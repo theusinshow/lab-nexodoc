@@ -190,6 +190,48 @@ function collectMentions(source: CrossDocumentSource, spec: FieldSpec): Identity
   return mentions;
 }
 
+export type IdentityMentionSpan = {
+  key: IdentityFieldKey;
+  label: string;
+  canonical: string;
+  page: number;
+  /** Offsets UTF-16 do valor capturado em `extracted.pages[i].text`, já sem pontuação de borda. */
+  start: number;
+  end: number;
+};
+
+/**
+ * TODAS as menções de identidade, com posição, sem eleger a moda.
+ *
+ * O núcleo de investigação (`lib/audit-engine/facts.ts`) precisa de cada menção
+ * como fato próprio: escolher "o valor do documento" por maioria é exatamente
+ * o que ele não pode fazer. Mesmos padrões e mesma canonicalização das regras
+ * abaixo — uma verdade só sobre o que é menção de identidade.
+ */
+export function collectIdentityMentionSpans(source: CrossDocumentSource): IdentityMentionSpan[] {
+  const spans: IdentityMentionSpan[] = [];
+  for (const spec of FIELD_SPECS) {
+    const canonicalize = spec.canonical ?? baseCanonical;
+    for (const page of source.extracted.pages) {
+      for (const pattern of spec.patterns) {
+        pattern.lastIndex = 0;
+        for (const match of page.text.matchAll(pattern)) {
+          const group = match[1];
+          if (!group) continue;
+          let start = (match.index ?? 0) + match[0].indexOf(group);
+          let end = start + group.length;
+          while (start < end && /[\s:;,.\-–]/.test(page.text[start])) start += 1;
+          while (end > start && /[\s:;,.\-–]/.test(page.text[end - 1])) end -= 1;
+          const canonical = canonicalize(group);
+          if (end <= start || !canonical || canonical.length < 2) continue;
+          spans.push({ key: spec.key, label: spec.label, canonical, page: page.page, start, end });
+        }
+      }
+    }
+  }
+  return spans;
+}
+
 /** valor afirmado por um documento = a moda das menções (evita que uma linha solta vire "o valor") */
 function resolveAssertedValue(mentions: IdentityMention[]): AssertedValue | null {
   if (mentions.length === 0) {

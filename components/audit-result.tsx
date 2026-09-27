@@ -31,7 +31,10 @@ import { createPortal } from "react-dom";
 import dynamic from "next/dynamic";
 
 import { Button } from "@/components/ui/button";
+import { CartaoDoMotor } from "@/components/achado/cartao-do-motor";
 import { ConversaDoAchado } from "@/components/achado/conversa-do-achado";
+import { findingCard } from "@/lib/audit-engine/finding-card";
+import { parseEngineFinding } from "@/lib/audit-engine/report-contract";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
@@ -54,7 +57,7 @@ import {
   classifyFindingImpact,
   classifyFindingTier,
   getDisciplineLabel,
-  getEmissionVerdict,
+  avaliarEmissao,
   getErrorTypeLabel,
   getFindingAssurance,
   getImpactLabel,
@@ -137,6 +140,14 @@ const MARCACAO_POR_GRAVIDADE: Record<StructuredFinding["severity"], string> = {
 
 type AuditResultProps = {
   content: string;
+  /**
+   * Fontes do MOTOR NOVO: quais revisões têm arquivo que se abre e como abrir a
+   * página citada. Ausente = fontes mostradas como indisponíveis (nunca um link falso).
+   */
+  motorFonte?: {
+    hasRevision: (revisionId: string) => boolean;
+    aoAbrir: (nav: { revisionId: string; fileName: string; page: number; highlight: string | null }) => void;
+  };
   auditId?: string;
   elapsedMs?: number;
   report?: AuditReport;
@@ -190,6 +201,8 @@ type ParsedAudit = Record<AuditSectionKey, string>;
 type StructuredFinding = {
   title: string;
   refId?: string;
+  /** `AuditFinding.motor`, quando o achado veio do motor novo. */
+  motor?: AuditFinding["motor"];
   severity: "critical" | "warning" | "ok";
   documento?: string;
   pagina?: string;
@@ -963,6 +976,10 @@ function reportFindingToStructured(finding: AuditFinding): StructuredFinding {
      * acreditar nele.
      */
     herdado_de: finding.herdado_de,
+    // Contrato do motor novo (opcional): quando existe, o cartão usa `findingCard`.
+    // Só o contrato VÁLIDO vira cartão do motor; corrompido cai no texto legado
+    // (e o veredito já bloqueia a emissão por integridade).
+    motor: parseEngineFinding(finding.motor).kind === "engine" ? finding.motor : undefined,
     confianca: finding.confianca,
     tier: classifyFindingTier(finding),
     assurance: getFindingAssurance(finding),
@@ -1200,6 +1217,7 @@ export function AuditResult({
   view: viewDeFora,
   onViewChange,
   achadoEmFoco,
+  motorFonte,
 }: AuditResultProps) {
   const [viewLocal, setViewLocal] = useState<AuditView>("summary");
   /*
@@ -1435,8 +1453,20 @@ export function AuditResult({
     (finding) => finding.tier !== "sugestao",
   );
   const suggestionFindings = findingsWithPdf.filter(
-    (finding) => finding.tier === "sugestao",
+    (finding) => finding.tier === "sugestao" && !finding.motor,
   );
+  /*
+   * QUESTÕES EM ABERTO DO MOTOR NOVO. O contrato põe o inconclusivo do motor na
+   * camada "sugestão", mas ele não é palpite rebaixado: é verificação que parou
+   * por falta de informação, com premissas e fontes — e a de prioridade Alta
+   * impede a emissão (`avaliarEmissao`). Por isso fica fora do bloco recolhido
+   * que diz "não contam para o veredito", visível e com o cartão do motor.
+   */
+  const RANK_DA_SEVERIDADE: Record<string, number> = { critical: 0, warning: 1, ok: 2 };
+  const openEngineFindings = findingsWithPdf
+    .filter((finding) => finding.tier === "sugestao" && !!finding.motor)
+    // A que bloqueia a emissão vem primeiro.
+    .sort((a, b) => (RANK_DA_SEVERIDADE[a.severity] ?? 3) - (RANK_DA_SEVERIDADE[b.severity] ?? 3));
 
   // Filtros por disciplina e tipo de erro (só mostra os que existem no resultado).
   /*
@@ -1542,7 +1572,7 @@ export function AuditResult({
     if (selecionados.size === 0) return undefined;
 
     const grupos = new Set(
-      [...filteredPrincipal, ...suggestionFindings]
+      [...filteredPrincipal, ...openEngineFindings, ...suggestionFindings]
         .filter((f) => f.refId && selecionados.has(f.refId))
         .map((f) => grupoDaDisciplinaDoAchado(findingDiscipline(f))),
     );
@@ -1590,15 +1620,9 @@ export function AuditResult({
     }
     return next;
   };
-  // Item 12 — veredito de emissão só a partir dos achados sólidos.
-  const verdict = report
-    ? getEmissionVerdict(
-        report.incongruencias.filter(
-          (finding) => classifyFindingTier(finding) === "principal",
-        ),
-        report.runtime?.passadas_incompletas ?? [],
-      )
-    : null;
+  // Item 12 — veredito de emissão: a regra única (`avaliarEmissao`), a mesma do
+  // texto exportado, do cartão e do grafo.
+  const verdict = report ? avaliarEmissao(report).veredito : null;
   const groupedReportFindings = report
     ? groupFindingsByImpact(report.incongruencias)
     : null;
@@ -2661,6 +2685,9 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
             {principalFindingsWithPdf.length !== 1 ? "s" : ""} em{" "}
             {uniqueDocumentCount || pdfSources.length || "?"} arquivo
             {(uniqueDocumentCount || pdfSources.length) !== 1 ? "s" : ""}
+            {openEngineFindings.length > 0
+              ? ` · ${openEngineFindings.length} quest${openEngineFindings.length !== 1 ? "ões" : "ão"} em aberto`
+              : ""}
             {suggestionFindings.length > 0
               ? ` · ${suggestionFindings.length} sugest${suggestionFindings.length !== 1 ? "ões" : "ão"} da IA`
               : ""}
@@ -4150,6 +4177,31 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
                       */}
                           <div className="grid gap-4 p-4 @min-[46rem]:grid-cols-[minmax(0,1.4fr)_minmax(15rem,0.6fr)]">
                             <div className="grid content-start gap-4">
+                              {finding.motor ? (
+                                /*
+                                  ACHADO DO MOTOR NOVO: o cartão vem pronto de
+                                  `findingCard` (ordem, fontes por lado, estado e
+                                  limites) e substitui os três textos e os trechos.
+                                  Navegação por revisão só quando a persistência
+                                  trouxer revisão → arquivo (P7); até lá, a fonte
+                                  mostra a citação e a indisponibilidade.
+                                */
+                                <CartaoDoMotor
+                                  modelo={findingCard(
+                                    {
+                                      descricao: finding.descricao ?? "",
+                                      conflito: finding.conflito ?? "",
+                                      evidencia: finding.evidencia ?? "",
+                                      sugestao_correcao: finding.acao ?? "",
+                                      pagina: finding.pagina ?? "",
+                                      motor: finding.motor,
+                                    },
+                                    motorFonte ?? { hasRevision: () => false },
+                                  )}
+                                  aoAbrir={motorFonte?.aoAbrir}
+                                />
+                              ) : (
+                              <>
                               <BlocoDeTexto titulo="O que está errado">
                                 {finding.descricao ||
                                   finding.title ||
@@ -4191,6 +4243,9 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
                                     : undefined
                                 }
                               />
+
+                              </>
+                              )}
 
                               {/*
                             A CONVERSA DO ACHADO, e só o ponto de montagem aqui.
@@ -4775,6 +4830,32 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
                       </div>
                     ) : null}
                   </div>
+                ) : null}
+
+                {openEngineFindings.length > 0 ? (
+                  <section className="nx-cut-8 grid gap-2 bg-[var(--nexodoc-recessed)] px-4 pb-4 pt-3">
+                    <h3 className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
+                      Questões em aberto — verificação não concluída ({openEngineFindings.length})
+                    </h3>
+                    {openEngineFindings.map((finding, index) => (
+                      <div key={`${finding.raw}-aberta-${index}`} className="nx-cut-8 bg-card p-3">
+                        <CartaoDoMotor
+                          modelo={findingCard(
+                            {
+                              descricao: finding.descricao ?? "",
+                              conflito: finding.conflito ?? "",
+                              evidencia: finding.evidencia ?? "",
+                              sugestao_correcao: finding.acao ?? "",
+                              pagina: finding.pagina ?? "",
+                              motor: finding.motor!,
+                            },
+                            motorFonte ?? { hasRevision: () => false },
+                          )}
+                          aoAbrir={motorFonte?.aoAbrir}
+                        />
+                      </div>
+                    ))}
+                  </section>
                 ) : null}
 
                 {suggestionFindings.length > 0 ? (

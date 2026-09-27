@@ -16,7 +16,7 @@ import type {
 } from "../../../lib/audit-report.ts";
 import {
   sortAuditFindings,
-  getEmissionVerdict,
+  avaliarEmissao,
   classifyFindingImpact,
   classifyFindingTier,
 } from "../../../lib/audit-report.ts";
@@ -157,7 +157,8 @@ export function buildAuditGraph(report: AuditReport): AuditGraph {
   // Passadas que não completaram rebaixam o veredito ("análise parcial — não use
   // para emitir"). Sem isto o canvas mostraria LIBERADO sobre uma leitura que não
   // aconteceu, justamente o que a tela textual já corrige.
-  const verdict = getEmissionVerdict(principal, report.runtime?.passadas_incompletas ?? []);
+  // Mesma regra de todas as telas: `avaliarEmissao` (lib/audit-report.ts).
+  const verdict = avaliarEmissao(report).veredito;
 
   const placed: AuditFindingNode[] = [];
   const unplaced: AuditFindingNode[] = [];

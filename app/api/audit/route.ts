@@ -1,4 +1,4 @@
-import { excedeOLimite, motivoDeArquivoGrande } from "@/lib/limite-do-anexo";
+import { LIMITE_DO_ARQUIVO_BYTES, excedeOLimite, motivoDeArquivoGrande } from "@/lib/limite-do-anexo";
 import { formatarDiaMes } from "@/lib/fuso-de-brasilia";
 import { NextResponse } from "next/server";
 
@@ -4639,7 +4639,31 @@ async function executarAuditoria(
  * mesma conexão do trabalho que os produz — se a conexão cai, cai tudo junto,
  * que é a verdade.
  */
+/**
+ * Teto do CORPO inteiro, verificado pelo `Content-Length` antes de lê-lo: o
+ * máximo de arquivos no teto de cada um, mais folga para os campos de texto
+ * (transcrições, gabarito). O teto por arquivo continua valendo lá dentro.
+ */
+const TETO_DO_CORPO_BYTES = MAX_FILES * LIMITE_DO_ARQUIVO_BYTES + 8 * 1024 * 1024;
+
 export async function POST(request: Request) {
+  /*
+   * PORTÃO ANTES DE LER O CORPO. O ator já era
+   * exigido em `executarAuditoria`, mas só depois de `request.formData()` ter
+   * trazido até centenas de MB para a memória de quem nem tinha sessão. A checagem
+   * de dentro continua (é ela que devolve o ator); esta só impede o trabalho.
+   */
+  try {
+    await requireActor();
+  } catch (err) {
+    const negado = accessDeniedResponse(err);
+    if (negado) return withCors(negado, request);
+    throw err;
+  }
+  const declarado = Number(request.headers.get("content-length"));
+  if (Number.isFinite(declarado) && declarado > TETO_DO_CORPO_BYTES) {
+    return withCors(jsonError("Envio grande demais para uma auditoria.", 413), request);
+  }
   const formData = await request.formData();
   if (formData.get("stream") !== "1") {
     return executarAuditoria(request, formData);

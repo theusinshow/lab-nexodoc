@@ -43,7 +43,7 @@ import { buildLdProposal, type SeloForLd } from "@/server/nexo/build-ld-proposal
 import type { LightCheckResult } from "@/server/nexo/light-check-core";
 import type { SeloIdentityResult } from "@/server/nexo/selo-identity-core";
 import {
-  getEmissionVerdict,
+  avaliarEmissao,
   groupFindingsByImpact,
   type AuditReport,
 } from "@/lib/audit-report";
@@ -3157,10 +3157,9 @@ function AuditoriaAncora({
   onAuditarDeNovo?: () => void;
 }) {
   const incompleta = incompletudeDoParecer(report);
-  const verdict = getEmissionVerdict(
-    report.incongruencias,
-    report.runtime?.passadas_incompletas ?? [],
-  );
+  // A regra única (`avaliarEmissao`): só achados principais acendem o semáforo,
+  // igual ao parecer em tela. Antes daqui este cartão contava as sugestões.
+  const verdict = avaliarEmissao(report).veredito;
   const variant =
     verdict.emoji === "🔴" ? "critical" : verdict.emoji === "🟢" ? "ok" : "warning";
   const porImpacto = groupFindingsByImpact(report.incongruencias);

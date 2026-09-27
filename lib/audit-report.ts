@@ -1,3 +1,4 @@
+import { countByState, readEngineReport, type EngineFindingV1, type EngineReportV1 } from "./audit-engine/report-contract.ts";
 import type { AiProvider } from "@/lib/ai-providers";
 import type { AuditMode } from "@/lib/audit-mode";
 import type { AnalysisLevel } from "@/lib/analysis-level";
@@ -108,6 +109,12 @@ export type AuditFinding = {
    * silenciosas.
    */
   herdado_de?: { auditId: string; quando: string };
+  /**
+   * Contrato do motor novo (`lib/audit-engine/report-contract.ts`), versionado e
+   * OPCIONAL: estado real da investigação, premissas, fontes por lado, limites.
+   * Ausente em parecer antigo — e aí o estado é desconhecido, não "confirmado".
+   */
+  motor?: EngineFindingV1;
 };
 
 export type FindingTier = "principal" | "sugestao";
@@ -292,6 +299,8 @@ export type AuditReport = {
   comparacoes: string[];
   incongruencias: AuditFinding[];
   conclusao: string;
+  /** Resumo versionado do motor novo (cobertura rastreada e contagem por estado). Opcional. */
+  motor?: EngineReportV1;
 };
 
 export function normalizePriority(value: string | undefined): FindingPriority {
@@ -1003,6 +1012,93 @@ export function getEmissionVerdict(
   };
 }
 
+export type AvaliacaoDeEmissao = {
+  estado: "incompleto" | "nao_emitir" | "revisar" | "liberado_com_ressalvas" | "liberado";
+  veredito: EmissionVerdict;
+  /** Aviso que vem ANTES do veredito e das contagens. `null` quando a análise está íntegra. */
+  aviso: { titulo: string; explicacao: string } | null;
+  /** O escopo efetivamente analisado — "liberado" nunca é conformidade integral. */
+  escopo: string;
+  pendencias: string[];
+};
+
+/**
+ * A REGRA ÚNICA de aptidão para emissão. Tela, texto exportado, cartão do Nexo
+ * e grafo passam por aqui; nenhum recalcula com uma lista diferente de achados.
+ *
+ * - O semáforo olha só achados PRINCIPAIS (sugestão não acende sozinha).
+ * - Incompletude vem de `incompletudeDoParecer` (passadas, status parcial/falha,
+ *   folhas mudas) E do resumo do motor quando existe (cobertura, falhas,
+ *   persistência inválida, desenho prometido e não avaliado).
+ * - Zero achados + análise interrompida nunca vira liberação.
+ * - Questão crítica em aberto (motor inconclusivo de prioridade Alta) impede
+ *   "liberado".
+ */
+export function avaliarEmissao(report: AuditReport, opcoes: { promessaVisual?: boolean } = {}): AvaliacaoDeEmissao {
+  const principais = report.incongruencias.filter((f) => classifyFindingTier(f) === "principal");
+  const passadas = report.runtime?.passadas_incompletas ?? [];
+  const base = getEmissionVerdict(principais, passadas);
+  const inc = incompletudeDoParecer(report);
+  const motor = readEngineReport(report);
+  const impeditivas: string[] = [];
+  const ressalvas: string[] = [];
+
+  if (inc.incompleta) impeditivas.push(inc.titulo || "análise incompleta");
+  if (motor.kind === "invalid") impeditivas.push(`resumo do motor ilegível (${motor.errors.join(", ")}): integridade da persistência não confirmada`);
+  let visualPendente = 0;
+  if (motor.kind === "engine") {
+    // Coerência: o resumo tem de bater com os achados publicados; achado do motor
+    // corrompido não pode sumir da conta nem ser lido como legado.
+    const porEstado = countByState(report.incongruencias);
+    if (porEstado.invalid > 0) impeditivas.push(`${porEstado.invalid} achado(s) do motor ilegível(is): integridade não confirmada`);
+    else if (porEstado.confirmed !== motor.value.counts.confirmed) {
+      impeditivas.push(`contagem do motor (${motor.value.counts.confirmed} confirmado(s)) não confere com os achados publicados (${porEstado.confirmed})`);
+    }
+    const cov = motor.value.coverage;
+    if (cov.status !== "complete" && cov.status !== "complete_with_inherited" && cov.status !== "empty") {
+      const pct = cov.completedRatio === null ? "—" : `${Math.round(cov.completedRatio * 100)}%`;
+      impeditivas.push(`cobertura do motor ${cov.status}: ${pct} do texto concluído`);
+    }
+    if (motor.value.counts.operationalFailures > 0) impeditivas.push(`${motor.value.counts.operationalFailures} verificação(ões) não concluída(s) por falha ou orçamento`);
+    visualPendente = cov.revisions.reduce((n, r) => n + r.visualPending.length, 0);
+    if (visualPendente && opcoes.promessaVisual) impeditivas.push(`${visualPendente} página(s) de desenho prometidas e não avaliadas`);
+  }
+  const criticasAbertas = report.incongruencias.filter((f) => f.motor?.state === "inconclusive" && f.prioridade === "Alta").length;
+  if (criticasAbertas) ressalvas.push(`${criticasAbertas} questão(ões) crítica(s) em aberto`);
+
+  const arquivos = report.arquivos_analisados ?? [];
+  const paginas = arquivos.reduce((n, a) => n + (a.paginas ?? 0), 0);
+  const escopo = [
+    `${arquivos.length} arquivo(s)${paginas ? `, ${paginas} página(s)` : ""}`,
+    motor.kind === "engine" ? `cobertura rastreada (${motor.value.coverage.status})` : "cobertura não rastreada (parecer anterior ao motor)",
+    visualPendente && !opcoes.promessaVisual ? `desenhos não avaliados em ${visualPendente} página(s) — limite do modo textual` : "",
+  ].filter(Boolean).join("; ");
+
+  const ehIncompleto = base.label.includes("NÃO USE PARA EMITIR");
+  if (impeditivas.length || ehIncompleto) {
+    const veredito = ehIncompleto ? base : {
+      emoji: "⚠️", label: "ANÁLISE PARCIAL — NÃO USE PARA EMITIR",
+      detail: `Pendências: ${impeditivas.join("; ")}. Os achados valem, mas a ausência de outros não significa que não existam. Rode de novo ou conclua as etapas pendentes.`,
+    };
+    return {
+      estado: "incompleto", veredito, escopo, pendencias: [...impeditivas, ...ressalvas],
+      aviso: { titulo: inc.titulo || veredito.label, explicacao: inc.explicacao || veredito.detail },
+    };
+  }
+  if (criticasAbertas && base.label.startsWith("LIBERADO")) {
+    return {
+      estado: "revisar", escopo, pendencias: ressalvas, aviso: null,
+      veredito: { emoji: "🟡", label: "REVISAR ANTES DE EMITIR", detail: `${ressalvas.join("; ")}: resolva antes de liberar.` },
+    };
+  }
+  const estado = base.label === "NÃO EMITIR" ? "nao_emitir" : base.label.startsWith("REVISAR") ? "revisar"
+    : base.label === "LIBERADO" ? "liberado" : "liberado_com_ressalvas";
+  const veredito = base.label.startsWith("LIBERADO")
+    ? { ...base, detail: `${base.detail} Não foram identificadas inconsistências confirmadas no escopo analisado (${escopo}).` }
+    : base;
+  return { estado, veredito, escopo, pendencias: ressalvas, aviso: null };
+}
+
 // Item 4 — selo de confiança por achado. Achado de regra é verificável (página +
 // evidência conferidas deterministicamente, sem alucinação); achado de IA é uma
 // sugestão que passou pela trava anti-alucinação, mas ainda pede conferência.
@@ -1031,7 +1127,8 @@ export function makeTextReport(report: AuditReport) {
   );
   const grouped = groupFindingsByImpact(principalFindings);
   const executiveSummary = buildExecutiveSummary(principalFindings);
-  const verdict = getEmissionVerdict(principalFindings, report.runtime?.passadas_incompletas ?? []);
+  const avaliacao = avaliarEmissao(report);
+  const verdict = avaliacao.veredito;
   const deterministicFindings = principalFindings.filter((finding) => finding.origem === "regra");
   const findings =
     principalFindings.length === 0
@@ -1058,11 +1155,11 @@ export function makeTextReport(report: AuditReport) {
           })
           .join("\n\n");
 
-  const incompleta = incompletudeDoParecer(report);
+  const aviso = avaliacao.aviso;
 
   return `
-${incompleta.incompleta ? `!!! ${incompleta.titulo} !!!
-${incompleta.explicacao}
+${aviso ? `!!! ${aviso.titulo} !!!
+${aviso.explicacao}
 
 ` : ""}0. Veredito de emissão
 ${verdict.emoji} ${verdict.label} — ${verdict.detail}

@@ -1,0 +1,54 @@
+{
+  "contracts": {
+    "version": "contracts-2",
+    "sha256": "3950a66aac474a29632a8986de533c37b2b3968be6e75d7551ba085bb9ee4f13"
+  },
+  "evidence": {
+    "version": "evidence-2",
+    "sha256": "d27f7c6c409712125b3eafcb963eacda57b45fcbc0f53f3cc2aee965c1c056b7"
+  },
+  "coverage": {
+    "version": "coverage-1",
+    "sha256": "e0d6d1568041fdb2164face21fb85bc64b2a87887bf40a5dfbb4265324e7b8fc"
+  },
+  "facts": {
+    "version": "facts-4",
+    "sha256": "5fca86ced3aea9baa208b4cab7014e6e5bb6dd8a043913ad4948ed7a52ee603d"
+  },
+  "relations": {
+    "version": "relations-3",
+    "sha256": "eb65c25ab47840a29258854043013252c86b135d10fafb9441e1974c07585efc"
+  },
+  "discovery": {
+    "version": "discovery-9",
+    "sha256": "c1154b02094546304b1ccf103a01c65341c5b77bc7123526e6203d674f39d8c2"
+  },
+  "calculation": {
+    "version": "calculation-1",
+    "sha256": "1b04c4e04b6dd58c146b433927c04f57029000bec1f115b4731a167641c1bc23"
+  },
+  "response": {
+    "version": "response-1",
+    "sha256": "f80dad24b2b5386d18eb8daf402e98505726fa23de52fef9456b52ab90bd1f58"
+  },
+  "result": {
+    "version": "result-2",
+    "sha256": "44ecad0a3837176a5a60008f6d6633483adb538f3f97e505d6b50294a892496c"
+  },
+  "routing": {
+    "version": "routing-2",
+    "sha256": "e4e15483608f845c157539057b337dc6920afe6602226f4c7c433040611d370a"
+  },
+  "reuse": {
+    "version": "reuse-2",
+    "sha256": "520ab2368de805a7d9a9ba36e6dae63bbd0b18e6274091e964d55ab77d45b122"
+  },
+  "report-contract": {
+    "version": "report-contract-5",
+    "sha256": "3f73615b4c5cf0cb80cb326a3a060505463c173c64059dfac7347a5f998cc2d8"
+  },
+  "legacy-candidates": {
+    "version": "legacy-candidates-1",
+    "sha256": "6604712c5506a10a0fb0765c7e62bf6efc472631725b3586f24ad5f982cdeef7"
+  }
+}

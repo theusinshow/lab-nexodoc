@@ -19,6 +19,12 @@
  * para ser conferido coluna a coluna, e o texto é proporcional para ser lido.
  */
 import type { AuditFinding, AuditReport } from "./audit-report";
+/*
+ * Imports de VALOR relativos e com extensão, pelo mesmo motivo de
+ * `lib/audit-report.ts`: a geração do papel é provada em node cru.
+ */
+import { avaliarEmissao } from "./audit-report.ts";
+import { findingCard } from "./audit-engine/finding-card.ts";
 
 /** Os estilos do papel. O desenhador traduz cada um numa fonte e num corpo. */
 export type EstiloDoBloco =
@@ -127,6 +133,7 @@ export function contagemPorImpacto(achados: readonly AuditFinding[]) {
 export function blocosDoParecer(report: AuditReport): Bloco[] {
   const achados = report.incongruencias.filter((f) => f.tier !== "sugestao");
   const conta = contagemPorImpacto(achados);
+  const avaliacao = avaliarEmissao(report);
   const blocos: Bloco[] = [
     { estilo: "titulo", texto: "Parecer de auditoria" },
     { estilo: "dado", texto: `${report.tipo_documento} · ${report.obra}` },
@@ -144,11 +151,11 @@ export function blocosDoParecer(report: AuditReport): Bloco[] {
      * é a assinatura do sistema; o fio era o desenho repetindo o argumento.
      */
     { estilo: "secao", texto: "Veredito", respiroAntes: 20 },
-    { estilo: "texto", texto: report.status_geral },
   ];
 
   /*
-   * A ANÁLISE INCOMPLETA VAI PARA O PAPEL, e vai LOGO ABAIXO do veredito.
+   * A ANÁLISE INCOMPLETA VAI PARA O PAPEL, logo abaixo do título "Veredito" e
+   * ANTES da linha do veredito (mesma ordem da tela: aviso primeiro).
    *
    * Um parecer parcial impresso sem essa linha é a pior peça que este sistema
    * poderia produzir: alguém libera um documento com base numa leitura que não
@@ -162,7 +169,19 @@ export function blocosDoParecer(report: AuditReport): Bloco[] {
         (report.status_analise === "parcial" ? "PARCIAL" : "COM FALHA") +
         " — não use este parecer para liberar o documento.",
     });
+  } else if (avaliacao.estado === "incompleto") {
+    // Concluída no status, mas com passada interrompida, cobertura do motor
+    // incompleta ou resumo ilegível: o papel diz o mesmo que a tela.
+    blocos.push({
+      estilo: "dado",
+      texto: `ANÁLISE INCOMPLETA — não use este parecer para liberar o documento. Pendências: ${avaliacao.pendencias.join("; ")}.`,
+    });
   }
+
+  // O VEREDITO vem DEPOIS do aviso, e é a MESMA regra da tela, do cartão e do
+  // grafo (`avaliarEmissao`) — não o `status_geral` cru: o papel não pode
+  // liberar o que a tela manda revisar.
+  blocos.push({ estilo: "texto", texto: `${avaliacao.veredito.label} — ${avaliacao.veredito.detail}` });
 
   blocos.push(
     { estilo: "secao", texto: "Sumário", respiroAntes: 10 },
@@ -248,6 +267,15 @@ export function blocosDoParecer(report: AuditReport): Bloco[] {
         abreAssunto: true,
       });
       blocos.push({ estilo: "texto", texto: a.sugestao_correcao.trim() });
+    }
+    /*
+     * ESTADO E LIMITES, só para achado do motor novo: legado não tem o dado, e
+     * inventar "confirmado" no papel seria pior do que não dizer nada.
+     */
+    if (a.motor) {
+      const cartao = findingCard(a, { hasRevision: () => false });
+      blocos.push({ estilo: "rotulo", texto: "ESTADO E LIMITES", respiroAntes: 4, abreAssunto: true });
+      blocos.push({ estilo: "texto", texto: [cartao.state.label, cartao.state.examined, ...cartao.state.limits].join(" · ") });
     }
   }
 

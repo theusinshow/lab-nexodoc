@@ -118,7 +118,9 @@ check(
   "a obra e o codigo aparecem",
   /117-25/.test(tudo) && /UBS Vila Manaus/i.test(tudo),
 );
-check("o veredito esta escrito", /com inconsistencias criticas/i.test(tudo));
+// Desde a regra única de emissão (P6.2/P6.5 do plano do motor), o papel imprime
+// o veredito de `avaliarEmissao` — o mesmo da tela —, e não o `status_geral` cru.
+check("o veredito esta escrito", /N[ÃA]O EMITIR/i.test(tudo) && /incongru[êe]ncias? cr[íi]ticas?/i.test(tudo));
 check(
   "o sumario conta os criticos",
   // Sem acento na régua: o PDF guarda "críticos" com acento, e comparar com a
