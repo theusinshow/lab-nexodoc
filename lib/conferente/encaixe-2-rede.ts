@@ -279,41 +279,40 @@ export async function varrerBloco(
  * de achados de rede sobre páginas que o `sol` já olhou com atenção.
  *
  * O buraco real é a interseção: bloco que NÃO foi ao modelo por bloco E que
- * caiu fora do que a leitura global coube. Os blocos vêm em ordem de documento,
- * então o corte da global é uma soma corrida de caracteres.
+ * tem alguma página fora do que a leitura global recebeu.
+ *
+ * POR PÁGINA, E NÃO POR SOMA DE CARACTERES (26/09/2026). A versão anterior
+ * recebia "quantos caracteres a global leu" como se fosse um prefixo do
+ * documento, e o número vinha do TETO, não do que aconteceu: com a global
+ * abortada ou truncada — o 117_25 em 14/09 e a primeira corrida do `gpt-6-sol`
+ * em 24/09 —, a rede dava o documento inteiro por lido e não varria nada,
+ * justamente na corrida que só tinha as regras. E no Padrão a global lê cabeça,
+ * meio e cauda, não um prefixo. Quem sabe o que foi lido é a passada global;
+ * ver `paginasNoContextoGlobal` em `lib/audit-validation-prompt.ts`.
  */
 export function blocosNaoLidos(
   blocos: AuditTextChunk[],
   idsLidosPorBloco: Set<string>,
-  caracteresLidosPelaGlobal: number,
+  paginasLidasPelaGlobal: ReadonlySet<number>,
 ) {
-  const naoLidos: AuditTextChunk[] = [];
-  let acumulado = 0;
-
-  for (const bloco of blocos) {
-    const comecaEm = acumulado;
-    acumulado += bloco.text.length;
-
+  return blocos.filter((bloco) => {
     if (idsLidosPorBloco.has(bloco.id)) {
-      continue;
+      return false;
     }
 
     /*
-     * Coberto pela global quando o bloco INTEIRO cabe no que ela mandou. Um
-     * bloco cortado ao meio pelo teto conta como não lido: o modelo viu o
-     * começo dele sem o fim, e é exatamente aí que o achado se perde.
+     * Coberto pela global só quando TODAS as páginas do bloco entraram. Uma
+     * página de fora já faz o bloco ser varrido: meia leitura não é leitura, e
+     * é na parte que faltou que o achado se perde.
      */
-    if (acumulado <= caracteresLidosPelaGlobal) {
-      continue;
+    for (let pagina = bloco.startPage; pagina <= bloco.endPage; pagina += 1) {
+      if (!paginasLidasPelaGlobal.has(pagina)) {
+        return true;
+      }
     }
 
-    // Nem o começo do bloco entrou? Então é buraco cheio. Entrou parcialmente?
-    // Também varre — meia leitura não é leitura.
-    void comecaEm;
-    naoLidos.push(bloco);
-  }
-
-  return naoLidos;
+    return false;
+  });
 }
 
 /**
@@ -326,10 +325,10 @@ export async function varrerOQueNinguemLeu(
   blocos: AuditTextChunk[],
   lidos: Set<string>,
   arquivo: string,
-  caracteresLidosPelaGlobal: number,
+  paginasLidasPelaGlobal: ReadonlySet<number>,
   contexto?: { userEmail?: string | null; conversationId?: string | null },
 ): Promise<AuditFinding[]> {
-  const naoLidos = blocosNaoLidos(blocos, lidos, caracteresLidosPelaGlobal);
+  const naoLidos = blocosNaoLidos(blocos, lidos, paginasLidasPelaGlobal);
 
   if (naoLidos.length === 0) {
     return [];

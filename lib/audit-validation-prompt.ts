@@ -49,6 +49,33 @@ export function getGlobalContextChars(analysisLevel: AnalysisLevel = "standard")
   return analysisLevel === "deep" ? DEFAULT_DEEP_GLOBAL_CONTEXT_CHARS : DEFAULT_GLOBAL_CONTEXT_CHARS;
 }
 
+/**
+ * AS JANELAS do texto que a leitura global recebe, em posições de
+ * `textoDoDocumentoParaIA`. Uma só quando o documento cabe; cabeça, meio e cauda
+ * quando não cabe.
+ *
+ * Existe separada do `buildDocumentContext` para que o recorte e a conta de "o
+ * que foi lido" (`paginasNoContextoGlobal`) saiam da MESMA aritmética. A rede de
+ * arrasto tratava a amostra como um PREFIXO: dava por lido o trecho entre a
+ * cabeça e o meio, que não foi, e varria a cauda, que foi.
+ */
+function janelasDoContexto(total: number, maxChars: number): [number, number][] {
+  if (total <= maxChars) {
+    return [[0, total]];
+  }
+
+  const headChars = Math.floor(maxChars * 0.38);
+  const tailChars = Math.floor(maxChars * 0.42);
+  const middleChars = maxChars - headChars - tailChars;
+  const middleStart = Math.max(0, Math.floor((total - middleChars) / 2));
+
+  return [
+    [0, headChars],
+    [middleStart, middleStart + middleChars],
+    [total - tailChars, total],
+  ];
+}
+
 export function buildDocumentContext(
   extracted: ExtractedPdf,
   analysisLevel: AnalysisLevel = "standard",
@@ -60,23 +87,86 @@ export function buildDocumentContext(
    * tabela mesmo depois de o Profundo (que lê por blocos) passar a enxergá-la.
    */
   const texto = textoDoDocumentoParaIA(extracted);
+  const janelas = janelasDoContexto(texto.length, maxChars);
 
-  if (texto.length <= maxChars) {
+  if (janelas.length === 1) {
     return texto;
   }
 
-  const headChars = Math.floor(maxChars * 0.38);
-  const tailChars = Math.floor(maxChars * 0.42);
-  const middleChars = maxChars - headChars - tailChars;
-  const middleStart = Math.max(0, Math.floor((texto.length - middleChars) / 2));
+  const [cabeca, meio, cauda] = janelas;
 
   return [
-    texto.slice(0, headChars),
+    texto.slice(cabeca[0], cabeca[1]),
     "\n\n--- RECORTE INTERMEDIARIO DO DOCUMENTO ---\n\n",
-    texto.slice(middleStart, middleStart + middleChars),
+    texto.slice(meio[0], meio[1]),
     "\n\n--- RECORTE FINAL DO DOCUMENTO ---\n\n",
-    texto.slice(-tailChars),
+    texto.slice(cauda[0], cauda[1]),
   ].join("");
+}
+
+/**
+ * Onde cada página começa e termina em `textoDoDocumentoParaIA`.
+ *
+ * Procura o texto de cada página em ordem, a partir do fim da anterior, em vez
+ * de refazer a conta de como `extractPdfText` junta as folhas: se a junção
+ * mudar lá, a conta daqui não descola em silêncio. Página que não se acha (texto
+ * vazio, folha muda) fica sem faixa, e página sem faixa nunca conta como lida.
+ */
+function faixasDasPaginas(extracted: ExtractedPdf) {
+  const texto = textoDoDocumentoParaIA(extracted);
+  const faixas: { page: number; start: number; end: number }[] = [];
+  let cursor = 0;
+
+  for (const page of extracted.pages) {
+    const trecho = page.text.trim();
+    if (!trecho) continue;
+
+    const start = texto.indexOf(trecho, cursor);
+    if (start === -1) continue;
+
+    const end = start + trecho.length;
+    faixas.push({ page: page.page, start, end });
+    cursor = end;
+  }
+
+  return faixas;
+}
+
+/**
+ * AS PÁGINAS QUE A LEITURA GLOBAL RECEBEU INTEIRAS — o que a rede de arrasto
+ * pode dar por lido.
+ *
+ * Página cortada ao meio por uma janela conta como NÃO lida: o modelo viu o
+ * começo sem o fim, e é no fim que o achado se perde.
+ *
+ * Só vale para a global que TERMINOU. Quem chama é que decide isso: com a
+ * passada abortada ou truncada, o conjunto certo é o vazio, e é essa a
+ * diferença entre a rede tapar o buraco e achar que ele não existe.
+ */
+export function paginasNoContextoGlobal(
+  extracted: ExtractedPdf,
+  analysisLevel: AnalysisLevel = "standard",
+): Set<number> {
+  const total = textoDoDocumentoParaIA(extracted).length;
+  const janelas = janelasDoContexto(total, getGlobalContextChars(analysisLevel));
+
+  if (janelas.length === 1) {
+    return new Set(extracted.pages.map((p) => p.page));
+  }
+
+  /*
+   * Folha sem texto entra como lida: não há o que a global perder nela, e sem
+   * isto todo bloco que contivesse uma folha muda seria varrido por inteiro.
+   * Quem responde por ela é a cobertura (`paginas_mudas`), não a rede.
+   */
+  const vazias = extracted.pages.filter((p) => !p.text.trim()).map((p) => p.page);
+
+  return new Set([
+    ...vazias,
+    ...faixasDasPaginas(extracted)
+      .filter((f) => janelas.some(([ini, fim]) => f.start >= ini && f.end <= fim))
+      .map((f) => f.page),
+  ]);
 }
 
 /** Orçamento de contexto da validação, em caracteres. */
@@ -105,9 +195,15 @@ const VIZINHAS = 1;
  * Sem página resolvível em achado nenhum, cai na amostragem antiga: contexto
  * genérico é pior que o certo, e melhor que nenhum.
  */
-export function buildValidationContext(
-  files: ValidationContextFile[],
-  findings: readonly AuditFinding[] = [],
+/**
+ * As páginas que o validador precisa ver para julgar ESTES achados, por arquivo:
+ * a de cada achado mais uma vizinha de cada lado. Uma conta só, usada pelo
+ * contexto e pelo corte em lotes — se fossem duas, o lote seria medido por uma
+ * régua e montado por outra.
+ */
+function paginasAlvo(
+  files: readonly ValidationContextFile[],
+  findings: readonly AuditFinding[],
 ) {
   const alvo = new Map<string, Set<number>>();
 
@@ -128,6 +224,102 @@ export function buildValidationContext(
     }
     alvo.set(chave, set);
   }
+
+  return alvo;
+}
+
+/** Quantos caracteres de página um conjunto de alvos põe no contexto. */
+function caracteresDoAlvo(
+  files: readonly ValidationContextFile[],
+  alvo: Map<string, Set<number>>,
+) {
+  let total = 0;
+
+  for (const file of files) {
+    const paginas = alvo.get(file.file.name);
+    if (!paginas?.size) continue;
+
+    for (const page of file.extracted.pages) {
+      // `--- PÁGINA n ---\n` + o separador entre páginas.
+      if (paginas.has(page.page)) total += page.text.length + 24;
+    }
+  }
+
+  return total;
+}
+
+/** Quantos achados, no máximo, uma chamada de validação julga. */
+export const ACHADOS_POR_LOTE = 20;
+
+/**
+ * OS LOTES DA VALIDAÇÃO — todo achado candidato em algum lote, e cada lote com
+ * as páginas dele cabendo no orçamento.
+ *
+ * Até 26/09/2026 a validação era UMA chamada, e `buildFindingCandidateList`
+ * cortava em 40 achados. A leitura global pode devolver 60, e os de regra vêm
+ * antes: numa auditoria profunda de 55 a 66 achados, de 15 a 25 nunca iam ao
+ * validador — os últimos da lista, que são os do fim do documento e TODOS os da
+ * rede de arrasto. Saíam intactos, sem uma palavra no parecer. E o contexto, as
+ * páginas citadas em ordem cortadas em 90k, perdia justamente o fim do
+ * documento: o "Escola Geral" (validador que não viu a página) de volta, só que
+ * para a metade de trás.
+ *
+ * Os achados vão em ordem de página, para que lotes vizinhos compartilhem
+ * folhas e caibam mais por lote. Os sem página ficam para o fim, num lote só
+ * deles, e é esse lote que recebe a amostra do documento — o mesmo tratamento
+ * de antes, agora sem roubar contexto dos que têm página.
+ *
+ * Um achado cujas páginas sozinhas passam do orçamento vai num lote próprio: o
+ * contexto dele sai cortado, mas ele é julgado.
+ */
+export function lotesDaValidacao(
+  files: readonly ValidationContextFile[],
+  findings: readonly AuditFinding[],
+  limites: { achados?: number; caracteres?: number } = {},
+): AuditFinding[][] {
+  const maxAchados = limites.achados ?? ACHADOS_POR_LOTE;
+  const maxCaracteres = limites.caracteres ?? VALIDACAO_MAX_CHARS;
+
+  const primeiraPagina = (finding: AuditFinding) =>
+    paginasDoAchado({ pagina: finding.pagina, referencia: finding.referencia_comparada })[0];
+
+  const comPagina = findings
+    .map((finding, ordem) => ({ finding, ordem, pagina: primeiraPagina(finding) }))
+    .filter((item) => item.pagina !== undefined)
+    .sort((a, b) => a.pagina! - b.pagina! || a.ordem - b.ordem)
+    .map((item) => item.finding);
+  const semPagina = findings.filter((finding) => primeiraPagina(finding) === undefined);
+
+  const lotes: AuditFinding[][] = [];
+  let atual: AuditFinding[] = [];
+
+  for (const finding of comPagina) {
+    const candidato = [...atual, finding];
+    const estoura =
+      candidato.length > maxAchados ||
+      caracteresDoAlvo(files, paginasAlvo(files, candidato)) > maxCaracteres;
+
+    if (estoura && atual.length > 0) {
+      lotes.push(atual);
+      atual = [finding];
+    } else {
+      atual = candidato;
+    }
+  }
+  if (atual.length > 0) lotes.push(atual);
+
+  for (let i = 0; i < semPagina.length; i += maxAchados) {
+    lotes.push(semPagina.slice(i, i + maxAchados));
+  }
+
+  return lotes;
+}
+
+export function buildValidationContext(
+  files: ValidationContextFile[],
+  findings: readonly AuditFinding[] = [],
+) {
+  const alvo = paginasAlvo(files, findings);
 
   const temAlvo = [...alvo.values()].some((s) => s.size > 0);
   let restante = VALIDACAO_MAX_CHARS;
@@ -191,9 +383,13 @@ export function buildMapaDosIguais(
     .join("\n");
 }
 
+/**
+ * A lista de candidatos, INTEIRA. Cortava em 40, e o que passava disso saía do
+ * parecer sem revisão e sem aviso; quem limita o tamanho agora é
+ * `lotesDaValidacao`, que garante que todo achado cai em algum lote.
+ */
 export function buildFindingCandidateList(findings: AuditFinding[]) {
   return findings
-    .slice(0, 40)
     .map((finding) => {
       return [
         `ID: ${finding.id}`,
@@ -343,13 +539,21 @@ ${buildValidationContext(args.files, args.findings)}
  * ter impressão e não ter síntese, e mandar uma linha em branco esconderia o
  * conteúdo do modelo. O lado seguro aqui é gastar, não perder.
  */
-export function buildDocumentContextComReuso(args: {
-  capitulos: readonly { hash: string; titulo: string; texto: string }[];
+type ArgsDoContextoComReuso = {
+  capitulos: readonly {
+    hash: string;
+    titulo: string;
+    texto: string;
+    startPage?: number;
+    endPage?: number;
+  }[];
   hashesHerdados: ReadonlySet<string>;
   resumoPorHash: ReadonlyMap<string, string>;
   maxChars: number;
-}): string {
-  const partes = args.capitulos.map((cap) => {
+};
+
+function partesComReuso(args: ArgsDoContextoComReuso) {
+  return args.capitulos.map((cap) => {
     const resumo = args.resumoPorHash.get(cap.hash);
 
     if (args.hashesHerdados.has(cap.hash) && resumo) {
@@ -358,8 +562,34 @@ export function buildDocumentContextComReuso(args: {
 
     return `--- ${cap.titulo} ---\n${cap.texto}`;
   });
+}
 
-  const texto = partes.join("\n\n");
+export function buildDocumentContextComReuso(args: ArgsDoContextoComReuso): string {
+  const texto = partesComReuso(args).join("\n\n");
 
   return texto.length <= args.maxChars ? texto : `${texto.slice(0, args.maxChars)}\n[...]`;
+}
+
+/**
+ * As páginas que a global da REAUDITORIA recebeu — o par de
+ * `paginasNoContextoGlobal` para quando o contexto vem de
+ * `buildDocumentContextComReuso`.
+ *
+ * Capítulo herdado conta como lido: ele foi lido na auditoria anterior, e os
+ * achados dele chegam herdados. Capítulo cortado pelo teto não conta, mesmo que
+ * o começo dele tenha entrado.
+ */
+export function paginasNoContextoComReuso(args: ArgsDoContextoComReuso): Set<number> {
+  const lidas = new Set<number>();
+  let usados = 0;
+
+  partesComReuso(args).forEach((parte, i) => {
+    usados += (i === 0 ? 0 : 2) + parte.length;
+    const cap = args.capitulos[i];
+    if (usados > args.maxChars || cap.startPage === undefined || cap.endPage === undefined) return;
+
+    for (let p = cap.startPage; p <= cap.endPage; p += 1) lidas.add(p);
+  });
+
+  return lidas;
 }

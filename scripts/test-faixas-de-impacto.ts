@@ -15,6 +15,7 @@ import { readFileSync } from "node:fs";
 import { CRITERIO_DAS_FAIXAS } from "../lib/faixas-de-impacto.ts";
 import { getAuditorPrompt } from "../lib/auditor-prompt.ts";
 import { getFindingValidationPrompt } from "../lib/audit-validation-prompt.ts";
+import { promptDaLeituraGlobal } from "../lib/prompts-da-leitura.ts";
 
 let passed = 0;
 function test(name: string, fn: () => void) {
@@ -51,13 +52,33 @@ test("a definição antiga e contraditória da validação saiu", () => {
   assert.ok(!/norma\/cálculo\/hierarquia que exige conferência/i.test(promptDaValidacao));
 });
 
-test("o prompt dos blocos do Profundo (route.ts) usa a definição única", () => {
-  const rota = readFileSync("app/api/audit/route.ts", "utf8");
-  assert.ok(rota.includes("${CRITERIO_DAS_FAIXAS}"), "route.ts não interpola CRITERIO_DAS_FAIXAS");
-  assert.ok(
-    !rota.includes('"critico_documental" (impede emitir), "tecnico_contratual" (exige decisão'),
-    "a definição abreviada ainda está em route.ts",
-  );
+test("o prompt da leitura global usa a definição única", () => {
+  /*
+   * Lia o FONTE de route.ts procurando a interpolação. Desde 26/09/2026 o
+   * prompt mora em lib/prompts-da-leitura.ts, e dá para conferir o texto que de
+   * fato vai ao modelo — que é o que importa.
+   */
+  const global = promptDaLeituraGlobal({
+    auditMode: "memorial",
+    userMessage: "",
+    projectName: "",
+    learningContext: "",
+    fileName: "a.pdf",
+    fileType: "memorial",
+    paginas: 1,
+    gabarito: "",
+    textoDoDocumento: "",
+  });
+  assert.ok(global.includes(CRITERIO_DAS_FAIXAS), "a leitura global não interpola CRITERIO_DAS_FAIXAS");
+
+  for (const arquivo of ["app/api/audit/route.ts", "lib/prompts-da-leitura.ts"]) {
+    assert.ok(
+      !readFileSync(arquivo, "utf8").includes(
+        '"critico_documental" (impede emitir), "tecnico_contratual" (exige decisão',
+      ),
+      `a definição abreviada ainda está em ${arquivo}`,
+    );
+  }
 });
 
 test("conta errada tem nome: adotado ≠ usado na própria fórmula é aritmético e crítico", () => {

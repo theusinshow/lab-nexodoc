@@ -18,7 +18,9 @@
  */
 import { getAuditExecutionProfile, type AuditAnalysisLevel, type AuditMode } from "./ai-providers.ts";
 import { getAuditorPrompt } from "./auditor-prompt.ts";
+import { getFindingValidationPrompt } from "./audit-validation-prompt.ts";
 import { numeroDoControle } from "./cache-de-controles.ts";
+import { promptDaLeituraGlobal, promptDoBloco } from "./prompts-da-leitura.ts";
 import { versaoDoAuditor, type ConfiguracaoDoAuditor } from "./versao-do-auditor.ts";
 
 /**
@@ -84,6 +86,44 @@ export function getReasoningEffort(analysisLevel: AuditAnalysisLevel, auditMode:
 }
 
 /**
+ * Os prompts que pedem e julgam os achados, com MARCADORES no lugar dos dados.
+ *
+ * Renderizar a função, e não copiar o texto para cá, é o que impede a versão
+ * de descolar do que vai ao modelo: qualquer mudança no texto, inclusive numa
+ * constante interpolada como a régua das faixas, muda o hash sozinha. Os
+ * marcadores são fixos, então o documento, o projeto e o usuário não entram —
+ * só o pedido.
+ *
+ * Ficam de fora os prompts das passadas desligadas em produção (identidade por
+ * IA, coerência por IA, confronto por IA, refutação): ligá-las é mudar de
+ * auditor por flag, e quem liga está em benchmark, não em reuso.
+ */
+function promptsComMarcadores(auditMode: AuditMode) {
+  const comum = {
+    auditMode,
+    userMessage: "{{pedido}}",
+    projectName: "{{projeto}}",
+    learningContext: "{{aprendizados}}",
+    fileName: "{{arquivo}}",
+    fileType: "{{tipo}}",
+  };
+
+  return [
+    promptDaLeituraGlobal({
+      ...comum,
+      paginas: "{{paginas}}",
+      gabarito: "{{gabarito}}",
+      textoDoDocumento: "{{documento}}",
+    }),
+    promptDoBloco({
+      ...comum,
+      chunk: { title: "{{bloco}}", startPage: 0, endPage: 0, text: "{{trecho}}" },
+    }),
+    getFindingValidationPrompt({ ...comum, files: [], findings: [] }),
+  ].join("\n\n=====\n\n");
+}
+
+/**
  * A configuração desta corrida, pronta para virar hash.
  *
  * Os modelos saem de `getAuditExecutionProfile`, que já é a fonte única deles
@@ -100,6 +140,7 @@ export function configuracaoDoAuditor(
 
   return {
     prompt: getAuditorPrompt(auditMode),
+    promptsDaLeitura: promptsComMarcadores(auditMode),
     modeloGlobal: modelo("global"),
     modeloBloco: modelo("chunk"),
     modeloValidacao: getAuditExecutionProfile({ auditMode, analysisLevel, role: "validation" })

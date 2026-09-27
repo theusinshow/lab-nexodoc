@@ -238,7 +238,7 @@
     "test:grupos": "node scripts/test-grupos-tecnicos.ts",
     "test:nexo:canvas-teclado": "node scripts/test-nexo-canvas-teclado.ts",
     "test:agrupar-blocos": "node scripts/test-agrupar-blocos.ts",
-    "test:versao-auditor": "node scripts/test-versao-do-auditor.ts",
+    "test:versao-auditor": "node --import ./scripts/lib/resolver-de-imports.mjs scripts/test-versao-do-auditor.ts",
     "test:elegibilidade": "node scripts/test-elegibilidade-da-base.ts",
     "test:aviso-gravacao": "node scripts/test-aviso-de-gravacao.ts",
     "test:tabela-do-pdf": "node scripts/test-tabela-do-pdf.ts",

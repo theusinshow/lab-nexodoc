@@ -10,7 +10,12 @@
  */
 import assert from "node:assert/strict";
 
-import { buildValidationContext } from "../lib/audit-validation-prompt.ts";
+import {
+  ACHADOS_POR_LOTE,
+  buildFindingCandidateList,
+  buildValidationContext,
+  lotesDaValidacao,
+} from "../lib/audit-validation-prompt.ts";
 import type { AuditFinding } from "../lib/audit-report.ts";
 
 let passed = 0;
@@ -116,6 +121,74 @@ test("respeita o orçamento mesmo com achado em toda página", () => {
   const muitos = Array.from({ length: 200 }, (_, i) => achado(String(i + 1)));
   const ctx = buildValidationContext(memorial(), muitos);
   assert.ok(ctx.length <= 92_000, `contexto de ${ctx.length} chars estourou o orçamento`);
+});
+
+// --- Os lotes: todo achado vai ao validador ---------------------------------
+/** Um parecer profundo típico: 10 de regra na frente, 56 de IA pelo documento. */
+function parecerProfundo() {
+  const regras = Array.from({ length: 10 }, (_, i) =>
+    achado(String(5 + i * 3), { id: `COER-${i + 1}`, origem: "regra" }),
+  );
+  const ia = Array.from({ length: 56 }, (_, i) =>
+    achado(String(1 + i * 3), { id: `INC-${i + 1}` }),
+  );
+  return [...regras, ...ia];
+}
+
+test("O CASO REAL: com 66 candidatos, TODOS caem em algum lote", () => {
+  /*
+   * Até 26/09 a lista cortava em 40: os 26 últimos — o fim do documento e a
+   * rede de arrasto — saíam sem revisão e sem aviso.
+   */
+  const todos = parecerProfundo();
+  const lotes = lotesDaValidacao(memorial(), todos);
+  const ids = lotes.flat().map((f) => f.id).sort();
+  assert.deepEqual(ids, todos.map((f) => f.id).sort());
+});
+
+test("nenhum lote passa do tamanho nem do orçamento de páginas", () => {
+  const arquivos = memorial();
+  for (const lote of lotesDaValidacao(arquivos, parecerProfundo())) {
+    assert.ok(lote.length <= ACHADOS_POR_LOTE, `lote de ${lote.length} achados`);
+    const ctx = buildValidationContext(arquivos, lote);
+    assert.ok(ctx.length <= 92_000, `contexto de ${ctx.length} chars estourou o orçamento`);
+    // Cortado no orçamento = alguma página do lote ficou de fora do contexto.
+    for (const f of lote) {
+      assert.match(ctx, new RegExp(`PÁGINA ${f.pagina} ---`), `${f.id} sem a página ${f.pagina}`);
+    }
+  }
+});
+
+test("o achado do FIM do documento tem a página dele no contexto do seu lote", () => {
+  /*
+   * O outro lado do defeito: as páginas iam em ordem e eram cortadas em 90k,
+   * então quem estava depois da página ~35 era julgado sem a página.
+   */
+  const arquivos = memorial();
+  const todos = [...parecerProfundo(), achado("181", { id: "INC-181" })];
+  const lote = lotesDaValidacao(arquivos, todos).find((l) => l.some((f) => f.id === "INC-181"));
+  assert.ok(lote, "o achado da 181 precisa estar em algum lote");
+  assert.match(buildValidationContext(arquivos, lote), /MARCA_181/);
+});
+
+test("achado sem página vai para um lote próprio, com a amostra", () => {
+  const arquivos = memorial();
+  const lotes = lotesDaValidacao(arquivos, [
+    achado("10", { id: "A" }),
+    achado("não identificada", { id: "B" }),
+  ]);
+  assert.deepEqual(lotes.map((l) => l.map((f) => f.id)), [["A"], ["B"]]);
+  assert.match(buildValidationContext(arquivos, lotes[1]), /TEXTO DE CONTEXTO:/);
+});
+
+test("achado cujas páginas sozinhas estouram o orçamento é julgado mesmo assim", () => {
+  const lotes = lotesDaValidacao(memorial(), [achado("1-200", { id: "GIGANTE" }), achado("5")]);
+  assert.ok(lotes.flat().some((f) => f.id === "GIGANTE"));
+});
+
+test("a lista de candidatos não corta mais em 40", () => {
+  const lista = buildFindingCandidateList(parecerProfundo());
+  assert.match(lista, /ID: INC-56\n/);
 });
 
 console.log(`\n${passed} teste(s) de contexto da validação OK`);

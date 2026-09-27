@@ -135,8 +135,12 @@ import {
   getFindingValidationPrompt,
   buildDocumentContextComReuso,
   getGlobalContextChars,
+  lotesDaValidacao,
+  paginasNoContextoComReuso,
+  paginasNoContextoGlobal,
 } from "@/lib/audit-validation-prompt";
 import { filterGroundedFindings } from "@/lib/audit-verify";
+import { promptDaLeituraGlobal, promptDoBloco } from "@/lib/prompts-da-leitura";
 
 export const runtime = "nodejs";
 
@@ -500,58 +504,8 @@ function getChunkPrompt(args: {
   fileType: string;
   chunk: AuditTextChunk;
 }) {
-  const modeInstruction =
-    args.auditMode === "volume"
-      ? "Audite volume de projeto: coerência entre capa, separatriz, LDs/listas, pranchas, selos, revisões, títulos, disciplinas, volume e tomo."
-      : "Audite memorial descritivo textual: coerência interna, normas suspeitas, cálculos simples, hierarquia e redação técnica.";
-
-  return `
-${modeInstruction}
-
-Leia o trecho abaixo procurando erros que possam comprometer emissão, licitação, cliente ou consistência documental.
-Procure ativamente: conflito de hierarquia documental, norma inadequada ao escopo, cálculo incoerente, unidade de medida divergente (cm × m, m² × m³), linguagem técnica reaproveitada de outro tipo de obra (ex.: rodovia num prédio), quadro/tabela inconsistente e redação/formatação crítica.
-
-NÃO reporte divergência de identidade documental — nome da obra, unidade, município, bairro, endereço, proprietário, órgão, cliente ou código. Essa camada é auditada por regras determinísticas próprias e reafirmá-la aqui só gera ruído e falso positivo. Se notar um trecho que parece de outra obra, trate-o apenas como possível reaproveitamento de linguagem técnica, não como troca de identidade.
-
-Se o trecho for sumário/índice (títulos com pontilhado e número de página), NÃO gere achados sobre ele — títulos repetidos, numeração ou grafia do índice não são defeitos. Nunca reclame de "recorte", "página fornecida" ou de não conseguir auditar a partir do sumário.
-
-UMA OCORRÊNCIA, UM ACHADO. Grafia, concordância, pontuação e palavra trocada se corrigem uma a uma, em lugares diferentes do texto: cada uma é um achado com a SUA "pagina", o SEU trecho em "evidencia", o SEU "termo_busca" e a SUA "sugestao_correcao". NUNCA junte várias numa frase só ("pág. 8 ...; pág. 23 ...; pág. 35 ..."): assim ninguém consegue abrir, localizar no PDF nem marcar como resolvida uma ocorrência isolada. Junte num achado só quando UMA decisão resolver todas de uma vez (convenção de unidade, nomenclatura, regra de prevalência). Em achado de texto, escreva "categoria": "Ortografia / Redação".
-
-Projeto informado: ${args.projectName || "não informado"}
-Arquivo: ${args.fileName}
-Tipo informado: ${args.fileType}
-Trecho: ${args.chunk.title}, páginas ${args.chunk.startPage}-${args.chunk.endPage}
-Solicitação do usuário: ${args.userMessage}
-
-Aprendizados ativos do escritório, usados como contexto e preferência de auditoria, não como evidência:
-${args.learningContext}
-
-Responda APENAS JSON válido:
-{
-  "findings": [
-    {
-      "prioridade": "Alta|Media/Alta|Media|Baixa/Media|Baixa",
-      "pagina": "número ou intervalo",
-      "capitulo": "capítulo/seção",
-      "local": "local do erro",
-      "tipo": "tipo do erro",
-      "descricao": "descrição objetiva",
-      "evidencia": "TRECHO LITERAL do documento (so o que esta escrito la; conta e conclusao vao em conflito)",
-      "termo_busca": "menor trecho exato para localizar no PDF via Ctrl+F",
-      "categoria": "categoria do achado (use \"Ortografia / Redação\" nos de texto)",
-      "conflito": "por que diverge",
-      "sugestao_correcao": "correção sugerida",
-      "confianca": "alta|media|baixa",
-      "impacto": "critico_documental|tecnico_contratual|revisao_editorial"
-    }
-  ]
-}
-
-Se não encontrar erro relevante, retorne {"findings":[]}.
-
-TEXTO:
-${args.chunk.text}
-`.trim();
+  // O texto mora em [[prompts-da-leitura.ts]], onde a versão do auditor o enxerga.
+  return promptDoBloco(args);
 }
 
 /*
@@ -808,6 +762,13 @@ function contarPaginasDoDocumento(extracted: ExtractedPdf) {
 export function tetoDeSaidaDaValidacao(achados: number) {
   return Math.min(32_000, 8_000 + achados * 300);
 }
+
+/*
+ * Quantos lotes de validação vão ao provedor ao mesmo tempo. Três cobre a
+ * auditoria profunda típica (55 a 66 achados, três ou quatro lotes) quase de
+ * uma vez, sem abrir mais conexões de fundo que a leitura por blocos abre.
+ */
+const VALIDACAO_LOTES_EM_PARALELO = 3;
 
 function getValidationTimeoutMs(analysisLevel: AnalysisLevel) {
   const value = Number(process.env.NEXODOC_VALIDATION_TIMEOUT_MS);
@@ -2400,6 +2361,38 @@ function contextoDoDocumento(args: {
   });
 }
 
+/**
+ * As páginas que `contextoDoDocumento` põe no prompt — o mesmo par de caminhos,
+ * na mesma ordem, para que "o que foi mandado" e "o que se diz lido" não possam
+ * divergir.
+ */
+function paginasDoContextoDoDocumento(args: {
+  analysisLevel: AnalysisLevel;
+  extracted: ExtractedPdf;
+  hashesHerdados?: ReadonlySet<string>;
+  resumoPorHash?: ReadonlyMap<string, string>;
+}) {
+  if (!args.hashesHerdados || args.hashesHerdados.size === 0) {
+    return paginasNoContextoGlobal(args.extracted, args.analysisLevel);
+  }
+
+  const capitulos = chunkPdfByChapter(args.extracted);
+  const impressos = impressaoDosCapitulos(capitulos);
+
+  return paginasNoContextoComReuso({
+    capitulos: capitulos.map((c, i) => ({
+      hash: impressos[i].hash,
+      titulo: c.title,
+      texto: c.text,
+      startPage: c.startPage,
+      endPage: c.endPage,
+    })),
+    hashesHerdados: args.hashesHerdados,
+    resumoPorHash: args.resumoPorHash ?? new Map(),
+    maxChars: getGlobalContextChars(args.analysisLevel),
+  });
+}
+
 function getGlobalFilePrompt(args: {
   auditMode: AuditMode;
   analysisLevel: AnalysisLevel;
@@ -2415,92 +2408,18 @@ function getGlobalFilePrompt(args: {
   /** Resumo por hash, de `runtime.sintese` do parecer anterior. */
   resumoPorHash?: ReadonlyMap<string, string>;
 }) {
-  const modeInstruction =
-    args.auditMode === "volume"
-      ? "Faça uma leitura global do volume de projeto, como auditor documental sênior."
-      : "Faça uma leitura global do memorial descritivo, como auditor documental sênior.";
-
-  return `
-${modeInstruction}
-
-Esta etapa deve funcionar como uma análise livre do documento inteiro, não como checklist de termos. Use a identidade predominante do documento (obra, município, órgão, disciplina) como referência para julgar coerência. Procure incongruências internas, capítulos incoerentes, normas suspeitas, contas inconsistentes, escopo ambíguo, promessas não cumpridas e problemas editoriais.
-
-A identidade documental também é auditada por regras determinísticas próprias, que comparam o documento contra o gabarito informado. Elas pegam o que casa com o gabarito; NÃO pegam texto pertencente a um TERCEIRO empreendimento que nunca foi declarado. Por isso: quando encontrar nome de obra, bloco, unidade ou elemento construtivo que não pertence a este empreendimento e não aparece na caracterização (ex.: um nome de prédio estranho, um bloco que não existe no programa, uma torre que ninguém descreveu), GERE O ACHADO. Se a camada determinística já tiver apontado o mesmo trecho, a deduplicação posterior resolve — perder o resíduo é muito pior que repeti-lo.
-
-SUMÁRIO / ÍNDICE. Linhas de título seguidas de pontilhado e número de página (ex.: "12.6 Quadro geral ....... 122") são o índice. Não gere achado sobre grafia ou espaçamento que exista SÓ no índice. Mas CONFIRA O ÍNDICE CONTRA O CORPO: se os capítulos listados no sumário não forem os capítulos que o documento realmente tem, ou se as páginas indicadas não corresponderem, isso é achado crítico de documento não finalizado — reporte com os dois lados (o que o sumário diz x o que o corpo traz). Nunca reclame de "recorte", "página fornecida" ou "reprocessar": você recebeu o documento inteiro; audite o conteúdo real.
-
-Em memoriais, confira explicitamente antes de responder:
-- construcao nova x trechos de reforma/adequacao (escopo ambíguo);
-- quantidade e nomenclatura de blocos, pavimentos, volumes e disciplinas;
-- areas informadas em secoes diferentes, inclusive arquitetura, eletrica, cabeamento e CFTV;
-- concessionaria, normas locais e siglas que exigem validação técnica.
-
-Priorize pelo impacto:
-- Alta: contradição técnica interna grave, cálculo/quantitativo incoerente ou norma incompatível que impede emissão.
-- Media/Alta: divergência técnica/contratual que pode afetar emissão, contratação ou revisão formal.
-- Media ou menor: redação, formatação, duplicidade e pontos de conferência editoriais.
-
-Preencha "impacto" em TODO achado, pela consequência para quem vai emitir. A prioridade mede urgência; o impacto decide em qual seção do relatório o achado aparece. A régua é esta, a mesma do auditor e da validação:
-${CRITERIO_DAS_FAIXAS}
-
-Não invente evidência. Se o documento só permitir suspeita, marque confiança média ou baixa e explique o motivo — mas registre o achado.
-
-PEQUE PELO EXCESSO: reporte todo defeito real que encontrar, inclusive acabamento, esquadria, ferragem, parágrafo duplicado e erro de redação, mesmo quando já houver achado grave no documento. Não omita achado por ser secundário; a classificação por impacto é que organiza a lista.
-
-UMA OCORRÊNCIA, UM ACHADO — quando a correção é feita ocorrência por ocorrência. Grafia, concordância, pontuação, palavra trocada, parágrafo duplicado: cada uma se corrige num lugar diferente do texto, então cada uma é um achado com a SUA "pagina", o SEU trecho em "evidencia", o SEU "termo_busca" e a SUA "sugestao_correcao". NUNCA junte várias numa frase só ("pág. 8 ...; pág. 23 ...; pág. 35 ..."): quem revisa não consegue abrir, localizar no PDF nem marcar como resolvida uma ocorrência que está enterrada dentro de um texto corrido. Ocorrências parecidas do mesmo defeito voltam a aparecer juntas na tela — isso é trabalho do software, não seu.
-
-CONSOLIDE apenas quando UMA decisão resolve todas as ocorrências de uma vez: regra de prevalência documental, norma adotada, convenção de unidade, nomenclatura de bloco. Aí sim um único achado, citando as páginas onde a decisão se aplica.
-
-Em achado de texto, escreva "categoria": "Ortografia / Redação". É por esse nome que a tela separa revisão de texto de divergência técnica.
-
-Teto de 60 achados, no máximo 30 deles com impacto "revisao_editorial". Havendo mais ocorrências de texto que isso, reporte as de menor número de página primeiro. NUNCA descarte achado técnico para caber ocorrência de texto.
-
-Projeto informado pelo usuário: ${args.projectName || "não informado"}
-Arquivo: ${args.fileName}
-Tipo informado: ${args.fileType}
-Páginas extraídas: ${args.extracted.pageCount}
-Solicitação do usuário: ${args.userMessage}
-
-Aprendizados ativos do escritório, usados como contexto e preferência de auditoria, não como evidência:
-${args.learningContext}
-
-${buildGabaritoContext(args.gabarito)}
-
-Responda APENAS JSON válido:
-{
-  "findings": [
-    {
-      "prioridade": "Alta|Media/Alta|Media|Baixa/Media|Baixa",
-      "pagina": "número ou intervalo",
-      "capitulo": "capítulo/seção",
-      "local": "local do erro",
-      "tipo": "tipo do erro",
-      "descricao": "descrição objetiva",
-      "evidencia": "TRECHO LITERAL do documento (so o que esta escrito la; conta e conclusao vao em conflito)",
-      "termo_busca": "menor trecho exato para localizar no PDF via Ctrl+F",
-      "categoria": "categoria do achado (use \"Ortografia / Redação\" nos de texto)",
-      "referencia_comparada": "identidade predominante ou trecho comparado, quando existir",
-      "conflito": "por que diverge",
-      "sugestao_correcao": "correção sugerida",
-      "confianca": "alta|media|baixa",
-      "impacto": "critico_documental|tecnico_contratual|revisao_editorial"
-    }
-  ]
-}
-
-Se não encontrar erro relevante, retorne {"findings":[]}.
-
-Além dos achados, devolva em "sintese" UMA LINHA por capítulo do documento.
-Não descreva o assunto do capítulo — registre o que ele AFIRMA: sistema
-estrutural, resistências, dimensões, quem executa o quê, normas declaradas. É
-isso que uma revisão futura pode contradizer, e é para isso que a linha serve.
-Use no campo "capitulo" o título do capítulo exatamente como aparece no
-documento. Se o documento não tiver capítulos identificáveis, devolve
-"sintese":[].
-
-TEXTO DO DOCUMENTO:
-${contextoDoDocumento(args)}
-`.trim();
+  // O texto mora em [[prompts-da-leitura.ts]], onde a versão do auditor o enxerga.
+  return promptDaLeituraGlobal({
+    auditMode: args.auditMode,
+    userMessage: args.userMessage,
+    projectName: args.projectName,
+    learningContext: args.learningContext,
+    fileName: args.fileName,
+    fileType: args.fileType,
+    paginas: args.extracted.pageCount,
+    gabarito: buildGabaritoContext(args.gabarito),
+    textoDoDocumento: contextoDoDocumento(args),
+  });
 }
 
 async function analyzeFileGloballyWithModel(args: {
@@ -2527,6 +2446,12 @@ async function analyzeFileGloballyWithModel(args: {
    * "não há mapa deste arquivo", nunca "o documento não tem capítulos".
    */
   sintese?: { capitulo: string; resumo: string }[];
+  /**
+   * Coletor das páginas que esta passada de fato leu — preenchido SÓ quando ela
+   * termina com resposta válida. Abortou, truncou ou voltou JSON quebrado: fica
+   * vazio, e a rede de arrasto varre o documento que ninguém leu.
+   */
+  paginasLidas?: Set<number>;
 }) {
   const profile = getPrimaryExecutionProfile(args.auditMode, args.analysisLevel, "global");
   const model = profile.model;
@@ -2591,6 +2516,9 @@ async function analyzeFileGloballyWithModel(args: {
       }),
     );
     parsed = parseRequiredAuditModelJson(result.text, "audit-global");
+    for (const pagina of paginasDoContextoDoDocumento(args)) {
+      args.paginasLidas?.add(pagina);
+    }
     for (const item of parsed?.sintese ?? []) {
       if (item?.capitulo && item?.resumo) {
         args.sintese?.push({ capitulo: String(item.capitulo), resumo: String(item.resumo) });
@@ -2839,85 +2767,117 @@ async function validateFindingsWithModel(args: {
   }
 
   const profile = getValidationExecutionProfile(args.auditMode, args.analysisLevel);
+  const model = profile.model;
 
-  try {
-    const model = profile.model;
-    const result = await executeAuditModelResponse({
-      taskId: args.auditId,
-      taskLabel: args.projectName || "Auditoria",
-      model,
-      providerOverride: profile.provider,
-      operation: "audit-validation",
-      timeoutMs: getValidationTimeoutMs(args.analysisLevel),
-      emSegundoPlano: true,
-      request: {
+  /*
+   * EM LOTES, e todos os achados — ver `lotesDaValidacao`. Era uma chamada só,
+   * com os 40 primeiros candidatos e 90k de páginas em ordem: o resto do
+   * parecer, e o fim do documento, passavam sem revisão.
+   *
+   * Cada lote leva só as páginas dos SEUS achados, então nenhum deles perde
+   * contexto para o vizinho. As instruções vêm antes dos dados no prompt, e é
+   * isso que deixa o provedor reaproveitar o prefixo em cache entre os lotes.
+   */
+  const lotes = lotesDaValidacao(args.files, args.findings);
+  const resultados = await mapWithConcurrency(lotes, VALIDACAO_LOTES_EM_PARALELO, async (lote, indice) => {
+    try {
+      const result = await executeAuditModelResponse({
+        taskId: args.auditId,
+        taskLabel: args.projectName || "Auditoria",
         model,
-        instructions: getAuditorPrompt(args.auditMode),
-        reasoning: { effort: getReasoningEffort(args.analysisLevel, args.auditMode) },
-        max_output_tokens: tetoDeSaidaDaValidacao(args.findings.length),
-        text: { format: auditValidationResponseFormat },
-        input: getFindingValidationPrompt(args),
-      },
-      metadata: {
-        findings: args.findings.length,
-        files: args.files.length,
-        auditEngine: args.auditEngine,
-        analysisLevel: args.analysisLevel,
-        auditMode: args.auditMode,
-      },
-      conversationId: args.conversationId,
-      userEmail: args.userEmail,
-    });
-    const parsed = parseRequiredAuditModelJson(result.text, "audit-validation");
-    const decisions = new Map(
-      (parsed?.decisions ?? [])
-        .filter((decision) => decision.source_id && decision.acao)
-        .map((decision) => [String(decision.source_id), decision]),
-    );
-
-    if (decisions.size === 0) {
-      return args.findings;
-    }
-
-    return args.findings.map((finding) => {
-      const decision = decisions.get(finding.id);
-      if (!decision) return finding;
-
-      /*
-       * A decisão vira achado em [[decisao-da-validacao.ts]]: regra e guarda
-       * mantêm a faixa e o achado, e o desacordo vira contestação — que vai
-       * para o parecer E para o log, onde quem mexe na regra vê na hora.
-       */
-      const novas: ContestacaoDeRegra[] = [];
-      const resultado = aplicarDecisaoDaValidacao(finding, decision, novas);
-      for (const contestacao of novas) {
-        args.contestacoes?.push(contestacao);
-        console.warn(linhaDeLog(contestacao));
+        providerOverride: profile.provider,
+        operation: "audit-validation",
+        timeoutMs: getValidationTimeoutMs(args.analysisLevel),
+        emSegundoPlano: true,
+        request: {
+          model,
+          instructions: getAuditorPrompt(args.auditMode),
+          reasoning: { effort: getReasoningEffort(args.analysisLevel, args.auditMode) },
+          max_output_tokens: tetoDeSaidaDaValidacao(lote.length),
+          text: { format: auditValidationResponseFormat },
+          input: getFindingValidationPrompt({ ...args, findings: lote }),
+        },
+        metadata: {
+          findings: lote.length,
+          lote: indice + 1,
+          lotes: lotes.length,
+          files: args.files.length,
+          auditEngine: args.auditEngine,
+          analysisLevel: args.analysisLevel,
+          auditMode: args.auditMode,
+        },
+        conversationId: args.conversationId,
+        userEmail: args.userEmail,
+      });
+      const parsed = parseRequiredAuditModelJson(result.text, "audit-validation");
+      return { lote, decisoes: parsed?.decisions ?? [], erro: null };
+    } catch (error) {
+      const failure = classifyProviderFailure(profile.provider, "audit", profile.model, error);
+      if (failure.category !== "unknown") {
+        recordProviderFailure(failure);
       }
-      return resultado;
-    });
-  } catch (error) {
-    const failure = classifyProviderFailure(
-      profile.provider,
-      "audit",
-      profile.model,
-      error,
-    );
-    if (failure.category !== "unknown") {
-      recordProviderFailure(failure);
+      console.error(
+        `[audit] validacao semantica: lote ${indice + 1}/${lotes.length} falhou; mantendo ${lote.length} candidato(s) (${failure.category})`,
+      );
+      return { lote, decisoes: [], erro: error };
     }
-    console.error(`[audit] validacao semantica falhou; mantendo candidatos (${failure.category})`);
-    /*
-     * Os achados ficam, mas sem a revisão eles não foram conferidos, e isso
-     * precisa aparecer no parecer. Era só uma linha de log: em 14/09/2026 a
-     * validação do 117_25 truncou e a tela não disse nada.
-     */
+  });
+
+  /*
+   * Os achados de um lote que falhou ficam, mas sem a revisão eles não foram
+   * conferidos, e isso precisa aparecer no parecer. Era só uma linha de log: em
+   * 14/09/2026 a validação do 117_25 truncou e a tela não disse nada. Com
+   * lotes, a falha pode ser PARCIAL — e o parecer diz quantos ficaram de fora.
+   */
+  const falhos = resultados.filter((r) => r.erro !== null);
+  if (falhos.length > 0) {
+    const semRevisao = falhos.reduce((n, r) => n + r.lote.length, 0);
+    const primeiro = falhos[0].erro as { message?: string } | null;
     args.degradacoes?.push({
       passada: "Revisão dos achados pela IA",
-      motivo: String((error as { message?: string })?.message ?? error).slice(0, 160),
+      motivo:
+        `${semRevisao} de ${args.findings.length} achado(s) sem revisão ` +
+        `(${falhos.length} de ${lotes.length} lote(s)): ` +
+        String(primeiro?.message ?? primeiro).slice(0, 120),
     });
+  }
+
+  const decisions = new Map(
+    resultados
+      .flatMap((r) => r.decisoes)
+      .filter((decision) => decision.source_id && decision.acao)
+      .map((decision) => [String(decision.source_id), decision]),
+  );
+
+  const semDecisao = resultados
+    .filter((r) => r.erro === null)
+    .flatMap((r) => r.lote)
+    .filter((finding) => !decisions.has(finding.id)).length;
+  if (semDecisao > 0) {
+    console.warn(`[audit] validacao semantica: ${semDecisao} achado(s) voltaram sem decisao do modelo`);
+  }
+
+  if (decisions.size === 0) {
     return args.findings;
   }
+
+  return args.findings.map((finding) => {
+    const decision = decisions.get(finding.id);
+    if (!decision) return finding;
+
+    /*
+     * A decisão vira achado em [[decisao-da-validacao.ts]]: regra e guarda
+     * mantêm a faixa e o achado, e o desacordo vira contestação — que vai
+     * para o parecer E para o log, onde quem mexe na regra vê na hora.
+     */
+    const novas: ContestacaoDeRegra[] = [];
+    const resultado = aplicarDecisaoDaValidacao(finding, decision, novas);
+    for (const contestacao of novas) {
+      args.contestacoes?.push(contestacao);
+      console.warn(linhaDeLog(contestacao));
+    }
+    return resultado;
+  });
 }
 
 async function analyzeCrossDocumentsWithModel(args: {
@@ -3202,13 +3162,18 @@ async function deepAnalyzeFile(args: {
    * suprime o meta-achado que reclama de auditar a partir do sumário, com teste
    * próprio —, então o motivo original do corte já não se sustenta sozinho.
    */
+  /*
+   * O conflito das regras LEGADAS não encolhe mais a leitura (26/09/2026). Ele
+   * cortava os blocos do Padrão para 4 e — mais abaixo — pulava a leitura global
+   * inteira: ligar `NEXODOC_ENABLE_RULE_BASED_AUDIT` para comparar motores
+   * deixava o documento sem uma linha lida por IA no Profundo, sem aviso. Um
+   * achado de regra acrescenta ao parecer; nunca decide o que a IA deixa de ler.
+   */
   const coberturaTotal = isCoberturaTotalEnabled();
   const chunkLimit =
     args.analysisLevel === "deep" && !coberturaTotal
       ? 0
-      : hasInferredIdentityConflict && !coberturaTotal
-        ? Math.min(4, getMaxChunksPerFile(args.analysisLevel))
-        : getMaxChunksPerFile(args.analysisLevel);
+      : getMaxChunksPerFile(args.analysisLevel);
   /*
    * O corte por capítulo é a VERDADE do documento e não muda — é ele que a
    * impressão digital hasheia lá no relatório, e é dela que vive o reuso entre
@@ -3347,58 +3312,58 @@ async function deepAnalyzeFile(args: {
   );
 
   const globalStartedAt = Date.now();
-  const shouldRunGlobalPass =
-    !hasInferredIdentityConflict || process.env.NEXODOC_ALWAYS_RUN_GLOBAL_AI === "true";
-  if (shouldRunGlobalPass) {
-    /*
-     * A etapa longa. No Profundo é o documento INTEIRO numa ida só ao modelo;
-     * no Padrão, trechos amostrados. Não há sinal interno para relatar — é
-     * chamada atômica — então o que se manda é o tamanho real do que vai ser
-     * lido e o TETO de tempo. É o orçamento que deixa a interface dizer
-     * "passou do previsto" sem inventar uma barra de progresso.
-     */
-    marco({
-      passada: "global",
-      estado: "inicio",
-      detalhe:
-        args.analysisLevel === "deep"
-          ? `documento inteiro — ${args.file.extracted.charCount.toLocaleString("pt-BR")} caracteres`
-          : "trechos amostrados do documento",
-      orcamentoMs: args.analysisLevel === "deep" ? getDeepGlobalTimeoutMs() : undefined,
-    });
-  }
+  /*
+   * A LEITURA GLOBAL RODA SEMPRE (26/09/2026). Era pulada quando as regras
+   * legadas achavam conflito de identidade — e, no Profundo, onde os blocos são
+   * zero, isso deixava o documento sem leitura de IA nenhuma. Ver o comentário
+   * do `chunkLimit` acima.
+   *
+   * A etapa longa. No Profundo é o documento INTEIRO numa ida só ao modelo;
+   * no Padrão, trechos amostrados. Não há sinal interno para relatar — é
+   * chamada atômica — então o que se manda é o tamanho real do que vai ser
+   * lido e o TETO de tempo. É o orçamento que deixa a interface dizer
+   * "passou do previsto" sem inventar uma barra de progresso.
+   */
+  marco({
+    passada: "global",
+    estado: "inicio",
+    detalhe:
+      args.analysisLevel === "deep"
+        ? `documento inteiro — ${args.file.extracted.charCount.toLocaleString("pt-BR")} caracteres`
+        : "trechos amostrados do documento",
+    orcamentoMs: args.analysisLevel === "deep" ? getDeepGlobalTimeoutMs() : undefined,
+  });
   const sinteseDesteArquivo: { capitulo: string; resumo: string }[] = [];
-  const globalFindings = shouldRunGlobalPass
-    ? await analyzeFileGloballyWithModel({
-        auditId: args.auditId,
-        auditMode: args.auditMode,
-        analysisLevel: args.analysisLevel,
-        userMessage: args.userMessage,
-        projectName: args.projectName,
-        learningContext: args.learningContext,
-        gabarito: args.gabarito,
-        fileName: args.file.file.name,
-        fileType: args.file.fileType,
-        extracted: args.file.extracted,
-        conversationId: args.conversationId,
-        userEmail: args.userEmail,
-        degradacoes: args.degradacoes,
-        sintese: sinteseDesteArquivo,
-        hashesHerdados: args.hashesHerdados,
-        resumoPorHash: args.resumoPorHash,
-      })
-    : [];
+  // Vazio até a global terminar bem — é o que a rede de arrasto lê lá embaixo.
+  const paginasLidasPelaGlobal = new Set<number>();
+  const globalFindings = await analyzeFileGloballyWithModel({
+    auditId: args.auditId,
+    auditMode: args.auditMode,
+    analysisLevel: args.analysisLevel,
+    userMessage: args.userMessage,
+    projectName: args.projectName,
+    learningContext: args.learningContext,
+    gabarito: args.gabarito,
+    fileName: args.file.file.name,
+    fileType: args.file.fileType,
+    extracted: args.file.extracted,
+    conversationId: args.conversationId,
+    userEmail: args.userEmail,
+    degradacoes: args.degradacoes,
+    sintese: sinteseDesteArquivo,
+    hashesHerdados: args.hashesHerdados,
+    resumoPorHash: args.resumoPorHash,
+    paginasLidas: paginasLidasPelaGlobal,
+  });
   args.sinteses?.set(args.file.file.name, sinteseDesteArquivo);
   console.log(
-    `[audit] ${args.file.file.name}: leitura global ${shouldRunGlobalPass ? "concluida" : "pulada"} em ${Math.round((Date.now() - globalStartedAt) / 1000)}s com ${globalFindings.length} achado(s)`,
+    `[audit] ${args.file.file.name}: leitura global concluida em ${Math.round((Date.now() - globalStartedAt) / 1000)}s com ${globalFindings.length} achado(s)`,
   );
-  if (shouldRunGlobalPass) {
-    marco({
-      passada: "global",
-      estado: "fim",
-      detalhe: `${globalFindings.length} achado(s)`,
-    });
-  }
+  marco({
+    passada: "global",
+    estado: "fim",
+    detalhe: `${globalFindings.length} achado(s)`,
+  });
 
   // Passada de coerência — só faz sentido quando o documento é MAIOR que a janela
   // da leitura global (senão a global já leu tudo e a coerência seria redundante,
@@ -3550,7 +3515,10 @@ async function deepAnalyzeFile(args: {
    * próprio texto que não tem trecho, com confiança baixa.
    *
    * Roda só onde há buraco de verdade: bloco que não foi ao modelo por bloco E
-   * que caiu fora do que a leitura global coube. Ver `blocosNaoLidos`.
+   * que tem página fora do que a leitura global RECEBEU E TERMINOU de ler. Com a
+   * global abortada ou truncada o conjunto é vazio, e a rede varre tudo que os
+   * blocos não cobriram — é a corrida em que ela mais faz falta. Ver
+   * `blocosNaoLidos`.
    */
   let achadosDaRede: AuditFinding[] = [];
 
@@ -3559,7 +3527,7 @@ async function deepAnalyzeFile(args: {
       blocosDisponiveis,
       new Set(chunks.map((bloco) => bloco.id)),
       args.file.file.name,
-      Math.min(args.file.extracted.text.length, getGlobalContextChars(args.analysisLevel)),
+      paginasLidasPelaGlobal,
       { userEmail: args.userEmail, conversationId: args.conversationId },
     );
 

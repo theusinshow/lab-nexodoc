@@ -11,6 +11,10 @@
 import assert from "node:assert/strict";
 
 import { versaoDoAuditor, type ConfiguracaoDoAuditor } from "../lib/versao-do-auditor.ts";
+import {
+  configuracaoDoAuditor,
+  versaoDoAuditorDaCorrida,
+} from "../lib/configuracao-do-auditor.ts";
 
 let passed = 0;
 function test(name: string, fn: () => void) {
@@ -27,6 +31,7 @@ function test(name: string, fn: () => void) {
 
 const BASE: ConfiguracaoDoAuditor = {
   prompt: "Você audita memoriais descritivos. Peque pelo excesso.",
+  promptsDaLeitura: "Faça uma leitura global. Teto de 60 achados. {{documento}}",
   modeloGlobal: "gpt-5.6-sol",
   modeloBloco: "gpt-5.6-terra",
   modeloValidacao: "gpt-5.6-sol",
@@ -66,6 +71,9 @@ test("cada campo, sozinho, invalida", () => {
     // pareceres produzidos sob outro regime.
     { blocosPorArquivo: 8 },
     { tetoDeSaida: 16000 },
+    // O pedido de verdade mora nos prompts da leitura, não no de sistema: até
+    // 26/09 ele mudava sem invalidar o reuso.
+    { promptsDaLeitura: "Faça uma leitura global. Teto de 80 achados. {{documento}}" },
   ];
   for (const m of mudancas) {
     assert.notEqual(
@@ -90,6 +98,7 @@ test("a ordem dos campos não muda a versão", () => {
     modeloValidacao: BASE.modeloValidacao,
     modeloBloco: BASE.modeloBloco,
     modeloGlobal: BASE.modeloGlobal,
+    promptsDaLeitura: BASE.promptsDaLeitura,
     prompt: BASE.prompt,
   };
   assert.equal(versaoDoAuditor(invertido), versaoDoAuditor(BASE));
@@ -100,6 +109,25 @@ test("nunca colide por concatenação ambígua", () => {
   const a = versaoDoAuditor({ ...BASE, modeloGlobal: "ab", modeloBloco: "c" });
   const b = versaoDoAuditor({ ...BASE, modeloGlobal: "a", modeloBloco: "bc" });
   assert.notEqual(a, b);
+});
+
+test("a configuração REAL carrega o pedido de verdade, e não o documento", () => {
+  /*
+   * Prova de ligação, não de aritmética: o hash só protege o reuso se os três
+   * prompts que pedem e julgam os achados estiverem dentro dele.
+   */
+  const { promptsDaLeitura } = configuracaoDoAuditor("memorial", "deep");
+  assert.match(promptsDaLeitura, /PEQUE PELO EXCESSO/, "leitura global");
+  assert.match(promptsDaLeitura, /Leia o trecho abaixo/, "leitura por bloco");
+  assert.match(promptsDaLeitura, /camada final de validação/, "validação");
+  assert.match(promptsDaLeitura, /\{\{documento\}\}/, "dados entram como marcador");
+});
+
+test("a versão da corrida é estável entre chamadas", () => {
+  assert.equal(
+    versaoDoAuditorDaCorrida("memorial", "deep"),
+    versaoDoAuditorDaCorrida("memorial", "deep"),
+  );
 });
 
 console.log(`\n${passed} teste(s) de versão do auditor OK`);

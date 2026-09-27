@@ -388,18 +388,22 @@ services:
       - key: NEXODOC_AUDIT_COBERTURA_TOTAL
         value: "false"
 
-      # A CAMADA DE REGRA determinística (`lib/audit-coherence.ts`) — o §12, a
-      # cláusula geral de analogia, a conferência de marca.
+      # A PASSADA DE COERÊNCIA POR IA — e NÃO a camada de regra.
       #
-      # É a ÚNICA do grupo de flags da auditoria que é LIGADA por padrão, e a
-      # única em que o padrão é o certo: as outras (`ENABLE_RULE_BASED_AUDIT`,
-      # `ENABLE_AI_IDENTITY_PASS`, `ENABLE_AI_CROSS_DOCUMENT`,
-      # `ENABLE_REFUTATION_PASS`) guardam motores legados ou caros e ficam fora
-      # daqui de propósito.
+      # Até 26/09/2026 este comentário dizia que a flag protegia a camada de
+      # regra determinística (`lib/audit-coherence.ts`). Não protege: aquela
+      # camada roda SEMPRE, sem flag nenhuma, e é ela que pega três das quatro
+      # incongruências críticas que a IA sozinha perde. Quem escrevesse `false`
+      # aqui achando que desligava a regra não desligava nada; quem mantinha
+      # `true` para protegê-la estava protegendo outra coisa.
       #
-      # O teste é `!== "false"`, então basta alguém escrever `false` UMA vez
-      # para derrubar a camada que pega três das quatro incongruências críticas
-      # que a IA sozinha perde. Explícita para que desligá-la seja um gesto
+      # O que ela liga, de fato, é `analyzeDocumentCoherenceWithModel` em
+      # `app/api/audit/route.ts`: uma chamada extra de IA sobre o documento
+      # inteiro que só roda no Profundo e só quando o texto passa da janela da
+      # leitura global (700k caracteres). Nos memoriais do acervo isso nunca
+      # acontece; é a rede para o documento gigante.
+      #
+      # O teste é `!== "false"`. Explícita para que desligá-la seja um gesto
       # deliberado, e não um efeito colateral.
       - key: NEXODOC_ENABLE_COHERENCE_PASS
         value: "true"
