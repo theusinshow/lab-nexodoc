@@ -327,3 +327,85 @@ export async function pendenciasDe(
 
   return [...porAuditoria.values()];
 }
+
+export type EnvioEmAberto = {
+  projectId: string;
+  code: string;
+  client: string;
+  auditId: string;
+  auditTitle: string;
+  /** Para quem foi — nome quando o escritório o conhece, senão o e-mail. */
+  para: string;
+  total: number;
+  enviadoEm: string;
+};
+
+/**
+ * O QUE VOCÊ ATRIBUIU E AINDA ESTÁ ABERTO — a outra metade da página Achados
+ * (auditoria UX/UI, G01). A home continua sem caixa de saída (ver
+ * `app/api/trabalho/meu`); aqui é o lugar declarado para conferir o que foi
+ * delegado, sem abrir auditoria por auditoria.
+ *
+ * `userId` nulo (convidado que nunca entrou) não atribuiu nada: lista vazia.
+ */
+export async function enviadosPor(
+  userId: string | null,
+  organizationId: string,
+): Promise<EnvioEmAberto[]> {
+  if (!userId) return [];
+  const prisma = getPrisma();
+  const linhas = await prisma.auditFeedback.findMany({
+    where: {
+      assignedById: userId,
+      resolvedAt: null,
+      assigneeEmail: { not: null },
+      audit: { project: { organizationId } },
+    },
+    select: {
+      assigneeEmail: true,
+      assignedAt: true,
+      audit: {
+        select: {
+          id: true,
+          title: true,
+          project: { select: { id: true, code: true, client: true } },
+        },
+      },
+    },
+    orderBy: { assignedAt: "desc" },
+  });
+
+  const emails = [...new Set(linhas.map((l) => l.assigneeEmail as string))];
+  const nomes = new Map<string, string>();
+  if (emails.length > 0) {
+    const membros = await prisma.organizationMember.findMany({
+      where: { organizationId, email: { in: emails } },
+      select: { email: true, name: true },
+    });
+    for (const m of membros) if (m.name) nomes.set(m.email, m.name);
+  }
+
+  const grupos = new Map<string, EnvioEmAberto>();
+  for (const linha of linhas) {
+    const projeto = linha.audit.project;
+    if (!projeto) continue;
+    const email = linha.assigneeEmail as string;
+    const chave = `${linha.audit.id}::${email}`;
+    const visto = grupos.get(chave);
+    if (visto) {
+      visto.total += 1;
+      continue;
+    }
+    grupos.set(chave, {
+      projectId: projeto.id,
+      code: projeto.code,
+      client: projeto.client,
+      auditId: linha.audit.id,
+      auditTitle: linha.audit.title,
+      para: nomes.get(email) ?? email,
+      total: 1,
+      enviadoEm: (linha.assignedAt ?? new Date()).toISOString(),
+    });
+  }
+  return [...grupos.values()];
+}

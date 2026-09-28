@@ -54,9 +54,39 @@ export const PARTIDAS: readonly Partida[] = [
   },
 ];
 
+/**
+ * INTENÇÕES SÓ DE LINK — pedidos que chegam de outra tela (o detalhe do projeto,
+ * os endereços antigos `/ld` e `/capas`), mas que não viram chip na entrada.
+ *
+ * Três chips bastam para quem chega sem saber pedir; "só a LD" e "só a capa"
+ * são recortes do "Montar um volume". Mas o projeto oferece os dois como
+ * ações próprias, e o link precisa entregar exatamente o que prometeu — por
+ * isso a frase é a do recorte, na mesma língua que o agente já entende ("a LD"
+ * -> só ld; "a capa" -> só capa, em `run-turn.ts`).
+ */
+export const INTENCOES_SO_DE_LINK: readonly Partida[] = [
+  {
+    id: "ld",
+    rotulo: "Gerar a lista de documentos (LD)",
+    frase: "cria a LD dessas pranchas",
+    precisa: "pranchas",
+  },
+  {
+    id: "capa",
+    rotulo: "Gerar a capa",
+    frase: "cria a capa dessas pranchas",
+    precisa: "pranchas",
+  },
+];
+
 export function partidaPorId(id: string | null | undefined): Partida | null {
   if (!id) return null;
-  return PARTIDAS.find((p) => p.id === id.trim().toLowerCase()) ?? null;
+  const alvo = id.trim().toLowerCase();
+  return (
+    PARTIDAS.find((p) => p.id === alvo) ??
+    INTENCOES_SO_DE_LINK.find((p) => p.id === alvo) ??
+    null
+  );
 }
 
 /**

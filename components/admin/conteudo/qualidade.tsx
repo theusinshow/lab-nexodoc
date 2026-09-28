@@ -11,11 +11,12 @@ import {
 import { FormEvent, useEffect, useState } from "react";
 
 import {
-  AdminError,
   AdminMetricStrip,
   TituloDaSecao,
 } from "@/components/admin/admin-page-shell";
 import { useAdminToken } from "@/components/admin/admin-token";
+import { AvisoDaCarga } from "@/components/admin/aviso-da-carga";
+import { classificarFalha, faseDaCarga, type FalhaDaCarga } from "@/lib/estado-da-carga";
 import {
   METAS_NAO_DECLARADAS,
   situacaoDaCobertura,
@@ -71,11 +72,11 @@ function formatNumber(value: number) {
 }
 
 function formatPercent(value: number | null) {
-  return value === null ? "--" : `${value.toLocaleString("pt-BR")}%`;
+  return value === null ? "—" : `${value.toLocaleString("pt-BR")}%`;
 }
 
 function formatSeconds(value: number | null) {
-  return value === null ? "--" : `${Math.max(1, Math.round(value / 1000))}s`;
+  return value === null ? "—" : `${Math.max(1, Math.round(value / 1000))}s`;
 }
 
 /** "semana de 10/08" — a segunda-feira, que é como o escritório fala da semana. */
@@ -106,10 +107,13 @@ function QualityTable({
   title,
   subtitle,
   rows,
+  vazio,
 }: {
   title: string;
   subtitle: string;
   rows: QualityBucket[];
+  /** A frase da tabela sem linhas — que depende de ter havido resposta (P02). */
+  vazio: string;
 }) {
   return (
     <section className="nx-edge-7">
@@ -133,6 +137,13 @@ function QualityTable({
             </tr>
           </thead>
           <tbody>
+            {rows.length === 0 ? (
+              <tr>
+                <td colSpan={9} className="px-4 py-6 text-center text-muted-foreground">
+                  {vazio}
+                </td>
+              </tr>
+            ) : null}
             {rows.map((row) => (
               <tr key={row.key} className="border-t">
                 <td className="px-4 py-3 font-mono font-medium">{row.label}</td>
@@ -185,50 +196,66 @@ export function CorpoDaQualidade() {
    */
   const { token, restaurado, recarga, registrarResposta } = useAdminToken();
   const [data, setData] = useState<QualityResponse | null>(null);
-  const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  // P02: falha com tipo; dados de antes ficam, com o horário no aviso.
+  const [erroDaCarga, setErroDaCarga] = useState<{ tipo: FalhaDaCarga; detalhe: string | null } | null>(null);
+  const [carregadoEm, setCarregadoEm] = useState<string | null>(null);
+  const fase = faseDaCarga({
+    restaurado,
+    token,
+    carregando: isLoading,
+    erro: erroDaCarga?.tipo ?? null,
+    temDados: Boolean(data),
+  });
+  const semResposta =
+    fase === "sem-token"
+      ? "Aguardando o token de administração."
+      : fase === "erro"
+        ? "Não carregado — veja o aviso da seção."
+        : "Carregando…";
   const apiUrl = getApiUrl();
 
   async function loadQuality(nextToken = token) {
     const trimmedToken = nextToken.trim();
 
-    if (!trimmedToken) {
-      setError("Informe o token admin.");
-      return;
-    }
+    if (!trimmedToken) return;
 
     setIsLoading(true);
-    setError("");
+    setErroDaCarga(null);
 
+    let response: Response;
     try {
-      const response = await fetch(`${apiUrl}/api/admin/quality`, {
+      response = await fetch(`${apiUrl}/api/admin/quality`, {
         headers: {
           Authorization: `Bearer ${trimmedToken}`,
         },
         cache: "no-store",
       });
-      const payload = (await response.json()) as QualityResponse | { error?: string };
-
-      if (!response.ok || isErrorPayload(payload)) {
-        throw new Error(
-          isErrorPayload(payload) && payload.error
-            ? payload.error
-            : "Não foi possível carregar a qualidade.",
-        );
-      }
-
-      registrarResposta(true);
-      setData(payload);
-    } catch (requestError) {
-      setData(null);
-      setError(
-        requestError instanceof Error
-          ? requestError.message
-          : "Não foi possível carregar a qualidade.",
-      );
-    } finally {
+    } catch {
+      setErroDaCarga({ tipo: "rede", detalhe: null });
       setIsLoading(false);
+      return;
     }
+    const payload = (await response.json().catch(() => null)) as
+      | QualityResponse
+      | { error?: string }
+      | null;
+
+    if (!response.ok || !payload || isErrorPayload(payload)) {
+      const tipo = classificarFalha(response);
+      if (tipo === "negado") registrarResposta(false);
+      setErroDaCarga({
+        tipo,
+        detalhe: payload && isErrorPayload(payload) ? (payload.error ?? null) : `HTTP ${response.status}`,
+      });
+      setIsLoading(false);
+      return;
+    }
+
+    registrarResposta(true);
+    setData(payload);
+    setCarregadoEm(new Date().toISOString());
+    setIsLoading(false);
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -260,7 +287,14 @@ export function CorpoDaQualidade() {
         descricao="Compare níveis e modelos a partir dos achados revisados manualmente. Quanto mais auditorias rotuladas, mais confiável será a decisão de produto."
       />
 
-        <AdminError message={error} />
+        <AvisoDaCarga
+          fase={fase}
+          erro={erroDaCarga?.tipo}
+          detalhe={erroDaCarga?.detalhe}
+          oque="os indicadores de qualidade"
+          atualizadoEm={carregadoEm}
+          onTentar={() => void loadQuality()}
+        />
 
         <AdminMetricStrip
           columns="sm:grid-cols-2 xl:grid-cols-4"
@@ -268,25 +302,25 @@ export function CorpoDaQualidade() {
             {
               label: "Auditorias concluídas",
               icon: ScanSearch,
-              value: overview ? formatNumber(overview.completedAudits) : "--",
+              value: overview ? formatNumber(overview.completedAudits) : "—",
               detail: overview ? `${formatNumber(overview.reviewedAudits)} já têm revisão humana` : "Aguardando consulta",
             },
             {
               label: "Confirmação",
               icon: CheckCircle2,
-              value: overview ? formatPercent(overview.confirmationRate) : "--",
+              value: overview ? formatPercent(overview.confirmationRate) : "—",
               detail: overview ? `${plural(overview.confirmed, "achado confirmado", "achados confirmados")}` : "Com base nos achados rotulados",
             },
             {
               label: "Falsos positivos",
               icon: XCircle,
-              value: overview ? formatNumber(overview.falsePositive) : "--",
+              value: overview ? formatNumber(overview.falsePositive) : "—",
               detail: overview ? `${formatPercent(overview.falsePositiveRate)} dos achados avaliados` : "Aguardando revisão",
             },
             {
               label: "Erros perdidos",
               icon: Clock3,
-              value: overview ? formatNumber(overview.missingFinding) : "--",
+              value: overview ? formatNumber(overview.missingFinding) : "—",
               detail: overview ? `${formatPercent(overview.reviewCoverage)} das auditorias foram rotuladas` : "Indicador de cobertura",
             },
           ]}
@@ -309,9 +343,11 @@ export function CorpoDaQualidade() {
               </p>
             </div>
             <span className="font-mono text-[11px] text-muted-foreground">
-              {metas.falsoPositivoMax > 0
-                ? `meta: falso positivo ≤ ${metas.falsoPositivoMax}%`
-                : "meta não declarada"}
+              {!data
+                ? "meta: —"
+                : metas.falsoPositivoMax > 0
+                  ? `meta: falso positivo ≤ ${metas.falsoPositivoMax}%`
+                  : "meta não declarada"}
               {metas.coberturaMin > 0 ? ` · cobertura ≥ ${metas.coberturaMin}%` : ""}
               {" · "}
               <a href="/admin/motor" className="underline underline-offset-4 hover:text-foreground">
@@ -322,7 +358,9 @@ export function CorpoDaQualidade() {
 
           {serie.length === 0 ? (
             <p className="px-4 py-6 text-sm text-muted-foreground">
-              Sem auditoria concluída no histórico — a série aparece a partir da primeira.
+              {data
+                ? "Sem auditoria concluída no histórico — a série aparece a partir da primeira."
+                : semResposta}
             </p>
           ) : (
             <div>
@@ -380,12 +418,14 @@ export function CorpoDaQualidade() {
           title="Comparação por nível"
           subtitle="Padrão deve ser rápido e confiável; Profundo precisa justificar maior custo com melhor cobertura."
           rows={data?.levels ?? []}
+          vazio={data ? "Nenhum nível com auditoria concluída." : semResposta}
         />
 
         <QualityTable
           title="Comparação por modelo"
           subtitle="O modelo só vence quando reduz falhas reais em auditorias revisadas, não apenas quando produz mais achados."
           rows={data?.models ?? []}
+          vazio={data ? "Nenhum modelo com auditoria concluída." : semResposta}
         />
     </section>
   );

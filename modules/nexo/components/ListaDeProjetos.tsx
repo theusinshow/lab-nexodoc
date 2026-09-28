@@ -120,7 +120,9 @@ export function ListaDeProjetos({
         <p className="m-0 px-1 pb-1 font-mono text-[10.5px] uppercase tracking-[0.12em] text-muted-foreground">
           Trabalhando no{" "}
           <span className="text-[var(--primary)]">
-            {trabalhandoEm.codigo || trabalhandoEm.chave}
+            {/* Nunca o id cru do banco: sem código conhecido, "projeto vinculado". */}
+            {trabalhandoEm.codigo ||
+              (/^c[a-z0-9]{20,}$/.test(trabalhandoEm.chave) ? "projeto vinculado" : trabalhandoEm.chave)}
           </span>
         </p>
       ) : null}

@@ -18,6 +18,8 @@ import {
   TituloDaSecao,
 } from "@/components/admin/admin-page-shell";
 import { useAdminToken } from "@/components/admin/admin-token";
+import { AvisoDaCarga } from "@/components/admin/aviso-da-carga";
+import { classificarFalha, faseDaCarga, type FalhaDaCarga } from "@/lib/estado-da-carga";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
@@ -103,6 +105,19 @@ export function CorpoDasAuditorias() {
   const [audits, setAudits] = useState<AuditListItem[]>([]);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  /*
+   * P02: lista vazia não responde "nenhuma auditoria" até o servidor dizer.
+   * A carga tem estado próprio; `error` fica para a exclusão.
+   */
+  const [carregadoEm, setCarregadoEm] = useState<string | null>(null);
+  const [erroDaCarga, setErroDaCarga] = useState<{ tipo: FalhaDaCarga; detalhe: string | null } | null>(null);
+  const fase = faseDaCarga({
+    restaurado,
+    token,
+    carregando: isLoading,
+    erro: erroDaCarga?.tipo ?? null,
+    temDados: Boolean(carregadoEm),
+  });
   const [deleting, setDeleting] = useState(false);
   const [query, setQuery] = useState("");
   /*
@@ -192,13 +207,10 @@ export function CorpoDasAuditorias() {
   async function loadAudits(nextToken = token) {
     const trimmedToken = nextToken.trim();
 
-    if (!trimmedToken) {
-      setError("Informe o token admin.");
-      return;
-    }
+    if (!trimmedToken) return;
 
     setIsLoading(true);
-    setError("");
+    setErroDaCarga(null);
 
     try {
       const params = new URLSearchParams({
@@ -221,34 +233,37 @@ export function CorpoDasAuditorias() {
         params.set("user", userFilter.trim());
       }
 
-      const response = await fetch(`${apiUrl}/api/admin/audits?${params}`, {
-        headers: {
-          Authorization: `Bearer ${trimmedToken}`,
-        },
-        cache: "no-store",
-      });
-      const payload = (await response.json()) as AuditsResponse | { error?: string };
+      let response: Response;
+      try {
+        response = await fetch(`${apiUrl}/api/admin/audits?${params}`, {
+          headers: {
+            Authorization: `Bearer ${trimmedToken}`,
+          },
+          cache: "no-store",
+        });
+      } catch {
+        setErroDaCarga({ tipo: "rede", detalhe: null });
+        return;
+      }
+      const payload = (await response.json().catch(() => null)) as
+        | AuditsResponse
+        | { error?: string }
+        | null;
 
-      if (!response.ok || isErrorPayload(payload)) {
-        throw new Error(
-          isErrorPayload(payload) && payload.error
-            ? payload.error
-            : "Não foi possível carregar auditorias.",
-        );
+      if (!response.ok || !payload || isErrorPayload(payload) || !Array.isArray(payload.audits)) {
+        const tipo = classificarFalha(response);
+        if (tipo === "negado") registrarResposta(false);
+        setErroDaCarga({
+          tipo,
+          detalhe: payload && isErrorPayload(payload) ? (payload.error ?? null) : `HTTP ${response.status}`,
+        });
+        return;
       }
 
       registrarResposta(true);
       setAudits(payload.audits);
-      registrarResposta(true);
+      setCarregadoEm(new Date().toISOString());
       setSelected(new Set());
-    } catch (requestError) {
-      setAudits([]);
-      registrarResposta(false);
-      setError(
-        requestError instanceof Error
-          ? requestError.message
-          : "Não foi possível carregar auditorias.",
-      );
     } finally {
       setIsLoading(false);
     }
@@ -278,14 +293,22 @@ export function CorpoDasAuditorias() {
         descricao="Acompanhe auditorias persistidas e filtre por projeto, status, modo e responsável."
       />
 
+        <AvisoDaCarga
+          fase={fase}
+          erro={erroDaCarga?.tipo}
+          detalhe={erroDaCarga?.detalhe}
+          oque="as auditorias"
+          atualizadoEm={carregadoEm}
+          onTentar={() => void loadAudits()}
+        />
         <AdminError message={error} />
 
         <AdminMetricStrip
           metrics={[
-            { label: "Auditorias", value: formatNumber(audits.length) },
-            { label: "Concluídas", value: formatNumber(totals.completed) },
-            { label: "PDFs", value: formatNumber(totals.files) },
-            { label: "Achados", value: formatNumber(totals.findings) },
+            { label: "Auditorias", value: carregadoEm ? formatNumber(audits.length) : "—" },
+            { label: "Concluídas", value: carregadoEm ? formatNumber(totals.completed) : "—" },
+            { label: "PDFs", value: carregadoEm ? formatNumber(totals.files) : "—" },
+            { label: "Achados", value: carregadoEm ? formatNumber(totals.findings) : "—" },
           ]}
         />
 
@@ -423,7 +446,13 @@ export function CorpoDasAuditorias() {
                     className="px-3 py-10 text-center text-muted-foreground"
                     colSpan={11}
                   >
-                    Nenhuma auditoria encontrada.
+                    {carregadoEm
+                      ? "Nenhuma auditoria encontrada com estes filtros."
+                      : fase === "sem-token"
+                        ? "Aguardando o token de administração."
+                        : fase === "erro"
+                          ? "Não carregado — veja o aviso acima."
+                          : "Carregando…"}
                   </td>
                 </tr>
               )}

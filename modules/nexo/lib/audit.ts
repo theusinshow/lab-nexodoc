@@ -343,7 +343,13 @@ interface RespostaDaAuditoria {
 
 /** O que o servidor sabe sobre uma auditoria já disparada. */
 export type EstadoDaAuditoria =
-  | { situacao: "rodando" }
+  /**
+   * `instavel`: a resposta foi 408/429/5xx ou veio ilegível — para quem RECONECTA
+   * vale seguir perguntando (é o que "rodando" sempre significou ali), mas quem
+   * ABRE POR LINK precisa dizer "falha temporária", não "ainda está rodando"
+   * (auditoria UX/UI, A01).
+   */
+  | { situacao: "rodando"; instavel?: true }
   /** O servidor respondeu 401: não há como saber até entrar de novo. */
   | { situacao: "sem-sessao" }
   /** O servidor respondeu 403: o escritório recusou esta pessoa. */
@@ -398,7 +404,7 @@ export async function consultarAuditoria(auditId: string): Promise<EstadoDaAudit
     | null;
   if (!res.ok || !corpo) {
     // Banco fora do ar é temporário: vale continuar tentando.
-    return { situacao: "rodando" };
+    return { situacao: "rodando", instavel: true };
   }
   if (corpo.status === "SEM_HISTORICO") {
     return {

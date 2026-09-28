@@ -253,3 +253,12 @@ anexar PDFs -> escrever solicitacao -> auditar -> ler resposta
 ```
 
 Qualquer elemento que nao ajude esse fluxo deve ficar fora da versao inicial.
+
+## 13. Organizacao apos a auditoria UX/UI (28/09/2026)
+
+- **Navegacao principal por tarefa:** Painel, Projetos, Montar volumes, Achados, Ajuda (Administracao por permissao). Fonte unica em `lib/navegacao-principal.ts`; aparece na barra da home (a partir de 1280px; abaixo, no menu da conta), na barra lateral do Nexo e no cabecalho das paginas.
+- **Busca de acoes:** botao "Buscar acoes · Ctrl+K" no Nexo; catalogo em `modules/nexo/lib/paleta.ts`, com "Onde fica" e pre-requisito por linha. A pagina `/ajuda` le o mesmo catalogo.
+- **Achados:** fila compacta + detalhe (abas Evidencia, Conversa (n), Historico); eixos Validade (o achado esta certo?) e Tratamento (o que foi feito); anterior/proximo no detalhe e no visor. "Foco na revisao" recolhe projetos e chat no Nexo. Link de achado abre em tela estreita.
+- **Mesa de volumes (`/volumes`):** areas Arquivos, Montagem e Conferencia; destino explicito Volume › Grupo › posicao; autosave local; desfazer/refazer; conferencia ligada a versao da montagem.
+- **Contrato de link:** `/nexo?projeto=<id>&intencao=<auditar|ld|capa|montar|conferir>` e `/nexo?auditoria=<id>&achado=<ref>`.
+- Detalhes, decisoes e evidencias: `docs/auditoria/execucao-ux-ui-claude-code/RELATORIO-DE-EXECUCAO.md`.

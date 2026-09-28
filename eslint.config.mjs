@@ -6,6 +6,7 @@ const eslintConfig = defineConfig([
   globalIgnores([
     ".next/**",
     ".next-bateria/**",
+    ".next-ux/**",
     "out/**",
     "build/**",
     "next-env.d.ts",

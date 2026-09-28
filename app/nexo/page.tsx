@@ -3,13 +3,17 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { getUserAccess } from "@/lib/access-control";
 import { buildCallbackPath, redirectToLogin } from "@/lib/auth-redirect";
+import { lerContextoDaUrl } from "@/lib/contexto-da-url";
+import { isDatabaseConfigured } from "@/lib/db";
 import { isNexoEnabled } from "@/lib/feature-flags";
+import { assertProjectAccess, getUserActor, normalizeEmail } from "@/lib/project-store";
+import type { ProjetoPedido } from "@/modules/nexo/lib/projeto-pedido";
 import { NexoWorkspace } from "@/modules/nexo";
 
 export default async function NexoPage({
   searchParams,
 }: {
-  searchParams: Promise<{ auditoria?: string; conversa?: string; projeto?: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   // Kill-switch: com a flag desligada, a rota nem existe pro usuario.
   if (!isNexoEnabled()) {
@@ -50,11 +54,61 @@ export default async function NexoPage({
   // ferramentas antigas) mora no rodapé da sidebar — esta é a entrada.
   // O nome vem da SESSÃO (servidor): a saudação da entrada usa o primeiro, e o
   // bloco da conta (rodapé da barra lateral) usa nome + e-mail.
+  const projetoPedido = await resolverProjetoPedido(params, session.user.email, session.user.name);
+  const contexto = lerContextoDaUrl({
+    get: (k) => {
+      const v = params[k];
+      return Array.isArray(v) ? (v[0] ?? null) : (v ?? null);
+    },
+  });
+
   return (
     <NexoWorkspace
+      projetoPedido={projetoPedido}
+      contexto={contexto}
       isAdmin={access.isAdmin}
       nome={session.user.name}
       email={session.user.email}
     />
   );
+}
+
+/**
+ * O PROJETO QUE O LINK PEDE, conferido AQUI — auditoria UX/UI, G03.
+ *
+ * Query string não é autorização: `?projeto=<id>` só vira "Trabalhando no
+ * projeto X" depois de o servidor confirmar que o projeto existe, não foi
+ * excluído e pertence a uma organização em que a pessoa é membro ativo — a
+ * mesma regra de `/projetos/[id]`. Projeto inacessível e inexistente dão a
+ * MESMA resposta, para não confirmar a existência de um id alheio.
+ */
+async function resolverProjetoPedido(
+  params: Record<string, string | string[] | undefined>,
+  email: string | null | undefined,
+  nome: string | null | undefined,
+): Promise<ProjetoPedido | null> {
+  const { projeto } = lerContextoDaUrl({
+    get: (k) => {
+      const v = params[k];
+      return Array.isArray(v) ? (v[0] ?? null) : (v ?? null);
+    },
+  });
+  if (!projeto) return null;
+  if (!isDatabaseConfigured() || !email) return { id: projeto, estado: "indisponivel" };
+  try {
+    const actor = await getUserActor(normalizeEmail(email), nome);
+    const p = await assertProjectAccess(projeto, actor);
+    return {
+      id: p.id,
+      estado: "ok",
+      codigo: p.code,
+      nome: p.name,
+      arquivado: p.status === "ARCHIVED",
+    };
+  } catch (err) {
+    // `findFirstOrThrow` sem linha = P2025. Outra falha (rede, banco) não é
+    // "sem acesso": dizer isso mandaria a pessoa pedir permissão que ela tem.
+    const codigo = (err as { code?: string } | null)?.code;
+    return { id: projeto, estado: codigo === "P2025" ? "sem-acesso" : "indisponivel" };
+  }
 }

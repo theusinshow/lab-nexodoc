@@ -76,4 +76,26 @@ test("normalizar tira acento e caixa", () => {
   assert.equal(normalizar("  Conferência  "), "conferencia");
 });
 
+test("G02: termos do trabalho acham a funcao ou dizem onde ela fica", () => {
+  for (const [termo, id] of [
+    ["anexo", "onde:anexo"],
+    ["capa", "partida:capa"],
+    ["LD", "partida:ld"],
+    ["separatriz", "onde:separatriz"],
+    ["exportar", "onde:exportar-volume"],
+    ["reordenar", "onde:reordenar"],
+    ["corrigir", "onde:corrigir-carimbo"],
+    ["atribuir", "onde:atribuir"],
+    ["copiar link", "onde:link-achado"],
+  ] as const) {
+    assert.ok(filtrarAcoes(termo).some((a) => a.id === id), termo);
+  }
+});
+
+test("G02: toda funcao contextual diz o que precisa existir antes", () => {
+  for (const a of ACOES_DA_PALETA.filter((x) => x.grupo === "Onde fica")) {
+    assert.ok(a.requisito && a.requisito.length > 10, a.id);
+  }
+});
+
 console.log(`\n${passed} ok`);

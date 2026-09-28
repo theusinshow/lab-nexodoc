@@ -80,9 +80,9 @@ export function formatPageSelection(selection: PageSelection): string {
     case "entire_file":
       return "Arquivo inteiro";
     case "page_range":
-      return `Paginas ${selection.startPage}-${selection.endPage}`;
+      return `Páginas ${selection.startPage}–${selection.endPage}`;
     case "specific_pages":
-      return `Paginas ${selection.pages?.join(", ")}`;
+      return `${(selection.pages?.length ?? 0) > 1 ? "Páginas" : "Página"} ${selection.pages?.join(", ")}`;
     default:
       return "";
   }

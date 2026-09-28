@@ -1,11 +1,13 @@
 "use client";
 
+import Link from "next/link";
 import { folhasDoArquivo, semAsFolhasDoArquivo } from "../lib/folhas-do-memorial";
 import { excedeOLimite, motivoDeArquivoGrande } from "@/lib/limite-do-anexo";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { Upload } from "lucide-react";
 import { flushSync } from "react-dom";
+import { usePathname, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { plural } from "@/lib/plural";
 import type { NexoDossieDraft, NexoSlotSuggestion } from "../types";
@@ -39,9 +41,22 @@ import {
 } from "@/server/nexo/parse-filename";
 import { runShellTransition } from "../lib/motion";
 import { partidaPorId } from "../lib/partidas";
+import type { ProjetoPedido } from "../lib/projeto-pedido";
 import {
-  conversaPedidaNaUrl,
-  deveRestaurar,
+  decidirProjeto,
+  lerContextoDaUrl,
+  urlMandaNoDestino,
+  type ContextoDaUrl,
+} from "@/lib/contexto-da-url";
+
+const CONTEXTO_VAZIO: ContextoDaUrl = {
+  projeto: null,
+  conversa: null,
+  auditoria: null,
+  achado: null,
+  intencao: null,
+};
+import {
   ultimaConversaLembrada,
 } from "../lib/ultima-conversa";
 import { decidirRetomada } from "../lib/retomada-da-auditoria";
@@ -167,8 +182,19 @@ export function NexoWorkspace({
   isAdmin = false,
   nome,
   email,
+  projetoPedido = null,
+  contexto = null,
 }: {
   isAdmin?: boolean;
+  /**
+   * O CONTEXTO DA URL lido NO SERVIDOR (G03/A01). Os efeitos de montagem liam
+   * `window.location` — e, vindo do login (redirect de server action), a
+   * montagem acontece com o endereço ainda em `/login`: a intenção, o projeto e
+   * até o `?auditoria=` se perdiam justamente para quem chegava sem sessão.
+   */
+  contexto?: ContextoDaUrl | null;
+  /** O projeto que a URL pediu, JÁ conferido pelo servidor (G03). */
+  projetoPedido?: ProjetoPedido | null;
   /** Nome de quem está logado (da sessão) — a saudação da entrada usa o primeiro. */
   nome?: string | null;
   /** E-mail da sessão — o bloco da conta, no rodapé da barra lateral. */
@@ -191,7 +217,13 @@ export function NexoWorkspace({
                   volumes desatualizados alcançar o montador de uma mensagem
                   que ficou lá atrás na conversa. */}
               <MontadoresDeVolumeProvider>
-                <NexoWorkspaceInner isAdmin={isAdmin} nome={nome} email={email} />
+                <NexoWorkspaceInner
+                  isAdmin={isAdmin}
+                  nome={nome}
+                  email={email}
+                  projetoPedido={projetoPedido}
+                  contexto={contexto ?? CONTEXTO_VAZIO}
+                />
               </MontadoresDeVolumeProvider>
             </AuditoriaStoreProvider>
           </ComposerControllerProvider>
@@ -205,10 +237,14 @@ function NexoWorkspaceInner({
   isAdmin,
   nome,
   email,
+  projetoPedido,
+  contexto,
 }: {
   isAdmin: boolean;
   nome?: string | null;
   email?: string | null;
+  projetoPedido: ProjetoPedido | null;
+  contexto: ContextoDaUrl;
 }) {
   const { emCurso: auditoriaEmCurso } = useAuditoria();
   const { online } = useConexao();
@@ -1643,14 +1679,10 @@ function NexoWorkspaceInner({
    * quem chega por link na primeira vez chega justamente na saudação. Lá, o
    * pedido ao servidor não chegava nem a sair.
    */
-  const aberturaPorLink = useAbrirAuditoriaPorLink(
-    typeof window === "undefined"
-      ? { auditoria: null, achado: null }
-      : (() => {
-          const q = new URLSearchParams(window.location.search);
-          return { auditoria: q.get("auditoria"), achado: q.get("achado") };
-        })(),
-  );
+  const aberturaPorLink = useAbrirAuditoriaPorLink({
+    auditoria: contexto.auditoria,
+    achado: contexto.achado,
+  });
 
   /*
    * A INTENÇÃO PEDIDA POR LINK — `/nexo?intencao=auditar`.
@@ -1668,17 +1700,24 @@ function NexoWorkspaceInner({
   const intencaoAplicada = useRef(false);
   useEffect(() => {
     if (intencaoAplicada.current || typeof window === "undefined") return;
-    const partida = partidaPorId(new URLSearchParams(window.location.search).get("intencao"));
+    const partida = partidaPorId(contexto.intencao);
     if (!partida) return;
-    intencaoAplicada.current = true;
     /*
      * `requestAnimationFrame` porque o composer só se registra depois de o
      * NexoChat montar — sem a espera, `fill` cairia no controle de mentira que
      * o provider usa antes de haver implementação, e a frase sumiria.
+     *
+     * A GUARDA É MARCADA DENTRO DO QUADRO (G03, 28/09/2026). Marcada antes, a
+     * navegação que vem do login desconecta e reconecta os efeitos: a limpeza
+     * cancelava o quadro, e a segunda execução achava a guarda já marcada — a
+     * frase nunca chegava ao composer.
      */
-    const raf = requestAnimationFrame(() => composer.fill(partida.frase));
+    const raf = requestAnimationFrame(() => {
+      intencaoAplicada.current = true;
+      composer.fill(partida.frase);
+    });
     return () => cancelAnimationFrame(raf);
-  }, [composer]);
+  }, [composer, contexto.intencao]);
 
   const [started, setStarted] = useState(false);
   const start = () => {
@@ -1694,11 +1733,19 @@ function NexoWorkspaceInner({
    * nada — sem isto, o parecer ficava gravado na conversa e a tela continuava
    * na saudação, como se o link não tivesse feito nada.
    */
+  /*
+   * E JÁ COMEÇOU ANTES DE O SERVIDOR RESPONDER — auditoria UX/UI, A01.
+   *
+   * Esperar o `abriu` deixava o carregamento e a FALHA sem onde aparecer: o
+   * palco (que sabe dizer "Não deu para abrir") só monta depois de `started`, e
+   * o `started` só ligava no sucesso. Um 404 deixava a pessoa na saudação, sem
+   * erro nenhum. O pedido por link é, em si, o começo do trabalho.
+   */
   useEffect(() => {
-    if (aberturaPorLink.abriu && !started) {
+    if (aberturaPorLink.pedida && !started) {
       runShellTransition(() => flushSync(() => setStarted(true)));
     }
-  }, [aberturaPorLink.abriu, started]);
+  }, [aberturaPorLink.pedida, started]);
   /*
    * A ÚLTIMA ABERTURA DA TELA — revisão da frente A, 15/09/2026. Com a troca de
    * DOM esperada (a8), duas `selectConv` sobrepostas (o F5 restaurando e um
@@ -1734,7 +1781,7 @@ function NexoWorkspaceInner({
   const selectConv = async (id: string, opcoes?: { recargaConfirmada?: boolean }) => {
     const minha = aberturasDaTela.comecar();
     const rec = await conv.selectConversation(id, opcoes);
-    if (!rec) return;
+    if (!rec) return null;
     /*
      * ESPERA A TROCA DE DOM, e não só o pedido dela (a8, 15/09/2026). Com view
      * transition, este callback roda quadros depois — e zera `memorialFile`. Sem
@@ -1784,14 +1831,15 @@ function NexoWorkspaceInner({
      * ele pertence ao momento do envio; o que volta é a capacidade de auditar
      * de novo, que é a ordem que o veredito parcial dá.
      */
-    if (!aberturasDaTela.valeAinda(minha)) return;
+    if (!aberturasDaTela.valeAinda(minha)) return rec;
     const memorialRetido = await conv.recuperarMemorial();
-    if (!aberturasDaTela.valeAinda(minha)) return;
+    if (!aberturasDaTela.valeAinda(minha)) return rec;
     if (memorialRetido) {
       setMemorialFile(memorialRetido.file);
       // A identidade volta junto: é ela que vira o gabarito da auditoria.
       if (memorialRetido.dossie) setDossie(memorialRetido.dossie);
     }
+    return rec;
   };
 
   /*
@@ -1810,6 +1858,64 @@ function NexoWorkspaceInner({
    * UMA VEZ, na montagem. E não quando a URL já manda em qual conversa abrir —
    * ver `deveRestaurar`.
    */
+  /*
+   * O DESFECHO DO PROJETO PEDIDO — G03. `conflito` e as recusas do servidor
+   * viram faixa; nunca trocam o vínculo de uma conversa em silêncio.
+   */
+  const [avisoDeProjeto, setAvisoDeProjeto] = useState<
+    null | { tipo: "conflito" } | { tipo: "sem-acesso" } | { tipo: "indisponivel" }
+  >(() =>
+    projetoPedido && projetoPedido.estado !== "ok" ? { tipo: projetoPedido.estado } : null,
+  );
+  /*
+   * O projeto pedido já foi aplicado nesta carga. ESTADO, e não ref: é ele que
+   * libera a sincronização da URL logo abaixo, inclusive no caso "conflito",
+   * em que a conversa não muda e nada mais faria o efeito rodar.
+   */
+  const [projetoAplicado, setProjetoAplicado] = useState(false);
+  const aplicarProjetoPedido = (projeto: string, atual: string | null) => {
+    const decisao = decidirProjeto({ pedido: projeto, atual });
+    if (decisao.tipo === "vincular") conv.vincularProjeto(projeto);
+    if (decisao.tipo === "conflito") setAvisoDeProjeto({ tipo: "conflito" });
+    setProjetoAplicado(true);
+  };
+  /*
+   * A URL ACOMPANHA O CONTEXTO DO PROJETO — G03, "F5 mantém o contexto".
+   *
+   * Enquanto a conversa aberta é do projeto pedido, `conversa=<id>` fica na
+   * URL: o F5 reabre ESTA conversa (e não uma em branco). Se ela ainda não foi
+   * gravada, a reabertura não a acha e a conversa nova recebe o projeto de novo.
+   * Quando a pessoa sai do projeto (outra conversa, "Nova conversa"), o projeto
+   * sai da URL — senão o F5 a puxaria de volta para um contexto que ela deixou.
+   * A intenção também sai: já foi escrita no composer, e o F5 a reescreveria
+   * por cima do que a pessoa digitou.
+   *
+   * Lê o endereço do ROTEADOR (`usePathname`/`useSearchParams`), não o
+   * `window.location`: vindo do login, a montagem acontece com a barra do
+   * navegador ainda em `/login`, e reescrever a partir dela gravaria o endereço
+   * errado — ou nada.
+   */
+  const caminhoDoRoteador = usePathname();
+  const buscaDoRoteador = useSearchParams().toString();
+  useEffect(() => {
+    if (!projetoAplicado || typeof window === "undefined") return;
+    if (caminhoDoRoteador !== "/nexo") return;
+    const params = new URLSearchParams(buscaDoRoteador);
+    const ctx = lerContextoDaUrl(params);
+    if (!ctx.projeto || ctx.auditoria) return;
+    const antes = params.toString();
+    params.delete("intencao");
+    if (conv.projectId === ctx.projeto) {
+      params.set("conversa", conv.conversationId);
+    } else {
+      params.delete("projeto");
+      params.delete("project");
+      params.delete("conversa");
+    }
+    const depois = params.toString();
+    if (depois === antes) return;
+    window.history.replaceState(window.history.state, "", depois ? `/nexo?${depois}` : "/nexo");
+  }, [projetoAplicado, caminhoDoRoteador, buscaDoRoteador, conv.conversationId, conv.projectId]);
   const restaurouUltima = useRef(false);
   /**
    * A conversa que esta carga MANDOU abrir, e cuja abertura ainda pode estar em
@@ -1819,15 +1925,30 @@ function NexoWorkspaceInner({
   const abrindoNaCarga = useRef<string | null>(null);
   useEffect(() => {
     if (restaurouUltima.current || typeof window === "undefined") return;
-    restaurouUltima.current = true;
+    // A guarda é marcada DENTRO do quadro que executa — ver a da intenção, acima.
     /*
      * O PEDIDO EXPLÍCITO VENCE A MEMÓRIA. `/nexo?conversa=<id>` é como a home
      * manda alguém de volta ao trabalho: quem clicou disse onde quer ir, e
      * abrir "onde eu parei" por cima jogaria fora o clique.
      */
-    const pedida = conversaPedidaNaUrl(window.location.search);
-    const id = pedida ?? (deveRestaurar(window.location.search) ? ultimaConversaLembrada() : null);
-    if (!id) return;
+    const pedida = contexto.conversa;
+    const ctxDaUrl = contexto;
+    const id = pedida ?? (urlMandaNoDestino(contexto) ? null : ultimaConversaLembrada());
+    /*
+     * O PROJETO PEDIDO (G03). Sem conversa a abrir, a conversa NOVA desta carga
+     * nasce endereçada a ele. Com auditoria na URL, quem decide o projeto é o
+     * parecer, não a query — nada é vinculado aqui.
+     */
+    const projetoOk =
+      projetoPedido?.estado === "ok" && !ctxDaUrl.auditoria ? projetoPedido.id : null;
+    if (!id) {
+      if (!projetoOk) return;
+      const raf0 = requestAnimationFrame(() => {
+        restaurouUltima.current = true;
+        aplicarProjetoPedido(projetoOk, null);
+      });
+      return () => cancelAnimationFrame(raf0);
+    }
     /*
      * DEPOIS DO PRIMEIRO QUADRO, como o efeito da `?intencao=` logo acima e
      * pelo mesmo tipo de razão: `selectConv` roda a transição do shell, e
@@ -1842,8 +1963,14 @@ function NexoWorkspaceInner({
     const raf = requestAnimationFrame(() => {
       // Marcado aqui, e não antes do quadro: um quadro cancelado não abre nada,
       // e não pode impedir a retomada de abrir.
+      restaurouUltima.current = true;
       abrindoNaCarga.current = id;
-      void Promise.resolve(selectConv(id)).catch(() => {});
+      void Promise.resolve(selectConv(id))
+        .then((rec) => {
+          // Conversa não achada (outra máquina, apagada): a nova recebe o projeto.
+          if (projetoOk) aplicarProjetoPedido(projetoOk, rec ? (rec.projectId ?? null) : null);
+        })
+        .catch(() => {});
     });
     return () => cancelAnimationFrame(raf);
     // Só na montagem: `selectConv` muda a cada render e re-rodar reabriria a
@@ -1957,9 +2084,7 @@ function NexoWorkspaceInner({
      * de imediato, enquanto a auditoria pedida ainda está vindo do servidor. O
      * link levava ao passeio guiado, e a pendência sumia.
      */
-    const pediramUmaAuditoria =
-      typeof window !== "undefined" &&
-      Boolean(new URLSearchParams(window.location.search).get("auditoria"));
+    const pediramUmaAuditoria = Boolean(contexto.auditoria);
 
     if (jaViu || pediramUmaAuditoria || conv.conversations.length > 0) return;
     const quadro = requestAnimationFrame(() => void iniciarTour());
@@ -2671,8 +2796,40 @@ function NexoWorkspaceInner({
       */}
       {conv.conflitoDeVersao && (
         <FaixaDaAbaTravada
-          aoRecarregar={() => selectConv(conv.conversationId, { recargaConfirmada: true })}
+          aoRecarregar={async () => {
+            await selectConv(conv.conversationId, { recargaConfirmada: true });
+          }}
         />
+      )}
+
+      {/*
+        O PROJETO PEDIDO QUE NÃO PÔDE SER APLICADO — G03. Cada recusa diz o que
+        NÃO foi feito (nada foi vinculado) e dá a saída. Notícia, não bloqueio:
+        dá para seguir trabalhando sem projeto, então pode ser fechada.
+      */}
+      {avisoDeProjeto && (
+        <FaixaDeEstado
+          tipo={avisoDeProjeto.tipo === "indisponivel" ? "offline" : "permissao"}
+          titulo={
+            avisoDeProjeto.tipo === "conflito"
+              ? "Esta conversa é de outro projeto"
+              : avisoDeProjeto.tipo === "sem-acesso"
+                ? "Projeto não encontrado"
+                : "Não deu para conferir o projeto"
+          }
+          acao={
+            <Button asChild size="sm" variant="outline">
+              <Link href="/projetos">Ver projetos</Link>
+            </Button>
+          }
+          aoFechar={() => setAvisoDeProjeto(null)}
+        >
+          {avisoDeProjeto.tipo === "conflito"
+            ? "O link pedia outro projeto, mas a conversa aberta já pertence a um projeto. Nada foi trocado: para trabalhar no projeto do link, comece uma nova conversa a partir dele."
+            : avisoDeProjeto.tipo === "sem-acesso"
+              ? "O projeto deste link não existe ou você não tem acesso a ele. Nenhuma conversa foi vinculada."
+              : "O servidor não respondeu ao conferir o projeto do link. Nenhuma conversa foi vinculada — recarregue para tentar de novo."}
+        </FaixaDeEstado>
       )}
 
       {tourAtivo && <TourDoNexo aoSair={encerrarTour} />}
@@ -2720,7 +2877,8 @@ function NexoWorkspaceInner({
       <FaviconVivo trabalhando={Boolean(auditoriaEmCurso || conv.auditoriaPendente)} />
       <NexoShell
         started={started}
-        barra={<BarraDoNexo />}
+        leitura={aberturaPorLink.pedida}
+        barra={<BarraDoNexo projetoPedido={projetoPedido} />}
         sidebar={
           <NexoSidebar
             onNewConversation={reset}

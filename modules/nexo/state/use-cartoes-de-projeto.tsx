@@ -61,10 +61,53 @@ export function esquecerResumo(): void {
   emVoo = null;
 }
 
+/**
+ * CÓDIGO E CLIENTE DE PROJETOS QUE O RESUMO AINDA NÃO CONHECE — G03/G07.
+ *
+ * O resumo vem das conversas que o SERVIDOR já tem. Uma conversa recém
+ * endereçada nesta máquina (o link "Gerar capas" do projeto, por exemplo) ainda
+ * não está lá, e a barra lateral escrevia "Trabalhando no CMUJG75SY…" — o id
+ * cru do banco. Busca a lista de projetos da organização uma vez, só quando
+ * falta um código.
+ */
+let projetosEmVoo: Promise<Map<string, { code: string; client: string }>> | null = null;
+function buscarProjetos(): Promise<Map<string, { code: string; client: string }>> {
+  if (!projetosEmVoo) {
+    projetosEmVoo = fetch("/api/projects?includeArchived=true")
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+      .then(
+        (p: { projects?: { id: string; code: string; client?: string | null }[] }) =>
+          new Map((p.projects ?? []).map((x) => [x.id, { code: x.code, client: x.client ?? "" }])),
+      )
+      .catch(() => {
+        projetosEmVoo = null;
+        return new Map<string, { code: string; client: string }>();
+      });
+  }
+  return projetosEmVoo;
+}
+
 export function useCartoesDeProjeto(
   conversations: readonly ConversationSummary[],
 ): CartaoDeProjeto[] {
   const [resumo, setResumo] = useState<ResumoDoServidor[] | null>(null);
+  const [projetos, setProjetos] = useState<Map<string, { code: string; client: string }> | null>(
+    null,
+  );
+  const faltaCodigo = useMemo(() => {
+    const doResumo = new Set((resumo ?? []).filter((r) => r.projectCode).map((r) => r.id));
+    return conversations.some((c) => c.projectId && !doResumo.has(c.id));
+  }, [conversations, resumo]);
+  useEffect(() => {
+    if (!faltaCodigo || projetos) return;
+    let vivo = true;
+    buscarProjetos().then((m) => {
+      if (vivo) setProjetos(m);
+    });
+    return () => {
+      vivo = false;
+    };
+  }, [faltaCodigo, projetos]);
 
   useEffect(() => {
     let vivo = true;
@@ -97,8 +140,10 @@ export function useCartoesDeProjeto(
          * `Project`, e a lista local nunca os viu.
          */
         projectId: c.projectId ?? r?.projectId ?? null,
-        projectCode: r?.projectCode ?? "",
-        projectClient: r?.projectClient ?? "",
+        projectCode:
+          r?.projectCode || projetos?.get(c.projectId ?? r?.projectId ?? "")?.code || "",
+        projectClient:
+          r?.projectClient || projetos?.get(c.projectId ?? r?.projectId ?? "")?.client || "",
         tipo: c.tipo ?? null,
         updatedAt: c.updatedAt,
         auditoriaPendente: c.temAuditoriaPendente,
@@ -107,5 +152,5 @@ export function useCartoesDeProjeto(
       };
     });
     return cartoesDeProjeto(cruas);
-  }, [conversations, resumo]);
+  }, [conversations, resumo, projetos]);
 }

@@ -87,6 +87,8 @@ import type { EscopoDaLista } from "@/lib/preferencias-da-home";
 import { MarcaDaPrefeitura } from "@/modules/nexo/components/MarcaDaPrefeitura";
 import { cn } from "@/lib/utils";
 import { cidadeDoCliente } from "@/lib/cliente-do-projeto";
+import { linkDoNexo } from "@/lib/contexto-da-url";
+import { linkDoAchado } from "@/lib/link-do-achado";
 import { ControlesDaLista } from "./controles-da-lista";
 import { usePreferenciasDaHome } from "./use-preferencias-da-home";
 import { OndeVoceParou } from "./onde-voce-parou";
@@ -865,7 +867,7 @@ function CartaoDeProjeto({
             {projeto.itens.map((item, indice) => (
               <Link
                 key={`${item.auditId}-${item.titulo}-${indice}`}
-                href={`/nexo?auditoria=${encodeURIComponent(item.auditId)}`}
+                href={linkDoAchado({ base: "", auditId: item.auditId, findingId: item.findingId })}
                 className="group flex items-center gap-3 border-t border-[var(--nexodoc-raised)] py-2 text-inherit transition-colors duration-[var(--duration-fast)] hover:text-[var(--nexodoc-accent)]"
               >
                 <span
@@ -942,7 +944,7 @@ function CartaoDeProjeto({
               */}
               <Ima>
                 <Link
-                  href={`/nexo?projeto=${encodeURIComponent(projeto.projectId)}`}
+                  href={linkDoNexo({ projeto: projeto.projectId, intencao: "auditar" })}
                   className="nx-cut-5 inline-flex items-center gap-2 bg-[#0f2d2a] px-3 py-1.5 font-mono text-[11px] font-medium uppercase tracking-[0.05em] text-[var(--nexodoc-accent)] transition-colors duration-[var(--duration-fast)] hover:bg-[#164039]"
                 >
                   <svg

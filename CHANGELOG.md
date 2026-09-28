@@ -8,6 +8,17 @@ O formato segue a ideia de manter secoes por versao, com itens objetivos.
 
 ### Adicionado
 
+- Execucao da auditoria UX/UI (31 itens, 28/09/2026) — ver `docs/auditoria/execucao-ux-ui-claude-code/RELATORIO-DE-EXECUCAO.md`:
+  - Navegacao principal por tarefa (Painel, Projetos, Montar volumes, Achados, Ajuda; Administracao por permissao) na home, no Nexo e nos cabecalhos; novas paginas `/achados` e `/ajuda`; `/ferramentas` passa a levar a `/volumes`; `/ld` e `/capas` deixam de dar 404.
+  - Contrato de link `/nexo?projeto=&intencao=` validado no servidor; destino preservado mesmo vindo do login; abertura de auditoria por link com estados de erro proprios.
+  - Evidencia aberta pela revisao auditada (hash) com resolvedor unico; link direto de achado copiavel.
+  - Mesa de montagem nova: destino explicito sem arraste, prontidao estrutural, autosave local com arquivos, desfazer/refazer, conferencia vinculada a versao, previa por volume, anexos, duplicar e mover volumes/grupos, fila de importacao com motivo, vinculo de projeto sem sair.
+  - Achados em fila + detalhe: busca, situacao, responsavel e ordem; eixos Validade e Tratamento; nomes por efeito (atribuir nao manda e-mail; notificar e separado); conversa carregada ao abrir, relida ao voltar a janela, rascunho preservado e falhas HTTP visiveis; anterior/proximo no visor; "Foco na revisao" no Nexo.
+  - Busca de acoes visivel ("Buscar acoes · Ctrl+K") com "Onde fica" e pre-requisitos; Projetos orientado a retomada; admin sem zero antes de carregar; leitura e tratamento de achado por link em tela estreita.
+  - Provas Playwright em `scripts/prova-ux/` e testes puros `test:contexto-da-url`, `test:fonte-da-evidencia`, `test:estado-da-carga`, `test:mesa`.
+  - Correcoes achadas no caminho: contexto do link perdido quando a pessoa chegava pelo login; previa da mesa gravava artefatos no projeto; GET da conversa criava linha de achado para cada cartao; setas das abas do detalhe partiam da aba selecionada; home transbordava 28px em 390px.
+- Pacote de execucao integral da auditoria UX/UI para Claude Code, com prompt, seis etapas cobrindo os 31 itens, contratos de integracao, roteiro de testes e controle de progresso/retomada.
+- Auditoria de UX/UI de 27–28/09/2026, com 31 achados priorizados, inventario funcional, evidencias visuais e criterios de aceite, com foco em montagem de volumes e revisao de achados.
 - Documentacao inicial do produto.
 - Escopo do MVP 0.1.
 - Regras do agente auditor documental.

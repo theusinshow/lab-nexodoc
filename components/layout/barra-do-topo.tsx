@@ -67,6 +67,8 @@ import { useEffect, useRef, useState } from "react";
 
 import { MarcaViva } from "@/components/brand/marca-viva";
 import { BotaoDoOrbe } from "@/components/layout/botao-do-orbe";
+import { NavegacaoPrincipal } from "@/components/layout/navegacao-principal";
+import { destinosPara } from "@/lib/navegacao-principal";
 import { RelogioDoTopo } from "@/components/layout/relogio-do-topo";
 import { cn } from "@/lib/utils";
 import { DURATION } from "@/modules/nexo/lib/motion";
@@ -200,9 +202,25 @@ export function BarraDoTopo({
         */}
         <RelogioDoTopo
           className={cn(
-            "nx-cut-5 ml-1 hidden items-center bg-[var(--nexodoc-recessed)] px-3 py-[7px] md:inline-flex",
+            "nx-cut-5 ml-1 hidden items-center bg-[var(--nexodoc-recessed)] px-3 py-[7px] md:inline-flex xl:hidden min-[1800px]:inline-flex",
             "transition-opacity duration-[120ms]",
             partindo && "opacity-0",
+          )}
+        />
+
+        {/*
+          A NAVEGAÇÃO PRINCIPAL (G01, 28/09/2026). Os destinos saíram do menu da
+          conta e voltaram à barra — com nome de tarefa, e não as abas antigas
+          (que repetiam o menu). Só a partir de 1280px, onde cabem à esquerda do
+          orbe; abaixo disso ficam no menu da conta, a duas ações.
+        */}
+        {/* Administração fica no menu da conta (por permissão): com ela, a
+            fileira passava por baixo do orbe em 1280px — medido na prova. */}
+        <NavegacaoPrincipal
+          ehAdmin={false}
+          className={cn(
+            "hidden transition-opacity duration-[120ms] xl:block",
+            partindo && "pointer-events-none opacity-0",
           )}
         />
 
@@ -258,7 +276,7 @@ export function BarraDoTopo({
           >
             <span className="hidden flex-col items-end gap-1.5 sm:flex">
               <span className="text-sm font-medium leading-none text-foreground">{nome}</span>
-              <span className="flex items-center gap-1.5 font-mono text-[10px] uppercase leading-none tracking-[0.1em] text-muted-foreground">
+              <span className="flex items-center gap-1.5 font-mono text-[11px] uppercase leading-none tracking-[0.1em] text-muted-foreground">
                 {escritorio}
                 {ehAdmin ? (
                   <span className="nx-cut-4 bg-[var(--nexodoc-raised)] px-1.5 py-[3px] tracking-[0.12em] text-[#9aa6ac]">
@@ -300,9 +318,13 @@ export function BarraDoTopo({
               }
             >
               <div className="p-2">
-                <ItemDaConta href="/volumes">Volumes</ItemDaConta>
-                <ItemDaConta href="/projetos">Todos os projetos do escritório</ItemDaConta>
-                {ehAdmin ? <ItemDaConta href="/admin">Painel Admin</ItemDaConta> : null}
+                {destinosPara(ehAdmin)
+                  .filter((d) => d.href !== "/")
+                  .map((d) => (
+                    <ItemDaConta key={d.href} href={d.href}>
+                      {d.rotulo}
+                    </ItemDaConta>
+                  ))}
                 <div className="my-1.5 h-px bg-[var(--nexodoc-raised)]" />
                 <ItemDaConta href="/api/auth/signout" tenue>
                   Sair

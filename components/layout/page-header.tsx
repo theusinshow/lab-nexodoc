@@ -1,6 +1,7 @@
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
+import { NavegacaoPrincipal } from "@/components/layout/navegacao-principal";
 import { cn } from "@/lib/utils";
 
 interface PageHeaderProps {
@@ -10,6 +11,11 @@ interface PageHeaderProps {
   className?: string;
   backHref?: string;
   backLabel?: string;
+  /**
+   * Mostra a navegação principal no topo (G01). Recebe se quem lê administra,
+   * para o destino Administração aparecer só com permissão.
+   */
+  navegacao?: { ehAdmin: boolean };
 }
 
 export function PageHeader({
@@ -18,11 +24,16 @@ export function PageHeader({
   children,
   className,
   backHref,
-  backLabel = "Painel de módulos",
+  // "Painel de módulos" era o nome de uma tela que não existe mais (G07).
+  backLabel = "Painel",
+  navegacao,
 }: PageHeaderProps) {
   return (
     <div className={cn("border-b border-border pb-4", className)}>
-      {backHref && (
+      {navegacao ? (
+        <NavegacaoPrincipal ehAdmin={navegacao.ehAdmin} className="mb-4" />
+      ) : null}
+      {backHref && !navegacao && (
         <Link
           href={backHref}
           className="mb-3 inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.12em] text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:text-foreground"

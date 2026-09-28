@@ -11,6 +11,8 @@ import {
   AdminPageShell,
 } from "@/components/admin/admin-page-shell";
 import { useAdminToken } from "@/components/admin/admin-token";
+import { AvisoDaCarga } from "@/components/admin/aviso-da-carga";
+import { classificarFalha, faseDaCarga, type FalhaDaCarga } from "@/lib/estado-da-carga";
 import { CorpoDosControles } from "@/components/admin/conteudo/controles";
 import { TituloDaSecao } from "@/components/admin/admin-page-shell";
 import { Badge } from "@/components/ui/badge";
@@ -140,6 +142,21 @@ export default function AdminUsersPage() {
   const [loading, setLoading] = useState(false);
   const [busyId, setBusyId] = useState("");
   const [error, setError] = useState("");
+  /*
+   * A LISTA JÁ VEIO DO SERVIDOR? `users` vazio não responde: "ninguém" e
+   * "nunca carregou" são o mesmo array (P02). Os números e a frase de lista
+   * vazia só falam depois de uma resposta válida.
+   */
+  const [carregouEm, setCarregouEm] = useState<string | null>(null);
+  const [erroDaCarga, setErroDaCarga] = useState<{ tipo: FalhaDaCarga; detalhe: string | null } | null>(null);
+  const [carregandoLista, setCarregandoLista] = useState(false);
+  const fase = faseDaCarga({
+    restaurado,
+    token,
+    carregando: carregandoLista,
+    erro: erroDaCarga?.tipo ?? null,
+    temDados: Boolean(carregouEm),
+  });
   /**
    * A ação de privilégio esperando confirmação. `null` = nenhuma.
    *
@@ -272,36 +289,40 @@ export default function AdminUsersPage() {
   async function loadUsers(nextToken = token) {
     const trimmedToken = nextToken.trim();
 
-    if (!trimmedToken) {
-      setError("Informe o token admin.");
-      return;
-    }
+    if (!trimmedToken) return;
 
-    setLoading(true);
-    setError("");
+    setCarregandoLista(true);
+    setErroDaCarga(null);
 
+    const params = new URLSearchParams();
+    if (query.trim()) params.set("q", query.trim());
+    if (role !== "all") params.set("role", role);
+    if (status !== "all") params.set("status", status);
+
+    let response: Response;
     try {
-      const params = new URLSearchParams();
-      if (query.trim()) params.set("q", query.trim());
-      if (role !== "all") params.set("role", role);
-      if (status !== "all") params.set("status", status);
-
-      const response = await fetch(`/api/admin/users?${params}`, {
+      response = await fetch(`/api/admin/users?${params}`, {
         cache: "no-store",
         headers: { Authorization: `Bearer ${trimmedToken}` },
       });
-      const payload = (await response.json().catch(() => null)) as { users?: AdminUser[]; error?: string } | null;
-
-      if (!response.ok) throw new Error(payload?.error ?? "Não foi possível carregar usuários.");
-      registrarResposta(true);
-      setUsers(payload?.users ?? []);
-    } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Não foi possível carregar usuários.");
-      setUsers([]);
-      registrarResposta(false);
-    } finally {
-      setLoading(false);
+    } catch {
+      setErroDaCarga({ tipo: "rede", detalhe: null });
+      setCarregandoLista(false);
+      return;
     }
+    const payload = (await response.json().catch(() => null)) as { users?: AdminUser[]; error?: string } | null;
+    if (!response.ok || !payload || !Array.isArray(payload.users)) {
+      const tipo = classificarFalha(response);
+      // Só a RECUSA reabre o campo do token; queda de servidor não é token errado.
+      if (tipo === "negado") registrarResposta(false);
+      setErroDaCarga({ tipo, detalhe: payload?.error ?? `HTTP ${response.status}` });
+      setCarregandoLista(false);
+      return;
+    }
+    registrarResposta(true);
+    setUsers(payload.users);
+    setCarregouEm(new Date().toISOString());
+    setCarregandoLista(false);
   }
 
   async function saveUser(user: AdminUser) {
@@ -396,6 +417,15 @@ export default function AdminUsersPage() {
         description="Quem entra, com que alçada, e o que acontece com quem chega sem convite."
       />
 
+        <AvisoDaCarga
+          fase={fase}
+          erro={erroDaCarga?.tipo}
+          detalhe={erroDaCarga?.detalhe}
+          oque="as pessoas"
+          atualizadoEm={carregouEm}
+          onTentar={() => void loadUsers()}
+        />
+        {/* Erro de AÇÃO (salvar, promover, liberar), separado do da carga. */}
         <AdminError message={error} />
 
         {/*
@@ -414,20 +444,20 @@ export default function AdminUsersPage() {
 
         <AdminMetricStrip
           metrics={[
-            { label: "Usuários", value: users.length },
-            { label: "Ativos", value: totals.active },
-            { label: "Admins", value: totals.admins },
-            { label: "LDs", value: totals.lds },
+            { label: "Usuários", value: carregouEm ? users.length : "—" },
+            { label: "Ativos", value: carregouEm ? totals.active : "—" },
+            { label: "Admins", value: carregouEm ? totals.admins : "—" },
+            { label: "LDs", value: carregouEm ? totals.lds : "—" },
           ]}
         />
 
         <form onSubmit={createUser} className="grid gap-2 nx-edge-8 p-3 lg:grid-cols-[1fr_1fr_160px_auto]">
           <div className="nx-edge-7 relative [--nx-fill:var(--nexodoc-recessed)]">
             <UserPlus className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <input value={newEmail} onChange={(event) => setNewEmail(event.target.value)} placeholder="email@empresa.com" className="h-10 w-full bg-transparent pl-9 pr-3 text-sm outline-none" />
+            <input value={newEmail} onChange={(event) => setNewEmail(event.target.value)} placeholder="email@empresa.com" aria-label="E-mail da pessoa a adicionar" type="email" className="h-10 w-full bg-transparent pl-9 pr-3 text-sm outline-none" />
           </div>
-          <input value={newName} onChange={(event) => setNewName(event.target.value)} placeholder="Nome" className="nx-edge-7 h-10 bg-transparent px-3 text-sm outline-none [--nx-fill:var(--nexodoc-recessed)]" />
-          <Select value={newRole} onChange={(event) => setNewRole(event.target.value as AdminUser["role"])} className="h-10">
+          <input value={newName} onChange={(event) => setNewName(event.target.value)} placeholder="Nome" aria-label="Nome da pessoa a adicionar" className="nx-edge-7 h-10 bg-transparent px-3 text-sm outline-none [--nx-fill:var(--nexodoc-recessed)]" />
+          <Select value={newRole} onChange={(event) => setNewRole(event.target.value as AdminUser["role"])} className="h-10" aria-label="Papel da pessoa a adicionar">
             <option value="USER">Usuário</option>
             <option value="ADMIN">Admin</option>
           </Select>
@@ -437,19 +467,19 @@ export default function AdminUsersPage() {
         <form onSubmit={submitFilters} className="grid gap-2 nx-edge-8 p-3 md:grid-cols-[1fr_180px_180px_auto]">
           <div className="nx-edge-7 relative [--nx-fill:var(--nexodoc-recessed)]">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar nome ou e-mail" className="h-10 w-full bg-transparent pl-9 pr-3 text-sm outline-none" />
+            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar nome ou e-mail" aria-label="Buscar pessoa por nome ou e-mail" type="search" className="h-10 w-full bg-transparent pl-9 pr-3 text-sm outline-none" />
           </div>
-          <Select value={role} onChange={(event) => setRole(event.target.value)} className="h-10">
+          <Select value={role} onChange={(event) => setRole(event.target.value)} className="h-10" aria-label="Filtrar por papel">
             <option value="all">Todos papéis</option>
             <option value="ADMIN">Admins</option>
             <option value="USER">Usuários</option>
           </Select>
-          <Select value={status} onChange={(event) => setStatus(event.target.value)} className="h-10">
+          <Select value={status} onChange={(event) => setStatus(event.target.value)} className="h-10" aria-label="Filtrar por situação">
             <option value="all">Todos status</option>
             <option value="active">Ativos</option>
             <option value="inactive">Desativados</option>
           </Select>
-          <Button type="submit" disabled={loading}>Filtrar</Button>
+          <Button type="submit" disabled={carregandoLista}>Filtrar</Button>
         </form>
 
         {someSelected && confirmando?.escopo === "lote" ? (
@@ -684,7 +714,7 @@ export default function AdminUsersPage() {
                     </div>
                   </td>
                 </tr>
-              )) : <tr><td colSpan={10} className="p-10 text-center text-muted-foreground">Nenhum usuário encontrado.</td></tr>}
+              )) : <tr><td colSpan={10} className="p-10 text-center text-muted-foreground">{carregouEm ? "Nenhum usuário encontrado com estes filtros." : fase === "sem-token" ? "Aguardando o token de administração." : fase === "erro" ? "Não carregado — veja o aviso no topo." : "Carregando…"}</td></tr>}
             </tbody>
           </table>
         </section>

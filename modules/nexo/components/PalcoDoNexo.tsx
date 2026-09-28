@@ -13,7 +13,21 @@
  */
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { FileText, ListChecks, Map, MapPin, ShieldCheck, SquareStack } from "lucide-react";
+import Link from "next/link";
+import {
+  FileText,
+  ListChecks,
+  Map,
+  MapPin,
+  Maximize2,
+  MessageSquare,
+  PanelLeft,
+  RotateCw,
+  ShieldCheck,
+  SquareStack,
+} from "lucide-react";
+
+import { Button } from "@/components/ui/button";
 
 import { AuditResult, type AuditView } from "@/components/audit-result";
 import { classifyFindingTier } from "@/lib/audit-report";
@@ -30,8 +44,10 @@ import {
   useAuditoria,
   type VistaDoPalco as Vista,
 } from "../state/auditoria-store";
-import { auditoriaParaBuscarArquivos, fonteDoDocumento } from "@/lib/fonte-do-documento";
+import { auditoriaParaBuscarArquivos } from "@/lib/fonte-do-documento";
+import { catalogoDoParecer, resolverFonte } from "@/lib/fonte-da-evidencia";
 
+import { useAreasRecolhidas } from "../lib/areas-recolhidas";
 import { AuditCanvas } from "./AuditCanvas";
 import { AuditoriaEmCurso } from "./AuditoriaEmCurso";
 import type { AberturaPorLink } from "./use-abrir-auditoria-por-link";
@@ -89,16 +105,29 @@ export function PalcoDoNexo({
    * de um F5 — que é quando o engenheiro volta para revisar com calma.
    */
   const [memorialPdf, setMemorialPdf] = useState<
-    { name: string; url: string } | null
+    { name: string; url: string; checksum: string | null } | null
   >(null);
 
   useEffect(() => {
     let url: string | null = null;
     let vivo = true;
-    void recuperarMemorial().then((guardado) => {
+    void recuperarMemorial().then(async (guardado) => {
       if (!vivo || !guardado) return;
+      /*
+       * O HASH DOS BYTES LOCAIS (A02/A03): é ele que diz se o memorial desta
+       * conversa é a MESMA revisão que foi auditada. Sem `crypto.subtle`
+       * (contexto inseguro), fica nulo — e o catálogo usa a cópia do servidor.
+       */
+      let checksum: string | null = null;
+      try {
+        const digest = await crypto.subtle.digest("SHA-256", await guardado.file.arrayBuffer());
+        checksum = [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
+      } catch {
+        checksum = null;
+      }
+      if (!vivo) return;
       url = URL.createObjectURL(guardado.file);
-      setMemorialPdf({ name: guardado.file.name, url });
+      setMemorialPdf({ name: guardado.file.name, url, checksum });
     });
     return () => {
       vivo = false;
@@ -191,21 +220,46 @@ export function PalcoDoNexo({
   // A resposta ainda não voltou: dizer "não foi guardado" agora seria chute.
   const buscandoArquivos = Boolean(auditIdParaBuscar) && buscadosDestaAuditoria === null;
 
-  const doServidor =
-    [...(salvo?.arquivos ?? []), ...(buscadosDestaAuditoria ?? [])].find(
-      (a) => a.checksumSha256,
-    ) ?? null;
-  const fonte = fonteDoDocumento({
-    urlLocal: memorialPdf?.url ?? null,
-    checksum: doServidor?.checksumSha256 ?? null,
-  });
+  /*
+   * O CATÁLOGO DAS FONTES DESTE PARECER — um só, para o visor do achado, o
+   * mapa "No documento" e o cartão do motor (A02/A03). Antes o visor recebia
+   * "o primeiro arquivo com checksum" e o mapa só o PDF local; reaberto noutra
+   * máquina, um mostrava a página e o outro uma grade de falhas.
+   *
+   * Enquanto a lista do servidor não volta, o local não entra: pode ser outra
+   * revisão com o mesmo nome, e decidir antes seria chutar.
+   */
+  const catalogo = useMemo(
+    () =>
+      buscandoArquivos
+        ? []
+        : catalogoDoParecer({
+            local: memorialPdf
+              ? { nome: memorialPdf.name, url: memorialPdf.url, checksum: memorialPdf.checksum }
+              : null,
+            auditados: [...(salvo?.arquivos ?? []), ...(buscadosDestaAuditoria ?? [])],
+          }),
+    [buscandoArquivos, memorialPdf, salvo?.arquivos, buscadosDestaAuditoria],
+  );
+  /*
+   * O DOCUMENTO DO MAPA: o arquivo que o parecer diz ter auditado
+   * (`report.arquivo`), pela MESMA regra dos achados.
+   */
+  const doMapa = resolverFonte({ arquivo: salvo?.report?.arquivo ?? null }, catalogo);
+  const fonte =
+    doMapa.tipo === "arquivo"
+      ? ({ tipo: doMapa.fonte.origem, url: doMapa.fonte.url } as const)
+      : ({
+          tipo: "ausente",
+          // Sem fonte nenhuma, a frase de sempre: o parecer é anterior ao
+          // armazenamento. Nos outros casos, o motivo específico do resolvedor.
+          motivo:
+            doMapa.motivo === "sem-fontes"
+              ? "Este documento foi auditado antes de o sistema passar a guardá-lo."
+              : doMapa.frase,
+        } as const);
   const documento =
-    fonte.tipo === "ausente"
-      ? null
-      : {
-          name: memorialPdf?.name ?? doServidor?.fileName ?? "memorial.pdf",
-          url: fonte.url,
-        };
+    doMapa.tipo === "arquivo" ? { name: doMapa.fonte.nome, url: doMapa.fonte.url } : null;
   /*
    * O PARECER DE ANTES, quando existe. É o que permite dizer o que o trabalho
    * de correção mudou, em vez de entregar a lista nova como se fosse a primeira.
@@ -356,7 +410,8 @@ export function PalcoDoNexo({
         content={salvo?.texto ?? ""}
         report={report}
         auditId={salvo?.auditId ?? undefined}
-        pdfSources={documento ? [documento] : []}
+        pdfSources={catalogo.map((f) => ({ name: f.nome, url: f.url }))}
+        fontes={catalogo}
         resolvidos={resolvidosDesta}
         onToggleResolvido={aoAlternarResolvido}
         /*
@@ -390,8 +445,9 @@ export function PalcoDoNexo({
         O seletor só aparece quando há duas vistas de fato. Com uma só, ele seria
         um controle que não controla nada.
       */}
-      {temAuditoria && (
-        <div className="flex shrink-0 items-center gap-1 px-1 pb-2">
+      <div className="flex shrink-0 flex-wrap items-center gap-1 px-1 pb-2">
+        {temAuditoria && (
+          <>
           <Chip
             data-tour="chip-mapa"
             variant={mostrandoAuditoria ? "quiet" : "default"}
@@ -410,9 +466,10 @@ export function PalcoDoNexo({
             <ShieldCheck aria-hidden />
             Auditoria
           </Chip>
-
-        </div>
-      )}
+          </>
+        )}
+        <EspacoDaRevisao />
+      </div>
 
       {/*
         A BARRA DE VISTAS — o segundo degrau, e só ele.
@@ -460,7 +517,7 @@ export function PalcoDoNexo({
                 )}
                 {/* Número de auditoria incompleta não anda sem a ressalva. */}
                 {v.valor === "findings" && incompletudeDoParecer(report).incompleta && (
-                  <span className="font-mono text-[10px] font-semibold uppercase text-[var(--status-critical)]">
+                  <span className="font-mono text-[11px] font-semibold uppercase text-[var(--status-critical)]">
                     incompleta
                   </span>
                 )}
@@ -534,7 +591,11 @@ export function PalcoDoNexo({
              * está quebrado, se ela não tem acesso, ou se é só demora.
              */
             <div className="flex h-full items-start justify-center overflow-y-auto pt-10">
-              <div className="max-w-md text-center">
+              <div
+                className="max-w-md text-center"
+                data-abertura-por-link={aberturaPorLink.carregando ? "carregando" : aberturaPorLink.tipoDaFalha ?? "falha"}
+                role={aberturaPorLink.carregando ? "status" : "alert"}
+              >
                 <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
                   {aberturaPorLink.carregando ? "Abrindo a auditoria" : "Não deu para abrir"}
                 </p>
@@ -543,6 +604,40 @@ export function PalcoDoNexo({
                     ? "Buscando o parecer no servidor."
                     : aberturaPorLink.falha}
                 </p>
+                {/*
+                  A SAÍDA DE CADA FALHA (A01). Sem ela a pessoa lia o motivo e
+                  ficava num palco vazio: temporária/rede/ainda rodando tentam
+                  de novo; sessão entra com o MESMO destino; as outras voltam ao
+                  painel, onde estão as pendências dela.
+                */}
+                {!aberturaPorLink.carregando && (
+                  <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+                    {aberturaPorLink.tipoDaFalha === "temporaria" ||
+                    aberturaPorLink.tipoDaFalha === "rede" ||
+                    aberturaPorLink.tipoDaFalha === "rodando" ? (
+                      <Button type="button" size="sm" onClick={aberturaPorLink.tentarDeNovo}>
+                        <RotateCw aria-hidden />
+                        Tentar de novo
+                      </Button>
+                    ) : null}
+                    {aberturaPorLink.tipoDaFalha === "sem-sessao" ? (
+                      <Button asChild size="sm">
+                        <a
+                          href={`/login?callbackUrl=${encodeURIComponent(
+                            typeof window === "undefined"
+                              ? "/nexo"
+                              : `${window.location.pathname}${window.location.search}`,
+                          )}`}
+                        >
+                          Entrar e abrir este parecer
+                        </a>
+                      </Button>
+                    ) : null}
+                    <Button asChild size="sm" variant="outline">
+                      <Link href="/">Voltar ao painel</Link>
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
           ) : reconexao.pendente ? (
@@ -607,7 +702,7 @@ export function PalcoDoNexo({
               <div className="h-full">
                 <AuditCanvas
                   report={report}
-                  pdfUrl={memorialPdf?.url}
+                  pdfUrl={documento?.url}
                   // Montado no clique, já no achado que a pessoa apontou.
                   parecer={(achadoEmFoco) => parecerCom({ controlado: false, achadoEmFoco })}
                 />
@@ -620,6 +715,46 @@ export function PalcoDoNexo({
           mapa
         )}
       </div>
+    </div>
+  );
+}
+
+/**
+ * OS CONTROLES DO ESPAÇO — auditoria UX/UI, G05. Botões nomeados para recolher
+ * a lista de projetos, o chat, ou os dois ("Foco na revisão"). A escolha fica
+ * guardada e volta na próxima visita; o chat recolhido continua montado.
+ */
+function EspacoDaRevisao() {
+  const areas = useAreasRecolhidas();
+  return (
+    <div role="group" aria-label="Espaço da revisão" className="ml-auto flex flex-wrap items-center gap-1 max-lg:hidden" data-espaco-da-revisao>
+      <Chip
+        aria-pressed={areas.foco}
+        variant={areas.foco ? "default" : "quiet"}
+        onClick={areas.alternarFoco}
+        className="min-h-7 px-2.5 py-0.5 text-[11px]"
+      >
+        <Maximize2 aria-hidden />
+        {areas.foco ? "Sair do foco" : "Foco na revisão"}
+      </Chip>
+      <Chip
+        aria-pressed={!areas.projetos}
+        variant="quiet"
+        onClick={areas.alternarProjetos}
+        className="min-h-7 px-2.5 py-0.5 text-[11px]"
+      >
+        <PanelLeft aria-hidden />
+        {areas.projetos ? "Mostrar projetos" : "Ocultar projetos"}
+      </Chip>
+      <Chip
+        aria-pressed={!areas.chat}
+        variant="quiet"
+        onClick={areas.alternarChat}
+        className="min-h-7 px-2.5 py-0.5 text-[11px]"
+      >
+        <MessageSquare aria-hidden />
+        {areas.chat ? "Mostrar chat" : "Ocultar chat"}
+      </Chip>
     </div>
   );
 }

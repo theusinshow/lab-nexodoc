@@ -396,7 +396,7 @@ check("o menu do achado oferece ENVIAR com todas as letras", temItem);
 if (temItem) {
   await itemEnviar.click();
 } else {
-  await pVictor.getByLabel(/Selecionar INC-001 para enviar/i).check();
+  await pVictor.getByLabel(/Selecionar INC-001 para atribuir/i).check();
 }
 
 check(
@@ -459,7 +459,7 @@ await pVictor.waitForLoadState("networkidle");
 await pVictor.waitForTimeout(3500);
 await pVictor.getByRole("button", { name: /achados/i }).first().click();
 await pVictor.waitForTimeout(500);
-await pVictor.getByLabel(/Selecionar INC-009 para enviar/i).check();
+await pVictor.getByLabel(/Selecionar INC-009 para atribuir/i).check();
 await pVictor.waitForTimeout(300);
 
 const barra = await pVictor.locator("main.nexo-shell__stage").innerText();
@@ -478,8 +478,8 @@ check(
  * E A OUTRA METADE: com grupo que TEM gente, o aviso não aparece. Sem isto, um
  * aviso grudado na tela para sempre passaria as duas asserções acima.
  */
-await pVictor.getByLabel(/Selecionar INC-009 para enviar/i).uncheck();
-await pVictor.getByLabel(/Selecionar INC-001 para enviar/i).check();
+await pVictor.getByLabel(/Selecionar INC-009 para atribuir/i).uncheck();
+await pVictor.getByLabel(/Selecionar INC-001 para atribuir/i).check();
 await pVictor.waitForTimeout(300);
 
 const semAviso = await pVictor.locator("main.nexo-shell__stage").innerText();

@@ -42,7 +42,7 @@ export function ControlesDaLista({
   const rotuloDaOrdem = ORDENS.find((o) => o.id === ordem)?.rotulo ?? ORDENS[0].rotulo;
 
   return (
-    <div className="flex shrink-0 items-center gap-3">
+    <div className="flex min-w-0 max-w-full flex-wrap items-center gap-3">
       {/*
         CONTROLE SEGMENTADO em superfície EMBUTIDA (`--nexodoc-recessed`), que é
         o que a DESIGN.md destina a ele. O fundo mais escuro que a página é o

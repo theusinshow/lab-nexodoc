@@ -18,6 +18,8 @@ import {
   TituloDaSecao,
 } from "@/components/admin/admin-page-shell";
 import { useAdminToken } from "@/components/admin/admin-token";
+import { AvisoDaCarga } from "@/components/admin/aviso-da-carga";
+import { classificarFalha, faseDaCarga, type FalhaDaCarga } from "@/lib/estado-da-carga";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TUDO_EM_ORDEM, resumoDeAtencao } from "@/lib/atencao-do-admin";
@@ -228,6 +230,22 @@ export function CorpoDaConfiguracao() {
   const [data, setData] = useState<AdminConfigResponse | null>(null);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  // P02: a CARGA tem estado próprio; `error` fica para as ações (salvar, testar).
+  const [erroDaCarga, setErroDaCarga] = useState<{ tipo: FalhaDaCarga; detalhe: string | null } | null>(null);
+  const [carregadoEm, setCarregadoEm] = useState<string | null>(null);
+  const fase = faseDaCarga({
+    restaurado,
+    token,
+    carregando: isLoading,
+    erro: erroDaCarga?.tipo ?? null,
+    temDados: Boolean(data),
+  });
+  const semResposta =
+    fase === "sem-token"
+      ? "Aguardando o token de administração."
+      : fase === "erro"
+        ? "Não carregado — veja o aviso da seção."
+        : "Carregando…";
   const [isTestingProvider, setIsTestingProvider] = useState(false);
   const [savingFlowId, setSavingFlowId] = useState("");
   const [modelDrafts, setModelDrafts] = useState<Record<string, string>>({});
@@ -248,35 +266,42 @@ export function CorpoDaConfiguracao() {
   async function loadConfig(nextToken = token) {
     const trimmedToken = nextToken.trim();
 
-    if (!trimmedToken) {
-      setError("Informe o token admin.");
-      return;
-    }
+    if (!trimmedToken) return;
 
     setIsLoading(true);
-    setError("");
+    setErroDaCarga(null);
 
     try {
-      const response = await fetch(`${apiUrl}/api/admin/config`, {
-        headers: {
-          Authorization: `Bearer ${trimmedToken}`,
-        },
-        cache: "no-store",
-      });
-      const payload = (await response.json()) as
+      let response: Response;
+      try {
+        response = await fetch(`${apiUrl}/api/admin/config`, {
+          headers: {
+            Authorization: `Bearer ${trimmedToken}`,
+          },
+          cache: "no-store",
+        });
+      } catch {
+        setErroDaCarga({ tipo: "rede", detalhe: null });
+        return;
+      }
+      const payload = (await response.json().catch(() => null)) as
         | AdminConfigResponse
-        | { error?: string };
+        | { error?: string }
+        | null;
 
-      if (!response.ok || isErrorPayload(payload)) {
-        throw new Error(
-          isErrorPayload(payload) && payload.error
-            ? payload.error
-            : "Não foi possível carregar configurações.",
-        );
+      if (!response.ok || !payload || isErrorPayload(payload)) {
+        const tipo = classificarFalha(response);
+        if (tipo === "negado") registrarResposta(false);
+        setErroDaCarga({
+          tipo,
+          detalhe: payload && isErrorPayload(payload) ? (payload.error ?? null) : `HTTP ${response.status}`,
+        });
+        return;
       }
 
       registrarResposta(true);
       setData(payload);
+      setCarregadoEm(new Date().toISOString());
       // Cotação zerada é "não declarada": o campo fica VAZIO, e não "0".
       setCambio(payload.cambio?.cotacao.valor ? String(payload.cambio.cotacao.valor) : "");
       setCambioSalvo(false);
@@ -291,13 +316,10 @@ export function CorpoDaConfiguracao() {
           ]),
         ),
       );
-    } catch (requestError) {
-      setData(null);
-      setError(
-        requestError instanceof Error
-          ? requestError.message
-          : "Não foi possível carregar configurações.",
-      );
+    } catch {
+      // Resposta que quebrou o preenchimento: formato inesperado. Dados de
+      // antes FICAM (com o horário no aviso) — apagar voltaria a "sem banco".
+      setErroDaCarga({ tipo: "formato", detalhe: null });
     } finally {
       setIsLoading(false);
     }
@@ -564,7 +586,15 @@ export function CorpoDaConfiguracao() {
         descricao="Modelos por fluxo, provedores, metas e chaves. Leitura operacional, sem expor credenciais."
       />
 
-        <AdminError message={error} />
+        <AvisoDaCarga
+        fase={fase}
+        erro={erroDaCarga?.tipo}
+        detalhe={erroDaCarga?.detalhe}
+        oque="a configuração do motor"
+        atualizadoEm={carregadoEm}
+        onTentar={() => void loadConfig()}
+      />
+      <AdminError message={error} />
 
 
         <section className="nx-edge-8 p-4">
@@ -575,14 +605,17 @@ export function CorpoDaConfiguracao() {
                 Salva somente nomes de modelos no banco. Chaves continuam protegidas no ambiente do backend.
               </p>
             </div>
-            <Badge variant={data?.modelSettings.databaseConfigured ? "ok" : "warning"}>
-              {data?.modelSettings.databaseConfigured ? (
-                <CheckCircle2 aria-hidden />
-              ) : (
-                <AlertTriangle aria-hidden />
-              )}
-              {data?.modelSettings.databaseConfigured ? "persistência ativa" : "sem DATABASE_URL"}
-            </Badge>
+            {/* Só com resposta: antes dela, afirmar "sem DATABASE_URL" era chute (P02). */}
+            {data ? (
+              <Badge variant={data.modelSettings.databaseConfigured ? "ok" : "warning"}>
+                {data.modelSettings.databaseConfigured ? (
+                  <CheckCircle2 aria-hidden />
+                ) : (
+                  <AlertTriangle aria-hidden />
+                )}
+                {data.modelSettings.databaseConfigured ? "persistência ativa" : "sem DATABASE_URL"}
+              </Badge>
+            ) : null}
           </div>
 
           <datalist id="nexodoc-ai-model-options">
@@ -656,9 +689,7 @@ export function CorpoDaConfiguracao() {
               );
             })}
             {!data ? (
-              <div className="px-3 py-6 text-sm text-muted-foreground">
-                Informe o token admin para editar modelos.
-              </div>
+              <div className="px-3 py-6 text-sm text-muted-foreground">{semResposta}</div>
             ) : null}
           </div>
         </section>
@@ -756,9 +787,7 @@ export function CorpoDaConfiguracao() {
               );
             })}
             {!data ? (
-              <div className="px-3 py-6 text-sm text-muted-foreground">
-                Informe o token admin para carregar os provedores.
-              </div>
+              <div className="px-3 py-6 text-sm text-muted-foreground">{semResposta}</div>
             ) : null}
           </div>
         </section>
@@ -785,10 +814,12 @@ export function CorpoDaConfiguracao() {
               </p>
             </div>
             <span className="inline-flex items-center gap-1.5 nx-cut-6 bg-[var(--signal-info-bg)] px-2.5 py-1 font-mono text-[11px] text-[var(--signal-info)]">
-              {data && (data.metaQualidade.metas.falsoPositivoMax > 0 ||
-                data.metaQualidade.metas.coberturaMin > 0)
-                ? "metas declaradas"
-                : "meta não declarada — o painel não julga"}
+              {!data
+                ? "—"
+                : data.metaQualidade.metas.falsoPositivoMax > 0 ||
+                    data.metaQualidade.metas.coberturaMin > 0
+                  ? "metas declaradas"
+                  : "meta não declarada — o painel não julga"}
             </span>
           </div>
 
@@ -841,9 +872,7 @@ export function CorpoDaConfiguracao() {
               Declarar metas
             </Button>
             {!data ? (
-              <span className="text-xs text-muted-foreground">
-                Informe o token admin para declarar.
-              </span>
+              <span className="text-xs text-muted-foreground">{semResposta}</span>
             ) : !data.metaQualidade.databaseConfigured ? (
               <span className="font-mono text-[11px] text-[var(--status-warning)]">
                 sem DATABASE_URL — só leitura do que veio do ambiente

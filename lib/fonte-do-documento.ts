@@ -58,14 +58,20 @@ export function fonteDoDocumento(args: {
  * (17/09/2026) a aba "No documento" sumiu com o arquivo guardado no banco, e a
  * tela ainda culpava o sistema por não tê-lo guardado.
  *
- * Só consulta quando falta tudo: sem local e sem checksum no parecer.
+ * Consulta sempre que o parecer não traz os checksums — MESMO com o PDF local
+ * (auditoria UX/UI, A02/A03, 28/09/2026). A regra antiga ("com local, não
+ * gasta a consulta") assumia que o memorial desta conversa é a revisão
+ * auditada; trocado depois da auditoria, ele tem o mesmo nome e outros bytes, e
+ * a evidência abria texto que o auditor nunca leu. A consulta é um GET sem
+ * custo de modelo; o hash de volta é o que decide (`catalogoDoParecer`).
+ *
+ * `urlLocal` continua no contrato porque os chamadores o têm à mão; não decide.
  */
 export function auditoriaParaBuscarArquivos(args: {
   urlLocal: string | null;
   arquivos: readonly { checksumSha256: string | null }[] | undefined;
   auditId: string | null | undefined;
 }): string | null {
-  if ((args.urlLocal ?? "").trim()) return null;
   if (args.arquivos?.some((a) => (a.checksumSha256 ?? "").trim())) return null;
   return (args.auditId ?? "").trim() || null;
 }

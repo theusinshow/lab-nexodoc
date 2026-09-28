@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { Loader2 } from "lucide-react";
+import type { ReactNode } from "react";
 import type { PageAsset } from "@/modules/volume-builder/lib/volume/volume-types";
 
 const PageAssetTrayInternal = dynamic(
@@ -22,9 +23,7 @@ interface PageAssetTrayProps {
   selectedAssetIds: string[];
   onSelectedAssetIdsChange: (ids: string[]) => void;
   onAssetsChange: (assets: PageAsset[]) => void;
-  onSendToCover: (asset: PageAsset) => void;
-  onSendToLd: (asset: PageAsset) => void;
-  onSendToDocuments: (assets: PageAsset[]) => void;
+  renderAcoes: (selecionadas: PageAsset[]) => ReactNode;
 }
 
 export function PageAssetTray(props: PageAssetTrayProps) {

@@ -43,6 +43,12 @@ import {
 import { useComposer } from "../state/composer-controller";
 import { MarcaDaPrefeitura } from "./MarcaDaPrefeitura";
 
+/** Pedir a paleta de fora (botão visível), sem prop atravessando o Nexo. */
+export const EVENTO_ABRIR_PALETA = "nexo:abrir-paleta";
+export function abrirPaleta() {
+  window.dispatchEvent(new Event(EVENTO_ABRIR_PALETA));
+}
+
 type Item =
   | { tipo: "acao"; acao: AcaoDaPaleta }
   | {
@@ -93,8 +99,14 @@ export function PaletaDeComandos({
         setAberta((a) => !a);
       }
     }
+    // G02: o botão visível "Buscar ações · Ctrl+K" abre a MESMA paleta.
+    const aoPedir = () => setAberta(true);
     document.addEventListener("keydown", aoTeclar);
-    return () => document.removeEventListener("keydown", aoTeclar);
+    window.addEventListener(EVENTO_ABRIR_PALETA, aoPedir);
+    return () => {
+      document.removeEventListener("keydown", aoTeclar);
+      window.removeEventListener(EVENTO_ABRIR_PALETA, aoPedir);
+    };
   }, []);
 
   useEffect(() => {
@@ -202,7 +214,7 @@ export function PaletaDeComandos({
               placeholder="Buscar obra, código ou ação…"
               className="w-full border-0 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
             />
-            <kbd className="shrink-0 font-mono text-[10px] uppercase tracking-[0.08em] text-muted-foreground">
+            <kbd className="shrink-0 font-mono text-[11px] uppercase tracking-[0.08em] text-muted-foreground">
               esc
             </kbd>
           </div>
@@ -210,7 +222,8 @@ export function PaletaDeComandos({
           <ol className="max-h-[46vh] overflow-y-auto py-1">
             {itens.length === 0 && (
               <li className="px-3 py-6 text-center text-xs text-muted-foreground">
-                Nada com esse nome — nem conversa, nem ação.
+                Nada com esse nome — nem conversa, nem ação. A Ajuda lista
+                onde fica cada função.
               </li>
             )}
             {itens.map((item, i) => {
@@ -260,10 +273,15 @@ export function PaletaDeComandos({
                     ) : (
                       <span className="w-[3px] shrink-0" aria-hidden />
                     )}
-                    <span className="min-w-0 flex-1 truncate text-[13px] text-foreground">
-                      {rotulo}
+                    <span className="flex min-w-0 flex-1 flex-col">
+                      <span className="truncate text-[13px] text-foreground">{rotulo}</span>
+                      {item.tipo === "acao" && item.acao.requisito ? (
+                        <span className="text-[11.5px] leading-4 text-muted-foreground">
+                          {item.acao.requisito}
+                        </span>
+                      ) : null}
                     </span>
-                    <span className="shrink-0 font-mono text-[10px] uppercase tracking-[0.07em] text-muted-foreground">
+                    <span className="shrink-0 font-mono text-[11px] uppercase tracking-[0.07em] text-muted-foreground">
                       {secao}
                     </span>
                     {i === cursor && (

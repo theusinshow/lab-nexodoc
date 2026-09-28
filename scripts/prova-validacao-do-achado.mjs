@@ -220,7 +220,7 @@ try {
 
   // --- 2. marcar aqui grava nos dois lugares ------------------------------
   const antes = gravacoes.length;
-  await acoes(REF_LOCAL).getByRole("button", { name: /Marcar corrigido/i }).click();
+  await acoes(REF_LOCAL).getByRole("button", { name: /Informar correção/i }).click();
   await page.waitForTimeout(1200);
 
   check(

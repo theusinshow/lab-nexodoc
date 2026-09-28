@@ -24,6 +24,8 @@ export type ImportedPdfFile = {
   pageCount: number;
   thumbnailStatus: "not_loaded" | "loading" | "ready" | "error";
   warnings: string[];
+  /** sha-256 dos bytes: detecta o mesmo PDF importado duas vezes (V09). */
+  checksum?: string;
 };
 
 export type PageAssetRole = "cover" | "ld" | "document" | "separator" | "appendix";

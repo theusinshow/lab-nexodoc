@@ -114,7 +114,7 @@ try {
   // Só se cobra o cabeçalho da faixa que REALMENTE tem achado neste relatório:
   // um memorial sem nenhum ponto editorial não deve exibir a seção vazia.
   const faixasPresentes = new Set(
-    await page.locator("article[data-impacto]").evaluateAll((nos) =>
+    await page.locator("[data-item-da-fila]").evaluateAll((nos) =>
       nos.map((no) => no.getAttribute("data-impacto")),
     ),
   );
@@ -159,7 +159,7 @@ try {
   }
 
   // --- a ORDEM da lista, lida do DOM e não do texto do cabeçalho -------------
-  const faixas = await page.locator("article[data-impacto]").evaluateAll((nos) =>
+  const faixas = await page.locator("[data-item-da-fila]").evaluateAll((nos) =>
     nos.map((no) => no.getAttribute("data-impacto")),
   );
 

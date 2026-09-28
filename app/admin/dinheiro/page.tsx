@@ -4,8 +4,9 @@ import { formatarDiaDeCalendario, formatarEmBrasilia } from "@/lib/fuso-de-brasi
 import { Activity, BarChart3, Coins, Loader2, RefreshCcw, ShieldCheck, Sigma, Wallet } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
+import { AvisoDaCarga } from "@/components/admin/aviso-da-carga";
+import { classificarFalha, faseDaCarga, type FalhaDaCarga } from "@/lib/estado-da-carga";
 import {
-  AdminError,
   AdminMetricStrip,
   AdminPageHeader,
   AdminPageShell,
@@ -188,8 +189,23 @@ export default function AdminUsagePage() {
   const { token, restaurado, recarga, registrarResposta } = useAdminToken();
   const [days, setDays] = useState(7);
   const [data, setData] = useState<AdminUsageResponse | null>(null);
-  const [error, setError] = useState("");
+  // P02: falha com tipo; os dados de antes ficam, com o horário deles.
+  const [erro, setErro] = useState<{ tipo: FalhaDaCarga; detalhe: string | null } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const fase = faseDaCarga({
+    restaurado,
+    token,
+    carregando: isLoading,
+    erro: erro?.tipo ?? null,
+    temDados: Boolean(data),
+  });
+  /** O que uma seção diz sem resposta do servidor — nunca "nenhum" nem "sem banco". */
+  const semResposta =
+    fase === "sem-token"
+      ? "Aguardando o token de administração."
+      : fase === "erro"
+        ? "Não carregado — veja o aviso no topo."
+        : "Carregando…";
   const apiUrl = getApiUrl();
   const maxDailyValue = getMaxDailyValue(data);
   const cotacao = data?.cotacao ?? COTACAO_NAO_DECLARADA;
@@ -205,45 +221,43 @@ export default function AdminUsagePage() {
   async function loadUsage(nextToken = token, nextDays = days) {
     const trimmedToken = nextToken.trim();
 
-    if (!trimmedToken) {
-      setError("Informe o token admin.");
-      return;
-    }
+    if (!trimmedToken) return;
 
     setIsLoading(true);
-    setError("");
+    setErro(null);
 
+    let response: Response;
     try {
-      const response = await fetch(`${apiUrl}/api/admin/usage?days=${nextDays}`, {
+      response = await fetch(`${apiUrl}/api/admin/usage?days=${nextDays}`, {
         headers: {
           Authorization: `Bearer ${trimmedToken}`,
         },
         cache: "no-store",
       });
-      const payload = (await response.json()) as
-        | AdminUsageResponse
-        | { error?: string };
-
-      if (!response.ok || isErrorPayload(payload)) {
-        throw new Error(
-          isErrorPayload(payload) && payload.error
-            ? payload.error
-            : "Não foi possível carregar uso.",
-        );
-      }
-
-      registrarResposta(true);
-      setData(payload);
-    } catch (requestError) {
-      setData(null);
-      setError(
-        requestError instanceof Error
-          ? requestError.message
-          : "Não foi possível carregar uso.",
-      );
-    } finally {
+    } catch {
+      setErro({ tipo: "rede", detalhe: null });
       setIsLoading(false);
+      return;
     }
+    const payload = (await response.json().catch(() => null)) as
+      | AdminUsageResponse
+      | { error?: string }
+      | null;
+
+    if (!response.ok || !payload || isErrorPayload(payload)) {
+      const tipo = classificarFalha(response);
+      if (tipo === "negado") registrarResposta(false);
+      setErro({
+        tipo,
+        detalhe: payload && isErrorPayload(payload) ? (payload.error ?? null) : `HTTP ${response.status}`,
+      });
+      setIsLoading(false);
+      return;
+    }
+
+    registrarResposta(true);
+    setData(payload);
+    setIsLoading(false);
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -292,7 +306,14 @@ export default function AdminUsagePage() {
         }
       />
 
-        <AdminError message={error} />
+        <AvisoDaCarga
+          fase={fase}
+          erro={erro?.tipo}
+          detalhe={erro?.detalhe}
+          oque="o consumo e os custos"
+          atualizadoEm={data?.generatedAt}
+          onTentar={() => void loadUsage()}
+        />
 
         {/*
           O TETO ABRE A TELA, e não fecha: o painel mostrava o gasto do mês sem
@@ -339,9 +360,12 @@ export default function AdminUsagePage() {
           que atravessa o painel para chegar onde a pessoa já está é pior que
           nenhum.
         */}
-        <p className="font-mono text-[11px] text-muted-foreground">
-          {procedenciaDaCotacao(cotacao, new Date())}
-        </p>
+        {/* Sem resposta, não há procedência a afirmar — nem "não declarada" (P02). */}
+        {data ? (
+          <p className="font-mono text-[11px] text-muted-foreground">
+            {procedenciaDaCotacao(cotacao, new Date())}
+          </p>
+        ) : null}
 
         {/*
           O REAL VEM COLADO NO DÓLAR, nunca no lugar dele: a fatura é em dólar e
@@ -355,7 +379,7 @@ export default function AdminUsagePage() {
             {
               label: "Gasto",
               icon: Coins,
-              value: data ? formatCurrency(data.costs.total.amount, data.costs.total.currency) : "--",
+              value: data ? formatCurrency(data.costs.total.amount, data.costs.total.currency) : "—",
               detail:
                 data && formatarReais(data.costs.total.amount, cotacao)
                   ? `${formatarReais(data.costs.total.amount, cotacao)} · últimos ${days} dias`
@@ -364,7 +388,7 @@ export default function AdminUsagePage() {
             {
               label: "Tokens",
               icon: Sigma,
-              value: data ? formatNumber(totalTokens) : "--",
+              value: data ? formatNumber(totalTokens) : "—",
               detail: data
                 ? `${formatNumber(data.usage.totals.inputTokens)} entrada / ${formatNumber(data.usage.totals.outputTokens)} saída`
                 : "Aguardando consulta",
@@ -372,13 +396,13 @@ export default function AdminUsagePage() {
             {
               label: "Chamadas",
               icon: Activity,
-              value: data ? formatNumber(data.usage.totals.requests) : "--",
+              value: data ? formatNumber(data.usage.totals.requests) : "—",
               detail: "Chamadas de modelo registradas pela OpenAI",
             },
             {
               label: "Cache",
               icon: BarChart3,
-              value: data ? formatNumber(data.usage.totals.cachedTokens) : "--",
+              value: data ? formatNumber(data.usage.totals.cachedTokens) : "—",
               detail: "Tokens de entrada com cache",
             },
           ]}
@@ -483,7 +507,7 @@ export default function AdminUsagePage() {
                 })
               ) : (
                 <p className="nx-edge-7 px-3 py-3 [--nx-fill:var(--nexodoc-recessed)] text-sm text-muted-foreground">
-                  Nenhum modelo retornado no periodo.
+                  {data ? "Nenhum modelo retornado no período." : semResposta}
                 </p>
               )}
             </div>
@@ -516,7 +540,7 @@ export default function AdminUsagePage() {
                       className="px-3 py-6 text-center text-muted-foreground"
                       colSpan={2}
                     >
-                      Nenhum custo retornado no periodo.
+                      {data ? "Nenhum custo retornado no período." : semResposta}
                     </td>
                   </tr>
                 )}
@@ -548,7 +572,12 @@ export default function AdminUsagePage() {
             ) : null}
           </div>
 
-          {!data?.internalUsage?.enabled ? (
+          {!data ? (
+            <p className="mt-4 nx-edge-7 px-3 py-3 [--nx-fill:var(--nexodoc-recessed)] text-sm text-muted-foreground">
+              {semResposta}
+            </p>
+          ) : !data.internalUsage?.enabled ? (
+            /* Só com RESPOSTA do servidor dizendo que o banco não está ligado. */
             <p className="mt-4 nx-edge-7 px-3 py-3 [--nx-fill:var(--nexodoc-recessed)] text-sm text-muted-foreground">
               Sem DATABASE_URL: o consumo por obra vem dos eventos gravados no banco.
             </p>
@@ -660,7 +689,11 @@ export default function AdminUsagePage() {
             </p>
           ) : null}
 
-          {!data?.internalUsage?.enabled ? (
+          {!data ? (
+            <p className="mt-4 nx-edge-7 px-3 py-3 [--nx-fill:var(--nexodoc-recessed)] text-sm text-muted-foreground">
+              {semResposta}
+            </p>
+          ) : !data.internalUsage?.enabled ? (
             <p className="mt-4 nx-edge-7 px-3 py-3 [--nx-fill:var(--nexodoc-recessed)] text-sm text-muted-foreground">
               Registro interno indisponível. Configure `DATABASE_URL` e aplique o schema do Prisma.
             </p>

@@ -48,7 +48,7 @@ const page = await browser.newPage({ viewport: { width: 1600, height: 1100 } });
 const erros = [];
 page.on("pageerror", (e) => erros.push(String(e)));
 
-const cardsNaLista = () => page.locator("[data-achado]").count();
+const cardsNaLista = () => page.locator("[data-item-da-fila]").count();
 
 try {
   await pularTourGuiado(page);
@@ -174,7 +174,7 @@ try {
   check("filtrar por revisão de texto deixa só os dois editoriais", filtrado === 2, `lista=${filtrado}`);
   check(
     "e os cartões restantes SÃO daquela faixa",
-    (await page.locator('[data-achado][data-impacto="revisao_editorial"]').count()) === 2,
+    (await page.locator('[data-item-da-fila][data-impacto="revisao_editorial"]').count()) === 2,
   );
 
   // Somar faixas soma achados — o filtro é união, não troca.

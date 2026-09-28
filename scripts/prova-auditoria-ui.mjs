@@ -179,10 +179,10 @@ try {
 
   await aba(/^Achados/i).click();
   await page.waitForTimeout(700);
-  const emAchados = await page.locator("[data-achado]").count();
+  const emAchados = await page.locator("[data-item-da-fila]").count();
   await aba(/^Parecer/i).click();
   await page.waitForTimeout(700);
-  const emParecer = await page.locator("[data-achado]").count();
+  const emParecer = await page.locator("[data-item-da-fila]").count();
   /*
    * O VISOR DE PDF DO ÚLTIMO ACHADO.
    *

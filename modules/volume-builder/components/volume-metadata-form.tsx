@@ -26,13 +26,13 @@ export function VolumeMetadataForm({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Dados Gerais do Lote</CardTitle>
+        <CardTitle className="text-base">Campos do volume</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="space-y-1">
             <Label htmlFor="projectCode" className="text-xs">
-              Codigo do Projeto
+              Código do projeto
             </Label>
             <Input
               id="projectCode"
@@ -44,7 +44,7 @@ export function VolumeMetadataForm({
           </div>
           <div className="space-y-1">
             <Label htmlFor="projectName" className="text-xs">
-              Nome do Projeto
+              Nome do projeto
             </Label>
             <Input
               id="projectName"
@@ -104,7 +104,7 @@ export function VolumeMetadataForm({
           </div>
           <div className="space-y-1">
             <Label htmlFor="revision" className="text-xs">
-              Revisao
+              Revisão
             </Label>
             <Input
               id="revision"

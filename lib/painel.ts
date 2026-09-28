@@ -32,6 +32,12 @@ import {
 /** Um achado em aberto, visto do projeto. */
 export type ItemDoPainel = {
   auditId: string;
+  /**
+   * O ACHADO, e não só o parecer — auditoria UX/UI, G04. Clicar num achado da
+   * home abria a auditoria inteira; com quarenta achados, a pessoa procurava de
+   * novo o que já tinha escolhido. Nulo quando a pendência não é de achado.
+   */
+  findingId: string | null;
   /** O título do achado. Nulo em pendência gravada antes de o rótulo existir. */
   titulo: string;
   /**
@@ -308,6 +314,9 @@ export async function painelDe(args: {
 
     atual.itens.push({
       auditId: linha.auditId,
+      findingId: linha.targetKey.startsWith("finding:")
+        ? linha.targetKey.slice("finding:".length) || null
+        : null,
       // Sem rótulo gravado, o `targetKey` (`finding:INC-014`) é o que sobra —
       // feio, mas localizável. Melhor que uma linha sem texto nenhum.
       titulo: linha.findingLabel?.trim() || linha.targetKey,

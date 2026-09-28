@@ -4,7 +4,6 @@ import { auth } from "@/auth";
 import { FundoDoAmbiente } from "@/components/ambiente/fundo-do-ambiente";
 import { PageHeader } from "@/components/layout/page-header";
 import { ProjectConsole, type ProjectConsoleItem } from "@/components/projects/project-console";
-import { PortaoDeTelaLarga } from "@/components/ui/portao-de-tela-larga";
 import { getUserAccess } from "@/lib/access-control";
 import { redirectToLogin } from "@/lib/auth-redirect";
 import { getPrisma, isDatabaseConfigured } from "@/lib/db";
@@ -27,7 +26,7 @@ export default async function ProjectsPage() {
     return (
       <main className="mx-auto max-w-7xl space-y-6 px-5 py-6 sm:px-7">
         <PageHeader
-          backHref="/"
+          navegacao={{ ehAdmin: access.isAdmin }}
           title="Projetos"
           description="DATABASE_URL não está configurada. Configure o banco para consultar projetos."
         />
@@ -66,20 +65,44 @@ export default async function ProjectsPage() {
     orderBy: { updatedAt: "desc" },
   });
 
+  /*
+   * O QUE ESPERA EM CADA PROJETO (P01): achados atribuídos e abertos, e quantos
+   * estão com quem lê. Uma consulta para a página inteira, não uma por cartão.
+   */
+  const abertos = await getPrisma().auditFeedback.findMany({
+    where: {
+      resolvedAt: null,
+      assigneeEmail: { not: null },
+      audit: { projectId: { in: projects.map((p) => p.id) } },
+    },
+    select: { assigneeEmail: true, audit: { select: { projectId: true } } },
+  });
+  const pendencias = new Map<string, { pendentes: number; comVoce: number }>();
+  for (const a of abertos) {
+    const id = a.audit.projectId;
+    if (!id) continue;
+    const atual = pendencias.get(id) ?? { pendentes: 0, comVoce: 0 };
+    atual.pendentes += 1;
+    if (a.assigneeEmail?.toLowerCase() === actor.email.toLowerCase()) atual.comVoce += 1;
+    pendencias.set(id, atual);
+  }
+
   return (
     <main className="mx-auto max-w-7xl space-y-6 px-5 py-6 sm:px-7">
       {/* Atmosfera: esta tela nao tem orbe vivo, que e a condicao para o campo
           existir. Ver a regra em `campo-neural.tsx`. */}
       <FundoDoAmbiente />
       <PageHeader
-        backHref="/"
+        navegacao={{ ehAdmin: access.isAdmin }}
         title="Projetos"
-        description="Base consolidada de projetos, documentos, arquivos, artefatos e eventos gerados pelos módulos."
+        description="Os projetos do escritório, com o que está esperando em cada um. Arquivados ficam no filtro Arquivados; criar um projeto é em “Novo projeto”."
       />
 
-      <PortaoDeTelaLarga titulo="O cadastro fica ao lado da lista do escritório, e é assim que se confere um código antes de criar outro.">
-        <ProjectConsole initialProjects={projects.map(serializeProject)} />
-      </PortaoDeTelaLarga>
+      {/* Sem portão de tela larga desde a P01: com a lista primeiro e o cadastro
+          sob demanda, a tela cabe numa coluna. */}
+      <ProjectConsole
+        initialProjects={projects.map((p) => ({ ...serializeProject(p), ...(pendencias.get(p.id) ?? {}) }))}
+      />
     </main>
   );
 }
