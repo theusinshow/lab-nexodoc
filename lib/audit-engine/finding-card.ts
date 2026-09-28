@@ -70,7 +70,12 @@ export type CardInput = {
   arquivo?: string; pagina: string; motor?: unknown;
 };
 
-export function findingCard(f: CardInput, availability: { hasRevision: (revisionId: string) => boolean }): FindingCardModel {
+export function findingCard(
+  f: CardInput,
+  // `fileName` vai junto (A03, 28/09/2026): o resolvedor da tela só aceita cair
+  // para o nome quando a revisão não traz hash — e para isso precisa do nome.
+  availability: { hasRevision: (revisionId: string, fileName?: string) => boolean },
+): FindingCardModel {
   const parsed = parseEngineFinding(f.motor);
   if (parsed.kind !== "engine") {
     // Parecer anterior ao motor (ou `motor` ilegível): mostra o que há, sem inventar fonte estruturada.
@@ -87,7 +92,7 @@ export function findingCard(f: CardInput, availability: { hasRevision: (revision
   const m = parsed.value;
   const sources: CardSource[] = m.references.map(r => ({
     role: ROLE[r.role], fileName: r.fileName, page: r.page, quote: r.quote,
-    navigation: availability.hasRevision(r.revisionId)
+    navigation: availability.hasRevision(r.revisionId, r.fileName)
       ? { kind: "open", revisionId: r.revisionId, fileName: r.fileName, page: r.page, highlight: r.uniqueOnPage === true ? r.quote : null }
       : { kind: "unavailable", fileName: r.fileName, page: r.page, reason: "file_not_available" },
   }));

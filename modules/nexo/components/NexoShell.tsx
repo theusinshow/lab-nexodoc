@@ -15,6 +15,7 @@
 import type { ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
+import { useAreasRecolhidas } from "../lib/areas-recolhidas";
 import { ShellSplitter } from "./ShellSplitter";
 
 export function NexoShell({
@@ -23,8 +24,15 @@ export function NexoShell({
   sidebar,
   stage,
   copilot,
+  leitura = false,
 }: {
   started: boolean;
+  /**
+   * G06: um parecer pedido por link. Abaixo de 1024px o shell deixa de mostrar
+   * só o recado e passa a mostrar o PALCO em coluna única — ler e tratar
+   * achado no celular; montar e gerar continuam pedindo tela maior.
+   */
+  leitura?: boolean;
   /**
    * A faixa do topo. O componente lá dentro decide não existir (devolve `null`)
    * quando não há obra lida nem auditoria rodando — por isso quem a esconde é o
@@ -40,9 +48,15 @@ export function NexoShell({
   stage: ReactNode;
   copilot: ReactNode;
 }) {
+  // G05: projetos e chat recolhíveis por botão nomeado (ver areas-recolhidas).
+  // O chat só recolhe com palco: sem palco ele É a tela.
+  const areas = useAreasRecolhidas();
   return (
     <div
       data-started={started}
+      data-projetos-recolhidos={areas.projetos || undefined}
+      data-chat-recolhido={(started && areas.chat) || undefined}
+      data-leitura={(started && leitura) || undefined}
       className={cn(
         "nexo-shell",
         started ? "nexo-shell--active" : "nexo-shell--welcome",
@@ -55,6 +69,12 @@ export function NexoShell({
       {/* Canvas (mapa do volume) entra no centro ao ativar; o chat desliza p/ a
           direita (FLIP via view-transition-name). Continuidade §1: o copiloto
           está SEMPRE no DOM, só muda de área no grid. */}
+      {started && leitura && (
+        <p className="nexo-shell__nota-estreita" role="note">
+          Nesta tela dá para ler e tratar achados. Montar volumes e gerar documentos
+          pedem uma tela a partir de 1024px.
+        </p>
+      )}
       {started && (
         <main className="nexo-shell__stage" aria-label="Organização dos arquivos">
           {stage}

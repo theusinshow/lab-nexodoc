@@ -10,6 +10,8 @@ import {
   TituloDaSecao,
 } from "@/components/admin/admin-page-shell";
 import { useAdminToken } from "@/components/admin/admin-token";
+import { AvisoDaCarga } from "@/components/admin/aviso-da-carga";
+import { classificarFalha, faseDaCarga, type FalhaDaCarga } from "@/lib/estado-da-carga";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
@@ -60,6 +62,9 @@ export function CorpoDasLds() {
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");
+  // P02: estado da CARGA; `error` fica para a exclusão.
+  const [carregadoEm, setCarregadoEm] = useState<string | null>(null);
+  const [erroDaCarga, setErroDaCarga] = useState<{ tipo: FalhaDaCarga; detalhe: string | null } | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const totals = useMemo(
     () => ({
@@ -118,37 +123,49 @@ export function CorpoDasLds() {
   }
 
   async function loadLds(nextToken = token) {
-    if (!nextToken.trim()) {
-      setError("Informe o token admin.");
-      return;
-    }
+    if (!nextToken.trim()) return;
 
     setLoading(true);
-    setError("");
+    setErroDaCarga(null);
 
+    const params = new URLSearchParams();
+    if (query.trim()) params.set("q", query.trim());
+    if (status !== "all") params.set("status", status);
+    if (user.trim()) params.set("user", user.trim());
+
+    let response: Response;
     try {
-      const params = new URLSearchParams();
-      if (query.trim()) params.set("q", query.trim());
-      if (status !== "all") params.set("status", status);
-      if (user.trim()) params.set("user", user.trim());
-
-      const response = await fetch(`/api/admin/lds?${params}`, {
+      response = await fetch(`/api/admin/lds?${params}`, {
         cache: "no-store",
         headers: { Authorization: `Bearer ${nextToken.trim()}` },
       });
-      const payload = (await response.json().catch(() => null)) as { lds?: LdRecord[]; error?: string } | null;
-
-      if (!response.ok) throw new Error(payload?.error ?? "Não foi possível carregar LDs.");
-      registrarResposta(true);
-      setLds(payload?.lds ?? []);
-      setSelected(new Set());
-    } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Não foi possível carregar LDs.");
-      registrarResposta(false);
-    } finally {
+    } catch {
+      setErroDaCarga({ tipo: "rede", detalhe: null });
       setLoading(false);
+      return;
     }
+    const payload = (await response.json().catch(() => null)) as { lds?: LdRecord[]; error?: string } | null;
+
+    if (!response.ok || !payload || !Array.isArray(payload.lds)) {
+      const tipo = classificarFalha(response);
+      if (tipo === "negado") registrarResposta(false);
+      setErroDaCarga({ tipo, detalhe: payload?.error ?? `HTTP ${response.status}` });
+      setLoading(false);
+      return;
+    }
+    registrarResposta(true);
+    setLds(payload.lds);
+    setCarregadoEm(new Date().toISOString());
+    setSelected(new Set());
+    setLoading(false);
   }
+  const fase = faseDaCarga({
+    restaurado,
+    token,
+    carregando: loading,
+    erro: erroDaCarga?.tipo ?? null,
+    temDados: Boolean(carregadoEm),
+  });
 
   /*
    * Busca quando houver token e quando o trilho pedir recarga. `restaurado`
@@ -183,26 +200,34 @@ export function CorpoDasLds() {
          */
         descricao="As LDs geradas, por usuário — é o registro do servidor, o mesmo que o Nexo alimenta. PDFs anexados não são armazenados."
       />
+        <AvisoDaCarga
+          fase={fase}
+          erro={erroDaCarga?.tipo}
+          detalhe={erroDaCarga?.detalhe}
+          oque="as LDs"
+          atualizadoEm={carregadoEm}
+          onTentar={() => void loadLds()}
+        />
         <AdminError message={error} />
         <AdminMetricStrip
           metrics={[
-            { label: "LDs", value: lds.length },
-            { label: "Geradas", value: totals.generated },
-            { label: "Pranchas", value: totals.rows },
-            { label: "Eventos", value: totals.events },
+            { label: "LDs", value: carregadoEm ? lds.length : "—" },
+            { label: "Geradas", value: carregadoEm ? totals.generated : "—" },
+            { label: "Pranchas", value: carregadoEm ? totals.rows : "—" },
+            { label: "Eventos", value: carregadoEm ? totals.events : "—" },
           ]}
         />
         <form onSubmit={submit} className="grid gap-2 nx-edge-8 p-3 md:grid-cols-[1fr_180px_250px_auto]">
           <div className="nx-edge-7 relative [--nx-fill:var(--nexodoc-recessed)]">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Código ou obra" className="h-10 w-full bg-transparent pl-9 pr-3 text-sm outline-none" />
+            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Código ou obra" aria-label="Buscar LD por código ou obra" type="search" className="h-10 w-full bg-transparent pl-9 pr-3 text-sm outline-none" />
           </div>
-          <Select value={status} onChange={(event) => setStatus(event.target.value)} className="h-10">
+          <Select value={status} onChange={(event) => setStatus(event.target.value)} className="h-10" aria-label="Filtrar LDs por situação">
             <option value="all">Todos status</option><option value="DRAFT">Rascunho</option><option value="GENERATED">Gerada</option><option value="ARCHIVED">Arquivada</option>
           </Select>
           <div className="nx-edge-7 relative [--nx-fill:var(--nexodoc-recessed)]">
             <UserRound className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <input value={user} onChange={(event) => setUser(event.target.value)} placeholder="Usuário" className="h-10 w-full bg-transparent pl-9 pr-3 text-sm outline-none" />
+            <input value={user} onChange={(event) => setUser(event.target.value)} placeholder="Usuário" aria-label="Filtrar LDs por usuário" className="h-10 w-full bg-transparent pl-9 pr-3 text-sm outline-none" />
           </div>
           <Button type="submit" disabled={loading}>Filtrar</Button>
         </form>
@@ -231,6 +256,7 @@ export function CorpoDasLds() {
                     type="checkbox"
                     checked={lds.length > 0 && selected.size === lds.length}
                     onChange={toggleSelectAll}
+                    aria-label="Selecionar todas as LDs listadas"
                     className="h-4 w-4 accent-primary"
                   />
                 </th>
@@ -246,6 +272,7 @@ export function CorpoDasLds() {
                       type="checkbox"
                       checked={selected.has(ld.id)}
                       onChange={() => toggleSelect(ld.id)}
+                      aria-label={`Selecionar LD ${ld.projectCode || ld.workName || ld.id}`}
                       className="h-4 w-4 accent-primary"
                     />
                   </td>
@@ -263,11 +290,21 @@ export function CorpoDasLds() {
                  */
                 <tr>
                   <td colSpan={9}>
+                    {!carregadoEm ? (
+                      <p className="p-10 text-center text-muted-foreground">
+                        {fase === "sem-token"
+                          ? "Aguardando o token de administração."
+                          : fase === "erro"
+                            ? "Não carregado — veja o aviso acima."
+                            : "Carregando…"}
+                      </p>
+                    ) : (
                     <EmptyState
                       icon={FileSpreadsheet}
                       label="Nenhuma LD"
                       description="As listas geradas no Nexo aparecem aqui, com quem gerou e quantas pranchas entraram. Se você filtrou por código, obra ou usuário, limpe o filtro para ver todas."
                     />
+                    )}
                   </td>
                 </tr>
               )}

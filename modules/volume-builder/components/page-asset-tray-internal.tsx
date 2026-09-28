@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, DragEvent, MouseEvent, ReactNode } from "react";
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
@@ -20,7 +20,6 @@ import {
   Layers3,
   Maximize2,
   Search,
-  Send,
   X,
   ZoomIn,
   ZoomOut,
@@ -40,9 +39,12 @@ interface PageAssetTrayProps {
   selectedAssetIds: string[];
   onSelectedAssetIdsChange: (ids: string[]) => void;
   onAssetsChange: (assets: PageAsset[]) => void;
-  onSendToCover: (asset: PageAsset) => void;
-  onSendToLd: (asset: PageAsset) => void;
-  onSendToDocuments: (assets: PageAsset[]) => void;
+  /**
+   * O que fazer com as páginas selecionadas — o destino explícito e os botões
+   * "Adicionar como…" (V03). Antes eram três botões fixos que iam sempre para
+   * o primeiro volume e o primeiro grupo.
+   */
+  renderAcoes: (selecionadas: PageAsset[]) => ReactNode;
 }
 
 type PreviewTarget = {
@@ -57,9 +59,7 @@ export default function PageAssetTrayInternal({
   selectedAssetIds,
   onSelectedAssetIdsChange,
   onAssetsChange,
-  onSendToCover,
-  onSendToLd,
-  onSendToDocuments,
+  renderAcoes,
 }: PageAssetTrayProps) {
   const [query, setQuery] = useState("");
   const [activeFileId, setActiveFileId] = useState<string>("all");
@@ -70,25 +70,42 @@ export default function PageAssetTrayInternal({
   const [lastSelectedId, setLastSelectedId] = useState<string | null>(null);
   const [previewAssetId, setPreviewAssetId] = useState<string | null>(null);
   const [zoomAssetId, setZoomAssetId] = useState<string | null>(null);
-  const fileObjectUrls = useMemo(() => {
-    const nextUrls = new Map<string, string>();
-
-    for (const file of fileDataMap.values()) {
-      const asset = assets.find((item) => item.sourceFileName === file.name);
-      if (asset && !nextUrls.has(asset.sourceFileId)) {
-        nextUrls.set(asset.sourceFileId, URL.createObjectURL(file));
-      }
+  /*
+   * UMA URL `blob:` POR ARQUIVO, estável enquanto o arquivo existir. Antes, a
+   * lista era recriada a cada mudança das páginas (os resumos chegam aos
+   * poucos) e o efeito revogava as URLs antigas com o visor ainda lendo uma
+   * delas: "Unexpected server response (0)" e a prévia caía no iframe.
+   */
+  const [fileObjectUrls, setFileObjectUrls] = useState<Map<string, string>>(new Map());
+  const urlsPorArquivo = useRef(new Map<string, { file: File; url: string }>());
+  useEffect(() => {
+    const m = urlsPorArquivo.current;
+    let mudou = false;
+    for (const [id, file] of fileDataMap) {
+      const e = m.get(id);
+      if (e?.file === file) continue;
+      if (e) URL.revokeObjectURL(e.url);
+      m.set(id, { file, url: URL.createObjectURL(file) });
+      mudou = true;
     }
-
-    for (const asset of assets) {
-      const file = fileDataMap.get(asset.sourceFileId);
-      if (file && !nextUrls.has(asset.sourceFileId)) {
-        nextUrls.set(asset.sourceFileId, URL.createObjectURL(file));
-      }
+    for (const [id, e] of m) {
+      if (fileDataMap.has(id)) continue;
+      URL.revokeObjectURL(e.url);
+      m.delete(id);
+      mudou = true;
     }
-
-    return nextUrls;
-  }, [assets, fileDataMap]);
+    if (mudou) {
+      const proximo = new Map([...m].map(([id, e]) => [id, e.url] as const));
+      queueMicrotask(() => setFileObjectUrls(proximo));
+    }
+  }, [fileDataMap]);
+  useEffect(() => {
+    const m = urlsPorArquivo.current;
+    return () => {
+      for (const e of m.values()) URL.revokeObjectURL(e.url);
+      m.clear();
+    };
+  }, []);
 
   const files = useMemo(() => {
     const map = new Map<string, { id: string; name: string; count: number }>();
@@ -186,14 +203,6 @@ export default function PageAssetTrayInternal({
   const zoomTarget = zoomAsset
     ? createPreviewTarget(zoomAsset, fileDataMap, fileObjectUrls)
     : undefined;
-
-  useEffect(() => {
-    return () => {
-      for (const url of fileObjectUrls.values()) {
-        URL.revokeObjectURL(url);
-      }
-    };
-  }, [fileObjectUrls]);
 
   useEffect(() => {
     const pendingFileIds = new Set(
@@ -308,6 +317,26 @@ export default function PageAssetTrayInternal({
     onSelectedAssetIdsChange([asset.id]);
   }
 
+  /** A caixa de cada página: alterna só ela (é o caminho do teclado: Tab + Espaço). */
+  function alternarPagina(asset: PageAsset) {
+    setPreviewAssetId(asset.id);
+    setLastSelectedId(asset.id);
+    onSelectedAssetIdsChange(
+      selectedAssetIds.includes(asset.id)
+        ? selectedAssetIds.filter((id) => id !== asset.id)
+        : [...selectedAssetIds, asset.id],
+    );
+  }
+
+  function alternarArquivo(ids: string[]) {
+    const todas = ids.every((id) => selectedAssetIds.includes(id));
+    onSelectedAssetIdsChange(
+      todas
+        ? selectedAssetIds.filter((id) => !ids.includes(id))
+        : Array.from(new Set([...selectedAssetIds, ...ids])),
+    );
+  }
+
   function handleDragStart(asset: PageAsset, event: DragEvent<HTMLElement>) {
     const ids = selectedAssetIds.includes(asset.id) ? selectedAssetIds : [asset.id];
     event.dataTransfer.setData("application/x-volume-pages", JSON.stringify(ids));
@@ -322,7 +351,7 @@ export default function PageAssetTrayInternal({
           <div className="flex items-center justify-between gap-2">
             <CardTitle className="flex items-center gap-2 text-base">
               <Layers3 className="h-4 w-4" />
-              Biblioteca de paginas
+              Biblioteca de páginas
             </CardTitle>
             <Badge variant="secondary">{filteredAssets.length}/{assets.length}</Badge>
           </div>
@@ -332,7 +361,9 @@ export default function PageAssetTrayInternal({
             <Input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Buscar arquivo, pagina, codigo ou texto"
+              placeholder="Buscar arquivo, página, código ou texto"
+              aria-label="Buscar páginas por arquivo, número, código ou texto"
+              type="search"
               className="h-8 pl-8 text-xs"
             />
           </div>
@@ -348,7 +379,7 @@ export default function PageAssetTrayInternal({
                 onClick={() => setActiveRole(role.value)}
               >
                 {role.label}
-                <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px]">
+                <Badge variant="secondary" className="ml-1 h-4 px-1 text-[11px]">
                   {role.count}
                 </Badge>
               </FilterButton>
@@ -401,7 +432,7 @@ export default function PageAssetTrayInternal({
                 onClick={() => setActiveFileId(file.id)}
               >
                 <span className="max-w-[180px] truncate">{file.name}</span>
-                <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px]">
+                <Badge variant="secondary" className="ml-1 h-4 px-1 text-[11px]">
                   {file.count}
                 </Badge>
               </FilterButton>
@@ -410,11 +441,15 @@ export default function PageAssetTrayInternal({
         </CardHeader>
 
         <CardContent className="flex min-h-0 flex-1 flex-col space-y-3 overflow-hidden">
-          {selectedAssetIds.length > 0 && (
-            <div className="space-y-2 rounded-md border border-[var(--nexodoc-tertiary-strong)]/45 bg-[var(--nexodoc-tertiary-bg)] p-2">
+          {/*
+            AS AÇÕES DA SELEÇÃO FICAM SEMPRE À VISTA — com seleção vazia elas
+            explicam como selecionar, em vez de sumir (V03/G09).
+          */}
+          <div className="space-y-2 rounded-md border border-[var(--nexodoc-tertiary-strong)]/45 bg-[var(--nexodoc-tertiary-bg)] p-2">
+            {selectedAssetIds.length > 0 ? (
               <div className="flex items-center justify-between gap-2">
-                <span className="text-xs font-medium text-[var(--nexodoc-tertiary)]">
-                  {plural(selectedAssetIds.length, "página", "páginas")}
+                <span className="text-xs font-medium text-[var(--nexodoc-tertiary)]" data-selecionadas={selectedAssetIds.length}>
+                  {plural(selectedAssetIds.length, "página selecionada", "páginas selecionadas")}
                 </span>
                 <Button
                   type="button"
@@ -423,29 +458,13 @@ export default function PageAssetTrayInternal({
                   className="h-6 px-2 text-xs"
                   onClick={() => onSelectedAssetIdsChange([])}
                 >
-                  <X className="mr-1 h-3 w-3" />
-                  Limpar
+                  <X className="mr-1 h-3 w-3" aria-hidden />
+                  Limpar seleção
                 </Button>
               </div>
-              <div className="grid grid-cols-3 gap-1.5">
-                <SendButton
-                  label="Capa"
-                  disabled={selectedAssets.length === 0}
-                  onClick={() => selectedAssets[0] && onSendToCover(selectedAssets[0])}
-                />
-                <SendButton
-                  label="LD"
-                  disabled={selectedAssets.length === 0}
-                  onClick={() => selectedAssets[0] && onSendToLd(selectedAssets[0])}
-                />
-                <SendButton
-                  label="Docs"
-                  disabled={selectedAssets.length === 0}
-                  onClick={() => onSendToDocuments(selectedAssets)}
-                />
-              </div>
-            </div>
-          )}
+            ) : null}
+            {renderAcoes(selectedAssets)}
+          </div>
 
           <PreviewPanel
             key={`${previewTarget?.asset.id ?? "empty"}:${previewTarget?.fileUrl ?? ""}`}
@@ -466,12 +485,19 @@ export default function PageAssetTrayInternal({
                 {groupedAssets.map((group) => (
                   <div key={group.fileId} className="space-y-1.5">
                     <div className="flex items-center justify-between gap-2 border-b pb-1">
-                      <p className="truncate text-[11px] font-medium text-muted-foreground">
+                      <p className="truncate text-xs font-medium text-muted-foreground">
                         {group.fileName}
                       </p>
-                      <span className="shrink-0 text-[10px] text-muted-foreground">
-                        {group.assets.length} pag.
-                      </span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 shrink-0 px-2 text-[11px]"
+                        onClick={() => alternarArquivo(group.assets.map((a) => a.id))}
+                        aria-label={`${group.assets.every((a) => selectedAssetIds.includes(a.id)) ? "Desmarcar" : "Selecionar"} as ${group.assets.length} páginas listadas de ${group.fileName}`}
+                      >
+                        {group.assets.every((a) => selectedAssetIds.includes(a.id)) ? "Desmarcar" : "Selecionar"} {group.assets.length} pág.
+                      </Button>
                     </div>
                     <div className="space-y-1">
                       {group.assets.map((asset) => (
@@ -481,6 +507,7 @@ export default function PageAssetTrayInternal({
                           selected={selectedAssetIds.includes(asset.id)}
                           previewing={previewAsset?.id === asset.id}
                           onSelect={selectAsset}
+                          onToggle={() => alternarPagina(asset)}
                           onNativeDragStart={handleDragStart}
                           onPreview={() => setPreviewAssetId(asset.id)}
                         />
@@ -578,30 +605,6 @@ function FilterButton({
   );
 }
 
-function SendButton({
-  label,
-  disabled,
-  onClick,
-}: {
-  label: string;
-  disabled: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <Button
-      type="button"
-      variant="outline"
-      size="sm"
-      className="h-7 px-1.5 text-[10px]"
-      disabled={disabled}
-      onClick={onClick}
-    >
-      <Send className="mr-1 h-3 w-3" />
-      {label}
-    </Button>
-  );
-}
-
 function FacetButtons({
   label,
   activeValue,
@@ -615,7 +618,7 @@ function FacetButtons({
 }) {
   return (
     <div className="space-y-1">
-      <p className="text-[10px] font-medium uppercase tracking-normal text-muted-foreground">
+      <p className="text-[11px] font-medium uppercase tracking-normal text-muted-foreground">
         {label}
       </p>
       <div className="flex flex-wrap gap-1.5">
@@ -629,7 +632,7 @@ function FacetButtons({
             onClick={() => onChange(option.value)}
           >
             {option.value}
-            <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px]">
+            <Badge variant="secondary" className="ml-1 h-4 px-1 text-[11px]">
               {option.count}
             </Badge>
           </FilterButton>
@@ -644,6 +647,7 @@ function PageAssetRow({
   selected,
   previewing,
   onSelect,
+  onToggle,
   onNativeDragStart,
   onPreview,
 }: {
@@ -651,6 +655,7 @@ function PageAssetRow({
   selected: boolean;
   previewing: boolean;
   onSelect: (asset: PageAsset, event: MouseEvent<HTMLElement>) => void;
+  onToggle: () => void;
   onNativeDragStart: (asset: PageAsset, event: DragEvent<HTMLElement>) => void;
   onPreview: () => void;
 }) {
@@ -679,7 +684,8 @@ function PageAssetRow({
       draggable
       onClick={(event) => onSelect(asset, event)}
       onDragStart={(event) => onNativeDragStart(asset, event)}
-      className={`group grid cursor-grab grid-cols-[34px_minmax(0,1fr)_auto] items-center gap-2 rounded-md border px-2 py-1.5 text-left transition-[border-color,background-color,opacity] active:cursor-grabbing ${
+      data-pagina={asset.id}
+      className={`group grid cursor-grab grid-cols-[auto_34px_minmax(0,1fr)_auto] items-center gap-2 rounded-md border px-2 py-1.5 text-left transition-[border-color,background-color,opacity] active:cursor-grabbing ${
         selected
           ? "border-[var(--nexodoc-tertiary-strong)] bg-[var(--nexodoc-tertiary-bg)]"
           : previewing
@@ -687,20 +693,34 @@ function PageAssetRow({
             : "border-border bg-background hover:border-primary/50 hover:bg-muted/25"
       }`}
       {...listeners}
-      {...attributes}
+      /*
+       * Os `attributes` do dnd-kit tornavam a LINHA focável (tabIndex 0, role
+       * "button") sem nome e sem ação no Enter. O foco agora vai para a caixa
+       * de seleção, que tem nome e responde ao Espaço (V03/G09).
+       */
+      aria-roledescription={attributes["aria-roledescription"]}
     >
-      <div className="flex h-8 items-center justify-center rounded border bg-muted/30 font-mono text-[11px]">
+      <input
+        type="checkbox"
+        checked={selected}
+        onChange={onToggle}
+        onClick={(event) => event.stopPropagation()}
+        onPointerDown={(event) => event.stopPropagation()}
+        aria-label={`Selecionar página ${asset.pageNumber} de ${asset.sourceFileName}`}
+        className="size-4 accent-[var(--primary)]"
+      />
+      <div className="flex h-8 items-center justify-center rounded border bg-muted/30 font-mono text-[11px]" aria-hidden>
         {asset.pageNumber}
       </div>
       <div className="min-w-0">
         <div className="flex min-w-0 items-center gap-1.5">
-          <Badge variant="outline" className="h-4 px-1 text-[9px]">
+          <Badge variant="outline" className="h-4 px-1 text-[11px]">
             {ROLE_LABELS[role]}
           </Badge>
           {classification && (
             <Badge
               variant="outline"
-              className={`h-4 px-1 text-[9px] ${
+              className={`h-4 px-1 text-[11px] ${
                 confidence >= 0.72
                   ? "border-[var(--status-ok)]/35 text-[var(--status-ok)]"
                   : "border-[var(--nexodoc-tertiary-strong)]/50 text-[var(--nexodoc-tertiary)]"
@@ -711,15 +731,15 @@ function PageAssetRow({
           )}
           <p className="truncate text-[11px] font-medium">{asset.sourceFileName}</p>
         </div>
-        <p className="mt-0.5 truncate text-[10px] text-muted-foreground">
+        <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
           {detail || asset.summary || "Resumo em leitura"}
         </p>
       </div>
       <div className="flex items-center gap-1">
         <button
           type="button"
-          title="Visualizar pagina"
-          aria-label={`Visualizar pagina ${asset.pageNumber}`}
+          title="Visualizar página"
+          aria-label={`Visualizar página ${asset.pageNumber} de ${asset.sourceFileName}`}
           className="flex h-6 w-6 items-center justify-center rounded border border-border bg-background text-muted-foreground opacity-80 transition-colors hover:border-[var(--nexodoc-tertiary-strong)] hover:text-[var(--nexodoc-tertiary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           onClick={(event) => {
             event.stopPropagation();
@@ -729,7 +749,7 @@ function PageAssetRow({
         >
           <Eye className="h-3.5 w-3.5" />
         </button>
-        <GripVertical className="h-3.5 w-3.5 text-muted-foreground opacity-70" />
+        <GripVertical className="h-3.5 w-3.5 text-muted-foreground opacity-70" aria-hidden />
       </div>
     </div>
   );
@@ -764,12 +784,12 @@ function PreviewPanel({
       <div className="flex items-center justify-between gap-2 border-b px-2 py-1.5">
         <div className="min-w-0">
           <div className="flex items-center gap-1.5">
-            <Badge variant="outline" className="h-4 px-1 text-[9px]">
+            <Badge variant="outline" className="h-4 px-1 text-[11px]">
               {ROLE_LABELS[role]}
             </Badge>
             <span className="font-mono text-[11px]">Pag. {asset.pageNumber}</span>
           </div>
-          <p className="mt-0.5 truncate text-[10px] text-muted-foreground">
+          <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
             {asset.sourceFileName}
           </p>
         </div>
@@ -777,7 +797,7 @@ function PreviewPanel({
           type="button"
           variant="outline"
           size="sm"
-          className="h-7 px-2 text-[10px]"
+          className="h-7 px-2 text-[11px]"
           onClick={onZoom}
         >
           <ZoomIn className="mr-1 h-3 w-3" />
@@ -879,7 +899,7 @@ function PageZoomOverlay({
         <div className="flex flex-wrap items-center justify-between gap-2 border-b bg-background px-3 py-2">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="h-5 px-1.5 text-[10px]">
+              <Badge variant="outline" className="h-5 px-1.5 text-[11px]">
                 {ROLE_LABELS[role]}
               </Badge>
               <span className="text-xs font-semibold">Pag. {asset.pageNumber}</span>

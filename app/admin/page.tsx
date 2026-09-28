@@ -10,8 +10,9 @@ import { cn } from "@/lib/utils";
 import { TUDO_EM_ORDEM } from "@/lib/atencao-do-admin";
 import { plural } from "@/lib/plural";
 
+import { AvisoDaCarga } from "@/components/admin/aviso-da-carga";
+import { classificarFalha, faseDaCarga, type FalhaDaCarga } from "@/lib/estado-da-carga";
 import {
-  AdminError,
   AdminMetricStrip,
   AdminPageHeader,
   AdminPageShell,
@@ -79,7 +80,7 @@ function isErrorPayload(payload: OverviewResponse | { error?: string }): payload
 
 export default function AdminHomePage() {
   /** O detalhe do cartão quando ainda não houve consulta — nunca um número. */
-  const semDados = "Aguardando consulta";
+  const semDados = "Sem resposta do servidor ainda";
   /*
    * O token vem do trilho, nao desta tela -- ver [[components/admin/admin-token.tsx]].
    * Antes, cada uma das sete telas tinha o seu, e o campo de senha era a
@@ -87,8 +88,23 @@ export default function AdminHomePage() {
    */
   const { token, restaurado, recarga, registrarResposta } = useAdminToken();
   const [data, setData] = useState<OverviewResponse | null>(null);
-  const [error, setError] = useState("");
+  /*
+   * A FALHA TEM TIPO, e os dados de antes FICAM (P02). Era `setData(null)` a
+   * cada erro: uma queda de rede apagava a tela e ela voltava a "Aguardando
+   * consulta", como se nada tivesse sido pedido.
+   */
+  const [erro, setErro] = useState<{ tipo: FalhaDaCarga; detalhe: string | null } | null>(null);
   const [loading, setLoading] = useState(false);
+  const fase = faseDaCarga({
+    restaurado,
+    token,
+    carregando: loading,
+    erro: erro?.tipo ?? null,
+    temDados: Boolean(data),
+  });
+  /** O que as listas dizem enquanto não há resposta — nunca "nenhum". */
+  const semResposta =
+    fase === "sem-token" ? "Aguardando o token." : fase === "erro" ? "Não carregado." : "Carregando…";
   /*
    * Só o que NÃO tem métrica em cima.
    *
@@ -101,37 +117,36 @@ export default function AdminHomePage() {
   async function loadOverview(nextToken = token) {
     const trimmedToken = nextToken.trim();
 
-    if (!trimmedToken) {
-      setError("Informe o token admin.");
-      return;
-    }
+    if (!trimmedToken) return;
 
     setLoading(true);
-    setError("");
+    setErro(null);
 
+    let response: Response;
     try {
-      const response = await fetch("/api/admin/overview", {
+      response = await fetch("/api/admin/overview", {
         cache: "no-store",
         headers: { Authorization: `Bearer ${trimmedToken}` },
       });
-      const payload = (await response.json().catch(() => null)) as OverviewResponse | { error?: string } | null;
-
-      if (!payload) {
-        throw new Error("Não foi possível carregar o painel admin.");
-      }
-
-      if (!response.ok || isErrorPayload(payload)) {
-        throw new Error(isErrorPayload(payload) ? payload.error ?? "Não foi possível carregar o painel admin." : "Não foi possível carregar o painel admin.");
-      }
-
-      registrarResposta(true);
-      setData(payload);
-    } catch (requestError) {
-      setData(null);
-      setError(requestError instanceof Error ? requestError.message : "Não foi possível carregar o painel admin.");
-    } finally {
+    } catch {
+      setErro({ tipo: "rede", detalhe: null });
       setLoading(false);
+      return;
     }
+    const payload = (await response.json().catch(() => null)) as OverviewResponse | { error?: string } | null;
+    if (!response.ok || !payload || isErrorPayload(payload)) {
+      const tipo = classificarFalha(response);
+      if (tipo === "negado") registrarResposta(false);
+      setErro({
+        tipo,
+        detalhe: payload && isErrorPayload(payload) ? (payload.error ?? null) : `HTTP ${response.status}`,
+      });
+      setLoading(false);
+      return;
+    }
+    registrarResposta(true);
+    setData(payload);
+    setLoading(false);
   }
 
   function submit(event: FormEvent<HTMLFormElement>) {
@@ -158,7 +173,14 @@ export default function AdminHomePage() {
         description="O que exige ação, quanto se gastou e o que rodou por último. Cada linha abre o dado."
       />
 
-        <AdminError message={error} />
+        <AvisoDaCarga
+          fase={fase}
+          erro={erro?.tipo}
+          detalhe={erro?.detalhe}
+          oque="os números do painel"
+          atualizadoEm={data?.generatedAt}
+          onTentar={() => void loadOverview()}
+        />
 
         {/*
           O VEREDITO NÃO SE REPETE AQUI. Ele abria esta tela desde a A.4, e era
@@ -207,18 +229,6 @@ export default function AdminHomePage() {
           </section>
         ) : null}
 
-        {/* O painel só fala quando tem o que dizer. */}
-        {!data && !loading && !error && (
-          <p className="nx-edge-8 p-3 text-sm text-muted-foreground">
-            {/*
-              "ACIMA" ERA VERDADE ATÉ O TOKEN MUDAR DE LUGAR. O campo vivia no
-              cabeçalho de cada tela; agora mora no rodapé do trilho, à
-              esquerda. Instrução que aponta para o lugar errado é pior que
-              nenhuma — manda a pessoa procurar onde não está.
-            */}
-            Informe o token admin no rodapé do trilho, à esquerda, para carregar os números.
-          </p>
-        )}
 
         {/*
           ZERO NAO E "NAO SEI".
@@ -232,11 +242,11 @@ export default function AdminHomePage() {
         <AdminMetricStrip
           columns="md:grid-cols-2 xl:grid-cols-5"
           metrics={[
-            { label: "Usuários ativos", value: data ? data.totals.activeUsers : "--", detail: data ? plural(data.totals.admins, "admin", "admins") : semDados, icon: UsersRound, href: "/admin/pessoas" },
-            { label: "Auditorias", value: data ? data.totals.audits : "--", detail: data ? `${data.totals.recentAudits} nos últimos 7 dias` : semDados, icon: ListChecks, href: "/admin/dados" },
-            { label: "Falhas", value: data ? data.totals.failedAudits : "--", detail: data ? "Auditorias com erro" : semDados, icon: AlertTriangle, href: "/admin/dados?status=FAILED", alerta: Boolean(data && data.totals.failedAudits > 0) },
-            { label: "LDs", value: data ? data.totals.ldDrafts : "--", detail: data ? `${plural(data.totals.generatedLds, "gerada", "geradas")} · ${data.totals.recentLds} nos últimos 7 dias` : semDados, icon: FileSpreadsheet, href: "/admin/dados" },
-            { label: "Eventos LD", value: data ? data.totals.ldEvents : "--", detail: data ? `${data.totals.recentLdEvents} nos últimos 7 dias` : semDados, icon: Clock3, href: "/admin/dados" },
+            { label: "Usuários ativos", value: data ? data.totals.activeUsers : "—", detail: data ? plural(data.totals.admins, "admin", "admins") : semDados, icon: UsersRound, href: "/admin/pessoas" },
+            { label: "Auditorias", value: data ? data.totals.audits : "—", detail: data ? `${data.totals.recentAudits} nos últimos 7 dias` : semDados, icon: ListChecks, href: "/admin/dados" },
+            { label: "Falhas", value: data ? data.totals.failedAudits : "—", detail: data ? "Auditorias com erro" : semDados, icon: AlertTriangle, href: "/admin/dados?status=FAILED", alerta: Boolean(data && data.totals.failedAudits > 0) },
+            { label: "LDs", value: data ? data.totals.ldDrafts : "—", detail: data ? `${plural(data.totals.generatedLds, "gerada", "geradas")} · ${data.totals.recentLds} nos últimos 7 dias` : semDados, icon: FileSpreadsheet, href: "/admin/dados" },
+            { label: "Eventos LD", value: data ? data.totals.ldEvents : "—", detail: data ? `${data.totals.recentLdEvents} nos últimos 7 dias` : semDados, icon: Clock3, href: "/admin/dados" },
           ]}
         />
 
@@ -270,7 +280,7 @@ export default function AdminHomePage() {
                 o mesmo erro dos zeros, escrito por extenso.
               */}
               {data && data.latestAudits.length === 0 ? <EmptyState description="Nenhuma auditoria registrada." className="py-10" /> : null}
-              {!data ? <EmptyState description="Aguardando consulta." className="py-10" /> : null}
+              {!data ? <EmptyState description={semResposta} className="py-10" /> : null}
             </div>
           </article>
 
@@ -291,7 +301,7 @@ export default function AdminHomePage() {
                 </div>
               ))}
               {data && data.latestLds.length === 0 ? <EmptyState description="Nenhuma LD registrada." className="py-10" /> : null}
-              {!data ? <EmptyState description="Aguardando consulta." className="py-10" /> : null}
+              {!data ? <EmptyState description={semResposta} className="py-10" /> : null}
             </div>
           </article>
         </section>
@@ -320,7 +330,7 @@ export default function AdminHomePage() {
             {data && (data.acoes ?? []).length === 0 ? (
               <EmptyState description="Nenhuma ação registrada ainda." className="py-8" />
             ) : null}
-            {!data ? <EmptyState description="Aguardando consulta." className="py-8" /> : null}
+            {!data ? <EmptyState description={semResposta} className="py-8" /> : null}
           </div>
         </article>
     </AdminPageShell>

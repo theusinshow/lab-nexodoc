@@ -169,8 +169,12 @@ await test("reconexão com 503 continua rodando: banco fora do ar é passageiro"
         status: 503,
       }),
   );
+  // Continua RODANDO, e diz que a resposta foi instável (auditoria UX/UI A01):
+  // é isso que deixa a tela de abertura por link oferecer "Tentar de novo" em
+  // vez de fingir que a análise segue normal.
   assert.deepEqual(await consultarAuditoria("abc12345"), {
     situacao: "rodando",
+    instavel: true,
   });
 });
 

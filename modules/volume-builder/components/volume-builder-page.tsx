@@ -1,614 +1,422 @@
 "use client";
 
-import { useState } from "react";
+/**
+ * MONTAR VOLUMES COM PDFs EXISTENTES — a mesa manual (auditoria UX/UI,
+ * etapas 2 e 3).
+ *
+ * O estado inteiro mora em `useMesa` (operações puras + histórico + rascunho
+ * neste dispositivo). Esta página só organiza as três áreas — Arquivos,
+ * Montagem, Conferência — e liga os gestos às operações:
+ *
+ * - telas largas (≥1536px): as três lado a lado;
+ * - notebooks (≥1024px): Arquivos fixo à esquerda; Montagem ou Conferência à
+ *   direita, por aba;
+ * - celular: uma área por vez, por aba, com rolagem natural da página — nada
+ *   de painel com altura zero (V04).
+ */
+
+import dynamic from "next/dynamic";
+import { useCallback, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core";
 import { DndContext, DragOverlay, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
-import type {
-  AssemblyRow,
-  AssemblySlot,
-  ImportedPdfFile,
-  PageAsset,
-  VolumeMetadata,
-} from "@/modules/volume-builder/lib/volume/volume-types";
-import type { AssemblySuggestion } from "@/modules/volume-builder/lib/volume/assembly-suggestion-types";
-import { plural } from "@/lib/plural";
-import { createEmptyBlock, createEmptyRow } from "@/modules/volume-builder/lib/volume/assembly-builder";
-import { createPageAssetsForFile, createPageSelectionFromAsset } from "@/modules/volume-builder/lib/volume/page-assets";
-import { VolumeMetadataForm } from "./volume-metadata-form";
-import { ImportedFilesPool } from "./imported-files-pool";
-import { PageAssetTray } from "./page-asset-tray";
-import { AssemblyWorkspace } from "./assembly-workspace";
-import { AssemblySuggestionPanel } from "./assembly-suggestion-panel";
-import { VolumeStructurePreview } from "./volume-structure-preview";
-import { AiValidationPanel } from "./ai-validation-panel";
-import { ExportPanel } from "./export-panel";
+import { FileStack, Plus, Upload } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, CircleDot, FileSearch, FileStack, Layers3, Plus, Upload } from "lucide-react";
+import { formatarEmBrasilia } from "@/lib/fuso-de-brasilia";
 import type { ProjectContext } from "@/lib/project-context";
+import { cn } from "@/lib/utils";
+import {
+  adicionarGrupo,
+  adicionarVolumeComGrupo,
+  aplicarSugestao,
+  editarMetadados,
+  impactoDoArquivo,
+  importarArquivos,
+  inserirPaginas,
+  prontidaoDaMontagem,
+  reclassificarArquivo,
+  removerArquivo,
+  type AlvoDeInsercao,
+  type Pendencia,
+} from "@/modules/volume-builder/lib/volume/mesa";
+import { createPageAssetsForFile } from "@/modules/volume-builder/lib/volume/page-assets";
+import type { ImportedPdfFile, PageAsset } from "@/modules/volume-builder/lib/volume/volume-types";
+import { AssemblySuggestionPanel } from "./assembly-suggestion-panel";
+import { ImportedFilesPool } from "./imported-files-pool";
+import { BarraDaMesa } from "./mesa/barra-da-mesa";
+import { ConferenciaDaMontagem } from "./mesa/conferencia-da-mesa";
+import { DadosDoVolume } from "./mesa/dados-do-volume";
+import { InserirNoDestino, SeletorDeDestino, destinoEfetivo, type Destino } from "./mesa/destino";
+import { SaidaDaMesa } from "./mesa/saida-da-mesa";
+import { VolumeDaMesa } from "./mesa/volume-da-mesa";
+import { PageAssetTray } from "./page-asset-tray";
+import { useMesa } from "./use-mesa";
+import { VolumeStructurePreview } from "./volume-structure-preview";
+
+const PreviaDoVolume = dynamic(() => import("./mesa/previa-do-volume"), { ssr: false });
+
+type Aba = "arquivos" | "montagem" | "conferencia";
+const ABAS: { id: Aba; rotulo: string }[] = [
+  { id: "arquivos", rotulo: "Arquivos" },
+  { id: "montagem", rotulo: "Montagem" },
+  { id: "conferencia", rotulo: "Conferência" },
+];
 
 export function VolumeBuilderPage({
-  projectId,
+  email,
   projectContext,
 }: {
-  projectId?: string;
+  email: string;
   projectContext?: ProjectContext | null;
 }) {
-  const [metadata, setMetadata] = useState<VolumeMetadata>({
-    projectCode: projectContext?.code ?? "",
-    projectName: projectContext?.name ?? "",
+  const mesa = useMesa({
+    email,
+    projetoInicial: projectContext?.id ?? null,
+    metadadosIniciais: { projectCode: projectContext?.code ?? "", projectName: projectContext?.name ?? "" },
   });
-  const [importedFiles, setImportedFiles] = useState<ImportedPdfFile[]>([]);
-  const [pageAssets, setPageAssets] = useState<PageAsset[]>([]);
-  const [selectedAssetIds, setSelectedAssetIds] = useState<string[]>([]);
-  const [fileDataMap, setFileDataMap] = useState<Map<string, File>>(new Map());
-  const [rows, setRows] = useState<AssemblyRow[]>([]);
-  const [showUploadPanel, setShowUploadPanel] = useState(true);
-  const [activeDragAssets, setActiveDragAssets] = useState<PageAsset[]>([]);
-  const operationalStages = [
-    {
-      id: "import",
-      label: "Importar",
-      detail: `${importedFiles.length} PDF(s)`,
-      state: importedFiles.length > 0 ? "done" : "current",
+  const { estado, bytes, executar } = mesa;
+
+  const [aba, setAba] = useState<Aba>("arquivos");
+  const [selecionadasIds, setSelecionadasIds] = useState<string[]>([]);
+  const [destinoEscolhido, setDestinoEscolhido] = useState<Destino | null>(null);
+  const [mostrarImportacao, setMostrarImportacao] = useState(true);
+  const [previa, setPrevia] = useState<string | null>(null);
+  const [arrastando, setArrastando] = useState<PageAsset[]>([]);
+  const [descartando, setDescartando] = useState(false);
+  const retornoDoFoco = useRef<HTMLElement | null>(null);
+
+  const destino = destinoEfetivo(estado, destinoEscolhido);
+  const selecionadas = useMemo(
+    () =>
+      selecionadasIds
+        .map((id) => estado.pageAssets.find((a) => a.id === id))
+        .filter((a): a is PageAsset => Boolean(a)),
+    [selecionadasIds, estado.pageAssets],
+  );
+  const disponiveis = useMemo(() => new Set(bytes.keys()), [bytes]);
+  const prontidao = useMemo(() => prontidaoDaMontagem(estado, { bytesDisponiveis: disponiveis }), [estado, disponiveis]);
+
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
+
+  // ------------------------------------------------------------ gestos
+
+  const inserir = useCallback(
+    (alvo: AlvoDeInsercao, assets: PageAsset[] = selecionadas) => {
+      executar((s) => inserirPaginas(s, alvo, assets));
     },
-    {
-      id: "classify",
-      label: "Classificar",
-      detail: `${plural(pageAssets.length, "página", "páginas")}`,
-      state: importedFiles.length === 0 ? "pending" : pageAssets.length > 0 ? "done" : "current",
-    },
-    {
-      id: "assemble",
-      label: "Montar",
-      detail: `${plural(rows.length, "volume", "volumes")}`,
-      state: pageAssets.length === 0 ? "pending" : rows.length > 0 ? "done" : "current",
-    },
-    {
-      id: "export",
-      label: "Exportar",
-      detail: rows.length > 0 ? "pronto para revisar" : "aguardando montagem",
-      state: rows.length > 0 ? "current" : "pending",
-    },
-  ] as const;
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 6,
-      },
-    })
+    [executar, selecionadas],
   );
 
-  function handleAddRow() {
-    const newRow = createEmptyRow(rows.length + 1);
-    setRows([...rows, newRow]);
+  const criarVolume = useCallback(() => {
+    // Volume novo já nasce com um grupo e vira o destino: é o passo seguinte
+    // de quem acabou de pedir um volume.
+    const r = executar((s) => adicionarVolumeComGrupo(s));
+    const novo = r.estado.rows.at(-1);
+    if (novo) setDestinoEscolhido({ rowId: novo.id, blockId: novo.blocks[0]?.id ?? null, posicao: null });
+  }, [executar]);
+
+  function aoImportar(files: ImportedPdfFile[], dados: File[]) {
+    mesa.guardarBytes(new Map(files.map((f, i) => [f.id, dados[i]])));
+    executar((s) => importarArquivos(s, files, files.flatMap((f) => createPageAssetsForFile(f))));
   }
 
-  function handleRemoveRow(rowId: string) {
-    setRows(rows.filter((r) => r.id !== rowId));
-  }
-
-  function handleUpdateRow(updatedRow: AssemblyRow) {
-    setRows(rows.map((r) => (r.id === updatedRow.id ? updatedRow : r)));
-  }
-
-  function createSlotFromAsset(asset: PageAsset, type: AssemblySlot["type"], label: string): AssemblySlot {
-    return {
-      id: `slot-${Date.now()}-${asset.id}`,
-      type,
-      label,
-      selection: createPageSelectionFromAsset(asset),
-      warnings: [],
-    };
-  }
-
-  function ensureFirstRow(currentRows: AssemblyRow[]) {
-    return currentRows.length > 0 ? currentRows : [createEmptyRow(1)];
-  }
-
-  function handleSendToCover(asset: PageAsset) {
-    setRows((currentRows) => {
-      const nextRows = ensureFirstRow(currentRows);
-      const [firstRow, ...rest] = nextRows;
-      return [
-        {
-          ...firstRow,
-          cover: createSlotFromAsset(asset, "cover", "Capa"),
-        },
-        ...rest,
-      ];
+  function irPara(p: Pendencia) {
+    setAba("montagem");
+    if (p.alvo.blockId) setDestinoEscolhido({ rowId: p.alvo.rowId, blockId: p.alvo.blockId, posicao: null });
+    requestAnimationFrame(() => {
+      const el = document.getElementById(p.alvo.blockId ? `grupo-${p.alvo.blockId}` : `volume-${p.alvo.rowId}`);
+      if (!el) return;
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+      el.setAttribute("tabindex", "-1");
+      el.focus({ preventScroll: true });
     });
   }
 
-  function handleSendToLd(asset: PageAsset) {
-    setRows((currentRows) => {
-      const nextRows = ensureFirstRow(currentRows);
-      const [firstRow, ...rest] = nextRows;
-      const [firstBlock, ...remainingBlocks] =
-        firstRow.blocks.length > 0 ? firstRow.blocks : [createEmptyBlock(1)];
-
-      return [
-        {
-          ...firstRow,
-          blocks: [
-            {
-              ...firstBlock,
-              ld: createSlotFromAsset(asset, "ld", "LD"),
-            },
-            ...remainingBlocks,
-          ],
-        },
-        ...rest,
-      ];
-    });
+  function abrirPrevia(rowId: string) {
+    retornoDoFoco.current = document.activeElement as HTMLElement | null;
+    setPrevia(rowId);
   }
 
-  function handleSendToDocuments(assets: PageAsset[]) {
-    if (assets.length === 0) {
-      return;
-    }
-
-    setRows((currentRows) => {
-      const nextRows = ensureFirstRow(currentRows);
-      const [firstRow, ...rest] = nextRows;
-      const [firstBlock, ...remainingBlocks] =
-        firstRow.blocks.length > 0 ? firstRow.blocks : [createEmptyBlock(1)];
-      const newDocuments = assets.map((asset, index) =>
-        createSlotFromAsset(asset, "document", `Doc ${firstBlock.documents.length + index + 1}`)
-      );
-
-      return [
-        {
-          ...firstRow,
-          blocks: [
-            {
-              ...firstBlock,
-              documents: [...firstBlock.documents, ...newDocuments],
-            },
-            ...remainingBlocks,
-          ],
-        },
-        ...rest,
-      ];
-    });
+  function fecharPrevia() {
+    setPrevia(null);
+    requestAnimationFrame(() => retornoDoFoco.current?.focus());
   }
 
-  function handleApplySuggestion(suggestion: AssemblySuggestion) {
-    const coverAsset = suggestion.coverAssetId
-      ? pageAssets.find((asset) => asset.id === suggestion.coverAssetId)
-      : undefined;
-    const ldAsset = suggestion.ldAssetId
-      ? pageAssets.find((asset) => asset.id === suggestion.ldAssetId)
-      : undefined;
-    const documentAssets = suggestion.documentAssetIds
-      .map((id) => pageAssets.find((asset) => asset.id === id))
-      .filter((asset): asset is PageAsset => Boolean(asset));
+  // ------------------------------------------------------------ arrastar (atalho)
 
-    const row = createEmptyRow(rows.length + 1);
-    const block = createEmptyBlock(1);
-
-    setRows((currentRows) => [
-      ...currentRows,
-      {
-        ...row,
-        title: suggestion.title || row.title,
-        outputFileName: suggestion.outputFileName || row.outputFileName,
-        cover: coverAsset ? createSlotFromAsset(coverAsset, "cover", "Capa") : undefined,
-        blocks: [
-          {
-            ...block,
-            title: suggestion.title || block.title,
-            separatorTitle: suggestion.separatorTitle || block.separatorTitle,
-            ld: ldAsset ? createSlotFromAsset(ldAsset, "ld", "LD") : undefined,
-            documents: documentAssets.map((asset, index) =>
-              createSlotFromAsset(asset, "document", `Doc ${index + 1}`)
-            ),
-          },
-        ],
-      },
-    ]);
+  function arrastadas(activeId: string) {
+    const ids = selecionadasIds.includes(activeId) ? selecionadasIds : [activeId];
+    return ids.map((id) => estado.pageAssets.find((a) => a.id === id)).filter((a): a is PageAsset => Boolean(a));
   }
 
-  function getDraggedAssets(activeId: string) {
-    const ids = selectedAssetIds.includes(activeId) ? selectedAssetIds : [activeId];
-    return ids
-      .map((id) => pageAssets.find((asset) => asset.id === id))
-      .filter((asset): asset is PageAsset => Boolean(asset));
+  function aoSoltar(ev: DragEndEvent) {
+    setArrastando([]);
+    const over = typeof ev.over?.id === "string" ? ev.over.id : null;
+    if (!over) return;
+    const assets = arrastadas(String(ev.active.id));
+    const [tipo, id, indice] = over.split(":");
+    const rowDoGrupo = (blockId: string) => estado.rows.find((r) => r.blocks.some((b) => b.id === blockId))?.id;
+    let alvo: AlvoDeInsercao | null = null;
+    if (tipo === "cover") alvo = { tipo: "cover", rowId: id };
+    else if (tipo === "ld" || tipo === "separator") {
+      const rowId = rowDoGrupo(id);
+      if (rowId) alvo = { tipo, rowId, blockId: id };
+    } else if (tipo === "documents" || tipo === "appendices") {
+      const rowId = rowDoGrupo(id);
+      if (rowId) alvo = { tipo: tipo === "documents" ? "document" : "appendix", rowId, blockId: id };
+    } else if (tipo === "document-item" || tipo === "appendix-item") {
+      // Soltar SOBRE um item insere ANTES dele — nunca apaga o que estava ali.
+      const rowId = rowDoGrupo(id);
+      if (rowId) alvo = { tipo: tipo === "document-item" ? "document" : "appendix", rowId, blockId: id, posicao: Number(indice) };
+    }
+    if (alvo) inserir(alvo, assets);
   }
 
-  function handleDragStart(event: DragStartEvent) {
-    setActiveDragAssets(getDraggedAssets(String(event.active.id)));
+  function teclasDasAbas(e: KeyboardEvent<HTMLDivElement>) {
+    const i = ABAS.findIndex((a) => a.id === aba);
+    if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+    e.preventDefault();
+    const proxima = ABAS[(i + (e.key === "ArrowRight" ? 1 : ABAS.length - 1)) % ABAS.length];
+    setAba(proxima.id);
+    requestAnimationFrame(() => document.getElementById(`aba-${proxima.id}`)?.focus());
   }
 
-  function handleDragEnd(event: DragEndEvent) {
-    setActiveDragAssets([]);
-    const overId = event.over?.id;
-    if (!overId || typeof overId !== "string") {
-      return;
-    }
-
-    const assets = getDraggedAssets(String(event.active.id));
-    if (assets.length === 0) {
-      return;
-    }
-
-    const [target, id, index] = overId.split(":");
-
-    if (target === "cover") {
-      const asset = assets[0];
-      setRows((currentRows) =>
-        currentRows.map((row) =>
-          row.id === id
-            ? { ...row, cover: createSlotFromAsset(asset, "cover", "Capa") }
-            : row
-        )
-      );
-      return;
-    }
-
-    if (target === "ld" || target === "separator") {
-      const asset = assets[0];
-      setRows((currentRows) =>
-        currentRows.map((row) => ({
-          ...row,
-          blocks: row.blocks.map((block) =>
-            block.id === id
-              ? {
-                  ...block,
-                  [target]: createSlotFromAsset(
-                    asset,
-                    target,
-                    target === "ld" ? "LD" : "Separatriz"
-                  ),
-                }
-              : block
-          ),
-        }))
-      );
-      return;
-    }
-
-    if (target === "documents") {
-      setRows((currentRows) =>
-        currentRows.map((row) => ({
-          ...row,
-          blocks: row.blocks.map((block) =>
-            block.id === id
-              ? {
-                  ...block,
-                  documents: [
-                    ...block.documents,
-                    ...assets.map((asset, assetIndex) =>
-                      createSlotFromAsset(
-                        asset,
-                        "document",
-                        `Doc ${block.documents.length + assetIndex + 1}`
-                      )
-                    ),
-                  ],
-                }
-              : block
-          ),
-        }))
-      );
-      return;
-    }
-
-    if (target === "document") {
-      const asset = assets[0];
-      const documentIndex = Number(index);
-      if (Number.isNaN(documentIndex)) {
-        return;
-      }
-
-      setRows((currentRows) =>
-        currentRows.map((row) => ({
-          ...row,
-          blocks: row.blocks.map((block) => {
-            if (block.id !== id) {
-              return block;
-            }
-
-            const documents = [...block.documents];
-            documents[documentIndex] = createSlotFromAsset(
-              asset,
-              "document",
-              `Doc ${documentIndex + 1}`
-            );
-            return { ...block, documents };
-          }),
-        }))
-      );
-    }
-  }
-
-  function handleFilesImported(files: ImportedPdfFile[], fileData: File[]) {
-    setImportedFiles((current) => [...current, ...files]);
-    setPageAssets((current) => [
-      ...current,
-      ...files.flatMap((file) => createPageAssetsForFile(file)),
-    ]);
-
-    setFileDataMap((current) => {
-      const newMap = new Map(current);
-      for (let i = 0; i < files.length; i++) {
-        newMap.set(files[i].id, fileData[i]);
-      }
-      return newMap;
-    });
-
-    if (files.length > 0) {
-      setShowUploadPanel(false);
-    }
-  }
-
-  function handleRemoveFile(fileId: string) {
-    setImportedFiles((current) => current.filter((f) => f.id !== fileId));
-    setPageAssets((current) => current.filter((asset) => asset.sourceFileId !== fileId));
-    setSelectedAssetIds((current) =>
-      current.filter((id) => !id.startsWith(`${fileId}-page-`))
-    );
-    setRows((currentRows) =>
-      currentRows.map((row) => ({
-        ...row,
-        cover:
-          row.cover?.selection?.sourceFileId === fileId ? undefined : row.cover,
-        blocks: row.blocks.map((block) => ({
-          ...block,
-          ld: block.ld?.selection?.sourceFileId === fileId ? undefined : block.ld,
-          separator:
-            block.separator?.selection?.sourceFileId === fileId
-              ? undefined
-              : block.separator,
-          documents: block.documents.filter(
-            (slot) => slot.selection?.sourceFileId !== fileId
-          ),
-          appendices: block.appendices?.filter(
-            (slot) => slot.selection?.sourceFileId !== fileId
-          ),
-        })),
-      }))
-    );
-
-    setFileDataMap((current) => {
-      const newMap = new Map(current);
-      newMap.delete(fileId);
-      return newMap;
-    });
-  }
+  const r = mesa.recuperacao;
 
   return (
-    <div className="flex max-h-[calc(100vh-16px)] max-w-full flex-col gap-3 overflow-hidden">
-      <Card className="shrink-0 border bg-background/95">
-        <CardContent className="grid gap-3 py-3 xl:grid-cols-[minmax(220px,1fr)_minmax(520px,1.45fr)_auto] xl:items-center">
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-lg font-semibold">Montagem de volumes</h1>
-              <Badge variant="outline">{plural(rows.length, "volume", "volumes")}</Badge>
-              <Badge variant="secondary">{plural(pageAssets.length, "página", "páginas")}</Badge>
-            </div>
-            <p className="truncate text-xs text-muted-foreground">
-              {metadata.projectCode || "Projeto sem codigo"}
-              {metadata.projectName ? ` - ${metadata.projectName}` : ""}
-            </p>
-          </div>
+    <div className="flex max-w-full flex-col gap-3">
+      <BarraDaMesa
+        mesa={mesa}
+        projetoInicial={projectContext ? { id: projectContext.id, code: projectContext.code, name: projectContext.name } : null}
+      />
 
-          <OperationalStageStrip stages={operationalStages} />
-
-          <div className="flex flex-wrap items-center gap-2 xl:justify-end">
-            <Button onClick={handleAddRow} size="sm" variant="outline">
-              <Plus className="h-4 w-4 mr-1" />
-              Volume
+      {r ? (
+        <section
+          role="status"
+          data-rascunho-recuperado
+          className="flex flex-wrap items-start gap-2 border border-[var(--signal-info-border)] bg-[var(--signal-info-bg)] px-3 py-2 text-sm"
+        >
+          <span className="min-w-0 flex-1">
+            Montagem recuperada deste dispositivo (salva às{" "}
+            {formatarEmBrasilia(new Date(r.em).toISOString(), { dateStyle: "short", timeStyle: "short" })}).
+            {r.faltando.length > 0 ? (
+              <span className="block text-[var(--status-critical)]">
+                Sem conteúdo guardado: {r.faltando.join(", ")}. Importe de novo para exportar.
+              </span>
+            ) : null}
+          </span>
+          <Button type="button" size="sm" variant="outline" onClick={mesa.fecharRecuperacao}>
+            Continuar
+          </Button>
+          {descartando ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="destructive"
+              onClick={() => {
+                setDescartando(false);
+                void mesa.descartar();
+              }}
+            >
+              Confirmar: apagar o rascunho deste dispositivo
             </Button>
-          </div>
-        </CardContent>
-      </Card>
+          ) : (
+            <Button type="button" size="sm" variant="ghost" onClick={() => setDescartando(true)}>
+              Descartar e começar nova
+            </Button>
+          )}
+        </section>
+      ) : null}
 
-      <div className="shrink-0">
-        <VolumeMetadataForm metadata={metadata} onChange={setMetadata} />
+      <DadosDoVolume
+        metadata={estado.metadata}
+        onChange={(m) => executar((s) => editarMetadados(s, m), { chave: "metadados" })}
+      />
+
+      <div role="tablist" aria-label="Áreas da mesa" className="flex gap-1 border-b 2xl:hidden" onKeyDown={teclasDasAbas}>
+        {ABAS.map((a) => (
+          <button
+            key={a.id}
+            id={`aba-${a.id}`}
+            type="button"
+            role="tab"
+            aria-selected={aba === a.id}
+            aria-controls={`area-${a.id}`}
+            tabIndex={aba === a.id ? 0 : -1}
+            onClick={() => setAba(a.id)}
+            className={cn(
+              "border-b-2 px-3 py-2 text-sm font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring",
+              aba === a.id ? "border-[var(--primary)] text-foreground" : "border-transparent text-muted-foreground",
+              a.id === "arquivos" && "lg:hidden",
+            )}
+          >
+            {a.rotulo}
+            {a.id === "arquivos" ? ` (${estado.importedFiles.length})` : a.id === "montagem" ? ` (${estado.rows.length})` : prontidao.bloqueios ? ` (${prontidao.bloqueios})` : ""}
+          </button>
+        ))}
       </div>
 
       <DndContext
         sensors={sensors}
-        onDragStart={handleDragStart}
-        onDragCancel={() => setActiveDragAssets([])}
-        onDragEnd={handleDragEnd}
+        onDragStart={(ev: DragStartEvent) => setArrastando(arrastadas(String(ev.active.id)))}
+        onDragCancel={() => setArrastando([])}
+        onDragEnd={aoSoltar}
       >
-      <div
-        className={`grid min-h-0 flex-1 grid-cols-1 gap-4 overflow-hidden ${
-          showUploadPanel
-            ? "xl:grid-cols-[minmax(240px,280px)_minmax(300px,360px)_minmax(0,1fr)] 2xl:grid-cols-[minmax(240px,280px)_minmax(320px,380px)_minmax(0,1fr)_minmax(260px,300px)]"
-            : "xl:grid-cols-[minmax(320px,390px)_minmax(0,1fr)] 2xl:grid-cols-[minmax(320px,390px)_minmax(0,1fr)_minmax(260px,300px)]"
-        }`}
-      >
-        {showUploadPanel && (
-        <aside className="min-h-0 min-w-0 overflow-y-auto pr-1">
-            <ImportedFilesPool
-              files={importedFiles}
-              fileDataMap={fileDataMap}
-              onFilesImported={handleFilesImported}
-              onRemoveFile={handleRemoveFile}
-              onCollapse={() => setShowUploadPanel(false)}
-            />
-        </aside>
-        )}
-
-        <aside className="min-h-0 min-w-0 space-y-3 overflow-y-auto pr-1">
-            {!showUploadPanel && (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="h-8 w-full justify-start text-xs"
-                onClick={() => setShowUploadPanel(true)}
-              >
-                <Upload className="mr-2 h-4 w-4" />
-                Mostrar upload
+        <div className="grid min-w-0 grid-cols-1 gap-3 lg:grid-cols-[22rem_minmax(0,1fr)] 2xl:grid-cols-[22rem_minmax(0,1fr)_22rem]">
+          <section
+            id="area-arquivos"
+            role="tabpanel"
+            aria-labelledby="aba-arquivos"
+            aria-label="Arquivos"
+            className={cn(
+              "min-w-0 space-y-3 lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:self-start lg:overflow-y-auto lg:pr-1",
+              aba === "arquivos" ? "block" : "hidden",
+              "lg:block",
+            )}
+          >
+            {mostrarImportacao ? (
+              <ImportedFilesPool
+                files={estado.importedFiles}
+                fileDataMap={bytes as Map<string, File>}
+                onFilesImported={aoImportar}
+                onRemoveFile={(id) => executar((s) => removerArquivo(s, id))}
+                onReclassify={(id, papel) => executar((s) => reclassificarArquivo(s, id, papel))}
+                impactoDe={(id) => impactoDoArquivo(estado, id)}
+                onCollapse={() => setMostrarImportacao(false)}
+              />
+            ) : (
+              <Button type="button" variant="outline" size="sm" className="w-full justify-start" onClick={() => setMostrarImportacao(true)}>
+                <Upload aria-hidden />
+                Mostrar importação ({estado.importedFiles.length} arquivos)
               </Button>
             )}
             <PageAssetTray
-              assets={pageAssets}
-              fileDataMap={fileDataMap}
-              selectedAssetIds={selectedAssetIds}
-              onSelectedAssetIdsChange={setSelectedAssetIds}
-              onAssetsChange={setPageAssets}
-              onSendToCover={handleSendToCover}
-              onSendToLd={handleSendToLd}
-              onSendToDocuments={handleSendToDocuments}
-            />
-        </aside>
-
-        <main className="min-h-0 min-w-0 space-y-3 overflow-y-auto pr-1">
-          <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b bg-background/95 pb-2">
-            <div>
-              <h2 className="text-base font-semibold">Mesa de montagem</h2>
-              <p className="text-xs text-muted-foreground">
-                Monte cada volume na ordem visual da esquerda para direita.
-              </p>
-            </div>
-            <Button onClick={handleAddRow} size="sm" variant="outline">
-              <Plus className="h-4 w-4 mr-1" />
-              Adicionar volume
-            </Button>
-          </div>
-          <AssemblySuggestionPanel
-            metadata={metadata}
-            importedFiles={importedFiles}
-            pageAssets={pageAssets}
-            onApplySuggestion={handleApplySuggestion}
-          />
-          <AssemblyWorkspace
-            rows={rows}
-            pageAssets={pageAssets}
-            onUpdateRow={handleUpdateRow}
-            onRemoveRow={handleRemoveRow}
-          />
-        </main>
-
-        <aside
-          className={`min-h-0 min-w-0 space-y-3 overflow-y-auto pr-1 ${
-            showUploadPanel ? "xl:col-span-3 2xl:col-span-1" : "xl:col-span-2 2xl:col-span-1"
-          }`}
-        >
-          <Card>
-            <CardContent className="space-y-3 py-4">
-              <div className="flex items-center gap-2">
-                <Layers3 className="h-4 w-4 text-muted-foreground" />
-                <h2 className="text-sm font-semibold">Conferencia</h2>
-              </div>
-              <div className="grid grid-cols-3 gap-2">
-                <Metric label="PDFs" value={importedFiles.length} />
-                <Metric label="Paginas" value={pageAssets.length} />
-                <Metric label="Volumes" value={rows.length} />
-              </div>
-            </CardContent>
-          </Card>
-
-          <AiValidationPanel rows={rows} importedFiles={importedFiles} metadata={metadata} compact />
-          <ExportPanel
-            rows={rows}
-            metadata={metadata}
-            importedFiles={importedFiles}
-            fileDataMap={fileDataMap}
-            projectId={projectId}
-            compact
-          />
-          <VolumeStructurePreview rows={rows} metadata={metadata} compact />
-        </aside>
-      </div>
-      <DragOverlay dropAnimation={{ duration: 180, easing: "cubic-bezier(0.22, 1, 0.36, 1)" }}>
-        {activeDragAssets.length > 0 ? (
-          <DragPreview assets={activeDragAssets} />
-        ) : null}
-      </DragOverlay>
-      </DndContext>
-    </div>
-  );
-}
-
-function OperationalStageStrip({
-  stages,
-}: {
-  stages: ReadonlyArray<{
-    id: string;
-    label: string;
-    detail: string;
-    state: "done" | "current" | "pending";
-  }>;
-}) {
-  return (
-    <ol className="grid grid-cols-2 gap-px overflow-hidden rounded-md border bg-border text-xs lg:grid-cols-4">
-      {stages.map((stage) => {
-        const isDone = stage.state === "done";
-        const isCurrent = stage.state === "current";
-
-        return (
-          <li
-            key={stage.id}
-            className={`min-w-0 bg-card px-3 py-2 ${
-              isCurrent ? "ring-1 ring-inset ring-primary/45" : ""
-            }`}
-          >
-            <div className="flex items-center gap-2">
-              {isDone ? (
-                <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-[var(--status-ok)]" />
-              ) : isCurrent ? (
-                <CircleDot className="h-3.5 w-3.5 shrink-0 text-primary" />
-              ) : (
-                <FileSearch className="h-3.5 w-3.5 shrink-0 text-muted-foreground/70" />
+              assets={estado.pageAssets}
+              fileDataMap={bytes as Map<string, File>}
+              selectedAssetIds={selecionadasIds}
+              onSelectedAssetIdsChange={setSelecionadasIds}
+              onAssetsChange={mesa.ajustarPaginas}
+              renderAcoes={(sel) => (
+                <div className="space-y-2">
+                  <SeletorDeDestino
+                    estado={estado}
+                    destino={destino}
+                    onChange={setDestinoEscolhido}
+                    onCriarVolume={criarVolume}
+                    onCriarGrupo={(rowId) => {
+                      const g = executar((s) => adicionarGrupo(s, rowId));
+                      const novo = g.estado.rows.find((x) => x.id === rowId)?.blocks.at(-1);
+                      if (novo) setDestinoEscolhido({ rowId, blockId: novo.id, posicao: null });
+                    }}
+                  />
+                  <InserirNoDestino estado={estado} destino={destino} quantidade={sel.length} onInserir={(alvo) => inserir(alvo, sel)} />
+                </div>
               )}
-              <span
-                className={`truncate font-medium ${
-                  stage.state === "pending" ? "text-muted-foreground" : "text-foreground"
-                }`}
-              >
-                {stage.label}
-              </span>
+            />
+          </section>
+
+          <section
+            id="area-montagem"
+            role="tabpanel"
+            aria-labelledby="aba-montagem"
+            aria-label="Montagem"
+            className={cn(
+              "min-w-0 space-y-3",
+              aba === "montagem" ? "block" : "hidden",
+              aba === "conferencia" ? "lg:hidden" : "lg:block",
+              "2xl:block",
+            )}
+          >
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b pb-2">
+              <div>
+                <h2 className="text-base font-semibold">Montagem</h2>
+                <p className="text-xs text-muted-foreground">
+                  Projeto → Volumes → Grupos (separatriz, LD, pranchas, anexos). A ordem na tela é a ordem do PDF.
+                </p>
+              </div>
+              <Button type="button" size="sm" variant="outline" onClick={criarVolume}>
+                <Plus aria-hidden />
+                Adicionar volume
+              </Button>
             </div>
-            <p className="mt-1 truncate pl-5 font-mono text-[11px] text-muted-foreground">
-              {stage.detail}
-            </p>
-          </li>
-        );
-      })}
-    </ol>
-  );
-}
 
-function Metric({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="rounded-md border bg-muted/30 p-2">
-      <p className="text-[11px] text-muted-foreground">{label}</p>
-      <p className="text-lg font-semibold tabular-nums">{value}</p>
-    </div>
-  );
-}
+            <AssemblySuggestionPanel
+              metadata={estado.metadata}
+              importedFiles={estado.importedFiles}
+              pageAssets={estado.pageAssets}
+              onApplySuggestion={(s) => executar((e) => aplicarSugestao(e, s))}
+            />
 
-function DragPreview({ assets }: { assets: PageAsset[] }) {
-  const first = assets[0];
+            {estado.rows.length === 0 ? (
+              <div className="border border-dashed p-8 text-center">
+                <FileStack className="mx-auto size-5 text-muted-foreground" aria-hidden />
+                <p className="mt-2 text-sm text-muted-foreground">Nenhum volume ainda.</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Use &quot;Adicionar volume&quot;. O volume nasce com um grupo e vira o destino das páginas selecionadas.
+                </p>
+              </div>
+            ) : (
+              estado.rows.map((row, i) => (
+                <VolumeDaMesa
+                  key={row.id}
+                  estado={estado}
+                  row={row}
+                  indice={i}
+                  prontidao={prontidao.volumes.find((v) => v.rowId === row.id)!}
+                  destino={destino}
+                  selecionadas={selecionadas}
+                  executar={executar}
+                  onDestino={setDestinoEscolhido}
+                  onPrevia={abrirPrevia}
+                />
+              ))
+            )}
+          </section>
 
-  return (
-    <div className="pointer-events-none w-56 rounded-md border border-[var(--nexodoc-tertiary-strong)]/60 bg-[var(--nexodoc-panel)] p-2 shadow-[0_14px_42px_rgb(0_0_0_/_0.45)] ring-2 ring-[var(--nexodoc-tertiary)]/20">
-      <div className="flex items-center gap-2">
-        <div className="flex h-12 w-9 shrink-0 items-center justify-center rounded-sm border bg-[var(--nexodoc-recessed)] text-xs font-semibold text-[var(--nexodoc-tertiary)]">
-          {first?.pageNumber ?? 1}
+          <section
+            id="area-conferencia"
+            role="tabpanel"
+            aria-labelledby="aba-conferencia"
+            aria-label="Conferência"
+            className={cn(
+              "min-w-0 space-y-3 2xl:sticky 2xl:top-24 2xl:max-h-[calc(100vh-7rem)] 2xl:self-start 2xl:overflow-y-auto",
+              aba === "conferencia" ? "block" : "hidden",
+              aba === "conferencia" ? "lg:block lg:col-start-2" : "lg:hidden",
+              "2xl:col-start-3 2xl:block",
+            )}
+          >
+            <ConferenciaDaMontagem
+              estado={estado}
+              prontidao={prontidao}
+              assinatura={mesa.assinatura}
+              conferencia={mesa.conferencia}
+              onConferido={mesa.registrarConferencia}
+              onIrPara={irPara}
+            />
+            <SaidaDaMesa
+              estado={estado}
+              bytes={bytes}
+              prontidao={prontidao}
+              assinatura={mesa.assinatura}
+              conferencia={mesa.conferencia}
+              projetoId={mesa.projetoId}
+              onPrevia={abrirPrevia}
+            />
+            <VolumeStructurePreview rows={estado.rows} metadata={estado.metadata} compact />
+          </section>
         </div>
-        <div className="min-w-0">
-          <p className="truncate text-xs font-medium">
-            {assets.length > 1 ? `${assets.length} paginas selecionadas` : first?.sourceFileName}
-          </p>
-          <p className="line-clamp-2 text-[10px] leading-snug text-muted-foreground">
-            {assets.length > 1
-              ? "Solte na capa, LD ou trilho de pranchas."
-              : first?.summary ?? "Solte na area desejada."}
-          </p>
-        </div>
-      </div>
-      <div className="mt-2 flex items-center gap-1 text-[10px] text-[var(--nexodoc-tertiary)]">
-        <FileStack className="h-3 w-3" />
-        Arrastando
-      </div>
+
+        <DragOverlay dropAnimation={{ duration: 180, easing: "cubic-bezier(0.22, 1, 0.36, 1)" }}>
+          {arrastando.length > 0 ? (
+            <div className="pointer-events-none w-56 border bg-[var(--nexodoc-panel)] p-2 text-xs shadow-lg">
+              {arrastando.length > 1 ? `${arrastando.length} páginas` : `${arrastando[0].sourceFileName} p. ${arrastando[0].pageNumber}`}
+              <span className="block text-muted-foreground">Solte num lugar da montagem</span>
+            </div>
+          ) : null}
+        </DragOverlay>
+      </DndContext>
+
+      {previa ? <PreviaDoVolume estado={estado} bytes={bytes} rowIdInicial={previa} onFechar={fecharPrevia} /> : null}
     </div>
   );
 }

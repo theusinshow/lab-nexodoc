@@ -5,7 +5,9 @@
  */
 import assert from "node:assert/strict";
 
+import { INTENCOES_DE_LINK } from "../lib/contexto-da-url.ts";
 import {
+  INTENCOES_SO_DE_LINK,
   PARTIDAS,
   faltaInsumo,
   partidaPorId,
@@ -65,6 +67,15 @@ test("e cada partida olha para o SEU insumo, nao para qualquer anexo", () => {
     faltaInsumo(partidaPorId("conferir")!, { pranchas: false, memorial: true }),
     true,
   );
+});
+
+test("G03: ld e capa sao intencoes de LINK, nao chips — e o contexto da URL as conhece", () => {
+  assert.equal(partidaPorId("ld")?.frase, "cria a LD dessas pranchas");
+  assert.equal(partidaPorId("CAPA")?.frase, "cria a capa dessas pranchas");
+  assert.ok(!PARTIDAS.some((p) => p.id === "ld" || p.id === "capa"), "nao viram chip");
+  for (const p of [...PARTIDAS, ...INTENCOES_SO_DE_LINK]) {
+    assert.ok((INTENCOES_DE_LINK as readonly string[]).includes(p.id), p.id);
+  }
 });
 
 console.log(`\n${passed} ok`);

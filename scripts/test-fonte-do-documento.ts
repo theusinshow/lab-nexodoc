@@ -95,10 +95,12 @@ test("sem local e sem arquivos no parecer, pergunta ao servidor pelo auditId", (
   );
 });
 
-test("com o PDF local, não gasta a consulta", () => {
+test("com o PDF local, AINDA consulta: só o servidor sabe qual revisão foi auditada (A02/A03)", () => {
+  // Era `null` ("não gasta a consulta"). O memorial local pode ser outra revisão
+  // com o mesmo nome; a consulta é um GET sem custo de modelo.
   assert.equal(
     auditoriaParaBuscarArquivos({ urlLocal: "blob:abc", arquivos: undefined, auditId: "aud_1" }),
-    null,
+    "aud_1",
   );
 });
 

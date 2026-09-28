@@ -79,6 +79,13 @@ export async function GET(
   const feedback = await getPrisma().auditFeedback.findMany({
     where: { auditId: id },
     orderBy: { createdAt: "asc" },
+    /*
+     * QUANTOS COMENTÁRIOS CADA ACHADO TEM — auditoria UX/UI, A08. A fila mostra
+     * "Conversa (n)" sem abrir as conversas: antes, cada cartão montado pedia a
+     * sua (e o GET da conversa ainda CRIA a linha do achado), 52 pedidos para
+     * um parecer de 52 achados. Agora é uma contagem nesta mesma consulta.
+     */
+    include: { _count: { select: { mensagens: { where: { kind: "comentario" } } } } },
   });
 
   /*
@@ -140,8 +147,9 @@ export async function GET(
   }
 
   return NextResponse.json({
-    feedback: feedback.map((f) => ({
+    feedback: feedback.map(({ _count, ...f }) => ({
       ...f,
+      comentarios: _count.mensagens,
       resolvedByName: f.resolvedById ? (nomes.get(f.resolvedById) ?? null) : null,
       // Cai para o e-mail quando ninguém preencheu o nome: melhor um endereço
       // do que uma tarja sem dono.

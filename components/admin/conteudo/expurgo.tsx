@@ -19,6 +19,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { AdminError, TituloDaSecao } from "@/components/admin/admin-page-shell";
 import { useAdminToken } from "@/components/admin/admin-token";
+import { AvisoDaCarga } from "@/components/admin/aviso-da-carga";
+import { classificarFalha, faseDaCarga, type FalhaDaCarga } from "@/lib/estado-da-carga";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { palavraDeConfirmacao, type Alcance } from "@/lib/expurgo";
@@ -99,33 +101,50 @@ export function CorpoDoExpurgo() {
   const [executando, setExecutando] = useState(false);
   const [erro, setErro] = useState("");
   const [feito, setFeito] = useState("");
+  // P02: "nenhuma conversa" só depois de o servidor responder.
+  const [carregadoEm, setCarregadoEm] = useState<string | null>(null);
+  const [erroDaCarga, setErroDaCarga] = useState<{ tipo: FalhaDaCarga; detalhe: string | null } | null>(null);
+  const fase = faseDaCarga({
+    restaurado,
+    token,
+    carregando,
+    erro: erroDaCarga?.tipo ?? null,
+    temDados: Boolean(carregadoEm),
+  });
 
   const carregar = useCallback(
     async (tokenAtual: string) => {
       setCarregando(true);
-      setErro("");
+      setErroDaCarga(null);
 
+      let resposta: Response;
       try {
-        const resposta = await fetch("/api/admin/dados", {
+        resposta = await fetch("/api/admin/dados", {
           cache: "no-store",
           headers: { Authorization: `Bearer ${tokenAtual.trim()}` },
         });
-        const corpo = (await resposta.json().catch(() => null)) as
-          | { conversas?: Conversa[]; error?: string }
-          | null;
-
-        if (!resposta.ok) throw new Error(corpo?.error ?? "Não foi possível carregar as conversas.");
-
-        registrarResposta(true);
-        setConversas(corpo?.conversas ?? []);
-        setSelecionadas(new Set());
-      } catch (falha) {
-        setErro(falha instanceof Error ? falha.message : "Não foi possível carregar as conversas.");
-        setConversas([]);
-        registrarResposta(false);
-      } finally {
+      } catch {
+        setErroDaCarga({ tipo: "rede", detalhe: null });
         setCarregando(false);
+        return;
       }
+      const corpo = (await resposta.json().catch(() => null)) as
+        | { conversas?: Conversa[]; error?: string }
+        | null;
+      setCarregando(false);
+
+      if (!resposta.ok || !corpo || !Array.isArray(corpo.conversas)) {
+        const tipo = classificarFalha(resposta);
+        if (tipo === "negado") registrarResposta(false);
+        // A lista de antes FICA: apagá-la faria a tela afirmar "nenhuma conversa".
+        setErroDaCarga({ tipo, detalhe: corpo?.error ?? `HTTP ${resposta.status}` });
+        return;
+      }
+
+      registrarResposta(true);
+      setConversas(corpo.conversas);
+      setCarregadoEm(new Date().toISOString());
+      setSelecionadas(new Set());
     },
     [registrarResposta],
   );
@@ -300,6 +319,7 @@ export function CorpoDoExpurgo() {
                     type="checkbox"
                     checked={todasDentro}
                     onChange={() => alternarObra(obra.chave)}
+                    aria-label={`Selecionar todas as conversas da obra ${obra.rotulo}`}
                     className="size-3.5 accent-[var(--primary)]"
                   />
                   <span className="truncate text-sm font-semibold">{obra.rotulo}</span>
@@ -343,15 +363,17 @@ export function CorpoDoExpurgo() {
           );
         })}
 
-        {!carregando && conversas.length === 0 ? (
+        {carregadoEm && !carregando && conversas.length === 0 ? (
           <EmptyState description="Nenhuma conversa no servidor." className="py-10" />
         ) : null}
-        {carregando ? (
-          <p className="flex items-center gap-2 px-1 font-mono text-xs text-muted-foreground">
-            <Loader2 className="size-3.5 animate-spin" />
-            carregando…
-          </p>
-        ) : null}
+        <AvisoDaCarga
+          fase={fase}
+          erro={erroDaCarga?.tipo}
+          detalhe={erroDaCarga?.detalhe}
+          oque="as conversas do servidor"
+          atualizadoEm={carregadoEm}
+          onTentar={() => void carregar(token)}
+        />
       </div>
 
       {conversas.length > 0 ? (

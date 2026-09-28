@@ -1091,43 +1091,54 @@ textarea {
   display: none;
 }
 
+/*
+ * LOGIN NO CELULAR — auditoria UX/UI, G06 (28/09/2026).
+ *
+ * Abaixo de 1024px o login inteiro virava "Use o Nexo no desktop": quem
+ * recebia o link de um achado no celular não conseguia nem ENTRAR para lê-lo.
+ * O formulário agora aparece em coluna única; o painel de apresentação some, e
+ * o aviso vira uma nota curta que diz o que o celular faz bem (ler e tratar
+ * achados) e o que pede tela maior (montagem e mapa lado a lado).
+ */
 @media (max-width: 1024px) {
   .login-split-shell {
     display: flex;
+    flex-direction: column;
     min-height: 100dvh;
   }
 
-  .login-auth-panel,
   .login-media-panel {
     display: none;
   }
 
+  .login-auth-panel {
+    flex: 1;
+    padding: 28px 20px;
+    border-right: 0;
+  }
+
   .login-narrow-notice {
+    order: -1;
     width: 100%;
-    min-height: 100dvh;
     display: flex;
-    flex-direction: column;
-    justify-content: center;
-    padding: 32px 24px;
-    background: var(--background);
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--border);
+    background: var(--card);
   }
 
   .login-narrow-title {
-    margin-top: 20px;
-    max-width: 12ch;
-    font-size: 36px;
-    line-height: 1.1;
-    font-weight: 560;
-    letter-spacing: 0;
+    font-size: 0.875rem;
+    line-height: 1.35;
+    font-weight: 600;
     color: var(--foreground);
   }
 
   .login-narrow-copy {
-    margin-top: 12px;
-    max-width: 40ch;
-    font-size: 0.9375rem;
-    line-height: 1.65;
-    font-weight: 400;
+    margin-top: 2px;
+    font-size: 0.8125rem;
+    line-height: 1.5;
     color: var(--muted-foreground);
   }
 }
@@ -1419,6 +1430,31 @@ textarea {
     var(--nexo-sidebar-w) minmax(0, 1fr) 12px var(--nexo-copilot-w);
 }
 
+/* G05 -- AREAS RECOLHIDAS (28/09/2026). Recolher esconde a coluna e mantem o
+   no no DOM: o chat guarda historico, rascunho e rolagem. As colunas restantes
+   sao reescritas porque a colocacao na linha 2 e por ordem (auto-placement). */
+.nexo-shell[data-projetos-recolhidos] .nexo-shell__sidebar,
+.nexo-shell[data-chat-recolhido] .nexo-shell__splitter,
+.nexo-shell[data-chat-recolhido] .nexo-shell__copilot {
+  display: none;
+}
+
+.nexo-shell--welcome[data-projetos-recolhidos] {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.nexo-shell--active[data-projetos-recolhidos] {
+  grid-template-columns: minmax(0, 1fr) 12px var(--nexo-copilot-w);
+}
+
+.nexo-shell--active[data-chat-recolhido] {
+  grid-template-columns: var(--nexo-sidebar-w) minmax(0, 1fr);
+}
+
+.nexo-shell--active[data-projetos-recolhidos][data-chat-recolhido] {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 /* Coluna do separador arrastavel (ShellSplitter). Estreita de proposito: a alca
    e o tracinho central; a coluna so precisa dar area de clique. */
 .nexo-shell__splitter {
@@ -1460,6 +1496,17 @@ textarea {
   text-align: center;
 }
 
+.nexo-shell__nota-estreita {
+  display: none;
+  grid-row: 2;
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--muted-foreground);
+  border-bottom: 1px solid var(--border);
+}
+
 .nexo-shell__estreito-titulo {
   font-size: 1.125rem;
   font-weight: 500;
@@ -1497,6 +1544,28 @@ textarea {
 
   .nexo-shell__estreito {
     display: flex;
+  }
+
+  /* G06 (28/09/2026): parecer aberto por link. O palco volta, em coluna unica,
+     e o recado sai -- o achado recebido no celular se le e se trata aqui. */
+  .nexo-shell[data-leitura] {
+    grid-template-rows: auto auto minmax(0, 1fr);
+  }
+
+  .nexo-shell[data-leitura] .nexo-shell__stage {
+    display: block;
+    grid-row: 3;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 0 0.75rem 1rem;
+  }
+
+  .nexo-shell[data-leitura] .nexo-shell__nota-estreita {
+    display: block;
+  }
+
+  .nexo-shell[data-leitura] .nexo-shell__estreito {
+    display: none;
   }
 }
 

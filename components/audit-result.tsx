@@ -42,6 +42,9 @@ import { Dropdown, DropdownItem } from "@/components/ui/dropdown";
 import { Badge, badgeVariants } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { pinsDoDocumento } from "@/lib/pins-do-parecer";
+import { resolverFonte, type FonteDoCatalogo } from "@/lib/fonte-da-evidencia";
+import { linkDoAchado } from "@/lib/link-do-achado";
+import { formatarEmBrasilia } from "@/lib/fuso-de-brasilia";
 import { palavra, plural } from "@/lib/plural";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Pop } from "@/components/ui/pop";
@@ -107,8 +110,13 @@ type ActivePdf = {
   page: number;
   highlight?: string;
   label?: string;
+  /** O arquivo aberto e como ele foi identificado (A03/A10). */
+  arquivo?: string;
+  criterio?: "revisao" | "nome" | "unico";
   /** Gravidade do achado — pinta a marcação no documento. */
   severity?: StructuredFinding["severity"];
+  /** De qual achado da fila o visor está mostrando a evidência (A10). */
+  achado?: string;
 };
 
 /**
@@ -145,13 +153,19 @@ type AuditResultProps = {
    * página citada. Ausente = fontes mostradas como indisponíveis (nunca um link falso).
    */
   motorFonte?: {
-    hasRevision: (revisionId: string) => boolean;
+    hasRevision: (revisionId: string, fileName?: string) => boolean;
     aoAbrir: (nav: { revisionId: string; fileName: string; page: number; highlight: string | null }) => void;
   };
   auditId?: string;
   elapsedMs?: number;
   report?: AuditReport;
   pdfSources?: AuditPdfSource[];
+  /**
+   * O CATÁLOGO DAS FONTES, com a identidade de cada revisão (A02/A03). Quando
+   * vem, manda: achado legado e referência do motor resolvem por ele
+   * (`lib/fonte-da-evidencia.ts`). Ausente, `pdfSources` vira catálogo sem hash.
+   */
+  fontes?: FonteDoCatalogo[];
   /**
    * Achados que o engenheiro já corrigiu no memorial (por `refId`).
    *
@@ -237,6 +251,8 @@ type StructuredFinding = {
   /** Por que esta faixa — ver `lib/severidade.ts`. */
   severityReason?: string;
   pdfUrl?: string;
+  /** Por que não há fonte para abrir, quando há catálogo e ela não resolve. */
+  semFonte?: string;
   raw: string;
 };
 
@@ -264,7 +280,31 @@ type SavedFeedback = {
   resolutionKind: DesfechoDoAchado | null;
   /** Quem encerrou, já resolvido em nome pela rota. */
   resolvedByName: string | null;
+  /** Quantos comentários a conversa do achado tem (A08: a fila mostra sem abrir). */
+  comentarios?: number;
+  assignedAt?: string | null;
+  notifiedAt?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
 };
+
+/** Como a fila de achados é ordenada (A04). */
+type OrdemDaFila = "impacto" | "pagina" | "documento" | "referencia";
+/** A situação operacional de um achado na fila (A04). */
+type SituacaoDaFila = "todos" | "meus" | "sem-responsavel" | "pendentes" | "encerrados";
+const SITUACOES_DA_FILA: { valor: SituacaoDaFila; rotulo: string }[] = [
+  { valor: "todos", rotulo: "Todos" },
+  { valor: "meus", rotulo: "Meus pendentes" },
+  { valor: "sem-responsavel", rotulo: "Sem responsável" },
+  { valor: "pendentes", rotulo: "Pendentes" },
+  { valor: "encerrados", rotulo: "Encerrados" },
+];
+type AbaDoDetalhe = "evidencia" | "conversa" | "historico";
+
+/** Texto comparável: sem acento, minúsculo — a busca da fila não exige grafia exata. */
+function paraBusca(texto: string) {
+  return texto.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
+}
 
 type DesfechoDoAchado = "FIXED_IN_DOC" | "FALSE_POSITIVE" | "ACCEPTED_RISK";
 
@@ -726,35 +766,6 @@ function getFirstPageNumber(value?: string) {
   return Number.isFinite(page) && page > 0 ? page : null;
 }
 
-function normalizeFileName(value: string) {
-  return normalizeText(value).replace(/\s+/g, " ").trim();
-}
-
-function findPdfSource(
-  finding: StructuredFinding,
-  pdfSources: AuditPdfSource[],
-) {
-  if (pdfSources.length === 0) {
-    return null;
-  }
-
-  const documentName = normalizeFileName(finding.documento ?? "");
-
-  if (documentName) {
-    const directMatch = pdfSources.find((source) => {
-      const sourceName = normalizeFileName(source.name);
-
-      return sourceName === documentName || documentName.includes(sourceName);
-    });
-
-    if (directMatch) {
-      return directMatch;
-    }
-  }
-
-  return pdfSources.length === 1 ? pdfSources[0] : null;
-}
-
 function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
@@ -885,7 +896,7 @@ async function createFindingSnapshot(
 <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
   <rect width="100%" height="100%" fill="#0B0D0E"/>
   <rect x="40" y="40" width="${width - 80}" height="${height - 80}" rx="10" fill="#171B1D" stroke="rgba(230,235,233,0.14)"/>
-  <text x="76" y="88" fill="#8A9490" font-family="'IBM Plex Mono', ui-monospace, monospace" font-size="18">Nexo | evidência de auditoria</text>
+  <text x="76" y="88" fill="#8A9490" font-family="'IBM Plex Mono', ui-monospace, monospace" font-size="18">Nexo | cartão do achado — texto do parecer, não captura do documento</text>
   ${lines
     .map((line, lineIndex) => {
       const isTitle = lineIndex === 0;
@@ -1206,6 +1217,86 @@ async function abrirParecerEmPdf(report: AuditReport): Promise<string | null> {
   }
 }
 
+/**
+ * O HISTÓRICO DE UM ACHADO — auditoria UX/UI, A05/A07.
+ *
+ * Sai da linha de feedback que o servidor já devolve (atribuição, aviso,
+ * encerramento, nota), com data e autor quando o banco os tem. Não inventa o
+ * que não foi gravado: o veredito não guarda autor, e a frase diz isso.
+ */
+function HistoricoDoAchado({
+  registro,
+  herdadoDe,
+  desfecho,
+}: {
+  registro?: SavedFeedback;
+  herdadoDe?: string;
+  desfecho?: { kind: DesfechoDoAchado; por: string | null };
+}) {
+  const quando = (iso?: string | null) =>
+    iso ? formatarEmBrasilia(iso, { dateStyle: "short", timeStyle: "short" }) : null;
+  const eventos: { chave: string; texto: string; data?: string | null }[] = [];
+  if (herdadoDe) {
+    eventos.push({ chave: "herdado", texto: `Herdado da auditoria de ${herdadoDe}: o capítulo não mudou desde lá.` });
+  }
+  if (registro?.verdict && registro.verdict !== "MISSING_FINDING") {
+    eventos.push({
+      chave: "validade",
+      texto: `Validade: ${VEREDITO_LABEL[registro.verdict]} (o autor do julgamento não é registrado).`,
+      data: registro.updatedAt,
+    });
+  }
+  if (registro?.assigneeEmail) {
+    eventos.push({
+      chave: "atribuido",
+      texto: `Atribuído a ${registro.assigneeName ?? registro.assigneeEmail}.`,
+      data: registro.assignedAt,
+    });
+  }
+  if (registro?.notifiedAt) {
+    eventos.push({ chave: "avisado", texto: "Aviso por e-mail enviado a quem recebeu.", data: registro.notifiedAt });
+  }
+  if (registro?.resolvedAt || desfecho) {
+    const tipo = desfecho?.kind ?? registro?.resolutionKind ?? null;
+    const por = desfecho?.por ?? registro?.resolvedByName ?? null;
+    const rotulo =
+      tipo === "ACCEPTED_RISK"
+        ? "Decisão técnica registrada"
+        : tipo === "FALSE_POSITIVE"
+          ? "Encerrado como falso positivo"
+          : "Correção informada";
+    eventos.push({
+      chave: "encerrado",
+      texto: `${rotulo}${por ? ` por ${por}` : ""}.${registro?.note ? ` Motivo: ${registro.note}` : ""}`,
+      data: registro?.resolvedAt,
+    });
+  }
+
+  return (
+    <div className="grid gap-2 p-4" data-historico-do-achado>
+      {eventos.length === 0 ? (
+        <p className="m-0 text-sm text-muted-foreground">
+          Nada registrado ainda. Julgamento, atribuição, aviso e encerramento aparecem aqui com data.
+        </p>
+      ) : (
+        <ol className="m-0 grid list-none gap-2 p-0">
+          {eventos.map((e) => (
+            <li key={e.chave} className="flex flex-wrap gap-x-3 text-sm leading-6">
+              <span className="min-w-[8.5rem] font-mono text-xs leading-6 text-muted-foreground">
+                {quando(e.data) ?? "—"}
+              </span>
+              <span className="min-w-0 flex-1 text-foreground">{e.texto}</span>
+            </li>
+          ))}
+        </ol>
+      )}
+      <p className="m-0 text-xs text-muted-foreground">
+        Encerramentos e reaberturas também entram na aba Conversa, com o nome de quem fez.
+      </p>
+    </div>
+  );
+}
+
 export function AuditResult({
   content,
   auditId,
@@ -1217,7 +1308,8 @@ export function AuditResult({
   view: viewDeFora,
   onViewChange,
   achadoEmFoco,
-  motorFonte,
+  motorFonte: motorFonteDeFora,
+  fontes,
 }: AuditResultProps) {
   const [viewLocal, setViewLocal] = useState<AuditView>("summary");
   /*
@@ -1251,11 +1343,35 @@ export function AuditResult({
   const [focoAnterior, setFocoAnterior] = useState<string | undefined>(
     undefined,
   );
+  /*
+   * FILA + DETALHE (A04/A07/A08). `escolhido` é a chave do achado aberto no
+   * detalhe; `vistaEstreita` decide o que aparece quando a coluna não comporta
+   * os dois; o rascunho de comentário mora aqui para sobreviver à troca de
+   * achado e de aba.
+   */
+  const [escolhido, setEscolhido] = useState<string | undefined>(achadoEmFoco);
+  const [vistaEstreita, setVistaEstreita] = useState<"lista" | "detalhe">(
+    achadoEmFoco ? "detalhe" : "lista",
+  );
+  const [abaDoDetalhe, setAbaDoDetalhe] = useState<AbaDoDetalhe>("evidencia");
+  const [rascunhos, setRascunhos] = useState<Record<string, string>>({});
+  const [comentariosPorAchado, setComentariosPorAchado] = useState<Record<string, number>>({});
+  const [historicoPorAchado, setHistoricoPorAchado] = useState<Record<string, SavedFeedback>>({});
+  const [busca, setBusca] = useState("");
+  const [situacao, setSituacao] = useState<SituacaoDaFila>("todos");
+  const [responsavelFiltro, setResponsavelFiltro] = useState("");
+  const [ordem, setOrdem] = useState<OrdemDaFila>("impacto");
   if (achadoEmFoco !== focoAnterior) {
     setFocoAnterior(achadoEmFoco);
     // Só o caso NÃO controlado: o foco vem do clique no canvas, e ali o parecer
     // mora no drawer, dono da própria vista.
     if (achadoEmFoco && !controlado) setViewLocal("findings");
+    // O achado pedido vira o DETALHE (A07), e em coluna estreita o detalhe
+    // aparece no lugar da fila.
+    if (achadoEmFoco) {
+      setEscolhido(achadoEmFoco);
+      setVistaEstreita("detalhe");
+    }
   }
 
   // A rolagem é sincronizar com o DOM — aí sim, efeito. Roda depois de a lista
@@ -1444,10 +1560,24 @@ export function AuditResult({
   const findings = report
     ? report.incongruencias.map(reportFindingToStructured)
     : splitFindings(parsed.findings);
-  const findingsWithPdf = findings.map((finding) => ({
-    ...finding,
-    pdfUrl: findPdfSource(finding, pdfSources)?.url,
-  }));
+  /*
+   * UMA REGRA PARA A FONTE DE TODO ACHADO (A02/A03). `findPdfSource` caía no
+   * único PDF disponível mesmo quando o achado citava OUTRO arquivo; agora o
+   * achado que não tem fonte diz por quê (`semFonte`), em vez de abrir a errada.
+   */
+  const catalogo: FonteDoCatalogo[] =
+    fontes ??
+    pdfSources.map((s) => ({ nome: s.name, url: s.url, checksum: null, origem: "local" as const }));
+  const fonteDoAchado = (finding: StructuredFinding) =>
+    resolverFonte({ arquivo: finding.documento }, catalogo);
+  const findingsWithPdf = findings.map((finding) => {
+    const fonte = fonteDoAchado(finding);
+    return {
+      ...finding,
+      pdfUrl: fonte.tipo === "arquivo" ? fonte.fonte.url : undefined,
+      semFonte: fonte.tipo === "ausente" && catalogo.length > 0 ? fonte.frase : undefined,
+    };
+  });
   // Item 2/4 — duas camadas: sólidos (principal) e sugestões da IA (recolhível).
   const principalFindingsWithPdf = findingsWithPdf.filter(
     (finding) => finding.tier !== "sugestao",
@@ -1519,15 +1649,82 @@ export function AuditResult({
       (finding) => findingImpactBucket(finding) === impact,
     ),
   );
-  const filteredPrincipal = principalFindingsWithPdf.filter(
+  /*
+   * SITUAÇÃO OPERACIONAL (A04). Encerrado = corrigido aqui, corrigido noutra
+   * máquina, ou com desfecho gravado — a mesma soma de `estaResolvido`, mais o
+   * desfecho. "Meus pendentes" é o que está COM quem lê e ainda não fechou.
+   */
+  const encerradoNaFila = (refId?: string) =>
+    Boolean(refId) &&
+    (resolvidos.has(refId!) || resolvidosNoServidor.has(refId!) || Boolean(desfechoPorAchado[refId!]));
+  const rotuloDoResponsavel = (refId?: string) => {
+    const r = refId ? atribuidoPor[refId] : undefined;
+    return r ? (r.souEu ? "você" : r.nome) : "";
+  };
+  const casaSituacao = (finding: StructuredFinding, s: SituacaoDaFila) => {
+    const fechado = encerradoNaFila(finding.refId);
+    const dono = finding.refId ? atribuidoPor[finding.refId] : undefined;
+    if (s === "todos") return true;
+    if (s === "encerrados") return fechado;
+    if (fechado) return false;
+    if (s === "meus") return Boolean(dono?.souEu);
+    if (s === "sem-responsavel") return !dono;
+    return true;
+  };
+  const termo = paraBusca(busca.trim());
+  const casaBusca = (finding: StructuredFinding) =>
+    !termo ||
+    paraBusca(
+      [
+        finding.refId,
+        finding.title,
+        finding.descricao,
+        finding.evidencia,
+        finding.documento,
+        finding.local,
+        finding.conflito,
+        finding.acao,
+        finding.pagina ? `pagina ${finding.pagina} pag ${finding.pagina} p.${finding.pagina}` : "",
+      ]
+        .filter(Boolean)
+        .join(" | "),
+    ).includes(termo);
+  const semSituacao = principalFindingsWithPdf.filter(
     (finding) =>
       (disciplineFilter.size === 0 ||
         disciplineFilter.has(findingDiscipline(finding))) &&
       (errorTypeFilter.size === 0 ||
         errorTypeFilter.has(findingErrorType(finding))) &&
       (impactFilter.size === 0 ||
-        impactFilter.has(findingImpactBucket(finding))),
+        impactFilter.has(findingImpactBucket(finding))) &&
+      casaBusca(finding) &&
+      (!responsavelFiltro || rotuloDoResponsavel(finding.refId) === responsavelFiltro),
   );
+  const filteredPrincipal = semSituacao.filter((finding) => casaSituacao(finding, situacao));
+  const contagemDaSituacao = (s: SituacaoDaFila) =>
+    semSituacao.filter((finding) => casaSituacao(finding, s)).length;
+  const responsaveisPresentes = [
+    ...new Set(
+      principalFindingsWithPdf
+        .map((f) => (encerradoNaFila(f.refId) ? "" : rotuloDoResponsavel(f.refId)))
+        .filter(Boolean),
+    ),
+  ].sort((a, b) => (a === "você" ? -1 : b === "você" ? 1 : a.localeCompare(b, "pt-BR")));
+  const filtrosAtivos =
+    disciplineFilter.size > 0 ||
+    errorTypeFilter.size > 0 ||
+    impactFilter.size > 0 ||
+    Boolean(termo) ||
+    Boolean(responsavelFiltro) ||
+    situacao !== "todos";
+  const limparFiltros = () => {
+    setDisciplineFilter(new Set());
+    setErrorTypeFilter(new Set());
+    setImpactFilter(new Set());
+    setBusca("");
+    setResponsavelFiltro("");
+    setSituacao("todos");
+  };
   /*
    * Agrupamento primário: FAIXA DE IMPACTO, não disciplina.
    *
@@ -1545,7 +1742,21 @@ export function AuditResult({
    * achados do mesmo capítulo fiquem vizinhos e o engenheiro corrija em lote.
    */
   const impactOrder = IMPACT_SECTIONS.map((section) => section.key);
+  const primeiraPagina = (f: StructuredFinding) =>
+    getFirstPageNumber(f.pagina) ?? Number.MAX_SAFE_INTEGER;
+  const numeroDaRef = (f: StructuredFinding) =>
+    Number.parseInt((f.refId ?? "").replace(/[^0-9]+/g, ""), 10) || Number.MAX_SAFE_INTEGER;
   const groupedPrincipal = [...filteredPrincipal].sort((a, b) => {
+    if (ordem === "pagina") {
+      return primeiraPagina(a) - primeiraPagina(b) || numeroDaRef(a) - numeroDaRef(b);
+    }
+    if (ordem === "documento") {
+      return (
+        (a.documento ?? "").localeCompare(b.documento ?? "", "pt-BR") ||
+        primeiraPagina(a) - primeiraPagina(b)
+      );
+    }
+    if (ordem === "referencia") return numeroDaRef(a) - numeroDaRef(b);
     const porFaixa =
       impactOrder.indexOf(findingImpactBucket(a)) -
       impactOrder.indexOf(findingImpactBucket(b));
@@ -1749,6 +1960,12 @@ export function AuditResult({
         );
 
         setFeedbackByFinding(saved);
+        setComentariosPorAchado(
+          Object.fromEntries(linhas.map((item) => [item.findingId as string, item.comentarios ?? 0])),
+        );
+        setHistoricoPorAchado(
+          Object.fromEntries(linhas.map((item) => [item.findingId as string, item])),
+        );
         setAtribuidoPor(
           Object.fromEntries(
             linhas
@@ -1953,6 +2170,44 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
     Boolean(refId) &&
     (resolvidos.has(refId!) || resolvidosNoServidor.has(refId!));
 
+  /** A chave estável de um achado na fila — a referência, ou o texto cru. */
+  const chaveDoAchado = (f: StructuredFinding) => f.refId ?? `raw:${f.raw.slice(0, 120)}`;
+  /*
+   * O DETALHE: o escolhido, se ainda existir; senão o primeiro da fila. Um
+   * escolhido que o filtro escondeu continua aberto — tirar o achado da frente
+   * de quem o está lendo porque mexeu num filtro seria perder o lugar.
+   */
+  const achadoDoDetalhe =
+    groupedPrincipal.find((f) => chaveDoAchado(f) === escolhido) ??
+    principalFindingsWithPdf.find((f) => chaveDoAchado(f) === escolhido) ??
+    groupedPrincipal[0];
+  const chaveDoDetalhe = achadoDoDetalhe ? chaveDoAchado(achadoDoDetalhe) : undefined;
+  const indiceDoDetalhe = achadoDoDetalhe
+    ? Math.max(0, groupedPrincipal.indexOf(achadoDoDetalhe))
+    : 0;
+  function abrirNoDetalhe(chave: string) {
+    setEscolhido(chave);
+    setVistaEstreita("detalhe");
+    requestAnimationFrame(() => {
+      const alvo = document.querySelector<HTMLElement>("[data-detalhe-do-achado]");
+      alvo?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
+  /** Tratamento em uma frase: com quem está, ou como fechou (A05). */
+  const situacaoLegivel = (finding: StructuredFinding) => {
+    const ref = finding.refId;
+    if (ref && desfechoPorAchado[ref]) {
+      const d = desfechoPorAchado[ref];
+      const rotulo = d.kind === "FIXED_IN_DOC" ? "Correção informada" : DESFECHO_LABEL[d.kind];
+      return `${rotulo}${d.por ? ` · ${d.por}` : ""}`;
+    }
+    if (estaResolvido(ref)) return "Correção informada";
+    if (ref && atribuidoPor[ref]) {
+      return atribuidoPor[ref].souEu ? "Pendente · com você" : `Pendente · com ${atribuidoPor[ref].nome}`;
+    }
+    return "Pendente · sem responsável";
+  };
+
   /**
    * Marca (ou desmarca) o achado como corrigido nos DOIS lugares.
    *
@@ -2090,6 +2345,9 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
     });
   }
 
+  const nomeDoDestinatario =
+    membros.find((m) => m.email === destinatario)?.name ?? destinatario;
+
   async function enviarSelecionados() {
     if (!auditId || !destinatario || selecionados.size === 0) {
       return;
@@ -2157,9 +2415,14 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
        * sessão, e "22 achados enviados" não diz se foram para o Milton ou para
        * o Victor. `rotulo.nome` é o mesmo texto que o seletor mostrava.
        */
+      const pedidos = selecionados.size;
+      const feitos = payload?.atribuidos ?? 0;
       setPop({
-        tom: "ok",
-        texto: `${plural(payload?.atribuidos ?? 0, "achado enviado", "achados enviados")} para ${rotulo.nome}. ${palavra(payload?.atribuidos ?? 0, "Aparece", "Aparecem")} na home de quem recebeu.`,
+        tom: feitos === pedidos ? "ok" : "falha",
+        texto:
+          feitos === pedidos
+            ? `${plural(feitos, "achado atribuído", "achados atribuídos")} a ${rotulo.nome}. ${palavra(feitos, "Aparece", "Aparecem")} na home de quem recebeu; ninguém recebeu e-mail ainda.`
+            : `${feitos} de ${pedidos} achados atribuídos a ${rotulo.nome}. ${pedidos - feitos} não ${palavra(pedidos - feitos, "entrou", "entraram")} — confira a situação na fila.`,
       });
     } catch (error) {
       // A falha FICA na tela: a seleção não foi zerada, e o motivo é a única
@@ -2325,16 +2588,34 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
   }
 
   /*
+   * O LINK DE UM ACHADO, copiado — G04. Mesmo contrato do e-mail e da home
+   * (`lib/link-do-achado.ts`), com a origem desta janela. A confirmação vai no
+   * pop, que é o canal de resultado desta tela; falha de área de transferência
+   * (permissão negada) também aparece, e com o link para copiar à mão.
+   */
+  async function copiarLinkDoAchado(findingId: string) {
+    if (!auditId) return;
+    const link = linkDoAchado({ base: window.location.origin, auditId, findingId });
+    try {
+      await navigator.clipboard.writeText(link);
+      setPop({ tom: "ok", texto: `Link do achado ${findingId} copiado.` });
+    } catch {
+      setPop({ tom: "falha", texto: `Não deu para copiar. O link é: ${link}` });
+    }
+  }
+
+  /*
    * `pagina` opcional: a fita de páginas manda o número EXATO em que clicaram.
    * Sem ela, o visor continua abrindo na primeira do achado, que é o que todo
    * o resto da tela faz — a fita é o único lugar que conhece as outras.
    */
   function openInlinePdf(finding: StructuredFinding, pagina?: number) {
-    const source = findPdfSource(finding, pdfSources);
+    const resolvida = fonteDoAchado(finding);
 
-    if (!source) {
+    if (resolvida.tipo !== "arquivo") {
       return;
     }
+    const source = resolvida.fonte;
 
     // Trocar de documento zera a régua: o número de páginas é do PDF, e o
     // próximo `onNumPages` é quem a reconstrói.
@@ -2345,8 +2626,60 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
       highlight: getHighlightNeedle(finding),
       label: finding.title,
       severity: finding.severity,
+      arquivo: source.nome,
+      criterio: resolvida.criterio,
+      achado: chaveDoAchado(finding),
     });
   }
+
+  /*
+   * A SEQUÊNCIA DO VISOR (A10): os achados da fila FILTRADA que têm documento,
+   * na ordem da fila. Anterior/próximo abrem o documento do vizinho sem fechar
+   * o visor, preservam zoom e filtro, e levam o detalhe junto.
+   */
+  const sequenciaDoVisor = groupedPrincipal.filter((f) => Boolean(f.pdfUrl));
+  const posicaoNoVisor = activePdf?.achado
+    ? sequenciaDoVisor.findIndex((f) => chaveDoAchado(f) === activePdf.achado)
+    : -1;
+  function irNoVisor(delta: number) {
+    const alvo = sequenciaDoVisor[posicaoNoVisor + delta];
+    if (!alvo) return;
+    setEscolhido(chaveDoAchado(alvo));
+    openInlinePdf(alvo);
+  }
+
+  /*
+   * A FONTE DO MOTOR NOVO, ligada de verdade (A03). `motorFonte` era prop sem
+   * chamador: os cartões recebiam `hasRevision: () => false` e diziam "arquivo
+   * indisponível" com o arquivo guardado. Agora a disponibilidade e a abertura
+   * saem do MESMO catálogo do visor — revisão pelo hash; nome só sem hash.
+   */
+  const motorFonte = motorFonteDeFora ?? {
+    hasRevision: (revisionId: string, fileName?: string) =>
+      resolverFonte({ revisao: revisionId, arquivo: fileName }, catalogo).tipo === "arquivo",
+    aoAbrir: (nav: {
+      revisionId: string;
+      fileName: string;
+      page: number;
+      highlight: string | null;
+    }) => {
+      const r = resolverFonte({ revisao: nav.revisionId, arquivo: nav.fileName }, catalogo);
+      if (r.tipo !== "arquivo") {
+        setPop({ tom: "falha", texto: r.frase });
+        return;
+      }
+      setPaginasDoAberto((atual) => (r.fonte.url === activePdf?.url ? atual : 0));
+      setActivePdf({
+        url: r.fonte.url,
+        page: nav.page,
+        highlight: nav.highlight ?? undefined,
+        label: nav.fileName,
+        arquivo: r.fonte.nome,
+        criterio: r.criterio,
+        achado: chaveDoDetalhe,
+      });
+    },
+  };
 
   /*
    * OS ACHADOS DO DOCUMENTO ABERTO, na ordem das páginas.
@@ -2383,8 +2716,16 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
             <div className="fixed inset-y-0 right-0 z-50 flex w-full max-w-[560px] flex-col border-l bg-card shadow-2xl">
               <div className="flex items-center justify-between gap-2 border-b px-4 py-2">
                 <div className="min-w-0">
-                  <p className="truncate font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
-                    PDF · página {activePdf.page}
+                  <p
+                    className="truncate font-mono text-[11px] uppercase tracking-wider text-muted-foreground"
+                    title={activePdf.arquivo}
+                  >
+                    {activePdf.arquivo ?? "PDF"} · página {activePdf.page}
+                    {activePdf.criterio === "nome"
+                      ? " · identificado pelo nome"
+                      : activePdf.criterio === "revisao"
+                        ? " · revisão auditada"
+                        : ""}
                   </p>
                   {activePdf.label ? (
                     <p className="truncate text-xs text-foreground">
@@ -2401,6 +2742,39 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
                   <X className="size-4" />
                 </button>
               </div>
+              {posicaoNoVisor >= 0 ? (
+                <div
+                  className="flex items-center justify-between gap-2 border-b px-3 py-1.5"
+                  data-sequencia-do-visor
+                >
+                  <span className="font-mono text-[11px] text-muted-foreground" aria-live="polite">
+                    Achado {posicaoNoVisor + 1} de {sequenciaDoVisor.length}
+                    {activePdf.achado && !activePdf.achado.startsWith("raw:") ? ` · ${activePdf.achado}` : ""}
+                  </span>
+                  <span className="flex gap-1">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      disabled={posicaoNoVisor <= 0}
+                      onClick={() => irNoVisor(-1)}
+                    >
+                      <ChevronLeft aria-hidden />
+                      Achado anterior
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      disabled={posicaoNoVisor >= sequenciaDoVisor.length - 1}
+                      onClick={() => irNoVisor(1)}
+                    >
+                      Próximo achado
+                      <ChevronRight aria-hidden />
+                    </Button>
+                  </span>
+                </div>
+              ) : null}
               {/*
             A BARRA DE NAVEGAÇÃO DO DOCUMENTO.
 
@@ -2747,11 +3121,9 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
               size="sm"
               onClick={() => setConfirmandoAviso((aberto) => !aberto)}
               aria-expanded={confirmandoAviso}
-              aria-label={`Avisar por e-mail ${plural(pendentesDeAviso.length, "pessoa envolvida", "pessoas envolvidas")}`}
             >
               <Mail />
-              Avisar{" "}
-              {plural(pendentesDeAviso.length, "envolvido", "envolvidos")}
+              Notificar por e-mail ({pendentesDeAviso.length})
             </Button>
           ) : null}
           <Dropdown
@@ -2917,16 +3289,15 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
                 type="button"
                 loading={avisando}
                 onClick={() => void avisarOsEnvolvidos()}
-                aria-label="Confirmar e enviar os avisos por e-mail"
               >
                 <Mail aria-hidden />
-                Enviar {plural(pendentesDeAviso.length, "aviso", "avisos")}
+                Notificar {plural(pendentesDeAviso.length, "pessoa", "pessoas")} por e-mail
               </Button>
               <Button
                 type="button"
                 variant="ghost"
                 onClick={() => setConfirmandoAviso(false)}
-                aria-label="Cancelar o envio dos avisos"
+                aria-label="Cancelar a notificação por e-mail"
               >
                 Cancelar
               </Button>
@@ -3231,6 +3602,23 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
 
         {view === "findings" ? (
           <SectionCard title="Matriz de achados" icon={MapPin}>
+            {/*
+              O ACHADO PEDIDO QUE NÃO ESTÁ AQUI — auditoria UX/UI, G04.
+              Um link antigo pode apontar para um achado que a reauditoria
+              removeu. Sem esta faixa a lista abria sem destaque nenhum, e a
+              pessoa não sabia se o link falhou ou se o achado sumiu.
+            */}
+            {achadoEmFoco && !findingsWithPdf.some((f) => f.refId === achadoEmFoco) ? (
+              <p
+                role="status"
+                data-achado-ausente={achadoEmFoco}
+                className="mb-4 nx-cut-6 bg-[var(--status-warning-bg)] px-3 py-2 text-sm leading-6 text-foreground"
+              >
+                O achado <span className="font-mono">{achadoEmFoco}</span> não está neste
+                parecer — pode ter sido removido numa reauditoria. A auditoria inteira
+                continua abaixo.
+              </p>
+            ) : null}
             {findings.length > 0 ? (
               <div className="space-y-4">
                 <div
@@ -3246,9 +3634,11 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
                     Como ler
                   </p>
                   <p className="mt-2 text-sm leading-6 text-foreground">
-                    Cada linha mostra o problema, onde conferir, a evidência
-                    encontrada, o conflito e a ação recomendada. Use o termo de
-                    busca para localizar o trecho no PDF.
+                    A fila resume cada achado: o que é, onde e com quem está.
+                    O detalhe mostra a evidência primeiro, com a conversa e o
+                    histórico em abas. <strong className="font-medium">Validade</strong>{" "}
+                    diz se o achado está certo; <strong className="font-medium">Tratamento</strong>{" "}
+                    diz o que foi feito na obra — um não implica o outro.
                   </p>
                 </div>
 
@@ -3259,7 +3649,7 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
                      inteira ao focar um deles (ver DESIGN.md §7). */
                   <div className="nx-cut-8 space-y-2 bg-[var(--nexodoc-recessed)] p-3">
                     <div className="flex flex-wrap items-center gap-1.5">
-                      <span className="mr-1 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                      <span className="mr-1 font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
                         Gravidade
                       </span>
                       {presentImpacts.map((impact) => (
@@ -3267,6 +3657,7 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
                           key={impact}
                           type="button"
                           data-filtro-gravidade={impact}
+                          aria-pressed={impactFilter.has(impact)}
                           onClick={() =>
                             setImpactFilter((current) =>
                               toggleFrom(current, impact),
@@ -3284,13 +3675,14 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
                       ))}
                     </div>
                     <div className="flex flex-wrap items-center gap-1.5">
-                      <span className="mr-1 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                      <span className="mr-1 font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
                         Disciplina
                       </span>
                       {presentDisciplines.map((discipline) => (
                         <button
                           key={discipline}
                           type="button"
+                          aria-pressed={disciplineFilter.has(discipline)}
                           onClick={() =>
                             setDisciplineFilter((current) =>
                               toggleFrom(current, discipline),
@@ -3309,13 +3701,14 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
                       ))}
                     </div>
                     <div className="flex flex-wrap items-center gap-1.5">
-                      <span className="mr-1 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                      <span className="mr-1 font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
                         Tipo
                       </span>
                       {presentErrorTypes.map((type) => (
                         <button
                           key={type}
                           type="button"
+                          aria-pressed={errorTypeFilter.has(type)}
                           onClick={() =>
                             setErrorTypeFilter((current) =>
                               toggleFrom(current, type),
@@ -3336,11 +3729,7 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
                       impactFilter.size > 0 ? (
                         <button
                           type="button"
-                          onClick={() => {
-                            setDisciplineFilter(new Set());
-                            setErrorTypeFilter(new Set());
-                            setImpactFilter(new Set());
-                          }}
+                          onClick={limparFiltros}
                           className="ml-1 rounded-full px-2 py-1 font-mono text-[11px] text-primary outline-none hover:underline focus-visible:underline"
                         >
                           limpar filtros
@@ -3351,334 +3740,296 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
                 ) : null}
 
                 {/*
-                  A LINHA DE SELEÇÃO EM MASSA, colada nos filtros — e não na
-                  barra do rodapé.
+                  ORGANIZAR A FILA — auditoria UX/UI, A04 (28/09/2026).
 
-                  Ela age sobre exatamente o que os filtros acabaram de
-                  produzir, então mora ao lado deles. Na barra do rodapé ela
-                  chegaria tarde: a barra só existe DEPOIS de haver seleção, e o
-                  problema é justamente o primeiro clique.
-
-                  Ela some quando não há nada a marcar — uma lista inteira de
-                  achados já resolvidos não tem massa para selecionar, e um
-                  controle que não faz nada é pior que controle nenhum.
+                  Busca por referência, texto, documento ou página; situação
+                  operacional (Meus pendentes, Sem responsável, Encerrados) e
+                  responsável; ordem declarada. A contagem "Mostrando N de M"
+                  diz o tamanho do recorte, e a seleção em lote diz que vale para
+                  OS FILTRADOS — não para a página nem para o parecer inteiro.
                 */}
-                {enviaveisDoFiltro.length > 0 ? (
-                  <div className="flex items-center justify-end">
-                    <button
-                      type="button"
-                      onClick={alternarTodosDoFiltro}
-                      aria-pressed={todosDoFiltroMarcados}
-                      className="nx-cut-6 px-2.5 py-1 font-mono text-[11px] uppercase tracking-[0.05em] text-muted-foreground outline-none transition-colors duration-[var(--duration-fast)] hover:text-foreground focus-visible:text-foreground"
-                    >
-                      {todosDoFiltroMarcados
-                        ? `Desmarcar ${enviaveisDoFiltro.length}`
-                        : /*
-                            O NÚMERO NO RÓTULO, e não só "selecionar todos": com
-                            filtro ligado, "todos" é ambíguo entre os 44 do
-                            parecer e os 9 da tela. O número diz qual dos dois
-                            sem precisar de outra frase.
-                          */
-                          `Selecionar ${enviaveisDoFiltro.length} ${enviaveisDoFiltro.length === 1 ? "achado" : "achados"}`}
-                    </button>
-                  </div>
-                ) : null}
-
-                <div className="grid gap-4">
-                  {groupedPrincipal.length === 0 ? (
-                    <EmptyState
-                      description="Nenhum achado com os filtros selecionados."
-                      className="py-8"
+                <div className="grid gap-2" data-organizar-fila>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <label htmlFor="busca-de-achados" className="sr-only">
+                      Buscar achado
+                    </label>
+                    <Input
+                      id="busca-de-achados"
+                      type="search"
+                      value={busca}
+                      onChange={(event) => setBusca(event.target.value)}
+                      placeholder="Buscar por referência, texto, documento ou página"
+                      className="min-w-[14rem] flex-1"
                     />
-                  ) : null}
-                  {groupedPrincipal.map((finding, index) => {
-                    const disciplina = findingDiscipline(finding);
-                    const paginas = paginasDoAchado({
-                      pagina: finding.pagina,
-                      referencia: finding.referencia,
-                    });
-                    const faixa = findingImpactBucket(finding);
-                    const secao = IMPACT_SECTIONS.find(
-                      (item) => item.key === faixa,
-                    );
-                    const showImpactHeader =
-                      index === 0 ||
-                      findingImpactBucket(groupedPrincipal[index - 1]) !==
-                        faixa;
-                    return (
-                      <Fragment key={`${finding.raw}-matrix-${index}`}>
-                        {showImpactHeader && secao ? (
-                          /*
-                           * O cabeçalho da faixa é o marcador de leitura da tela.
-                           * O bloqueador ganha o tom destrutivo porque é o único
-                           * que interrompe a entrega; os outros dois ficam
-                           * discretos de propósito, para não competirem com ele.
-                           */
-                          <div
-                            data-faixa={faixa}
-                            className="mt-4 first:mt-0 flex flex-col gap-1 border-l-2 pl-3"
-                            style={{
-                              borderColor:
-                                faixa === "critico_documental"
-                                  ? "var(--destructive)"
-                                  : "var(--border)",
-                            }}
-                          >
-                            <h5
-                              className={cn(
-                                "font-mono text-[11px] font-semibold uppercase tracking-wider",
-                                faixa === "critico_documental"
-                                  ? "text-destructive"
-                                  : "text-muted-foreground",
-                              )}
-                            >
-                              {secao.title} ({impactCount(faixa)})
-                            </h5>
-                            <p className="text-xs text-muted-foreground">
-                              {secao.hint}
-                            </p>
-                          </div>
-                        ) : null}
-                        {/*
-                      AS AÇÕES SAEM DE DENTRO DO CARTÃO e viram uma barra
-                      acima dele.
-
-                      É a organização do desenho "Nexo - Achados", e o ganho é
-                      de leitura: no cabeçalho, os botões disputavam a linha
-                      com as etiquetas e o título ficava sem largura. Separadas,
-                      a identidade do achado (o que é, onde dói) ocupa o cartão
-                      inteiro e o que se FAZ com ele fica em cima, no mesmo
-                      lugar em todos os cartões.
-
-                      A forma do desenho, não: ele recorta as ações como aba
-                      (canto superior esquerdo E direito), e o chanfro desta
-                      casa é sempre superior-esquerdo + inferior-direito.
-                    */}
-                        <div
-                          /*
-                        DE QUEM SÃO ESTAS AÇÕES. A barra é IRMÃ do cartão, não
-                        filha — a identidade do achado ocupa o cartão inteiro e o
-                        que se faz com ele fica em cima. O preço disso é que o
-                        `data-achado` do cartão não alcança estes botões, e quem
-                        precisa deles (prova, e qualquer coisa que venha depois)
-                        só teria a POSIÇÃO na lista para se guiar. Índice é o
-                        número mágico que já quebrou uma prova nesta tela.
-                      */
-                          data-acoes-do-achado={finding.refId || undefined}
-                          /*
-                           * `@container` PORQUE A COLUNA MANDA, e não a janela.
-                           *
-                           * Medido em 27/08/2026 no painel do Nexo com janela
-                           * de 1100px: esta fila tem 274px de largura, e os
-                           * quatro controles somam 433 — três linhas. O `@`
-                           * pergunta à COLUNA, que é quem aperta; uma media
-                           * query de janela responderia "1100px, está largo"
-                           * enquanto a fila quebra em três.
-                           */
-                          className="@container flex flex-wrap items-center justify-end gap-2 px-2.5 pb-1.5"
+                    <label className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
+                      Responsável
+                      <Select
+                        value={responsavelFiltro}
+                        onChange={(event) => setResponsavelFiltro(event.target.value)}
+                        className="w-44"
+                        selectClassName="normal-case tracking-normal text-foreground"
+                      >
+                        <option value="">qualquer</option>
+                        {responsaveisPresentes.map((nome) => (
+                          <option key={nome} value={nome}>
+                            {nome}
+                          </option>
+                        ))}
+                      </Select>
+                    </label>
+                    <label className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
+                      Ordem
+                      <Select
+                        value={ordem}
+                        onChange={(event) => setOrdem(event.target.value as OrdemDaFila)}
+                        className="w-40"
+                        selectClassName="normal-case tracking-normal text-foreground"
+                      >
+                        <option value="impacto">por impacto</option>
+                        <option value="pagina">por página</option>
+                        <option value="documento">por documento</option>
+                        <option value="referencia">por referência</option>
+                      </Select>
+                    </label>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Situação">
+                    <span className="mr-1 font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
+                      Situação
+                    </span>
+                    {SITUACOES_DA_FILA.map((s) => (
+                      <button
+                        key={s.valor}
+                        type="button"
+                        data-filtro-situacao={s.valor}
+                        aria-pressed={situacao === s.valor}
+                        onClick={() => setSituacao(s.valor)}
+                        className={cn(
+                          "nx-cut-6 px-2.5 py-1 font-mono text-[11px] transition-colors",
+                          situacao === s.valor
+                            ? "bg-card text-foreground ring-1 ring-[var(--ring)]"
+                            : "text-muted-foreground hover:text-foreground",
+                        )}
+                      >
+                        {s.rotulo} ({contagemDaSituacao(s.valor)})
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p
+                      className="font-mono text-[11px] text-muted-foreground"
+                      aria-live="polite"
+                      data-mostrando={groupedPrincipal.length}
+                    >
+                      Mostrando {groupedPrincipal.length} de{" "}
+                      {plural(principalFindingsWithPdf.length, "achado", "achados")}
+                    </p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      {filtrosAtivos ? (
+                        <Button type="button" size="sm" variant="ghost" onClick={limparFiltros}>
+                          Limpar filtros
+                        </Button>
+                      ) : null}
+                      {enviaveisDoFiltro.length > 0 ? (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={alternarTodosDoFiltro}
+                          aria-pressed={todosDoFiltroMarcados}
                         >
-                          {/*
-                          O botão fica no CABEÇALHO do achado, ao lado do menu:
-                          é a ação que se repete 22 vezes numa revisão, e ela
-                          tem que estar sempre no mesmo lugar, sem rolar.
-                        */}
-                          {/*
-                          "MARCAR CORRIGIDO" SOME quando o achado foi encerrado
-                          de outro jeito.
+                          {todosDoFiltroMarcados
+                            ? `Desmarcar os ${enviaveisDoFiltro.length} ${filtrosAtivos ? "filtrados" : "pendentes"}`
+                            : `Selecionar os ${enviaveisDoFiltro.length} ${filtrosAtivos ? "filtrados" : "pendentes"} para atribuir`}
+                        </Button>
+                      ) : null}
+                    </div>
+                  </div>
+                </div>
 
-                          Ele reflete `resolvedAt`, e os TRÊS desfechos marcam
-                          essa coluna — então um achado assumido como decisão
-                          técnica aparecia com a tarja "Decisão técnica" ao
-                          lado de um botão dizendo "Corrigido". As duas coisas
-                          se contradizem, e a contradição estava exatamente
-                          sobre o que o registro precisa deixar claro: se o
-                          documento foi mexido ou se o risco foi assumido.
-                        */}
-                          {onToggleResolvido &&
-                          finding.refId &&
-                          (!desfechoPorAchado[finding.refId] ||
-                            desfechoPorAchado[finding.refId].kind ===
-                              "FIXED_IN_DOC") ? (
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant={
-                                estaResolvido(finding.refId)
-                                  ? "secondary"
-                                  : "outline"
-                              }
-                              onClick={() =>
-                                void alternarResolvido(
-                                  finding,
-                                  !estaResolvido(finding.refId),
-                                )
-                              }
-                              className={
-                                estaResolvido(finding.refId)
-                                  ? "border-[var(--status-ok)]/40 text-[var(--status-ok)]"
-                                  : undefined
-                              }
-                            >
-                              {/*
-                                O ÍCONE SAI QUANDO A COLUNA APERTA — e é ele, não o rótulo.
-                                Um ícone vale ~22px com o gap, e os dois desta fila são o
-                                que separa duas linhas de três. Cortar a PALAVRA
-                                economizaria mais e custaria o sentido: "Decisão técnica"
-                                sem texto é um quadrado mudo, e decisão que alguém vai
-                                defender depois não pode virar adivinhação.
-                              */}
-                              <Check className="hidden @[21rem]:block" />
-                              {estaResolvido(finding.refId)
-                                ? "Corrigido"
-                                : "Marcar corrigido"}
-                            </Button>
-                          ) : null}
-                          {/*
-                            A ORDEM DESTA FILA É POR FREQUÊNCIA, e foi medida.
+                {/*
+                  FILA + DETALHE — auditoria UX/UI, A07 (28/09/2026).
 
-                            "Marcar corrigido" e "Enviar" são o que se repete
-                            vinte e duas vezes numa revisão; "Decisão técnica" é
-                            rara e pesada — abre campo de nota e vira compromisso
-                            que alguém defende depois. Pôr as duas frequentes
-                            juntas na primeira linha não é só hierarquia: com a
-                            coluna a 274px (254 de conteúdo), 144+8+72 = 224 cabe
-                            e sobra folga, enquanto a ordem antiga empurrava o
-                            `···` sozinho para uma TERCEIRA linha — vinte e duas
-                            vezes, uma por cartão.
-                          */}
-                          {/*
-                            ENVIAR, IRMÃO DOS OUTROS DOIS — e não escondido no
-                            `···`.
-
-                            Enviar já era possível antes: a etiqueta "Ref.
-                            INC-001" é uma caixa de seleção, e marcá-la abre a
-                            barra com o destinatário. Mas a palavra "enviar" só
-                            aparecia DEPOIS de marcar, e dentro do menu de três
-                            pontos — quem não sabia que a caixa existia não tinha
-                            como descobrir a função, e ela é metade do produto.
-
-                            NÃO ABRE SELETOR PRÓPRIO: marca este achado e deixa a
-                            barra do rodapé escolher a pessoa. Um segundo lugar
-                            para escolher destinatário seria uma segunda regra de
-                            quem pode receber, e as duas discordariam no primeiro
-                            dia.
-
-                            E ELE ALTERNA. Marcar é reversível, então o mesmo
-                            botão desmarca — um botão que já cumpriu seu efeito e
-                            não faz mais nada é um botão quebrado.
-                          */}
-                          {finding.refId && !estaResolvido(finding.refId) ? (
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant={
-                                selecionados.has(finding.refId)
-                                  ? "secondary"
-                                  : "outline"
-                              }
-                              onClick={() => alternarSelecao(finding.refId!)}
-                              aria-pressed={selecionados.has(finding.refId)}
-                            >
-                              <Send className="hidden @[21rem]:block" />
-                              {selecionados.has(finding.refId)
-                                ? "Marcado"
-                                : "Enviar"}
-                            </Button>
-                          ) : null}
-                          {/*
-                          DECISÃO TÉCNICA — o terceiro desfecho.
-
-                          Fica ao lado de "Marcar corrigido" e não dentro do
-                          menu de três pontos: é uma decisão que se assume, e
-                          esconder uma decisão que alguém vai ter que defender
-                          depois é o contrário do que a tela deve fazer.
-
-                          O primeiro clique abre o campo da nota; o segundo
-                          grava. Sem nota o botão não fecha nada — e o
-                          servidor recusa também, que é onde a regra vale.
-                        */}
-                          {finding.refId &&
-                          !desfechoPorAchado[finding.refId] ? (
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="outline"
-                              disabled={
-                                escrevendoRisco === finding.refId &&
-                                !notaDoRisco[finding.refId]?.trim()
-                              }
-                              onClick={() => {
-                                if (escrevendoRisco !== finding.refId) {
-                                  setEscrevendoRisco(finding.refId!);
-                                  return;
-                                }
-
-                                void salvarDesfecho(
-                                  finding,
-                                  index,
-                                  "ACCEPTED_RISK",
-                                  notaDoRisco[finding.refId!],
-                                );
-                              }}
-                            >
-                              {escrevendoRisco === finding.refId
-                                ? "Registrar decisão"
-                                : "Decisão técnica"}
-                            </Button>
-                          ) : null}
-                          <Dropdown
-                            align="end"
-                            trigger={({ open, toggle }) => (
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="icon"
-                                className="size-8"
-                                onClick={toggle}
-                                aria-expanded={open}
-                                aria-label="Ações do achado"
-                              >
-                                <MoreHorizontal className="size-4" />
-                              </Button>
-                            )}
-                          >
-                            {({ close }) => (
-                              <>
-                                {finding.termoBusca ? (
-                                  <DropdownItem
-                                    onClick={() => {
-                                      void navigator.clipboard.writeText(
-                                        finding.termoBusca ?? "",
-                                      );
-                                      close();
-                                    }}
-                                  >
-                                    <Copy className="size-4" />
-                                    Copiar termo
-                                  </DropdownItem>
-                                ) : null}
-                                <DropdownItem
-                                  onClick={() => {
-                                    void createFindingSnapshot(finding, index);
-                                    close();
+                  A lista virou fila compacta (o que é, onde, com quem) e o
+                  cartão inteiro virou o DETALHE do achado escolhido: evidência
+                  primeiro, conversa e histórico em abas nomeadas, e os dois
+                  eixos — Validade e Tratamento — separados embaixo. Lado a lado
+                  quando a coluna tem 52rem; abaixo disso, em sequência, com
+                  "Voltar à lista". `@container` porque quem aperta é a coluna
+                  (o palco do Nexo, o drawer), não a janela.
+                */}
+                <div className="@container">
+                  <div className="grid items-start gap-4 @min-[52rem]:grid-cols-[minmax(15rem,21rem)_minmax(0,1fr)]">
+                    <nav
+                      aria-label="Fila de achados"
+                      data-fila-de-achados
+                      className={cn(
+                        "min-w-0 @min-[52rem]:sticky @min-[52rem]:top-2 @min-[52rem]:max-h-[calc(100dvh-6rem)] @min-[52rem]:overflow-y-auto",
+                        vistaEstreita === "detalhe" && "hidden @min-[52rem]:block",
+                      )}
+                    >
+                      {groupedPrincipal.length === 0 ? (
+                        <EmptyState
+                          description="Nenhum achado com os filtros selecionados."
+                          className="py-8"
+                        />
+                      ) : null}
+                      <ol className="m-0 grid list-none gap-1 p-0">
+                        {groupedPrincipal.map((finding, index) => {
+                          const faixa = findingImpactBucket(finding);
+                          const secao = IMPACT_SECTIONS.find((item) => item.key === faixa);
+                          const cabecalho =
+                            ordem === "impacto" &&
+                            (index === 0 || findingImpactBucket(groupedPrincipal[index - 1]) !== faixa);
+                          const chave = chaveDoAchado(finding);
+                          const atual = chave === chaveDoDetalhe;
+                          const paginas = paginasDoAchado({
+                            pagina: finding.pagina,
+                            referencia: finding.referencia,
+                          });
+                          const comentarios = finding.refId ? comentariosPorAchado[finding.refId] ?? 0 : 0;
+                          return (
+                            <Fragment key={`${chave}-fila`}>
+                              {cabecalho && secao ? (
+                                <li
+                                  data-faixa={faixa}
+                                  className="mt-3 border-l-2 pl-2 first:mt-0"
+                                  style={{
+                                    borderColor:
+                                      faixa === "critico_documental" ? "var(--destructive)" : "var(--border)",
                                   }}
                                 >
-                                  <Eye className="size-4" />
-                                  Print do achado
-                                </DropdownItem>
-                              </>
-                            )}
-                          </Dropdown>
-                        </div>
-                        {/*
-                      ACHADO RESOLVIDO = tarefa riscada da lista.
-                      O engenheiro trabalha com o software numa tela e o
-                      memorial na outra, corrigindo um a um. Sem marcar o que já
-                      foi, ele perde o lugar a cada rolagem — e relê achado que
-                      já resolveu, que é o desperdício mais banal desta tela.
-                      Verde + risco no título: some da leitura sem sumir da tela,
-                      porque desfazer tem que continuar possível.
-                    */}
+                                  <p
+                                    className={cn(
+                                      "font-mono text-[11px] font-semibold uppercase tracking-wider",
+                                      faixa === "critico_documental" ? "text-destructive" : "text-muted-foreground",
+                                    )}
+                                    title={secao.hint}
+                                  >
+                                    {secao.title} ({impactCount(faixa)})
+                                  </p>
+                                </li>
+                              ) : null}
+                              <li
+                                data-item-da-fila={finding.refId || chave}
+                                data-impacto={faixa}
+                                data-atual={atual || undefined}
+                                data-pagina={getFirstPageNumber(finding.pagina) ?? undefined}
+                                className={cn(
+                                  "nx-cut-6 flex items-start gap-2 px-2 py-2 transition-colors",
+                                  atual
+                                    ? "bg-[var(--nexodoc-raised)] ring-1 ring-inset ring-[var(--ring)]"
+                                    : "bg-[var(--nexodoc-recessed)]/60 hover:bg-[var(--nexodoc-raised)]",
+                                )}
+                              >
+                                {finding.refId && !estaResolvido(finding.refId) ? (
+                                  <input
+                                    type="checkbox"
+                                    checked={selecionados.has(finding.refId)}
+                                    onChange={() => alternarSelecao(finding.refId!)}
+                                    aria-label={`Selecionar ${finding.refId} para atribuir`}
+                                    className="mt-1 size-4 shrink-0 accent-primary"
+                                  />
+                                ) : (
+                                  <span aria-hidden className="w-4 shrink-0" />
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => abrirNoDetalhe(chave)}
+                                  aria-current={atual ? "true" : undefined}
+                                  className="min-w-0 flex-1 text-left outline-none focus-visible:underline"
+                                >
+                                  <span className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 font-mono text-[11px] text-muted-foreground">
+                                    <span
+                                      aria-hidden
+                                      className="nx-cut-4 inline-block size-2 shrink-0"
+                                      style={{ background: COR_DO_PIN[finding.severity] }}
+                                    />
+                                    <span className="text-foreground">{finding.refId ?? `Achado ${index + 1}`}</span>
+                                    <span>· {getImpactLabel(faixa)}</span>
+                                    <span>· {rotuloDePaginas(paginas, finding.pagina)}</span>
+                                  </span>
+                                  <span
+                                    className={cn(
+                                      "mt-0.5 block text-sm leading-5 [overflow-wrap:anywhere]",
+                                      estaResolvido(finding.refId)
+                                        ? "text-muted-foreground line-through decoration-[var(--status-ok)]/60"
+                                        : "text-foreground",
+                                    )}
+                                  >
+                                    {finding.title}
+                                  </span>
+                                  <span className="mt-0.5 flex flex-wrap gap-x-2 text-[11px] text-muted-foreground">
+                                    <span data-situacao-do-item>{situacaoLegivel(finding)}</span>
+                                    {comentarios > 0 ? (
+                                      <span>{plural(comentarios, "comentário", "comentários")}</span>
+                                    ) : null}
+                                  </span>
+                                </button>
+                              </li>
+                            </Fragment>
+                          );
+                        })}
+                      </ol>
+                    </nav>
+
+                    <div
+                      data-detalhe-do-achado
+                      className={cn("min-w-0", vistaEstreita === "lista" && "hidden @min-[52rem]:block")}
+                    >
+                      {(() => {
+                        const finding = achadoDoDetalhe;
+                        if (!finding) return null;
+                        const index = indiceDoDetalhe;
+                        const disciplina = findingDiscipline(finding);
+                        const paginas = paginasDoAchado({
+                          pagina: finding.pagina,
+                          referencia: finding.referencia,
+                        });
+                        const faixa = findingImpactBucket(finding);
+                        const posicao = groupedPrincipal.findIndex((f) => chaveDoAchado(f) === chaveDoDetalhe);
+                        const comentarios = finding.refId ? comentariosPorAchado[finding.refId] ?? 0 : 0;
+                        const registro = finding.refId ? historicoPorAchado[finding.refId] : undefined;
+                        return (
+                          <div className="grid gap-2">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="ghost"
+                                className="@min-[52rem]:hidden"
+                                onClick={() => setVistaEstreita("lista")}
+                              >
+                                <ChevronLeft aria-hidden />
+                                Voltar à lista
+                              </Button>
+                              <span className="font-mono text-[11px] text-muted-foreground" data-posicao-do-achado>
+                                {posicao >= 0
+                                  ? `Achado ${posicao + 1} de ${groupedPrincipal.length}`
+                                  : "Fora da lista filtrada"}
+                              </span>
+                              <span className="ml-auto flex gap-1">
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="outline"
+                                  disabled={posicao <= 0}
+                                  onClick={() => abrirNoDetalhe(chaveDoAchado(groupedPrincipal[posicao - 1]))}
+                                >
+                                  <ChevronLeft aria-hidden />
+                                  Anterior
+                                </Button>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="outline"
+                                  disabled={posicao < 0 || posicao >= groupedPrincipal.length - 1}
+                                  onClick={() => abrirNoDetalhe(chaveDoAchado(groupedPrincipal[posicao + 1]))}
+                                >
+                                  Próximo
+                                  <ChevronRight aria-hidden />
+                                </Button>
+                              </span>
+                            </div>
                         <article
                           // Faixa no DOM: é o que permite provar a ORDEM da lista no
                           // navegador sem depender do texto do cabeçalho.
@@ -3953,31 +4304,9 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
                                   </Badge>
                                 ) : null}
                                 {finding.refId ? (
-                                  /*
-                                O ÚNICO DA FILA QUE NÃO É `<Badge>`: badge é um
-                                `<span>`, e este rótulo guarda uma caixa de
-                                seleção — tem de ser `<label>` para o clique no
-                                texto marcar o campo. `badgeVariants` é a saída
-                                que o próprio primitivo exporta: mesma forma,
-                                mesma tipografia, elemento certo.
-                              */
-                                  <label
-                                    className={cn(
-                                      badgeVariants({ variant: "secondary" }),
-                                      "cursor-pointer gap-1.5",
-                                    )}
-                                  >
-                                    <input
-                                      type="checkbox"
-                                      checked={selecionados.has(finding.refId)}
-                                      onChange={() =>
-                                        alternarSelecao(finding.refId!)
-                                      }
-                                      aria-label={`Selecionar ${finding.refId} para enviar`}
-                                      className="size-3.5 accent-primary"
-                                    />
-                                    Ref. {finding.refId}
-                                  </label>
+                                  /* A seleção para atribuir mora na fila e no
+                                     Tratamento (A06); aqui a referência só identifica. */
+                                  <Badge variant="secondary">Ref. {finding.refId}</Badge>
                                 ) : null}
                                 {/*
                               COM QUEM ESTÁ. Aparece enquanto o achado é
@@ -4127,43 +4456,68 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
                           </div>
 
                           {/*
-                        A JUSTIFICATIVA DA DECISÃO TÉCNICA, na largura inteira do
-                        cartão e não espremida na linha dos botões: quem assume
-                        um risco precisa de espaço para dizer por quê, e o texto
-                        curto que caberia ali seria o que ninguém consegue
-                        defender depois.
-                      */}
-                          {finding.refId &&
-                          escrevendoRisco === finding.refId ? (
-                            <div className="border-t border-border p-4">
-                              <label
-                                htmlFor={`nota-risco-${finding.refId}`}
-                                className="mb-2 block font-mono text-xs uppercase text-muted-foreground"
+                            AS ABAS DO DETALHE — Evidência, Conversa (n), Histórico.
+                            A conversa só carrega quando a aba abre (A08): a fila
+                            mostra a contagem que vem do feedback, e 100 achados
+                            não disparam 100 conversas.
+                          */}
+                          <div
+                            role="tablist"
+                            aria-label="Partes do achado"
+                            className="relative z-20 flex gap-1 border-b px-4 pt-2"
+                            onKeyDown={(event) => {
+                              if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") return;
+                              const ordemDasAbas: AbaDoDetalhe[] = ["evidencia", "conversa", "historico"];
+                              // A partir da aba FOCADA, não da selecionada (padrão ARIA de abas).
+                              const focada = (event.target as HTMLElement).id.replace("aba-", "") as AbaDoDetalhe;
+                              const i = Math.max(0, ordemDasAbas.indexOf(focada));
+                              const proxima =
+                                ordemDasAbas[(i + (event.key === "ArrowRight" ? 1 : 2)) % 3];
+                              setAbaDoDetalhe(proxima);
+                              queueMicrotask(() =>
+                                document.getElementById(`aba-${proxima}`)?.focus(),
+                              );
+                            }}
+                          >
+                            {(
+                              [
+                                { valor: "evidencia", rotulo: "Evidência" },
+                                {
+                                  valor: "conversa",
+                                  rotulo: `Conversa (${comentarios})`,
+                                },
+                                { valor: "historico", rotulo: "Histórico" },
+                              ] as { valor: AbaDoDetalhe; rotulo: string }[]
+                            ).map((aba) => (
+                              <button
+                                key={aba.valor}
+                                id={`aba-${aba.valor}`}
+                                type="button"
+                                role="tab"
+                                aria-selected={abaDoDetalhe === aba.valor}
+                                aria-controls={`painel-${aba.valor}`}
+                                tabIndex={abaDoDetalhe === aba.valor ? 0 : -1}
+                                onClick={() => setAbaDoDetalhe(aba.valor)}
+                                className={cn(
+                                  "-mb-px border-b-2 px-3 py-1.5 font-mono text-xs outline-none transition-colors focus-visible:text-foreground",
+                                  abaDoDetalhe === aba.valor
+                                    ? "border-[var(--ring)] text-foreground"
+                                    : "border-transparent text-muted-foreground hover:text-foreground",
+                                )}
                               >
-                                Por que este risco está sendo assumido
-                              </label>
-                              <Textarea
-                                id={`nota-risco-${finding.refId}`}
-                                value={notaDoRisco[finding.refId] ?? ""}
-                                onChange={(event) =>
-                                  setNotaDoRisco((atual) => ({
-                                    ...atual,
-                                    [finding.refId!]: event.target.value,
-                                  }))
-                                }
-                                rows={3}
-                                autoFocus
-                                placeholder="Ex.: aprovado pelo corpo de bombeiros em 12/08, ata anexada ao processo."
-                                className="w-full"
-                                textareaClassName="resize-y"
-                              />
-                              <p className="mt-2 font-mono text-[11px] text-muted-foreground">
-                                Fica registrada com o seu nome e a data. Sem
-                                ela, a decisão não é gravada.
-                              </p>
-                            </div>
-                          ) : null}
+                                {aba.rotulo}
+                              </button>
+                            ))}
+                          </div>
 
+                          <div
+                            id={`painel-${abaDoDetalhe}`}
+                            role="tabpanel"
+                            aria-labelledby={`aba-${abaDoDetalhe}`}
+                            className="relative z-20"
+                          >
+                            {abaDoDetalhe === "evidencia" ? (
+                              <>
                           {/*
                         A EXPLICAÇÃO OCUPA A COLUNA LARGA, e os metadados vão
                         para a lateral. Era o contrário: `Documento / Página /
@@ -4247,24 +4601,6 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
                               </>
                               )}
 
-                              {/*
-                            A CONVERSA DO ACHADO, e só o ponto de montagem aqui.
-                            O componente mora em `components/achado/` porque
-                            este arquivo tem 4.859 linhas e o `AuditResult`
-                            sozinho passa de três mil — mais trezentas aqui
-                            seriam exatamente como se chegou a esse tamanho.
-
-                            Exige `auditId`: sem parecer gravado no servidor não
-                            há onde pendurar a conversa. E exige `refId`: é ele
-                            que identifica o achado dentro do relatório.
-                          */}
-                              {auditId && finding.refId ? (
-                                <ConversaDoAchado
-                                  auditId={auditId}
-                                  findingId={finding.refId}
-                                  membros={membros}
-                                />
-                              ) : null}
                             </div>
 
                             <div className="grid content-start gap-3">
@@ -4305,7 +4641,7 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
                                             : "cursor-default",
                                         )}
                                       >
-                                        <span className="mr-1 text-[10px] uppercase tracking-wider opacity-70">
+                                        <span className="mr-1 text-[11px] uppercase tracking-wider opacity-70">
                                           pág.
                                         </span>
                                         {numero}
@@ -4336,6 +4672,14 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
                                 Enterrada num kebab, ela simplesmente não existia
                                 para quem usa.
                               */}
+                                  {!finding.pdfUrl && finding.semFonte ? (
+                                    <span
+                                      data-sem-fonte
+                                      className="w-full text-xs leading-5 text-muted-foreground"
+                                    >
+                                      {finding.semFonte}
+                                    </span>
+                                  ) : null}
                                   {finding.pdfUrl ? (
                                     <Button
                                       type="button"
@@ -4388,21 +4732,54 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
                               </section>
                             </div>
                           </div>
+                              </>
+                            ) : null}
+                            {abaDoDetalhe === "conversa" ? (
+                              <div className="p-4">
+                                {auditId && finding.refId ? (
+                                  <ConversaDoAchado
+                                    key={finding.refId}
+                                    auditId={auditId}
+                                    findingId={finding.refId}
+                                    membros={membros}
+                                    rascunho={rascunhos[finding.refId] ?? ""}
+                                    onRascunho={(texto) =>
+                                      setRascunhos((atual) => ({ ...atual, [finding.refId!]: texto }))
+                                    }
+                                    onPublicado={() =>
+                                      setComentariosPorAchado((atual) => ({
+                                        ...atual,
+                                        [finding.refId!]: (atual[finding.refId!] ?? 0) + 1,
+                                      }))
+                                    }
+                                  />
+                                ) : (
+                                  <p className="m-0 text-sm text-muted-foreground">
+                                    A conversa existe para pareceres gravados no servidor.
+                                  </p>
+                                )}
+                              </div>
+                            ) : null}
+                            {abaDoDetalhe === "historico" ? (
+                              <HistoricoDoAchado
+                                registro={registro}
+                                herdadoDe={finding.herdado_de?.quando}
+                                desfecho={finding.refId ? desfechoPorAchado[finding.refId] : undefined}
+                              />
+                            ) : null}
+                          </div>
 
                           {/*
-                        O VEREDITO SOBRE O ACHADO vira o rodapé do cartão, e uma
-                        PERGUNTA em vez de um rótulo.
-
-                        Ele era uma caixa chamada "Avaliar achado" espremida na
-                        coluna estreita, embaixo de tudo. Duas coisas mudam com
-                        isso: ele deixa de disputar espaço com a evidência, e
-                        "Esse achado está certo?" diz o que os três botões
-                        querem — o rótulo antigo descrevia a função, não o
-                        pedido.
-
-                        É o que alimenta o benchmark do motor, então o lugar
-                        dele na tela decide quanto dado a gente tem.
-                      */}
+                            OS DOIS EIXOS, separados — auditoria UX/UI, A05.
+                            VALIDADE julga o achado (a IA acertou?). TRATAMENTO diz o
+                            que foi feito na obra. Confirmar não corrige nada, e
+                            corrigir não diz que o achado era verdadeiro.
+                          */}
+                          <div className="relative z-20 grid gap-0 border-t @min-[40rem]:grid-cols-2">
+                            <section aria-label="Validade" className="grid content-start gap-2 p-4 @min-[40rem]:border-r" data-eixo="validade">
+                              <h5 className="font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                                Validade — o achado está certo?
+                              </h5>
                           {auditId && finding.refId ? (
                             <div
                               /*
@@ -4421,7 +4798,7 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
                                 feedbackByFinding[finding.refId] || undefined
                               }
                               className={cn(
-                                "relative z-20 flex flex-wrap items-center gap-3 border-t px-4 py-3 transition-colors duration-[var(--duration-base)] ease-[var(--ease-feedback)]",
+                                "nx-cut-6 flex flex-wrap items-center gap-3 px-3 py-2 transition-colors duration-[var(--duration-base)] ease-[var(--ease-feedback)]",
                                 feedbackByFinding[finding.refId] === "CONFIRMED"
                                   ? "border-[var(--status-ok)]/30 bg-[var(--status-ok-bg)]"
                                   : feedbackByFinding[finding.refId] ===
@@ -4437,7 +4814,7 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
                                   : feedbackByFinding[finding.refId] ===
                                       "FALSE_POSITIVE"
                                     ? "Marcado como falso positivo."
-                                    : "Esse achado está certo?"}
+                                    : "Ainda sem julgamento."}
                               </p>
                               <div className="flex flex-wrap gap-2">
                                 <Button
@@ -4468,7 +4845,7 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
                                   }
                                 >
                                   <Check />
-                                  Correto
+                                  Confirmar achado
                                 </Button>
                                 <Button
                                   type="button"
@@ -4521,11 +4898,282 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
                               </div>
                             </div>
                           ) : null}
+                            </section>
+                            <section aria-label="Tratamento" className="grid content-start gap-2 p-4" data-eixo="tratamento">
+                              <h5 className="font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                                Tratamento — o que foi feito
+                              </h5>
+                              <p className="m-0 text-xs text-muted-foreground" data-tratamento-atual>
+                                {situacaoLegivel(finding)}
+                              </p>
+                        <div
+                          /*
+                        DE QUEM SÃO ESTAS AÇÕES. A barra é IRMÃ do cartão, não
+                        filha — a identidade do achado ocupa o cartão inteiro e o
+                        que se faz com ele fica em cima. O preço disso é que o
+                        `data-achado` do cartão não alcança estes botões, e quem
+                        precisa deles (prova, e qualquer coisa que venha depois)
+                        só teria a POSIÇÃO na lista para se guiar. Índice é o
+                        número mágico que já quebrou uma prova nesta tela.
+                      */
+                          data-acoes-do-achado={finding.refId || undefined}
+                          /*
+                           * `@container` PORQUE A COLUNA MANDA, e não a janela.
+                           *
+                           * Medido em 27/08/2026 no painel do Nexo com janela
+                           * de 1100px: esta fila tem 274px de largura, e os
+                           * quatro controles somam 433 — três linhas. O `@`
+                           * pergunta à COLUNA, que é quem aperta; uma media
+                           * query de janela responderia "1100px, está largo"
+                           * enquanto a fila quebra em três.
+                           */
+                          className="@container flex flex-wrap items-center gap-2"
+                        >
+                          {/*
+                          O botão fica no CABEÇALHO do achado, ao lado do menu:
+                          é a ação que se repete 22 vezes numa revisão, e ela
+                          tem que estar sempre no mesmo lugar, sem rolar.
+                        */}
+                          {/*
+                          "MARCAR CORRIGIDO" SOME quando o achado foi encerrado
+                          de outro jeito.
+
+                          Ele reflete `resolvedAt`, e os TRÊS desfechos marcam
+                          essa coluna — então um achado assumido como decisão
+                          técnica aparecia com a tarja "Decisão técnica" ao
+                          lado de um botão dizendo "Corrigido". As duas coisas
+                          se contradizem, e a contradição estava exatamente
+                          sobre o que o registro precisa deixar claro: se o
+                          documento foi mexido ou se o risco foi assumido.
+                        */}
+                          {onToggleResolvido &&
+                          finding.refId &&
+                          (!desfechoPorAchado[finding.refId] ||
+                            desfechoPorAchado[finding.refId].kind ===
+                              "FIXED_IN_DOC") ? (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant={
+                                estaResolvido(finding.refId)
+                                  ? "secondary"
+                                  : "outline"
+                              }
+                              onClick={() =>
+                                void alternarResolvido(
+                                  finding,
+                                  !estaResolvido(finding.refId),
+                                )
+                              }
+                              className={
+                                estaResolvido(finding.refId)
+                                  ? "border-[var(--status-ok)]/40 text-[var(--status-ok)]"
+                                  : undefined
+                              }
+                            >
+                              {/*
+                                O ÍCONE SAI QUANDO A COLUNA APERTA — e é ele, não o rótulo.
+                                Um ícone vale ~22px com o gap, e os dois desta fila são o
+                                que separa duas linhas de três. Cortar a PALAVRA
+                                economizaria mais e custaria o sentido: "Decisão técnica"
+                                sem texto é um quadrado mudo, e decisão que alguém vai
+                                defender depois não pode virar adivinhação.
+                              */}
+                              <Check className="hidden @[21rem]:block" />
+                              {estaResolvido(finding.refId)
+                                ? "Correção informada"
+                                : "Informar correção"}
+                            </Button>
+                          ) : null}
+                          {/*
+                            A ORDEM DESTA FILA É POR FREQUÊNCIA, e foi medida.
+
+                            "Marcar corrigido" e "Enviar" são o que se repete
+                            vinte e duas vezes numa revisão; "Decisão técnica" é
+                            rara e pesada — abre campo de nota e vira compromisso
+                            que alguém defende depois. Pôr as duas frequentes
+                            juntas na primeira linha não é só hierarquia: com a
+                            coluna a 274px (254 de conteúdo), 144+8+72 = 224 cabe
+                            e sobra folga, enquanto a ordem antiga empurrava o
+                            `···` sozinho para uma TERCEIRA linha — vinte e duas
+                            vezes, uma por cartão.
+                          */}
+                          {/*
+                            ENVIAR, IRMÃO DOS OUTROS DOIS — e não escondido no
+                            `···`.
+
+                            Enviar já era possível antes: a etiqueta "Ref.
+                            INC-001" é uma caixa de seleção, e marcá-la abre a
+                            barra com o destinatário. Mas a palavra "enviar" só
+                            aparecia DEPOIS de marcar, e dentro do menu de três
+                            pontos — quem não sabia que a caixa existia não tinha
+                            como descobrir a função, e ela é metade do produto.
+
+                            NÃO ABRE SELETOR PRÓPRIO: marca este achado e deixa a
+                            barra do rodapé escolher a pessoa. Um segundo lugar
+                            para escolher destinatário seria uma segunda regra de
+                            quem pode receber, e as duas discordariam no primeiro
+                            dia.
+
+                            E ELE ALTERNA. Marcar é reversível, então o mesmo
+                            botão desmarca — um botão que já cumpriu seu efeito e
+                            não faz mais nada é um botão quebrado.
+                          */}
+                          {finding.refId && !estaResolvido(finding.refId) ? (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant={
+                                selecionados.has(finding.refId)
+                                  ? "secondary"
+                                  : "outline"
+                              }
+                              onClick={() => alternarSelecao(finding.refId!)}
+                              aria-pressed={selecionados.has(finding.refId)}
+                            >
+                              <Send className="hidden @[21rem]:block" />
+                              {selecionados.has(finding.refId)
+                                ? "Selecionado para atribuir"
+                                : "Selecionar para atribuir"}
+                            </Button>
+                          ) : null}
+                          {/*
+                          DECISÃO TÉCNICA — o terceiro desfecho.
+
+                          Fica ao lado de "Marcar corrigido" e não dentro do
+                          menu de três pontos: é uma decisão que se assume, e
+                          esconder uma decisão que alguém vai ter que defender
+                          depois é o contrário do que a tela deve fazer.
+
+                          O primeiro clique abre o campo da nota; o segundo
+                          grava. Sem nota o botão não fecha nada — e o
+                          servidor recusa também, que é onde a regra vale.
+                        */}
+                          {finding.refId &&
+                          !desfechoPorAchado[finding.refId] ? (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              disabled={
+                                escrevendoRisco === finding.refId &&
+                                !notaDoRisco[finding.refId]?.trim()
+                              }
+                              onClick={() => {
+                                if (escrevendoRisco !== finding.refId) {
+                                  setEscrevendoRisco(finding.refId!);
+                                  return;
+                                }
+
+                                void salvarDesfecho(
+                                  finding,
+                                  index,
+                                  "ACCEPTED_RISK",
+                                  notaDoRisco[finding.refId!],
+                                );
+                              }}
+                            >
+                              {escrevendoRisco === finding.refId
+                                ? "Gravar decisão técnica"
+                                : "Registrar decisão técnica"}
+                            </Button>
+                          ) : null}
+                          <Dropdown
+                            align="end"
+                            trigger={({ open, toggle }) => (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={toggle}
+                                aria-expanded={open}
+                              >
+                                <MoreHorizontal className="size-4" />
+                                Mais ações
+                              </Button>
+                            )}
+                          >
+                            {({ close }) => (
+                              <>
+                                {finding.termoBusca ? (
+                                  <DropdownItem
+                                    onClick={() => {
+                                      void navigator.clipboard.writeText(
+                                        finding.termoBusca ?? "",
+                                      );
+                                      close();
+                                    }}
+                                  >
+                                    <Copy className="size-4" />
+                                    Copiar termo
+                                  </DropdownItem>
+                                ) : null}
+                                {auditId && finding.refId ? (
+                                  <DropdownItem
+                                    onClick={() => {
+                                      void copiarLinkDoAchado(finding.refId!);
+                                      close();
+                                    }}
+                                  >
+                                    <Copy className="size-4" />
+                                    Copiar link do achado
+                                  </DropdownItem>
+                                ) : null}
+                                <DropdownItem
+                                  onClick={() => {
+                                    void createFindingSnapshot(finding, index).catch((e) =>
+                                      setPop({ tom: "falha", texto: e instanceof Error ? e.message : "Não deu para gerar o cartão." }),
+                                    );
+                                    close();
+                                  }}
+                                >
+                                  <Eye className="size-4" />
+                                  Exportar cartão do achado (PNG)
+                                </DropdownItem>
+                              </>
+                            )}
+                          </Dropdown>
+                        </div>
+                          {finding.refId &&
+                          escrevendoRisco === finding.refId ? (
+                            <div className="grid">
+                              <label
+                                htmlFor={`nota-risco-${finding.refId}`}
+                                className="mb-2 block font-mono text-xs uppercase text-muted-foreground"
+                              >
+                                Por que este risco está sendo assumido
+                              </label>
+                              <Textarea
+                                id={`nota-risco-${finding.refId}`}
+                                value={notaDoRisco[finding.refId] ?? ""}
+                                onChange={(event) =>
+                                  setNotaDoRisco((atual) => ({
+                                    ...atual,
+                                    [finding.refId!]: event.target.value,
+                                  }))
+                                }
+                                rows={3}
+                                autoFocus
+                                placeholder="Ex.: aprovado pelo corpo de bombeiros em 12/08, ata anexada ao processo."
+                                className="w-full"
+                                textareaClassName="resize-y"
+                              />
+                              <p className="mt-2 font-mono text-[11px] text-muted-foreground">
+                                Fica registrada com o seu nome e a data. Sem
+                                ela, a decisão não é gravada.
+                              </p>
+                            </div>
+                          ) : null}
+                            </section>
+                          </div>
                         </article>
-                      </Fragment>
-                    );
-                  })}
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  </div>
                 </div>
+
 
                 {auditId ? (
                   <section className="nx-cut-8 bg-[var(--nexodoc-recessed)] p-4">
@@ -4635,14 +5283,14 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
                             <span className="text-sm font-semibold normal-case tracking-normal text-foreground">
                               {selecionados.size}
                             </span>{" "}
-                            {selecionados.size === 1 ? "achado" : "achados"}
+                            {selecionados.size === 1 ? "achado selecionado" : "achados selecionados"}
                           </span>
 
                           <label
                             htmlFor="destinatario-do-envio"
                             className="sr-only"
                           >
-                            Enviar para
+                            Atribuir a
                           </label>
                           {/*
                       ALTURA 40, e não 36. O `h-9` ia para o WRAPPER, mas o
@@ -4664,7 +5312,7 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
                             className="min-w-[15rem] flex-1 sm:max-w-[22rem]"
                             selectClassName="text-foreground"
                           >
-                            <option value="">Enviar para…</option>
+                            <option value="">Atribuir a…</option>
                             {/*
                         QUEM RESPONDE PELA DISCIPLINA VEM PRIMEIRO — e ninguém
                         some da lista.
@@ -4752,10 +5400,11 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
                         do chat do Nexo —, e para quem navega por leitor de tela
                         os dois seriam a mesma palavra solta.
                       */
-                            aria-label="Enviar achados selecionados"
                           >
                             <Send aria-hidden />
-                            Enviar
+                            {destinatario
+                              ? `Atribuir ${plural(selecionados.size, "achado", "achados")} a ${nomeDoDestinatario}`
+                              : `Atribuir ${plural(selecionados.size, "achado", "achados")}`}
                           </Button>
 
                           {/*
@@ -4810,6 +5459,10 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
                       Frase em SANS, não em mono: mono é rótulo e dado. Isto é
                       prosa, e prosa em mono lê como saída de terminal.
                     */}
+                          <p className="m-0 w-full text-xs text-muted-foreground" data-resumo-do-lote>
+                            Atribuir não manda e-mail: a pessoa vê na home dela. O aviso por e-mail é
+                            separado, em &ldquo;Notificar por e-mail&rdquo;, no topo do parecer.
+                          </p>
                           {grupoDoEnvio && !agrupar ? (
                             <p className="flex w-full items-start gap-2 text-xs leading-relaxed text-[var(--signal-info)]">
                               <Info

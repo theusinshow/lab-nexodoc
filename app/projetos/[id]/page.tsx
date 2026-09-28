@@ -19,6 +19,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { getUserAccess } from "@/lib/access-control";
+import { linkDoNexo } from "@/lib/contexto-da-url";
 import { redirectToLogin } from "@/lib/auth-redirect";
 import { getPrisma, isDatabaseConfigured } from "@/lib/db";
 import { assertProjectAccess, getUserActor, normalizeEmail } from "@/lib/project-store";
@@ -90,7 +91,7 @@ export default async function ProjectDetailPage({
       label: "Auditoria",
       action: "Auditar documentos",
       description: "Checar memoriais, capas, LDs, pranchas e divergencias documentais.",
-      href: `/audit?project=${project.id}`,
+      href: linkDoNexo({ projeto: project.id, intencao: "auditar" }),
       icon: BookOpenCheck,
       completed: hasAuditOutput,
     },
@@ -98,7 +99,7 @@ export default async function ProjectDetailPage({
       label: "LD",
       action: "Montar LD",
       description: "Ler selos, revisar pranchas, ajustar tomos e gerar pacote final.",
-      href: `/ld?project=${project.id}`,
+      href: linkDoNexo({ projeto: project.id, intencao: "ld" }),
       icon: TableProperties,
       completed: hasLdOutput,
     },
@@ -106,7 +107,7 @@ export default async function ProjectDetailPage({
       label: "Capas",
       action: "Gerar capas",
       description: "Gerar capas tecnicas a partir dos dados confirmados do projeto.",
-      href: `/capas?project=${project.id}`,
+      href: linkDoNexo({ projeto: project.id, intencao: "capa" }),
       icon: FileText,
       completed: hasCoverOutput,
     },
@@ -125,6 +126,7 @@ export default async function ProjectDetailPage({
   return (
     <main className="mx-auto max-w-7xl space-y-6 px-5 py-6 sm:px-7">
       <PageHeader
+        navegacao={{ ehAdmin: access.isAdmin }}
         title={project.name}
         description={`${project.code} · ${project.ownerEmail}`}
       >
@@ -136,16 +138,12 @@ export default async function ProjectDetailPage({
         </Button>
       </PageHeader>
 
-      <ProjectDetailActions
-        project={{
-          id: project.id,
-          code: project.code,
-          name: project.name,
-          client: project.client,
-          description: project.description,
-          status: project.status === "ARCHIVED" ? "ARCHIVED" : "ACTIVE",
-        }}
-      />
+      {project.status === "ARCHIVED" ? (
+        <p role="status" className="nx-cut-6 bg-[var(--status-warning-bg)] px-3 py-2 text-sm text-foreground">
+          Projeto arquivado. Para voltar a trabalhar nele, use Reativar em{" "}
+          <a href="#configuracoes-do-projeto" className="underline underline-offset-4">Configurações do projeto</a>.
+        </p>
+      ) : null}
 
       <section className="grid gap-3 md:grid-cols-4">
         <Metric label="Documentos" value={project._count.documents} />
@@ -267,6 +265,20 @@ export default async function ProjectDetailPage({
           </div>
         </CardContent>
       </Card>
+      {/* P01: manutenção (dados, arquivar, reativar, excluir) DEPOIS do trabalho —
+          o detalhe começa pelo contexto e pela próxima ação. */}
+      <section id="configuracoes-do-projeto" className="scroll-mt-24">
+        <ProjectDetailActions
+        project={{
+          id: project.id,
+          code: project.code,
+          name: project.name,
+          client: project.client,
+          description: project.description,
+          status: project.status === "ARCHIVED" ? "ARCHIVED" : "ACTIVE",
+        }}
+      />
+      </section>
     </main>
   );
 }

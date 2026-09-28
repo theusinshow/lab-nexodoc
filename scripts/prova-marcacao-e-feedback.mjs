@@ -279,7 +279,7 @@ await page.screenshot({ path: `${OUT}/feedback-falso-positivo.png` });
 // --- o CONFIRMADO, no outro cartao ------------------------------------------
 const segundo = cartoes.nth(1);
 await segundo.scrollIntoViewIfNeeded();
-await segundo.getByRole("button", { name: /^Correto$/i }).click();
+await segundo.getByRole("button", { name: /^Confirmar achado$/i }).click();
 await page.waitForTimeout(1000);
 
 const areaOk = segundo.locator("[data-veredito-do-achado]");

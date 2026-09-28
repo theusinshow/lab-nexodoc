@@ -1,5 +1,7 @@
 import { redirect } from "next/navigation";
 
+import { lerContextoDaUrl, linkDoNexo } from "@/lib/contexto-da-url";
+
 /**
  * `/audit` foi APOSENTADA — a auditoria mora no Nexo.
  *
@@ -8,7 +10,7 @@ import { redirect } from "next/navigation";
  * depois de um F5. Manter as duas significava que metade dos clientes veria a
  * versão pior por acidente de link antigo.
  *
- * O redirecionamento preserva `?project=`: quem chegar por um link salvo cai no
+ * O redirecionamento preserva o projeto (`?project=` ou `?projeto=`): quem chegar por um link salvo cai no
  * lugar certo em vez de numa página que some. O HISTÓRICO não se perde — as
  * auditorias continuam no banco, e o painel administrativo (`/admin/audits`)
  * segue listando tudo.
@@ -20,8 +22,19 @@ import { redirect } from "next/navigation";
 export default async function AuditPage({
   searchParams,
 }: {
-  searchParams: Promise<{ project?: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const { project } = await searchParams;
-  redirect(project ? `/nexo?project=${encodeURIComponent(project)}` : "/nexo");
+  const params = await searchParams;
+  /*
+   * O redirecionamento ia para `/nexo?project=`, que o Nexo não lia: o link
+   * "Auditar documentos" do projeto chegava à saudação genérica (auditoria
+   * UX/UI, G03). Agora vai no contrato canônico, com a intenção de auditar.
+   */
+  const { projeto } = lerContextoDaUrl({
+    get: (nome) => {
+      const v = params[nome];
+      return Array.isArray(v) ? (v[0] ?? null) : (v ?? null);
+    },
+  });
+  redirect(linkDoNexo({ projeto, intencao: "auditar" }));
 }

@@ -141,9 +141,9 @@ export default {
       `faixas=${await faixaSemConferir.count()}`,
     );
 
-    // Sair (para uma conversa nova, pelo "Novo projeto") e voltar pela barra.
+    // Sair (para uma conversa nova, pelo "Nova conversa") e voltar pela barra.
     await page
-      .getByRole("button", { name: "Novo projeto" })
+      .getByRole("button", { name: "Nova conversa", exact: true })
       .click({ timeout: 10_000 });
     await faixaSemConferir.waitFor({ state: "detached", timeout: 15_000 });
     await naBarra(TITULO).click({ timeout: 10_000 });

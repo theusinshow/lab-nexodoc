@@ -18,6 +18,8 @@ import { useCallback, useEffect, useState } from "react";
 
 import { AdminError, TituloDaSecao } from "@/components/admin/admin-page-shell";
 import { useAdminToken } from "@/components/admin/admin-token";
+import { AvisoDaCarga } from "@/components/admin/aviso-da-carga";
+import { classificarFalha, faseDaCarga, type FalhaDaCarga } from "@/lib/estado-da-carga";
 import { Button } from "@/components/ui/button";
 import {
   normalizarCotacao,
@@ -39,31 +41,49 @@ export function CorpoDaCotacao() {
   const [salvando, setSalvando] = useState(false);
   const [salvo, setSalvo] = useState(false);
   const [erro, setErro] = useState("");
+  // P02: estado da CARGA; "cotação não declarada" só com resposta do servidor.
+  const [erroDaCarga, setErroDaCarga] = useState<{ tipo: FalhaDaCarga; detalhe: string | null } | null>(null);
+  const [carregando, setCarregando] = useState(false);
+  const fase = faseDaCarga({
+    restaurado,
+    token,
+    carregando,
+    erro: erroDaCarga?.tipo ?? null,
+    temDados: Boolean(cambio),
+  });
 
   const erros = validarCotacao(normalizarCotacao({ valor: rascunho }));
 
   const carregar = useCallback(
     async (tokenAtual: string) => {
+      setCarregando(true);
+      setErroDaCarga(null);
+      let resposta: Response;
       try {
-        const resposta = await fetch("/api/admin/config", {
+        resposta = await fetch("/api/admin/config", {
           cache: "no-store",
           headers: { Authorization: `Bearer ${tokenAtual.trim()}` },
         });
-        const corpo = (await resposta.json().catch(() => null)) as
-          | { cambio?: Cambio; error?: string }
-          | null;
-
-        if (!resposta.ok || !corpo?.cambio) {
-          throw new Error(corpo?.error ?? "Não foi possível carregar a cotação.");
-        }
-
-        registrarResposta(true);
-        setCambio(corpo.cambio);
-        setErro("");
-      } catch (falha) {
-        setErro(falha instanceof Error ? falha.message : "Não foi possível carregar a cotação.");
-        registrarResposta(false);
+      } catch {
+        setErroDaCarga({ tipo: "rede", detalhe: null });
+        setCarregando(false);
+        return;
       }
+      const corpo = (await resposta.json().catch(() => null)) as
+        | { cambio?: Cambio; error?: string }
+        | null;
+      setCarregando(false);
+
+      if (!resposta.ok || !corpo?.cambio) {
+        const tipo = classificarFalha(resposta);
+        if (tipo === "negado") registrarResposta(false);
+        setErroDaCarga({ tipo, detalhe: corpo?.error ?? `HTTP ${resposta.status}` });
+        return;
+      }
+
+      registrarResposta(true);
+      setCambio(corpo.cambio);
+      setErro("");
     },
     [registrarResposta],
   );
@@ -112,13 +132,18 @@ export function CorpoDaCotacao() {
         descricao="A fatura do provedor é em dólar; a decisão de rodar é em real. A cotação é declarada, não buscada — e todo valor convertido sai com “≈” e com a data desta declaração."
       />
 
+      <AvisoDaCarga
+        fase={fase}
+        erro={erroDaCarga?.tipo}
+        detalhe={erroDaCarga?.detalhe}
+        oque="a cotação"
+        onTentar={() => void carregar(token)}
+      />
       <AdminError message={erro} />
 
       <div className="nx-edge-8 flex flex-col gap-3 p-4">
         <span className="nx-cut-5 inline-flex w-fit items-center gap-1.5 border border-[var(--signal-info-border)] bg-[var(--signal-info-bg)] px-2.5 py-1 font-mono text-[11px] text-[var(--signal-info)]">
-          {cambio
-            ? procedenciaDaCotacao(cambio.cotacao, new Date())
-            : "cotação não declarada — os valores ficam em dólar"}
+          {cambio ? procedenciaDaCotacao(cambio.cotacao, new Date()) : "cotação: —"}
         </span>
 
         <div className="flex flex-wrap items-end gap-3">
@@ -129,6 +154,7 @@ export function CorpoDaCotacao() {
             <input
               value={rascunho}
               placeholder="ex.: 5,42"
+              aria-label="Reais por US$ 1"
               inputMode="decimal"
               disabled={!cambio || salvando}
               onChange={(evento) => {
@@ -150,7 +176,11 @@ export function CorpoDaCotacao() {
           </Button>
           {!cambio ? (
             <span className="text-xs text-muted-foreground">
-              Informe o token admin para declarar.
+              {fase === "sem-token"
+                ? "Aguardando o token de administração."
+                : fase === "erro"
+                  ? "Não carregada — veja o aviso acima."
+                  : "Carregando…"}
             </span>
           ) : !cambio.databaseConfigured ? (
             <span className="font-mono text-[11px] text-[var(--status-warning)]">

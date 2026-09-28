@@ -16,11 +16,13 @@
  * no Dinheiro, a vazão e os limites no Motor, o freio no Pessoas.
  */
 
-import { Loader2, RotateCcw, Save } from "lucide-react";
+import { RotateCcw, Save } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
 import { AdminError } from "@/components/admin/admin-page-shell";
 import { useAdminToken } from "@/components/admin/admin-token";
+import { AvisoDaCarga } from "@/components/admin/aviso-da-carga";
+import { classificarFalha, faseDaCarga, type FalhaDaCarga } from "@/lib/estado-da-carga";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 
@@ -73,24 +75,49 @@ export function CorpoDosControles({
   const [rascunho, setRascunho] = useState<Record<string, string>>({});
   const [salvando, setSalvando] = useState("");
   const [erro, setErro] = useState("");
+  // P02: estado da CARGA, separado do erro de salvar.
+  const [erroDaCarga, setErroDaCarga] = useState<{ tipo: FalhaDaCarga; detalhe: string | null } | null>(null);
+  const [carregando, setCarregando] = useState(false);
+  const [carregadoEm, setCarregadoEm] = useState<string | null>(null);
+  const fase = faseDaCarga({
+    restaurado,
+    token,
+    carregando,
+    erro: erroDaCarga?.tipo ?? null,
+    temDados: Boolean(retrato),
+  });
 
   const carregar = useCallback(
     async (tokenAtual: string) => {
+      setCarregando(true);
+      setErroDaCarga(null);
+      let resposta: Response;
       try {
-        const resposta = await fetch("/api/admin/controles", {
+        resposta = await fetch("/api/admin/controles", {
           cache: "no-store",
           headers: { Authorization: `Bearer ${tokenAtual.trim()}` },
         });
+      } catch {
+        setErroDaCarga({ tipo: "rede", detalhe: null });
+        setCarregando(false);
+        return;
+      }
+      try {
         const corpo = (await resposta.json().catch(() => null)) as
           | (Retrato & { error?: string })
           | null;
 
-        if (!resposta.ok || !corpo) {
-          throw new Error(corpo?.error ?? "Não foi possível carregar os controles.");
+        if (!resposta.ok || !corpo || !Array.isArray(corpo.controles)) {
+          const tipo = classificarFalha(resposta);
+          // Só a RECUSA reabre o campo do token (antes, qualquer falha reabria).
+          if (tipo === "negado") registrarResposta(false);
+          setErroDaCarga({ tipo, detalhe: corpo?.error ?? `HTTP ${resposta.status}` });
+          return;
         }
 
         registrarResposta(true);
         setRetrato(corpo);
+        setCarregadoEm(new Date().toISOString());
         /*
          * O RASCUNHO É REDESENHADO A CADA CARGA, e é o certo: depois de salvar,
          * o campo tem que mostrar o que o servidor aceitou — não o que foi
@@ -102,9 +129,8 @@ export function CorpoDosControles({
           ),
         );
         setErro("");
-      } catch (falha) {
-        setErro(falha instanceof Error ? falha.message : "Não foi possível carregar os controles.");
-        registrarResposta(false);
+      } finally {
+        setCarregando(false);
       }
     },
     [registrarResposta],
@@ -149,6 +175,14 @@ export function CorpoDosControles({
 
   return (
     <div className="flex flex-col gap-3">
+      <AvisoDaCarga
+        fase={fase}
+        erro={erroDaCarga?.tipo}
+        detalhe={erroDaCarga?.detalhe}
+        oque="os controles"
+        atualizadoEm={carregadoEm}
+        onTentar={() => void carregar(token)}
+      />
       <AdminError message={erro} />
 
       {retrato && !retrato.databaseConfigured ? (
@@ -158,12 +192,6 @@ export function CorpoDosControles({
         </p>
       ) : null}
 
-      {!retrato ? (
-        <p className="flex items-center gap-2 px-1 font-mono text-xs text-muted-foreground">
-          <Loader2 className="size-3.5 animate-spin" />
-          carregando…
-        </p>
-      ) : null}
 
       {mostrados.map((controle) => (
         <article key={controle.chave} className="nx-edge-8 flex flex-col gap-2 p-3">
@@ -189,6 +217,7 @@ export function CorpoDosControles({
                * precisa saber o que pode digitar antes de digitar.
                */
               placeholder={`vazio = não declarado · aceita ${controle.minimo} a ${controle.maximo}`}
+              aria-label={controle.rotulo}
               className="nx-edge-7 h-9 w-[340px] max-w-full bg-transparent px-3 text-sm outline-none [--nx-fill:var(--nexodoc-recessed)]"
             />
             <Button
@@ -275,6 +304,7 @@ function PainelDoFreio({
             value={organizationId}
             onChange={(evento) => setOrganizationId(evento.target.value)}
             placeholder="id do escritório"
+            aria-label="Id do escritório de destino"
             className="nx-edge-7 h-9 w-[220px] bg-transparent px-3 text-sm outline-none [--nx-fill:var(--nexodoc-recessed)]"
           />
         ) : null}

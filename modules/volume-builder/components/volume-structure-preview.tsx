@@ -22,7 +22,7 @@ export function VolumeStructurePreview({
       <Card>
         <CardContent className={compact ? "py-4 text-center" : "py-8 text-center"}>
           <p className="text-sm text-muted-foreground">
-            Nenhuma linha para exibir na previa.
+            Nenhum volume para exibir na estrutura.
           </p>
         </CardContent>
       </Card>
@@ -32,7 +32,9 @@ export function VolumeStructurePreview({
   return (
     <Card>
       <CardContent className={compact ? "py-4 space-y-3" : "py-4 space-y-4"}>
-        <p className="text-sm font-medium">Previa</p>
+        {/* A ÁRVORE NÃO É O PDF: a prévia real é "Abrir prévia" (V07). */}
+        <p className="text-sm font-medium">Estrutura planejada</p>
+        <p className="text-xs text-muted-foreground">O que a montagem pretende, por volume. Para ver o PDF, use &quot;Abrir prévia&quot;.</p>
         {!compact && metadata.projectCode && (
           <p className="text-xs text-muted-foreground">
             Projeto: {metadata.projectCode} {metadata.projectName && `- ${metadata.projectName}`}
@@ -53,17 +55,22 @@ export function VolumeStructurePreview({
               {row.blocks.map((block) => (
                 <div key={block.id} className="ml-3">
                   <p>
-                    {block.title} ({block.disciplineCode || "sem disc."})
+                    {block.title} ({block.disciplineCode || "sem código"})
                   </p>
                   <p className="ml-3">
-                    Separatriz: {block.separator?.selection?.sourceFileName ?? `${block.separatorTitle ?? "sem titulo"} (automatica)`}
+                    Separatriz: {block.separator?.selection?.sourceFileName ?? `${block.separatorTitle || "sem título"} (automática)`}
                   </p>
                   {block.ld?.selection && (
                     <p className="ml-3">LD: {block.ld.selection.sourceFileName}</p>
                   )}
                   {block.documents.map((doc) => (
                     <p key={doc.id} className="ml-3">
-                      Doc: {doc.selection?.sourceFileName ?? "vazio"}
+                      Prancha: {doc.selection?.sourceFileName ?? "vazio"}
+                    </p>
+                  ))}
+                  {(block.appendices ?? []).map((a) => (
+                    <p key={a.id} className="ml-3">
+                      Anexo: {a.selection?.sourceFileName ?? "vazio"}
                     </p>
                   ))}
                 </div>

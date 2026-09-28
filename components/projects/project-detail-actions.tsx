@@ -115,7 +115,7 @@ export function ProjectDetailActions({ project }: { project: ProjectEditable }) 
       <CardContent className="space-y-5 py-5">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h2 className="text-base font-semibold">Controle do projeto</h2>
+            <h2 className="text-base font-semibold">Configurações do projeto</h2>
             <p className="mt-1 text-sm text-muted-foreground">
               Ajuste os dados operacionais e o status do dossiê consolidado.
             </p>
@@ -168,7 +168,7 @@ export function ProjectDetailActions({ project }: { project: ProjectEditable }) 
           <div className="flex flex-col gap-2 lg:col-span-3 sm:flex-row sm:items-center">
             <Button disabled={isPending}>
               {isPending ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
-              Salvar alteracoes
+              Salvar alterações
             </Button>
             {notice ? <span className="text-sm text-[var(--status-ok)]">{notice}</span> : null}
             {error ? <span className="text-sm text-destructive">{error}</span> : null}

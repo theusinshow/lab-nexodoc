@@ -29,7 +29,7 @@ export function LinhaDaConversa({ linha }: { linha: LinhaLegivel }) {
       <p className="m-0 text-[11.5px] leading-5 text-muted-foreground">
         <span className="text-foreground">{linha.quem}</span>
         {linha.frase ? ` ${linha.frase}` : ""}
-        <span className="ml-2 font-mono text-[10.5px]">{quando(linha.createdAt)}</span>
+        <span className="ml-2 font-mono text-[11px]">{quando(linha.createdAt)}</span>
       </p>
       {linha.body ? (
         <p className="m-0 mt-1 whitespace-pre-wrap text-[12.5px] leading-5 text-foreground">

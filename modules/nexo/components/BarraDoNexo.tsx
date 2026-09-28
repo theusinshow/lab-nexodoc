@@ -26,17 +26,29 @@ import { contextoDaBarra } from "../lib/contexto-da-barra";
 import { resumoDaAuditoria } from "../lib/resumo-da-auditoria";
 import { auditoriaDaConversa, useAuditoria } from "../state/auditoria-store";
 import { useConversation } from "../state/conversation-store";
+import type { ProjetoPedido } from "../lib/projeto-pedido";
 import { MarcaDaPrefeitura } from "./MarcaDaPrefeitura";
 
-export function BarraDoNexo() {
-  const { conversationId, identidade, seloResults } = useConversation();
+export function BarraDoNexo({
+  projetoPedido = null,
+}: {
+  /**
+   * O projeto que o link pediu e o servidor conferiu (G03). Só aparece quando a
+   * conversa aberta é MESMO desse projeto — dizer "Projeto X" sobre uma conversa
+   * de outro projeto seria a troca silenciosa que o contrato proíbe.
+   */
+  projetoPedido?: ProjetoPedido | null;
+} = {}) {
+  const { conversationId, identidade, seloResults, projectId } = useConversation();
   const { emCurso } = useAuditoria();
 
   const auditando = auditoriaDaConversa(emCurso, conversationId);
   const contexto = contextoDaBarra({ identidade, seloResults });
+  const projeto =
+    projetoPedido?.estado === "ok" && projectId === projetoPedido.id ? projetoPedido : null;
 
   // Nada a afirmar: a barra não existe, e o palco fica com a altura inteira.
-  if (!auditando && !contexto) return null;
+  if (!auditando && !contexto && !projeto) return null;
 
   if (auditando) {
     const { rotulo, contagem } = resumoDaAuditoria(auditando.marcos);
@@ -72,10 +84,32 @@ export function BarraDoNexo() {
     );
   }
 
-  // Repouso. `contexto` é não-nulo aqui: o retorno acima já cobriu o outro caso.
-  const { obra, orgao, codigo } = contexto!;
+  /*
+   * SÓ O PROJETO, antes de qualquer leitura: quem chegou por "Gerar capas" do
+   * projeto vê em qual projeto está trabalhando ANTES de anexar e gastar.
+   */
+  if (!contexto) {
+    return (
+      <div className="nexo-barra" data-camada="repouso" data-projeto-da-conversa={projeto!.id}>
+        <span className="nexo-barra__rotulo">Projeto</span>
+        <span className="nexo-barra__obra" title={projeto!.nome}>
+          {projeto!.nome}
+        </span>
+        {projeto!.arquivado && <span className="nexo-barra__orgao">arquivado</span>}
+        <span className="nexo-barra__codigo">{projeto!.codigo}</span>
+      </div>
+    );
+  }
+
+  // Repouso com obra lida.
+  const { obra, orgao, codigo } = contexto;
   return (
-    <div className="nexo-barra" data-camada="repouso">
+    <div
+      className="nexo-barra"
+      data-camada="repouso"
+      data-projeto-da-conversa={projeto?.id}
+    >
+      {projeto && <span className="nexo-barra__rotulo">Projeto {projeto.codigo}</span>}
       {/*
         O SELO, e não o sinal: a faixa é uma SUPERFÍCIE LARGA, e ali os 31px do
         sinal se perderiam entre o nome da obra e o código.

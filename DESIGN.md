@@ -352,6 +352,13 @@ Mono corre num eixo paralelo de dois degraus:
 
 ### Regras nomeadas
 
+**Regra do texto de decisão (28/09/2026, auditoria UX/UI G08).** O que a pessoa
+precisa ler para DECIDIR ou AGIR — evidência, situação do achado, pendência da
+montagem, rótulo de botão — fica em Body (14px) ou Caption (12px). Os 11px do
+Mono Label são só para metadado auxiliar (contagem ao lado de um filtro,
+referência, página). Nada abaixo de 11px: as telas de achados, mesa, paleta,
+barra lateral e barra do topo foram varridas para esse piso.
+
 **Regra da disciplina do mono.** Todo elemento que carrega dado estruturado
 (horário, nome de arquivo, código de documento, contagem, tempo decorrido) usa
 IBM Plex Mono. O Sans é para títulos, parágrafos e conclusões.

@@ -22,6 +22,8 @@
  *    título maior não truncar em cinco caracteres.
  */
 
+import { abrirPaleta } from "./PaletaDeComandos";
+import { NavegacaoPrincipal } from "@/components/layout/navegacao-principal";
 import { formatarDiaMes, formatarHora, mesmoDiaEmBrasilia } from "@/lib/fuso-de-brasilia";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
@@ -31,18 +33,15 @@ import {
   Cloud,
   CloudOff,
   TriangleAlert,
+  Command,
   Compass,
   CopyPlus,
   Eraser,
   FileSearch,
-  FolderKanban,
-  Gauge,
-  Layers,
   Plus,
   Search,
   Settings,
   Trash2,
-  Wrench,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -51,7 +50,6 @@ import { LimpezaDaPasta } from "./LimpezaDaPasta";
 import { Button } from "@/components/ui/button";
 import { Dropdown, DropdownItem } from "@/components/ui/dropdown";
 import { SignOutMenuItem } from "@/components/sign-out-button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { ConversationSummary, TipoDeTrabalho } from "../lib/nexo-db";
 import { avisoDeGravacao } from "../lib/aviso-de-gravacao";
 import type { EstadoDaSincronizacao } from "../lib/nexo-sync";
@@ -237,8 +235,24 @@ export function NexoSidebar({
         className="w-full justify-start gap-2.5 px-3.5 text-[12.5px]"
       >
         <Plus className="shrink-0" strokeWidth={1.9} aria-hidden />
-        Novo projeto
+        {/* "Nova conversa", e não "Novo projeto" (G07): o botão abre uma
+            conversa; o projeto nasce dos documentos anexados, ou se cria em
+            Projetos. Dois nomes para duas operações. */}
+        Nova conversa
       </Button>
+
+      {/* G02: a busca de ações tem um acionador VISÍVEL — o Ctrl+K é atalho,
+          não o único caminho. Abre a mesma paleta. */}
+      <button
+        type="button"
+        onClick={abrirPaleta}
+        data-abrir-paleta
+        className="nx-edge-7 flex h-[34px] w-full items-center gap-2 px-3 text-left text-[12.5px] text-muted-foreground outline-none transition-colors [--nx-edge:var(--border)] [--nx-fill:transparent] hover:text-foreground focus-visible:text-foreground"
+      >
+        <Command className="size-3.5 shrink-0" aria-hidden />
+        <span className="flex-1">Buscar ações</span>
+        <kbd className="font-mono text-[11px] uppercase tracking-[0.08em]">Ctrl+K</kbd>
+      </button>
 
       {/* Busca */}
       {!empty && (
@@ -413,31 +427,26 @@ export function NexoSidebar({
         com o mesmo texto do rótulo antigo. Ícone sem nome é adivinhação, e
         adivinhação em navegação é o pior lugar para colocá-la.
       */}
-      <nav
-        aria-label="Resto do software"
-        className="flex items-center gap-1 border-t border-border/60 pt-2.5"
-      >
-        <BotaoDeIcone rotulo="Projetos" href="/projetos" Icone={FolderKanban} />
-        {isAdmin && (
-          <BotaoDeIcone rotulo="Painel admin" href="/admin" Icone={Gauge} />
-        )}
+      {/*
+        Rodapé, camada 1: A NAVEGAÇÃO PRINCIPAL, em texto (G01, 28/09/2026).
+        Era uma fileira de ícones — Projetos, Admin, Como funciona e
+        "Ferramentas antigas" — que só se entendia no tooltip, e a montagem
+        manual aparecia como legado. Agora são os mesmos cinco destinos da home,
+        com nome, em duas colunas (~80px de altura).
+      */}
+      <div className="flex flex-col gap-1 border-t border-border/60 pt-2.5">
+        <NavegacaoPrincipal ehAdmin={Boolean(isAdmin)} compacta />
         {onVerTour && (
-          <BotaoDeIcone
-            rotulo="Como funciona"
+          <button
+            type="button"
             onClick={() => void onVerTour()}
-            Icone={Compass}
-          />
+            className="flex items-center gap-1.5 px-2 py-1 text-left text-[12.5px] text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:text-foreground focus-visible:underline"
+          >
+            <Compass className="size-3.5" aria-hidden />
+            Como funciona o Nexo
+          </button>
         )}
-        {/* Cor de legado: presente sem chamar. Nem status, nem desabilitado — a
-            ferramenta funciona, só não é o caminho novo. Por último, sempre:
-            é saída de emergência, não destino. */}
-        <BotaoDeIcone
-          rotulo="Ferramentas antigas"
-          href="/ferramentas"
-          Icone={Wrench}
-          legado
-        />
-      </nav>
+      </div>
 
       {/*
         Rodapé, camada 2: A CONTA.
@@ -503,55 +512,5 @@ export function NexoSidebar({
         </Dropdown>
       )}
     </aside>
-  );
-}
-
-/**
- * Um destino do rodapé, em ícone.
- *
- * `aria-label` E tooltip com o MESMO texto, sempre: o primeiro é para quem não
- * vê o ícone, o segundo para quem vê e não o reconhece. Um sem o outro deixa
- * metade das pessoas adivinhando.
- */
-function BotaoDeIcone({
-  rotulo,
-  href,
-  onClick,
-  Icone,
-  legado = false,
-}: {
-  rotulo: string;
-  href?: string;
-  onClick?: () => void;
-  Icone: typeof Layers;
-  legado?: boolean;
-}) {
-  const classe = cn(
-    "nx-edge-6 flex h-[38px] w-11 shrink-0 items-center justify-center transition-colors focus-visible:outline-none [--nx-edge:transparent] [--nx-fill:transparent] focus-visible:[--nx-fill:var(--accent)] hover:[--nx-fill:var(--accent)]",
-    legado
-      ? "text-[var(--legacy)]/80 hover:text-[var(--legacy)]"
-      : "text-muted-foreground hover:text-foreground",
-  );
-  const icone = (
-    <Icone className="h-[18px] w-[18px]" strokeWidth={1.5} aria-hidden />
-  );
-
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        {href ? (
-          <Link href={href} aria-label={rotulo} className={classe}>
-            {icone}
-          </Link>
-        ) : (
-          <button type="button" onClick={onClick} aria-label={rotulo} className={classe}>
-            {icone}
-          </button>
-        )}
-      </TooltipTrigger>
-      <TooltipContent side="top">
-        <p>{rotulo}</p>
-      </TooltipContent>
-    </Tooltip>
   );
 }

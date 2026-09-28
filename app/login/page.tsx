@@ -286,17 +286,23 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         </div>
       </aside>
 
+      {/*
+        NOTA, NÃO PORTÃO (G06). Era a tela inteira dizendo "Use o Nexo no
+        desktop" — e quem recebia o link de um achado no celular não entrava.
+      */}
       <section className="login-narrow-notice" aria-labelledby="login-narrow-title">
         <span aria-hidden="true">
-          <MarcaViva size={48} />
+          <MarcaViva size={28} />
         </span>
-        <h1 id="login-narrow-title" className="login-narrow-title">
-          Use o Nexo no desktop
-        </h1>
-        <p className="login-narrow-copy">
-          A análise técnica de PDFs, o mapa do volume e a revisão lado a lado
-          exigem uma tela maior.
-        </p>
+        <div>
+          <p id="login-narrow-title" className="login-narrow-title">
+            No celular, dá para ler e tratar achados.
+          </p>
+          <p className="login-narrow-copy">
+            A montagem de volumes e o mapa do documento lado a lado rendem mais
+            num computador.
+          </p>
+        </div>
       </section>
     </main>
   );

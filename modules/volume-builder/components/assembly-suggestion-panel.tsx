@@ -95,7 +95,7 @@ export function AssemblySuggestionPanel({
         {suggestions.length > 0 && (
           <div className="space-y-2">
             <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">
+              <Badge variant="secondary" className="h-5 px-1.5 text-[11px]">
                 {response?.source === "ai" ? "IA" : "Local"}
               </Badge>
               <span className="text-xs text-muted-foreground">
@@ -168,7 +168,7 @@ export function AssemblySuggestionPanel({
 function SuggestionMetric({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-md border bg-background/60 p-2">
-      <p className="text-[10px] text-muted-foreground">{label}</p>
+      <p className="text-[11px] text-muted-foreground">{label}</p>
       <p className="text-sm font-semibold">{value}</p>
     </div>
   );

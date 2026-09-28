@@ -66,10 +66,10 @@ export const projetosModule: ModuleDef = {
  */
 export const legacyModules: readonly ModuleDef[] = [
   {
-    title: "Organização de volumes",
+    title: "Montar volumes com PDFs existentes",
     description: "Junção, ordenação e conferência final dos volumes de projeto.",
     href: "/volumes",
-    label: "Abrir volumes",
+    label: "Montar volumes",
     icon: Layers3,
     emphasis: false,
     status: "active",

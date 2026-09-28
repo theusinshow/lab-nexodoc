@@ -20,6 +20,8 @@
  * a abertura do produto.
  */
 
+import { lerContextoDaUrl, urlMandaNoDestino } from "../../../lib/contexto-da-url.ts";
+
 export const CHAVE_ULTIMA_CONVERSA = "nexo:ultima-conversa";
 
 /** Guarda qual conversa estava aberta. Falha em silêncio: é conveniência. */
@@ -82,6 +84,11 @@ export function conversaPedidaNaUrl(query: string): string | null {
  * Puro (recebe a query, não a lê do `window`) → testável em node cru.
  */
 export function deveRestaurar(query: string): boolean {
-  const params = new URLSearchParams(query);
-  return !params.get("auditoria") && !params.get("intencao");
+  /*
+   * `?projeto=` (e o legado `?project=`) TAMBÉM mandam — auditoria UX/UI, G03.
+   * Sem eles na lista, "Auditar documentos" do projeto B reabria a última
+   * conversa, que podia ser do projeto A. A regra mora no leitor único do
+   * contexto da URL, para que ler e decidir não divirjam.
+   */
+  return !urlMandaNoDestino(lerContextoDaUrl(query));
 }
