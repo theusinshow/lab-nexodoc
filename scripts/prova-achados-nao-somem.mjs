@@ -160,6 +160,8 @@ try {
   await page.screenshot({ path: `${OUT}/achados-1-contagem-bate.png` });
 
   // --- 2. o filtro de gravidade -------------------------------------------
+  // Gravidade mora no painel "Filtros e ordem" da coluna da fila (28/09/2026).
+  await page.getByRole("button", { name: /Filtros e ordem/ }).click();
   const chipsGravidade = page.locator("[data-filtro-gravidade]");
   check(
     "há um chip por faixa presente no parecer",

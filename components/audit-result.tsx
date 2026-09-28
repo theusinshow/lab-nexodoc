@@ -23,6 +23,9 @@ import {
   Info,
   Search,
   Send,
+  SlidersHorizontal,
+  ListChecks,
+  MessageSquare,
   Wrench,
   X,
 } from "lucide-react";
@@ -139,6 +142,29 @@ const COR_DO_PIN: Record<StructuredFinding["severity"], string> = {
   warning: "var(--status-warning)",
   ok: "var(--status-ok)",
 };
+
+/*
+ * O CHIP DE FILTRO da fila de achados — um desenho só para situação,
+ * gravidade, disciplina e tipo. É a camada `.nx-edge-6` do sistema (§7): em
+ * repouso a moldura é transparente e o miolo é o do cartão, OPACO, para que o
+ * anel de foco vire anel e não um bloco teal; ligado, "selecionado/atual" da
+ * matriz de estados — moldura teal e miolo elevado. `recuado` é para o chip que
+ * mora no painel recuado (disciplina e tipo), onde o miolo de repouso é o dele.
+ */
+function classeDoFiltro(ativo: boolean, recuado = false) {
+  return cn(
+    "nx-edge-6 inline-flex min-h-8 items-center gap-1.5 whitespace-nowrap px-2.5 py-1 font-mono text-xs outline-none transition-[background-color,color] duration-[var(--duration-fast)] ease-[var(--ease-feedback)] active:translate-y-px",
+    ativo
+      ? "text-foreground [--nx-edge:var(--ring)] [--nx-fill:var(--nexodoc-raised)]"
+      : cn(
+          "text-muted-foreground [--nx-edge:transparent] hover:text-foreground hover:[--nx-edge:var(--border)] hover:[--nx-fill:var(--nexodoc-raised)]",
+          recuado ? "[--nx-fill:var(--nexodoc-recessed)]" : "[--nx-fill:var(--card)]",
+        ),
+  );
+}
+
+const ROTULO_DA_LINHA_DE_FILTRO =
+  "mr-1 w-[5.5rem] shrink-0 font-mono text-[11px] uppercase tracking-wider text-muted-foreground";
 
 const MARCACAO_POR_GRAVIDADE: Record<StructuredFinding["severity"], string> = {
   critical: "[&_mark]:bg-[var(--status-critical)] [&_mark]:text-[var(--destructive-foreground)]",
@@ -1149,19 +1175,18 @@ function SectionCard({
 
 function FindingField({ label, value }: { label: string; value?: string }) {
   return (
-    <div
-      className="nx-edge-7 min-w-0 px-3 py-2.5"
-      style={
-        {
-          "--nx-edge": "var(--border)",
-          "--nx-fill": "var(--nexodoc-recessed)",
-        } as React.CSSProperties
-      }
-    >
-      <p className="font-mono text-xs text-muted-foreground">{label}</p>
-      <p className="mt-1 break-words text-sm text-foreground">
+    <div className="grid min-w-0 gap-0.5 py-2">
+      <dt className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
+        {label}
+      </dt>
+      <dd
+        className={cn(
+          "m-0 break-words text-sm",
+          value ? "text-foreground" : "text-muted-foreground",
+        )}
+      >
         {value || "não informado"}
-      </p>
+      </dd>
     </div>
   );
 }
@@ -1717,6 +1742,30 @@ export function AuditResult({
     Boolean(termo) ||
     Boolean(responsavelFiltro) ||
     situacao !== "todos";
+  /*
+   * DISCIPLINA E TIPO FICAM ATRÁS DE UM BOTÃO. São recortes de consulta — "o
+   * que é da elétrica?" —, não de trabalho: quem revisa decide pela situação e
+   * pela gravidade, e as duas linhas de etiquetas empurravam o primeiro achado
+   * para baixo da dobra em toda visita. Abrem sozinhas quando há filtro delas
+   * ativo, para que um recorte nunca fique aplicado e invisível.
+   */
+  const recortesAtivos =
+    disciplineFilter.size +
+    errorTypeFilter.size +
+    impactFilter.size +
+    (responsavelFiltro ? 1 : 0);
+  const [recortesAbertos, setRecortesAbertos] = useState(false);
+  /** Faixas recolhidas na fila agrupada por impacto. */
+  const [faixasRecolhidas, setFaixasRecolhidas] = useState<Set<FindingImpact>>(
+    () => new Set(),
+  );
+  const bloqueiamNaFila = principalFindingsWithPdf.filter(
+    (f) => findingImpactBucket(f) === "critico_documental",
+  ).length;
+  const julgadosNaFila = principalFindingsWithPdf.filter(
+    (f) => f.refId && feedbackByFinding[f.refId],
+  ).length;
+  const mostrarRecortes = recortesAbertos || recortesAtivos > 0;
   const limparFiltros = () => {
     setDisciplineFilter(new Set());
     setErrorTypeFilter(new Set());
@@ -1833,7 +1882,11 @@ export function AuditResult({
   };
   // Item 12 — veredito de emissão: a regra única (`avaliarEmissao`), a mesma do
   // texto exportado, do cartão e do grafo.
-  const verdict = report ? avaliarEmissao(report).veredito : null;
+  const emissao = report ? avaliarEmissao(report) : null;
+  const verdict = emissao?.veredito ?? null;
+  const avisoCobreOVeredito = Boolean(
+    report && emissao?.estado === "incompleto" && incompletudeDoParecer(report).incompleta,
+  );
   const groupedReportFindings = report
     ? groupFindingsByImpact(report.incongruencias)
     : null;
@@ -2191,8 +2244,65 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
     requestAnimationFrame(() => {
       const alvo = document.querySelector<HTMLElement>("[data-detalhe-do-achado]");
       alvo?.scrollIntoView({ behavior: "smooth", block: "start" });
+      document
+        .querySelector<HTMLElement>(`[data-item-da-fila="${CSS.escape(chave)}"]`)
+        ?.scrollIntoView({ block: "nearest" });
     });
   }
+  /*
+   * J / K PERCORREM A FILA, C / F JULGAM — os gestos que se repetem vinte vezes numa revisão, e
+   * que pedia mirar "Próximo" a cada achado. É a convenção de leitor de fila
+   * (e-mail, revisão de código). Calado enquanto se digita, com modificador
+   * (Ctrl+K é a busca de ações) e com o visor do PDF aberto, que tem o seu
+   * próprio anterior/próximo.
+   */
+  useEffect(() => {
+    if (view !== "findings" || activePdf) return;
+    const aoTeclar = (event: KeyboardEvent) => {
+      if (event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) return;
+      const tecla = event.key.toLowerCase();
+      if (!["j", "k", "c", "f"].includes(tecla)) return;
+      const alvo = event.target as HTMLElement | null;
+      if (alvo?.closest("input, textarea, select, [contenteditable=''], [contenteditable='true'], [role='dialog']")) return;
+      // C e F julgam o achado aberto (Validade). Reversível: o outro botão troca.
+      if (tecla === "c" || tecla === "f") {
+        if (!auditId || !achadoDoDetalhe?.refId || feedbackSavingKey === achadoDoDetalhe.refId) return;
+        event.preventDefault();
+        void saveFindingFeedback(
+          achadoDoDetalhe,
+          indiceDoDetalhe,
+          tecla === "c" ? "CONFIRMED" : "FALSE_POSITIVE",
+        );
+        return;
+      }
+      const posicao = groupedPrincipal.findIndex((f) => chaveDoAchado(f) === chaveDoDetalhe);
+      const destino = groupedPrincipal[posicao + (tecla === "j" ? 1 : -1)];
+      if (!destino) return;
+      event.preventDefault();
+      abrirNoDetalhe(chaveDoAchado(destino));
+    };
+    document.addEventListener("keydown", aoTeclar);
+    return () => document.removeEventListener("keydown", aoTeclar);
+  });
+  /**
+   * O status da linha da fila, em uma ou duas palavras à direita: como fechou,
+   * se foi descartado, ou com quem está. Sem nada a dizer (pendente e sem
+   * ninguém), cala — o losango vazado já diz "ainda por julgar". A frase
+   * completa segue em `situacaoLegivel`, no `title` e para leitor de tela.
+   */
+  const statusCurto = (
+    finding: StructuredFinding,
+  ): { texto: string; tom: "ok" | "seu" | "descartado" | "neutro" } | null => {
+    const ref = finding.refId;
+    if (!ref) return null;
+    const d = desfechoPorAchado[ref];
+    if (d) return { texto: DESFECHO_LABEL[d.kind], tom: d.kind === "FALSE_POSITIVE" ? "descartado" : "ok" };
+    if (estaResolvido(ref)) return { texto: "Corrigido", tom: "ok" };
+    if (feedbackByFinding[ref] === "FALSE_POSITIVE") return { texto: "Falso positivo", tom: "descartado" };
+    const com = atribuidoPor[ref];
+    if (com) return com.souEu ? { texto: "com você", tom: "seu" } : { texto: com.nome, tom: "neutro" };
+    return null;
+  };
   /** Tratamento em uma frase: com quem está, ou como fechou (A05). */
   const situacaoLegivel = (finding: StructuredFinding) => {
     const ref = finding.refId;
@@ -3014,10 +3124,20 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
             />
             {verdict.label}
           </p>
+          {/*
+            SEM REPETIR O AVISO. Com a auditoria incompleta, o detalhe do
+            veredito é "Pendências: <o título do aviso logo acima>" — a mesma
+            frase duas vezes, em dois blocos âmbar empilhados, antes de qualquer
+            achado. O aviso já explica; o veredito fica com o que só ele diz: a
+            decisão e a obra.
+          */}
           <p className="text-sm text-muted-foreground">
-            {(report?.obra && report.obra !== "não identificada"
-              ? `${report.obra} · `
-              : "") + verdict.detail}
+            {[
+              report?.obra && report.obra !== "não identificada" ? report.obra : "",
+              avisoCobreOVeredito ? "" : verdict.detail,
+            ]
+              .filter(Boolean)
+              .join(" · ")}
           </p>
         </div>
       ) : null}
@@ -3621,244 +3741,44 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
             ) : null}
             {findings.length > 0 ? (
               <div className="space-y-4">
-                <div
-                  className="nx-edge-8 p-4"
-                  style={
-                    {
-                      "--nx-edge": "var(--border)",
-                      "--nx-fill": "var(--nexodoc-recessed)",
-                    } as React.CSSProperties
-                  }
-                >
-                  <p className="font-mono text-xs uppercase text-muted-foreground">
-                    Como ler
-                  </p>
-                  <p className="mt-2 text-sm leading-6 text-foreground">
+                {/*
+                  COMO LER vira pergunta que se abre, e não parágrafo fixo. Era
+                  um bloco de três linhas acima da fila em TODA visita — útil na
+                  primeira, ruído da segunda em diante, e empurrava o primeiro
+                  achado para baixo da dobra. O texto é o mesmo.
+                */}
+                <details className="group" data-como-ler>
+                  <summary className="inline-flex cursor-pointer items-center gap-1.5 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground">
+                    <Info className="size-3.5" aria-hidden />
+                    Como ler esta tela
+                    <ChevronDown
+                      className="size-3.5 transition-transform duration-[var(--duration-fast)] group-open:rotate-180"
+                      aria-hidden
+                    />
+                  </summary>
+                  <p className="mt-2 max-w-[75ch] text-sm leading-6 text-foreground">
                     A fila resume cada achado: o que é, onde e com quem está.
                     O detalhe mostra a evidência primeiro, com a conversa e o
                     histórico em abas. <strong className="font-medium">Validade</strong>{" "}
                     diz se o achado está certo; <strong className="font-medium">Tratamento</strong>{" "}
                     diz o que foi feito na obra — um não implica o outro.
                   </p>
-                </div>
-
-                {presentDisciplines.length > 1 ||
-                presentErrorTypes.length > 1 ||
-                presentImpacts.length > 1 ? (
-                  /* Forma so: o painel guarda botoes, e a camada acenderia
-                     inteira ao focar um deles (ver DESIGN.md §7). */
-                  <div className="nx-cut-8 space-y-2 bg-[var(--nexodoc-recessed)] p-3">
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <span className="mr-1 font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
-                        Gravidade
-                      </span>
-                      {presentImpacts.map((impact) => (
-                        <button
-                          key={impact}
-                          type="button"
-                          data-filtro-gravidade={impact}
-                          aria-pressed={impactFilter.has(impact)}
-                          onClick={() =>
-                            setImpactFilter((current) =>
-                              toggleFrom(current, impact),
-                            )
-                          }
-                          className={cn(
-                            "nx-cut-6 px-2.5 py-1 font-mono text-[11px] transition-colors",
-                            impactFilter.has(impact)
-                              ? "border-ring bg-card text-foreground"
-                              : "text-muted-foreground hover:text-foreground",
-                          )}
-                        >
-                          {getImpactLabel(impact)} ({impactCount(impact)})
-                        </button>
-                      ))}
-                    </div>
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <span className="mr-1 font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
-                        Disciplina
-                      </span>
-                      {presentDisciplines.map((discipline) => (
-                        <button
-                          key={discipline}
-                          type="button"
-                          aria-pressed={disciplineFilter.has(discipline)}
-                          onClick={() =>
-                            setDisciplineFilter((current) =>
-                              toggleFrom(current, discipline),
-                            )
-                          }
-                          className={cn(
-                            "nx-cut-6 px-2.5 py-1 font-mono text-[11px] transition-colors",
-                            disciplineFilter.has(discipline)
-                              ? "border-ring bg-card text-foreground"
-                              : "text-muted-foreground hover:text-foreground",
-                          )}
-                        >
-                          {getDisciplineLabel(discipline)} (
-                          {disciplineCount(discipline)})
-                        </button>
-                      ))}
-                    </div>
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <span className="mr-1 font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
-                        Tipo
-                      </span>
-                      {presentErrorTypes.map((type) => (
-                        <button
-                          key={type}
-                          type="button"
-                          aria-pressed={errorTypeFilter.has(type)}
-                          onClick={() =>
-                            setErrorTypeFilter((current) =>
-                              toggleFrom(current, type),
-                            )
-                          }
-                          className={cn(
-                            "nx-cut-6 px-2.5 py-1 font-mono text-[11px] transition-colors",
-                            errorTypeFilter.has(type)
-                              ? "border-ring bg-card text-foreground"
-                              : "text-muted-foreground hover:text-foreground",
-                          )}
-                        >
-                          {getErrorTypeLabel(type)}
-                        </button>
-                      ))}
-                      {disciplineFilter.size > 0 ||
-                      errorTypeFilter.size > 0 ||
-                      impactFilter.size > 0 ? (
-                        <button
-                          type="button"
-                          onClick={limparFiltros}
-                          className="ml-1 rounded-full px-2 py-1 font-mono text-[11px] text-primary outline-none hover:underline focus-visible:underline"
-                        >
-                          limpar filtros
-                        </button>
-                      ) : null}
-                    </div>
-                  </div>
-                ) : null}
+                </details>
 
                 {/*
-                  ORGANIZAR A FILA — auditoria UX/UI, A04 (28/09/2026).
+                  FILA + DETALHE — auditoria UX/UI, A07 (28/09/2026); coluna da
+                  fila redesenhada na passada de 28/09 a partir da proposta do
+                  Claude Design.
 
-                  Busca por referência, texto, documento ou página; situação
-                  operacional (Meus pendentes, Sem responsável, Encerrados) e
-                  responsável; ordem declarada. A contagem "Mostrando N de M"
-                  diz o tamanho do recorte, e a seleção em lote diz que vale para
-                  OS FILTRADOS — não para a página nem para o parecer inteiro.
-                */}
-                <div className="grid gap-2" data-organizar-fila>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <label htmlFor="busca-de-achados" className="sr-only">
-                      Buscar achado
-                    </label>
-                    <Input
-                      id="busca-de-achados"
-                      type="search"
-                      value={busca}
-                      onChange={(event) => setBusca(event.target.value)}
-                      placeholder="Buscar por referência, texto, documento ou página"
-                      className="min-w-[14rem] flex-1"
-                    />
-                    <label className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
-                      Responsável
-                      <Select
-                        value={responsavelFiltro}
-                        onChange={(event) => setResponsavelFiltro(event.target.value)}
-                        className="w-44"
-                        selectClassName="normal-case tracking-normal text-foreground"
-                      >
-                        <option value="">qualquer</option>
-                        {responsaveisPresentes.map((nome) => (
-                          <option key={nome} value={nome}>
-                            {nome}
-                          </option>
-                        ))}
-                      </Select>
-                    </label>
-                    <label className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
-                      Ordem
-                      <Select
-                        value={ordem}
-                        onChange={(event) => setOrdem(event.target.value as OrdemDaFila)}
-                        className="w-40"
-                        selectClassName="normal-case tracking-normal text-foreground"
-                      >
-                        <option value="impacto">por impacto</option>
-                        <option value="pagina">por página</option>
-                        <option value="documento">por documento</option>
-                        <option value="referencia">por referência</option>
-                      </Select>
-                    </label>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Situação">
-                    <span className="mr-1 font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
-                      Situação
-                    </span>
-                    {SITUACOES_DA_FILA.map((s) => (
-                      <button
-                        key={s.valor}
-                        type="button"
-                        data-filtro-situacao={s.valor}
-                        aria-pressed={situacao === s.valor}
-                        onClick={() => setSituacao(s.valor)}
-                        className={cn(
-                          "nx-cut-6 px-2.5 py-1 font-mono text-[11px] transition-colors",
-                          situacao === s.valor
-                            ? "bg-card text-foreground ring-1 ring-[var(--ring)]"
-                            : "text-muted-foreground hover:text-foreground",
-                        )}
-                      >
-                        {s.rotulo} ({contagemDaSituacao(s.valor)})
-                      </button>
-                    ))}
-                  </div>
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <p
-                      className="font-mono text-[11px] text-muted-foreground"
-                      aria-live="polite"
-                      data-mostrando={groupedPrincipal.length}
-                    >
-                      Mostrando {groupedPrincipal.length} de{" "}
-                      {plural(principalFindingsWithPdf.length, "achado", "achados")}
-                    </p>
-                    <div className="flex flex-wrap items-center gap-2">
-                      {filtrosAtivos ? (
-                        <Button type="button" size="sm" variant="ghost" onClick={limparFiltros}>
-                          Limpar filtros
-                        </Button>
-                      ) : null}
-                      {enviaveisDoFiltro.length > 0 ? (
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          onClick={alternarTodosDoFiltro}
-                          aria-pressed={todosDoFiltroMarcados}
-                        >
-                          {todosDoFiltroMarcados
-                            ? `Desmarcar os ${enviaveisDoFiltro.length} ${filtrosAtivos ? "filtrados" : "pendentes"}`
-                            : `Selecionar os ${enviaveisDoFiltro.length} ${filtrosAtivos ? "filtrados" : "pendentes"} para atribuir`}
-                        </Button>
-                      ) : null}
-                    </div>
-                  </div>
-                </div>
-
-                {/*
-                  FILA + DETALHE — auditoria UX/UI, A07 (28/09/2026).
-
-                  A lista virou fila compacta (o que é, onde, com quem) e o
-                  cartão inteiro virou o DETALHE do achado escolhido: evidência
-                  primeiro, conversa e histórico em abas nomeadas, e os dois
-                  eixos — Validade e Tratamento — separados embaixo. Lado a lado
-                  quando a coluna tem 52rem; abaixo disso, em sequência, com
-                  "Voltar à lista". `@container` porque quem aperta é a coluna
-                  (o palco do Nexo, o drawer), não a janela.
+                  A fila carrega os PRÓPRIOS controles no topo — progresso,
+                  busca, situação, filtros —, e o detalhe começa na altura da
+                  fila em vez de embaixo de uma barra de largura inteira. Lado a
+                  lado quando a coluna tem 52rem; abaixo disso, em sequência,
+                  com "Voltar à lista". `@container` porque quem aperta é a
+                  coluna (o palco do Nexo, o drawer), não a janela.
                 */}
                 <div className="@container">
-                  <div className="grid items-start gap-4 @min-[52rem]:grid-cols-[minmax(15rem,21rem)_minmax(0,1fr)]">
+                  <div className="grid items-start gap-5 @min-[52rem]:grid-cols-[minmax(17rem,22rem)_minmax(0,1fr)]">
                     <nav
                       aria-label="Fila de achados"
                       data-fila-de-achados
@@ -3867,19 +3787,258 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
                         vistaEstreita === "detalhe" && "hidden @min-[52rem]:block",
                       )}
                     >
+                      <div
+                        className="grid gap-2.5 bg-card pb-3 @min-[52rem]:sticky @min-[52rem]:top-0 @min-[52rem]:z-10"
+                        data-organizar-fila
+                      >
+                        {/*
+                          O PROGRESSO DA REVISÃO: quantos bloqueiam e quantos já
+                          foram julgados. "Julgado" é ter Validade registrada —
+                          é o trabalho que esta tela existe para fazer, e sem o
+                          número ninguém sabe quanto falta.
+                        */}
+                        <div className="grid gap-1.5">
+                          <p className="flex flex-wrap items-baseline gap-x-2 font-mono text-xs text-muted-foreground">
+                            {bloqueiamNaFila > 0 ? (
+                              <span className="font-semibold text-destructive">
+                                {bloqueiamNaFila} {bloqueiamNaFila === 1 ? "bloqueia" : "bloqueiam"}
+                              </span>
+                            ) : null}
+                            <span data-julgados={julgadosNaFila}>
+                              <span className="tabular-nums text-foreground">{julgadosNaFila}</span> de{" "}
+                              {principalFindingsWithPdf.length} julgados
+                            </span>
+                          </p>
+                          <div
+                            aria-hidden
+                            className="h-0.5 w-full overflow-hidden bg-[var(--nexodoc-recessed)]"
+                          >
+                            <div
+                              className="h-full bg-[var(--nexodoc-accent)] transition-[width] duration-[var(--duration-base)]"
+                              style={{
+                                width: `${principalFindingsWithPdf.length ? (julgadosNaFila / principalFindingsWithPdf.length) * 100 : 0}%`,
+                              }}
+                            />
+                          </div>
+                        </div>
+
+                        <label htmlFor="busca-de-achados" className="sr-only">
+                          Buscar achado
+                        </label>
+                        <Input
+                          id="busca-de-achados"
+                          type="search"
+                          value={busca}
+                          onChange={(event) => setBusca(event.target.value)}
+                          placeholder="Buscar por texto, referência ou página"
+                        />
+
+                        <div className="flex flex-wrap items-center gap-1" role="group" aria-label="Situação">
+                          {SITUACOES_DA_FILA.map((s) => (
+                            <button
+                              key={s.valor}
+                              type="button"
+                              data-filtro-situacao={s.valor}
+                              aria-pressed={situacao === s.valor}
+                              onClick={() => setSituacao(s.valor)}
+                              className={cn(classeDoFiltro(situacao === s.valor), "min-h-7 px-2")}
+                            >
+                              {s.rotulo} <span className="tabular-nums opacity-80">{contagemDaSituacao(s.valor)}</span>
+                            </button>
+                          ))}
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-1">
+                          <button
+                            type="button"
+                            aria-expanded={mostrarRecortes}
+                            aria-controls="recortes-da-fila"
+                            onClick={() => {
+                              if (recortesAtivos === 0) setRecortesAbertos((aberto) => !aberto);
+                            }}
+                            aria-disabled={recortesAtivos > 0 || undefined}
+                            title={
+                              recortesAtivos > 0
+                                ? "Fica aberto enquanto houver filtro aplicado"
+                                : "Responsável, ordem, gravidade, disciplina e tipo"
+                            }
+                            className={cn(classeDoFiltro(false), "min-h-7 px-2")}
+                          >
+                            <SlidersHorizontal className="size-3.5" aria-hidden />
+                            Filtros e ordem
+                            {recortesAtivos > 0 ? (
+                              <span className="tabular-nums text-foreground">· {recortesAtivos}</span>
+                            ) : null}
+                            <ChevronDown
+                              aria-hidden
+                              className={cn(
+                                "size-3.5 transition-transform duration-[var(--duration-fast)]",
+                                mostrarRecortes && "rotate-180",
+                              )}
+                            />
+                          </button>
+                          {filtrosAtivos ? (
+                            <button
+                              type="button"
+                              onClick={limparFiltros}
+                              className={cn(classeDoFiltro(false), "min-h-7 px-2")}
+                            >
+                              <X className="size-3.5" aria-hidden />
+                              Limpar filtros
+                            </button>
+                          ) : null}
+                          {enviaveisDoFiltro.length > 0 ? (
+                            <button
+                              type="button"
+                              onClick={alternarTodosDoFiltro}
+                              aria-pressed={todosDoFiltroMarcados}
+                              aria-label={
+                                todosDoFiltroMarcados
+                                  ? `Desmarcar os ${enviaveisDoFiltro.length} ${filtrosAtivos ? "filtrados" : "pendentes"}`
+                                  : `Selecionar os ${enviaveisDoFiltro.length} ${filtrosAtivos ? "filtrados" : "pendentes"} para atribuir`
+                              }
+                              title={
+                                todosDoFiltroMarcados
+                                  ? `Desmarcar os ${enviaveisDoFiltro.length} ${filtrosAtivos ? "filtrados" : "pendentes"}`
+                                  : `Selecionar os ${enviaveisDoFiltro.length} ${filtrosAtivos ? "filtrados" : "pendentes"} para atribuir`
+                              }
+                              className={cn(classeDoFiltro(todosDoFiltroMarcados), "ml-auto min-h-7 px-2")}
+                            >
+                              <ListChecks className="size-3.5" aria-hidden />
+                              <span className="tabular-nums">{enviaveisDoFiltro.length}</span>
+                            </button>
+                          ) : null}
+                        </div>
+
+                        {mostrarRecortes ? (
+                          <div
+                            id="recortes-da-fila"
+                            className="nx-cut-8 grid gap-2.5 bg-[var(--nexodoc-recessed)] p-2.5"
+                          >
+                            <div className="grid grid-cols-2 gap-2">
+                              <label className="grid gap-1 font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
+                                Responsável
+                                <Select
+                                  value={responsavelFiltro}
+                                  onChange={(event) => setResponsavelFiltro(event.target.value)}
+                                  selectClassName="normal-case tracking-normal text-foreground"
+                                >
+                                  <option value="">qualquer</option>
+                                  {responsaveisPresentes.map((nome) => (
+                                    <option key={nome} value={nome}>
+                                      {nome}
+                                    </option>
+                                  ))}
+                                </Select>
+                              </label>
+                              <label className="grid gap-1 font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
+                                Ordem
+                                <Select
+                                  value={ordem}
+                                  onChange={(event) => setOrdem(event.target.value as OrdemDaFila)}
+                                  selectClassName="normal-case tracking-normal text-foreground"
+                                >
+                                  <option value="impacto">por impacto</option>
+                                  <option value="pagina">por página</option>
+                                  <option value="documento">por documento</option>
+                                  <option value="referencia">por referência</option>
+                                </Select>
+                              </label>
+                            </div>
+                            {presentImpacts.length > 1 || impactFilter.size > 0 ? (
+                              <div className="grid gap-1">
+                                <span className={ROTULO_DA_LINHA_DE_FILTRO}>Gravidade</span>
+                                <div className="flex flex-wrap gap-1">
+                                  {presentImpacts.map((impact) => (
+                                    <button
+                                      key={impact}
+                                      type="button"
+                                      data-filtro-gravidade={impact}
+                                      aria-pressed={impactFilter.has(impact)}
+                                      onClick={() =>
+                                        setImpactFilter((current) =>
+                                          toggleFrom(current, impact),
+                                        )
+                                      }
+                                      className={cn(classeDoFiltro(impactFilter.has(impact), true), "min-h-7 px-2")}
+                                    >
+                                      {getImpactLabel(impact)} ({impactCount(impact)})
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            ) : null}
+                            {presentDisciplines.length > 1 ? (
+                              <div className="grid gap-1">
+                                <span className={ROTULO_DA_LINHA_DE_FILTRO}>Disciplina</span>
+                                <div className="flex flex-wrap gap-1">
+                                  {presentDisciplines.map((discipline) => (
+                                    <button
+                                      key={discipline}
+                                      type="button"
+                                      aria-pressed={disciplineFilter.has(discipline)}
+                                      onClick={() =>
+                                        setDisciplineFilter((current) =>
+                                          toggleFrom(current, discipline),
+                                        )
+                                      }
+                                      className={cn(classeDoFiltro(disciplineFilter.has(discipline), true), "min-h-7 px-2")}
+                                    >
+                                      {getDisciplineLabel(discipline)} ({disciplineCount(discipline)})
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            ) : null}
+                            {presentErrorTypes.length > 1 ? (
+                              <div className="grid gap-1">
+                                <span className={ROTULO_DA_LINHA_DE_FILTRO}>Tipo</span>
+                                <div className="flex flex-wrap gap-1">
+                                  {presentErrorTypes.map((type) => (
+                                    <button
+                                      key={type}
+                                      type="button"
+                                      aria-pressed={errorTypeFilter.has(type)}
+                                      onClick={() =>
+                                        setErrorTypeFilter((current) =>
+                                          toggleFrom(current, type),
+                                        )
+                                      }
+                                      className={cn(classeDoFiltro(errorTypeFilter.has(type), true), "min-h-7 px-2")}
+                                    >
+                                      {getErrorTypeLabel(type)}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            ) : null}
+                          </div>
+                        ) : null}
+
+                        <p
+                          className="font-mono text-[11px] text-muted-foreground"
+                          aria-live="polite"
+                          data-mostrando={groupedPrincipal.length}
+                        >
+                          Mostrando {groupedPrincipal.length} de{" "}
+                          {plural(principalFindingsWithPdf.length, "achado", "achados")}
+                        </p>
+                      </div>
+
                       {groupedPrincipal.length === 0 ? (
                         <EmptyState
                           description="Nenhum achado com os filtros selecionados."
                           className="py-8"
                         />
                       ) : null}
-                      <ol className="m-0 grid list-none gap-1 p-0">
+                      <ol className="m-0 grid list-none gap-0.5 p-0">
                         {groupedPrincipal.map((finding, index) => {
                           const faixa = findingImpactBucket(finding);
                           const secao = IMPACT_SECTIONS.find((item) => item.key === faixa);
                           const cabecalho =
                             ordem === "impacto" &&
                             (index === 0 || findingImpactBucket(groupedPrincipal[index - 1]) !== faixa);
+                          const recolhida = ordem === "impacto" && faixasRecolhidas.has(faixa);
                           const chave = chaveDoAchado(finding);
                           const atual = chave === chaveDoDetalhe;
                           const paginas = paginasDoAchado({
@@ -3887,47 +4046,95 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
                             referencia: finding.referencia,
                           });
                           const comentarios = finding.refId ? comentariosPorAchado[finding.refId] ?? 0 : 0;
+                          const julgado = Boolean(finding.refId && feedbackByFinding[finding.refId]);
+                          const status = statusCurto(finding);
+                          const daFaixa = cabecalho
+                            ? groupedPrincipal.filter((f) => findingImpactBucket(f) === faixa)
+                            : [];
                           return (
                             <Fragment key={`${chave}-fila`}>
                               {cabecalho && secao ? (
-                                <li
-                                  data-faixa={faixa}
-                                  className="mt-3 border-l-2 pl-2 first:mt-0"
-                                  style={{
-                                    borderColor:
-                                      faixa === "critico_documental" ? "var(--destructive)" : "var(--border)",
-                                  }}
-                                >
-                                  <p
-                                    className={cn(
-                                      "font-mono text-[11px] font-semibold uppercase tracking-wider",
-                                      faixa === "critico_documental" ? "text-destructive" : "text-muted-foreground",
-                                    )}
+                                /*
+                                  O GRUPO SE RECOLHE. Rótulo + fio, e não tarja
+                                  lateral (proibida, DESIGN.md §4); a cor do
+                                  bloqueador fica no texto. "x/y julgados" diz o
+                                  quanto da faixa já passou pela Validade.
+                                */
+                                <li data-faixa={faixa} className="mt-3 first:mt-0">
+                                  <button
+                                    type="button"
+                                    aria-expanded={!recolhida}
+                                    onClick={() =>
+                                      setFaixasRecolhidas((atuais) => {
+                                        const nova = new Set(atuais);
+                                        if (nova.has(faixa)) nova.delete(faixa);
+                                        else nova.add(faixa);
+                                        return nova;
+                                      })
+                                    }
                                     title={secao.hint}
+                                    className="flex w-full items-center gap-1.5 py-1 text-left font-mono text-[11px] uppercase tracking-wider outline-none focus-visible:underline"
                                   >
-                                    {secao.title} ({impactCount(faixa)})
-                                  </p>
+                                    <ChevronDown
+                                      aria-hidden
+                                      className={cn(
+                                        "size-3.5 shrink-0 text-muted-foreground transition-transform duration-[var(--duration-fast)]",
+                                        recolhida && "-rotate-90",
+                                      )}
+                                    />
+                                    <span
+                                      className={cn(
+                                        "font-semibold",
+                                        faixa === "critico_documental"
+                                          ? "text-destructive"
+                                          : faixa === "tecnico_contratual"
+                                            ? "text-[var(--status-warning)]"
+                                            : "text-muted-foreground",
+                                      )}
+                                    >
+                                      {secao.title}
+                                    </span>
+                                    <span className="tabular-nums text-muted-foreground">{daFaixa.length}</span>
+                                    <span className="ml-auto normal-case tracking-normal text-muted-foreground">
+                                      {
+                                        daFaixa.filter((f) => f.refId && feedbackByFinding[f.refId]).length
+                                      }
+                                      /{daFaixa.length} julgados
+                                    </span>
+                                  </button>
                                 </li>
                               ) : null}
+                              {recolhida ? null : (
                               <li
                                 data-item-da-fila={finding.refId || chave}
                                 data-impacto={faixa}
                                 data-atual={atual || undefined}
                                 data-pagina={getFirstPageNumber(finding.pagina) ?? undefined}
                                 className={cn(
-                                  "nx-cut-6 flex items-start gap-2 px-2 py-2 transition-colors",
+                                  "group/item nx-edge-6 flex items-start gap-2 px-2 py-2",
                                   atual
-                                    ? "bg-[var(--nexodoc-raised)] ring-1 ring-inset ring-[var(--ring)]"
-                                    : "bg-[var(--nexodoc-recessed)]/60 hover:bg-[var(--nexodoc-raised)]",
+                                    ? "[--nx-edge:var(--ring)] [--nx-fill:var(--nexodoc-raised)]"
+                                    : "[--nx-edge:transparent] [--nx-fill:var(--card)] hover:[--nx-fill:var(--nexodoc-raised)]",
                                 )}
                               >
+                                {/*
+                                  A CAIXA DE SELEÇÃO APARECE QUANDO SERVE: ao
+                                  passar o ponteiro, no foco do teclado, ou
+                                  quando já há seleção em curso. Continua no
+                                  Tab — opacidade não tira do teclado.
+                                */}
                                 {finding.refId && !estaResolvido(finding.refId) ? (
                                   <input
                                     type="checkbox"
                                     checked={selecionados.has(finding.refId)}
                                     onChange={() => alternarSelecao(finding.refId!)}
                                     aria-label={`Selecionar ${finding.refId} para atribuir`}
-                                    className="mt-1 size-4 shrink-0 accent-primary"
+                                    className={cn(
+                                      "mt-0.5 size-4 shrink-0 accent-primary transition-opacity",
+                                      selecionados.size > 0
+                                        ? "opacity-100"
+                                        : "opacity-0 focus-visible:opacity-100 group-hover/item:opacity-100",
+                                    )}
                                   />
                                 ) : (
                                   <span aria-hidden className="w-4 shrink-0" />
@@ -3936,21 +4143,54 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
                                   type="button"
                                   onClick={() => abrirNoDetalhe(chave)}
                                   aria-current={atual ? "true" : undefined}
-                                  className="min-w-0 flex-1 text-left outline-none focus-visible:underline"
+                                  className="min-w-0 flex-1 text-left outline-none"
                                 >
-                                  <span className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 font-mono text-[11px] text-muted-foreground">
+                                  <span className="flex items-center gap-1.5 font-mono text-[11px] text-muted-foreground">
+                                    {/*
+                                      O LOSANGO: cor = severidade; cheio =
+                                      julgado, vazado = ainda sem Validade.
+                                    */}
                                     <span
                                       aria-hidden
-                                      className="nx-cut-4 inline-block size-2 shrink-0"
-                                      style={{ background: COR_DO_PIN[finding.severity] }}
+                                      className="inline-block size-1.5 shrink-0 rotate-45 border"
+                                      style={{
+                                        borderColor: COR_DO_PIN[finding.severity],
+                                        background: julgado ? COR_DO_PIN[finding.severity] : "transparent",
+                                      }}
                                     />
                                     <span className="text-foreground">{finding.refId ?? `Achado ${index + 1}`}</span>
-                                    <span>· {getImpactLabel(faixa)}</span>
-                                    <span>· {rotuloDePaginas(paginas, finding.pagina)}</span>
+                                    {/* Agrupada por impacto, a faixa já está no cabeçalho do grupo. */}
+                                    {ordem !== "impacto" ? <span className="truncate">· {getImpactLabel(faixa)}</span> : null}
+                                    <span className="shrink-0">{rotuloDePaginas(paginas, finding.pagina)}</span>
+                                    <span className="ml-auto flex shrink-0 items-center gap-1.5">
+                                      {comentarios > 0 ? (
+                                        <span
+                                          className="inline-flex items-center gap-0.5"
+                                          title={plural(comentarios, "comentário", "comentários")}
+                                        >
+                                          <MessageSquare className="size-3" aria-hidden />
+                                          <span className="tabular-nums">{comentarios}</span>
+                                          <span className="sr-only">{comentarios === 1 ? "comentário" : "comentários"}</span>
+                                        </span>
+                                      ) : null}
+                                      {status ? (
+                                        <span
+                                          className={cn(
+                                            "max-w-[8rem] truncate uppercase tracking-wider",
+                                            status.tom === "seu" && "text-[var(--status-warning)]",
+                                            status.tom === "ok" && "text-[var(--status-ok)]",
+                                            status.tom === "descartado" && "line-through",
+                                          )}
+                                          title={situacaoLegivel(finding)}
+                                        >
+                                          {status.texto}
+                                        </span>
+                                      ) : null}
+                                    </span>
                                   </span>
                                   <span
                                     className={cn(
-                                      "mt-0.5 block text-sm leading-5 [overflow-wrap:anywhere]",
+                                      "mt-1 block text-sm leading-5 [overflow-wrap:anywhere]",
                                       estaResolvido(finding.refId)
                                         ? "text-muted-foreground line-through decoration-[var(--status-ok)]/60"
                                         : "text-foreground",
@@ -3958,14 +4198,13 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
                                   >
                                     {finding.title}
                                   </span>
-                                  <span className="mt-0.5 flex flex-wrap gap-x-2 text-[11px] text-muted-foreground">
-                                    <span data-situacao-do-item>{situacaoLegivel(finding)}</span>
-                                    {comentarios > 0 ? (
-                                      <span>{plural(comentarios, "comentário", "comentários")}</span>
-                                    ) : null}
+                                  {/* A frase inteira, para leitor de tela e para quem busca por ela. */}
+                                  <span data-situacao-do-item className="sr-only">
+                                    {situacaoLegivel(finding)}
                                   </span>
                                 </button>
                               </li>
+                              )}
                             </Fragment>
                           );
                         })}
@@ -3989,6 +4228,8 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
                         const posicao = groupedPrincipal.findIndex((f) => chaveDoAchado(f) === chaveDoDetalhe);
                         const comentarios = finding.refId ? comentariosPorAchado[finding.refId] ?? 0 : 0;
                         const registro = finding.refId ? historicoPorAchado[finding.refId] : undefined;
+                        // A mesma página que `openInlinePdf` abre sem argumento.
+                        const paginaDaEvidencia = getFirstPageNumber(finding.pagina);
                         return (
                           <div className="grid gap-2">
                             <div className="flex flex-wrap items-center gap-2">
@@ -4002,30 +4243,58 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
                                 <ChevronLeft aria-hidden />
                                 Voltar à lista
                               </Button>
+                              {/*
+                                ONDE ESTOU: a faixa do achado e a posição na fila.
+                                A faixa na cor dela, como no cabeçalho do grupo.
+                              */}
+                              <span
+                                className={cn(
+                                  "font-mono text-[11px] font-semibold uppercase tracking-wider",
+                                  faixa === "critico_documental"
+                                    ? "text-destructive"
+                                    : faixa === "tecnico_contratual"
+                                      ? "text-[var(--status-warning)]"
+                                      : "text-muted-foreground",
+                                )}
+                              >
+                                {IMPACT_SECTIONS.find((s) => s.key === faixa)?.title}
+                              </span>
                               <span className="font-mono text-[11px] text-muted-foreground" data-posicao-do-achado>
                                 {posicao >= 0
                                   ? `Achado ${posicao + 1} de ${groupedPrincipal.length}`
                                   : "Fora da lista filtrada"}
                               </span>
-                              <span className="ml-auto flex gap-1">
+                              <span className="ml-auto flex items-center gap-1">
+                                <span
+                                  aria-hidden
+                                  className="mr-1 hidden font-mono text-[11px] text-muted-foreground @min-[52rem]:inline"
+                                >
+                                  K / J
+                                </span>
                                 <Button
                                   type="button"
                                   size="sm"
                                   variant="outline"
+                                  className="w-8 px-0"
                                   disabled={posicao <= 0}
                                   onClick={() => abrirNoDetalhe(chaveDoAchado(groupedPrincipal[posicao - 1]))}
+                                  aria-label="Anterior"
+                                  aria-keyshortcuts="K"
+                                  title="Achado anterior (K)"
                                 >
                                   <ChevronLeft aria-hidden />
-                                  Anterior
                                 </Button>
                                 <Button
                                   type="button"
                                   size="sm"
                                   variant="outline"
+                                  className="w-8 px-0"
                                   disabled={posicao < 0 || posicao >= groupedPrincipal.length - 1}
                                   onClick={() => abrirNoDetalhe(chaveDoAchado(groupedPrincipal[posicao + 1]))}
+                                  aria-label="Próximo"
+                                  aria-keyshortcuts="J"
+                                  title="Próximo achado (J)"
                                 >
-                                  Próximo
                                   <ChevronRight aria-hidden />
                                 </Button>
                               </span>
@@ -4171,12 +4440,54 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
                               />
                             </div>
                           ) : null}
-                          <div className="flex flex-wrap items-start gap-4 rounded-t-md border-b bg-[var(--nexodoc-recessed)]/70 p-4">
+                          <div className="flex flex-wrap items-start gap-4 border-b px-4 pb-3 pt-4">
                             <div className="min-w-0 flex-1">
-                              <div className="mb-2 flex flex-wrap items-center gap-2">
-                                <Badge variant="secondary">
-                                  Achado {index + 1}
-                                </Badge>
+                              <h4
+                                className={cn(
+                                  "mb-2 max-w-[60ch] text-lg font-semibold leading-7 tracking-[-0.01em] text-balance transition-colors",
+                                  estaResolvido(finding.refId)
+                                    ? "text-muted-foreground line-through decoration-[var(--status-ok)]/60"
+                                    : "text-foreground",
+                                )}
+                              >
+                                {finding.title}
+                              </h4>
+                              {/*
+                                A IDENTIDADE DO ACHADO EM UMA LINHA DE DADO.
+                                Eram oito etiquetas do mesmo peso: "Achado 2"
+                                (repetindo o "Achado 2 de 9" da navegação),
+                                "Ref. INC-002", disciplina e tipo ao lado da
+                                gravidade e de "com Milton". Referência,
+                                disciplina e tipo DIZEM O QUE O ACHADO É; as
+                                etiquetas abaixo dizem EM QUE PÉ ELE ESTÁ. A
+                                disciplina mantém a cor da escala (a mesma do
+                                canvas), agora no texto.
+                              */}
+                              <p className="mb-2.5 flex flex-wrap items-center gap-x-1.5 font-mono text-xs text-muted-foreground">
+                                {finding.refId ? (
+                                  <span className="text-foreground">{finding.refId}</span>
+                                ) : (
+                                  <span className="text-foreground">Achado {index + 1}</span>
+                                )}
+                                <span aria-hidden>·</span>
+                                <span
+                                  style={
+                                    corDaDisciplina(disciplina)
+                                      ? { color: corDaDisciplina(disciplina) as string }
+                                      : undefined
+                                  }
+                                >
+                                  {getDisciplineLabel(disciplina)}
+                                </span>
+                                {getErrorTypeLabel(findingErrorType(finding)).toLowerCase() !==
+                                (finding.title ?? "").trim().toLowerCase() ? (
+                                  <>
+                                    <span aria-hidden>·</span>
+                                    <span>{getErrorTypeLabel(findingErrorType(finding))}</span>
+                                  </>
+                                ) : null}
+                              </p>
+                              <div className="flex flex-wrap items-center gap-1.5">
                                 {/*
                               O MOTIVO DA SEVERIDADE VIAJA COM A ETIQUETA.
 
@@ -4247,66 +4558,6 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
                                   >
                                     herdado · {finding.herdado_de.quando}
                                   </Badge>
-                                ) : null}
-                                {/*
-                              A DISCIPLINA ERA TEAL, e teal é o acento do
-                              INTERATIVO (§2, regra do acento único). Uma
-                              etiqueta categórica pintada na cor de "clique aqui"
-                              gasta o acento em decoração — e, pior, ficava irmã
-                              da tarja de responsável, que estava a duas posições
-                              na mesma fila.
-
-                              O sistema já tem a escala certa para isto:
-                              `--discipline-*`, oito tons dessaturados, feitos
-                              para agrupar sem competir com os três sinais de
-                              status. `corDaDisciplina` é a mesma função que
-                              pinta as folhas no canvas — a disciplina passa a
-                              ter UMA cor no produto, e não duas.
-
-                              O RÓTULO CONTINUA SENDO O PORTADOR. Disciplina sem
-                              família conhecida (geral, acessibilidade) fica sem
-                              cor, e é o desenho: inventar um tom para cada uma
-                              faria a escala competir com os sinais.
-                            */}
-                                <Badge
-                                  variant="secondary"
-                                  style={
-                                    corDaDisciplina(disciplina)
-                                      ? {
-                                          color: corDaDisciplina(
-                                            disciplina,
-                                          ) as string,
-                                          background: `color-mix(in oklab, ${corDaDisciplina(disciplina)} 14%, transparent)`,
-                                        }
-                                      : undefined
-                                  }
-                                >
-                                  {getDisciplineLabel(disciplina)}
-                                </Badge>
-                                {/*
-                              A ETIQUETA DE TIPO SÓ APARECE QUANDO DIZ ALGO NOVO.
-
-                              O título do achado É o tipo (`title: finding.tipo`
-                              em `reportFindingToStructured`), então a etiqueta
-                              escrevia "Quantitativo" a dois centímetros de um
-                              título "Quantitativo". Com a reorganização isso
-                              ficou impossível de não ver — a etiqueta e o título
-                              passaram a ser vizinhos diretos.
-                            */}
-                                {getErrorTypeLabel(
-                                  findingErrorType(finding),
-                                ).toLowerCase() !==
-                                (finding.title ?? "").trim().toLowerCase() ? (
-                                  <Badge variant="secondary">
-                                    {getErrorTypeLabel(
-                                      findingErrorType(finding),
-                                    )}
-                                  </Badge>
-                                ) : null}
-                                {finding.refId ? (
-                                  /* A seleção para atribuir mora na fila e no
-                                     Tratamento (A06); aqui a referência só identifica. */
-                                  <Badge variant="secondary">Ref. {finding.refId}</Badge>
                                 ) : null}
                                 {/*
                               COM QUEM ESTÁ. Aparece enquanto o achado é
@@ -4419,19 +4670,6 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
                                     }
                                   </Badge>
                                 ) : null}
-                              </div>
-                              <h4
-                                className={cn(
-                                  "text-base font-semibold leading-6 transition-colors",
-                                  estaResolvido(finding.refId)
-                                    ? "text-muted-foreground line-through decoration-[var(--status-ok)]/60"
-                                    : "text-foreground",
-                                )}
-                              >
-                                {finding.title}
-                              </h4>
-                            </div>
-
                             {/*
                           "4 PÁGINAS" NO LUGAR DE "PÁGINA 8".
 
@@ -4448,11 +4686,14 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
                               variant={
                                 ehMultiPagina(paginas) ? "ok" : "secondary"
                               }
-                              className="shrink-0 gap-1.5 font-mono text-xs"
+                              className="gap-1.5 font-mono text-xs"
                             >
                               <FileText className="size-3.5" />
                               {rotuloDePaginas(paginas, finding.pagina)}
                             </Badge>
+                              </div>
+                            </div>
+
                           </div>
 
                           {/*
@@ -4653,25 +4894,23 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
 
                               <section className="nx-cut-6 min-w-0 bg-[var(--nexodoc-recessed)] p-3">
                                 {/*
-                              `flex-wrap` porque esta linha DESCEU para a coluna
-                              estreita: o rótulo e o botão "Ver no documento" não
-                              encolhem, e lado a lado mediam 1013px dentro de
-                              580. Sem a quebra, o cartão inteiro passava a rolar
-                              na horizontal dentro do palco do Nexo.
-                            */}
+                                  A PÁGINA NO CABEÇALHO, O BOTÃO DEPOIS DO TRECHO.
+                                  Lê-se o trecho e em seguida vai-se conferir: o
+                                  botão fica no fim da leitura, e o chip diz
+                                  ANTES dela de qual folha o trecho saiu. "Ver na
+                                  pág. N" diz o destino; o nome acessível
+                                  continua "Ver no documento".
+                                */}
                                 <div className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-1.5">
-                                  <Search className="size-4 shrink-0 text-primary" />
+                                  <Search className="size-4 shrink-0 text-muted-foreground" aria-hidden />
                                   <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                                     Evidência encontrada
                                   </p>
-                                  {/*
-                                VER NO DOCUMENTO fica AQUI, colado à evidência —
-                                não escondido no menu "⋯". É a ação que fecha o
-                                ciclo da auditoria: o achado deixa de ser uma
-                                afirmação e vira algo que se confere na página.
-                                Enterrada num kebab, ela simplesmente não existia
-                                para quem usa.
-                              */}
+                                  {paginaDaEvidencia ? (
+                                    <span className="nx-cut-4 bg-[var(--nexodoc-raised)] px-1.5 py-0.5 font-mono text-[11px] text-foreground">
+                                      pág. {paginaDaEvidencia}
+                                    </span>
+                                  ) : null}
                                   {!finding.pdfUrl && finding.semFonte ? (
                                     <span
                                       data-sem-fonte
@@ -4680,26 +4919,6 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
                                       {finding.semFonte}
                                     </span>
                                   ) : null}
-                                  {finding.pdfUrl ? (
-                                    <Button
-                                      type="button"
-                                      size="sm"
-                                      variant="outline"
-                                      /*
-                                    SEM `ml-auto`. Numa linha que quebra, a
-                                    margem automática resolvia para o espaço
-                                    livre da linha inteira e inflava o
-                                    `scrollWidth` do botão — o cartão passava a
-                                    rolar 1041px dentro de 636 sem que nada
-                                    parecesse largo na tela. `gap` já separa.
-                                  */
-                                      className="h-7 shrink-0"
-                                      onClick={() => openInlinePdf(finding)}
-                                    >
-                                      <ExternalLink className="size-3.5" />
-                                      Ver no documento
-                                    </Button>
-                                  ) : null}
                                 </div>
                                 <p className="text-sm leading-6 text-foreground">
                                   <HighlightedEvidence
@@ -4707,6 +4926,29 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
                                     needle={getHighlightNeedle(finding)}
                                   />
                                 </p>
+                                {/*
+                                  VER NO DOCUMENTO fica colado à evidência — não
+                                  escondido no menu "⋯". É a ação que fecha o
+                                  ciclo da auditoria: o achado deixa de ser uma
+                                  afirmação e vira algo que se confere na página.
+                                */}
+                                {finding.pdfUrl ? (
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="outline"
+                                    className="mt-3 h-7"
+                                    onClick={() => openInlinePdf(finding)}
+                                    aria-label={
+                                      paginaDaEvidencia
+                                        ? `Ver no documento, página ${paginaDaEvidencia}`
+                                        : "Ver no documento"
+                                    }
+                                  >
+                                    <ExternalLink className="size-3.5" aria-hidden />
+                                    {paginaDaEvidencia ? `Ver na pág. ${paginaDaEvidencia}` : "Ver no documento"}
+                                  </Button>
+                                ) : null}
                               </section>
 
                               {/*
@@ -4715,8 +4957,12 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
                             precisa deles já decidiu que vai olhar o documento.
                             "Página provável" saiu: a fita acima diz melhor, e
                             com todas as páginas em vez de uma.
+
+                            Lista de definição, e não três caixas com contorno:
+                            eram três cartões dentro do cartão do achado, cada um
+                            com moldura, para três pares rótulo/valor.
                           */}
-                              <section className="grid content-start gap-2 border-t pt-3">
+                              <dl className="m-0 grid content-start divide-y divide-border/60 px-1">
                                 <FindingField
                                   label="Documento"
                                   value={finding.documento}
@@ -4729,7 +4975,7 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
                                   label="Categoria"
                                   value={finding.categoria}
                                 />
-                              </section>
+                              </dl>
                             </div>
                           </div>
                               </>
@@ -4846,6 +5092,7 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
                                 >
                                   <Check />
                                   Confirmar achado
+                                  <kbd aria-hidden className="ml-0.5 font-mono text-[11px] font-normal opacity-60">C</kbd>
                                 </Button>
                                 <Button
                                   type="button"
@@ -4873,6 +5120,7 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
                                 >
                                   <AlertTriangle />
                                   Falso positivo
+                                  <kbd aria-hidden className="ml-0.5 font-mono text-[11px] font-normal opacity-60">F</kbd>
                                 </Button>
                                 <Button
                                   type="button"
