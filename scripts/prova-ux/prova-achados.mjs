@@ -53,8 +53,8 @@ const ate = (page, fn, arg) => page.waitForFunction(fn, arg, { timeout: 20000 })
 
   // T11 — contagens e busca
   checar((await fila(page).count()) === 9, `fila com os 9 achados (${await fila(page).count()})`);
-  const rotulo = async (v) => (await page.locator(`[data-filtro-situacao="${v}"]`).innerText()).trim();
-  checar((await rotulo("meus")) === "Meus pendentes (1)" && (await rotulo("sem-responsavel")) === "Sem responsável (5)" && (await rotulo("encerrados")) === "Encerrados (2)", `contagens por situação: ${await rotulo("meus")} · ${await rotulo("sem-responsavel")} · ${await rotulo("encerrados")}`);
+  const rotulo = async (v) => (await page.locator(`[data-filtro-situacao="${v}"]`).innerText()).replace(/\s+/g, " ").trim();
+  checar((await rotulo("meus")) === "Meus pendentes 1" && (await rotulo("sem-responsavel")) === "Sem responsável 5" && (await rotulo("encerrados")) === "Encerrados 2", `contagens por situação: ${await rotulo("meus")} · ${await rotulo("sem-responsavel")} · ${await rotulo("encerrados")}`);
   await page.getByLabel("Buscar achado").fill("inc-005");
   checar(JSON.stringify(await refsDaFila(page)) === '["INC-005"]', "busca por referência (sem caixa exata) acha só INC-005");
   checar((await page.locator("[data-mostrando]").innerText()).includes("Mostrando 1 de 9"), "contagem 'Mostrando 1 de 9'");
@@ -66,6 +66,8 @@ const ate = (page, fn, arg) => page.waitForFunction(fn, arg, { timeout: 20000 })
   await page.locator('[data-filtro-situacao="encerrados"]').click();
   checar(JSON.stringify((await refsDaFila(page)).sort()) === '["INC-003","INC-004"]', "Encerrados = INC-003 e INC-004 (resolvidos continuam acessíveis)");
   await page.locator('[data-filtro-situacao="todos"]').click();
+  // Responsável, ordem e gravidade moram no painel "Filtros e ordem" (28/09/2026).
+  await page.getByRole("button", { name: /Filtros e ordem/ }).click();
   await page.getByLabel("Responsável").selectOption("Milton Teste");
   checar(JSON.stringify(await refsDaFila(page)) === '["INC-002"]', "fila de uma pessoa: Milton = INC-002");
   await page.getByRole("button", { name: "Limpar filtros" }).click();
