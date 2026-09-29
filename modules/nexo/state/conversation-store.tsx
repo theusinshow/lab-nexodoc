@@ -35,6 +35,7 @@ import { tituloDaConversa, type IdentidadeLida } from "../lib/titulo-da-conversa
 import { summarizeSelos } from "../lib/agent-context";
 import { aplicarAjuste, PREFIXO_AVULSA, type Ajuste, type FolhaId } from "../lib/folhas";
 import { aplicarIdentidade, type IdentidadeDoProjeto } from "../lib/identidade";
+import type { EditaveisSalvos } from "../lib/editaveis-no-projeto";
 import { nomeDoVolume, pastaDoProjeto } from "../lib/pasta-do-projeto";
 import { anotarDecisao, type DecisoesDoProjeto } from "../lib/decisoes";
 import { consultarAuditoria } from "../lib/audit";
@@ -288,6 +289,12 @@ interface ConversationStoreValue {
   /** Declara um tomo a mais: a fileira nasce vazia e vira destino de arrasto. */
   declararTomos: (n: number) => void;
   /**
+   * Quando e onde os editáveis (capa, LD, separatriz) foram salvos. É o que
+   * destrava o PDF do volume — ver `editaveis-no-projeto.ts`.
+   */
+  editaveisSalvos: EditaveisSalvos | null;
+  registrarEditaveisSalvos: (salvos: EditaveisSalvos) => void;
+  /**
    * Achados de auditoria que o engenheiro já corrigiu no memorial, por
    * `auditId`. É PROGRESSO DE TRABALHO, não conteúdo do parecer — por isso vive
    * aqui e não dentro do resultado: o relatório continua íntegro, e o que muda
@@ -514,6 +521,7 @@ export function ConversationStoreProvider({ children }: { children: ReactNode })
   const [projectId, setProjectId] = useState<string | null>(null);
   const [decisoes, setDecisoes] = useState<DecisoesDoProjeto>({});
   const [tomosDeclarados, setTomosDeclarados] = useState(0);
+  const [editaveisSalvos, setEditaveisSalvos] = useState<EditaveisSalvos | null>(null);
   const [achadosResolvidos, setAchadosResolvidos] = useState<Record<string, string[]>>({});
   /** Auditorias disparadas nesta conversa, registradas na LARGADA. */
   const [auditorias, setAuditorias] = useState<{ auditId: string; artifactId: string }[]>([]);
@@ -540,6 +548,7 @@ export function ConversationStoreProvider({ children }: { children: ReactNode })
     projectId,
     decisoes,
     tomosDeclarados,
+    editaveisSalvos,
     achadosResolvidos,
     auditorias,
     artefatosApagados,
@@ -562,6 +571,7 @@ export function ConversationStoreProvider({ children }: { children: ReactNode })
       projectId,
       decisoes,
       tomosDeclarados,
+      editaveisSalvos,
       achadosResolvidos,
       auditorias,
       artefatosApagados,
@@ -936,6 +946,7 @@ export function ConversationStoreProvider({ children }: { children: ReactNode })
       ...(Object.keys(s.identidade).length > 0 ? { identidade: s.identidade } : {}),
       ...(Object.keys(s.decisoes).length > 0 ? { decisoes: s.decisoes } : {}),
       ...(s.tomosDeclarados > 0 ? { tomosDeclarados: s.tomosDeclarados } : {}),
+      ...(s.editaveisSalvos ? { editaveisSalvos: s.editaveisSalvos } : {}),
       ...(Object.keys(s.achadosResolvidos).length > 0
         ? { achadosResolvidos: s.achadosResolvidos }
         : {}),
@@ -1235,6 +1246,14 @@ export function ConversationStoreProvider({ children }: { children: ReactNode })
     [schedulePersist],
   );
 
+  const registrarEditaveisSalvos = useCallback(
+    (salvos: EditaveisSalvos) => {
+      setEditaveisSalvos(salvos);
+      schedulePersist();
+    },
+    [schedulePersist],
+  );
+
   // Persiste os blobs de um resultado e o expõe reidratado (URLs vivas).
   const saveResult = useCallback(
     async (input: SaveResultInput) => {
@@ -1370,6 +1389,7 @@ export function ConversationStoreProvider({ children }: { children: ReactNode })
     setIdentidade({});
     setProjectId(null);
     setTomosDeclarados(0);
+    setEditaveisSalvos(null);
     setAuditoriaPendente(null);
     setMemorialMeta(null);
     // Conversa nova ainda não existe no disco: volta a valer a guarda de vazia.
@@ -1721,6 +1741,7 @@ export function ConversationStoreProvider({ children }: { children: ReactNode })
       setProjectId(rec.projectId ?? null);
       setDecisoes(rec.decisoes ?? {});
       setTomosDeclarados(rec.tomosDeclarados ?? 0);
+      setEditaveisSalvos(rec.editaveisSalvos ?? null);
       setAchadosResolvidos(rec.achadosResolvidos ?? {});
       setAuditorias(rec.auditorias ?? []);
       setArtefatosApagados(rec.artefatosApagados ?? []);
@@ -2065,6 +2086,8 @@ export function ConversationStoreProvider({ children }: { children: ReactNode })
       guardarDecisoesVivas,
       tomosDeclarados,
       declararTomos,
+      editaveisSalvos,
+      registrarEditaveisSalvos,
       achadosResolvidos,
       marcarAchadoResolvido,
       registrarAuditoria,
@@ -2119,6 +2142,8 @@ export function ConversationStoreProvider({ children }: { children: ReactNode })
       guardarDecisoesVivas,
       tomosDeclarados,
       declararTomos,
+      editaveisSalvos,
+      registrarEditaveisSalvos,
       achadosResolvidos,
       marcarAchadoResolvido,
       registrarAuditoria,

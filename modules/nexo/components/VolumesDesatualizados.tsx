@@ -29,6 +29,7 @@ import { AlertTriangle, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { palavra, plural } from "@/lib/plural";
 import { baixarArquivosEmZip } from "../lib/editaveis";
+import { useLiberacaoDoVolume } from "../state/use-liberacao-do-volume";
 import { nomeDoZipDosVolumes } from "../lib/nome-do-volume";
 import { volumesDesatualizados } from "../lib/volumes-desatualizados";
 import { volumesProntosDosResultados } from "../lib/volumes-prontos";
@@ -74,6 +75,11 @@ export function VolumesDesatualizados({
     conferirAntesDeGastar,
   } = useConversation();
   const { montador } = useMontadoresDeVolume();
+  /*
+   * Remontar é livre; BAIXAR passa pela mesma trava do card do volume. Sem
+   * isto, este botão seria a porta dos fundos da regra "editáveis antes do PDF".
+   */
+  const liberacao = useLiberacaoDoVolume();
 
   const velhos = useMemo(() => volumesDesatualizados(results), [results]);
 
@@ -185,7 +191,10 @@ export function VolumesDesatualizados({
     } finally {
       setMontando(null);
       setFalhas(coletadas);
-      if (refeitos.length > 0) setABaixar({ ids: refeitos, desde });
+      if (refeitos.length > 0) {
+        if (liberacao.liberado) setABaixar({ ids: refeitos, desde });
+        else setErro(`Remontado. ${liberacao.motivo ?? ""}`.trim());
+      }
     }
   }
 
@@ -246,9 +255,13 @@ export function VolumesDesatualizados({
                 ? `Remontando ${montando + 1} de ${velhos.length}…`
                 : baixando
                   ? "Preparando o download…"
-                  : velhos.length === 1
-                    ? "Remontar e baixar"
-                    : `Remontar e baixar os ${velhos.length}`}
+                  : !liberacao.liberado
+                    ? velhos.length === 1
+                      ? "Remontar"
+                      : `Remontar os ${velhos.length}`
+                    : velhos.length === 1
+                      ? "Remontar e baixar"
+                      : `Remontar e baixar os ${velhos.length}`}
             </Button>
             {!podeGastar && (
               <span className="text-xs text-muted-foreground">

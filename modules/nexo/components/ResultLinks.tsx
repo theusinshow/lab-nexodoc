@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import type { SavedResult } from "../state/conversation-store";
 import { temAlgoADizer } from "../lib/links-do-resultado";
 import { tamanhoLegivel } from "../lib/pendencia";
+import { useLiberacaoDoVolume } from "../state/use-liberacao-do-volume";
 
 /** Mapeia os arquivos salvos p/ o formato do ResultLinks. */
 export function toResultFiles(saved: SavedResult) {
@@ -61,6 +62,13 @@ export function ResultLinks({
   motivoRegerarBloqueado?: string | null;
 }) {
   const files = toResultFiles(saved);
+  /*
+   * O PDF do VOLUME só sai depois que os editáveis foram salvos no projeto —
+   * ver `editaveis-no-projeto.ts`. Os outros artefatos (capa, LD, separatriz
+   * soltas) não passam por aqui: são peças, não a entrega.
+   */
+  const liberacao = useLiberacaoDoVolume();
+  const travado = saved.kind === "volume" && !liberacao.liberado;
   if (!temAlgoADizer(saved)) return null;
   return (
     <div className="nx-edge-6 flex flex-col gap-2 p-3 [--nx-fill:var(--nexodoc-recessed)]">
@@ -122,6 +130,21 @@ export function ResultLinks({
              anexa no e-mail da prefeitura por tamanho, e descobrir 18 MB só
              depois de baixar é tarde. */
           const peso = tamanhoLegivel(f.sizeBytes);
+          if (travado) {
+            return (
+              <Button
+                key={f.label}
+                size="sm"
+                variant={f.primary ? "default" : "outline"}
+                disabled
+                title={liberacao.motivo ?? undefined}
+                data-prova="baixar-artefato-travado"
+              >
+                <Download className="mr-1.5 h-3.5 w-3.5" aria-hidden />
+                {f.label}
+              </Button>
+            );
+          }
           return (
             <Button
               key={f.label}
@@ -142,6 +165,11 @@ export function ResultLinks({
           );
         })}
       </div>
+      {travado && files.length > 0 && (
+        <p className="text-xs text-muted-foreground" data-prova="motivo-da-trava-do-volume">
+          {liberacao.motivo}
+        </p>
+      )}
     </div>
   );
 }

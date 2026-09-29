@@ -140,7 +140,9 @@ import {
 } from "../lib/pendencia";
 import { useComposer } from "../state/composer-controller";
 import { useConversation, type SavedResult } from "../state/conversation-store";
-import { baixarArquivosEmZip, baixarEditaveis, editaveisDosResultados } from "../lib/editaveis";
+import { baixarArquivosEmZip, editaveisDosResultados } from "../lib/editaveis";
+import { SalvarEditaveisNoProjeto } from "./SalvarEditaveisNoProjeto";
+import { useLiberacaoDoVolume } from "../state/use-liberacao-do-volume";
 import { todosOsVolumesProntos, volumesProntosDosResultados } from "../lib/volumes-prontos";
 import {
   gerarEditaveisConsolidados,
@@ -1497,8 +1499,6 @@ function VolumesDoConjunto({
   const [montando, setMontando] = useState<number | null>(null);
   const [falhas, setFalhas] = useState<{ rotulo: string; motivo: string }[]>([]);
   const { results, identidade } = useConversation();
-  const [baixando, setBaixando] = useState(false);
-  const [erroDoZip, setErroDoZip] = useState<string | null>(null);
 
   /*
    * Os EDITÁVEIS do conjunto — capa, LD e separatriz de todos os tomos. O PDF é
@@ -1506,8 +1506,8 @@ function VolumesDoConjunto({
    * seis tomos são dezenas de cliques.
    */
   const editaveis = useMemo(() => editaveisDosResultados(results), [results]);
-  const selosDaConversa = props.selos;
-  const identidadeDaConversa = identidade;
+  /** O PDF do volume só sai depois dos editáveis salvos — ver `editaveis-no-projeto.ts`. */
+  const liberacao = useLiberacaoDoVolume();
 
   /*
    * Os VOLUMES montados. O "baixar todos" é o espelho do "montar todos": seis
@@ -1535,37 +1535,6 @@ function VolumesDoConjunto({
       setErroDosVolumes(err instanceof Error ? err.message : "Falha ao juntar os volumes.");
     } finally {
       setBaixandoVolumes(false);
-    }
-  }
-
-  async function baixarTodosOsEditaveis() {
-    setBaixando(true);
-    setErroDoZip(null);
-    try {
-      /*
-       * Os TRÊS CONSOLIDADOS vão na raiz do ZIP: uma capa com uma página por
-       * tomo, uma LD com os tomos como seções, uma separatriz. É o que se abre
-       * no LibreOffice para mexer numa vírgula — vinte arquivos soltos, não.
-       *
-       * Os por-tomo continuam nas pastas: eles são o que entrou DENTRO de cada
-       * volume, e conferir o que foi encadernado é outra necessidade.
-       */
-      const params = parametrosDaEntrega(results);
-      const { editaveis: consolidados, falhas } = await gerarEditaveisConsolidados({
-        selos: selosDaConversa,
-        params,
-        identidade: identidadeDaConversa,
-      });
-      await baixarEditaveis([...consolidados, ...editaveis], "editaveis-do-volume.zip");
-      if (falhas.length > 0) {
-        setErroDoZip(
-          `O ZIP saiu, mas ${plural(falhas.length, "consolidado não foi gerado", "consolidados não foram gerados")}: ${falhas.join("; ")}. Os por-tomo estão lá.`,
-        );
-      }
-    } catch (err) {
-      setErroDoZip(err instanceof Error ? err.message : "Falha ao juntar os editáveis.");
-    } finally {
-      setBaixando(false);
     }
   }
 
@@ -1630,7 +1599,10 @@ function VolumesDoConjunto({
           <Button
             size="sm"
             variant="secondary"
-            disabled={!conjuntoCompleto || baixandoVolumes || montando !== null}
+            disabled={
+              !conjuntoCompleto || !liberacao.liberado || baixandoVolumes || montando !== null
+            }
+            title={conjuntoCompleto && !liberacao.liberado ? liberacao.motivo ?? undefined : undefined}
             onClick={baixarTodosOsVolumes}
           >
             {baixandoVolumes
@@ -1645,27 +1617,12 @@ function VolumesDoConjunto({
         </div>
       )}
       {/*
-        Os EDITÁVEIS, num ZIP só. Fica fora do `tomos.length > 1` porque juntar
-        capa, LD e separatriz num arquivo já vale para um volume — e é onde o
-        engenheiro vai quando precisa mexer numa vírgula no LibreOffice.
+        PASSO 2: os editáveis na pasta do projeto, ANTES do PDF do volume.
+        Substitui o antigo "Baixar os editáveis (ZIP)", que ninguém era obrigado
+        a clicar — e o ODT morria no navegador. O ZIP continua como saída de
+        quem não consegue gravar direto (ver o componente).
       */}
-      {editaveis.length > 0 && (
-        <div className="flex flex-col gap-2">
-          <Button
-            size="sm"
-            variant="secondary"
-            disabled={baixando}
-            onClick={baixarTodosOsEditaveis}
-          >
-            {baixando
-              ? "Gerando os consolidados…"
-              : "Baixar os editáveis (3 ODTs + por tomo)"}
-          </Button>
-          {erroDoZip && (
-            <p className="text-xs text-[var(--destructive)]">{erroDoZip}</p>
-          )}
-        </div>
-      )}
+      {editaveis.length > 0 && <SalvarEditaveisNoProjeto selos={props.selos} />}
       {tomos.map((t) => (
         <VolumeConfirmation key={t.sufixo || "unico"} {...props} tomo={t} />
       ))}

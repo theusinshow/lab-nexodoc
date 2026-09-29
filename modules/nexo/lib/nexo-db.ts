@@ -165,6 +165,12 @@ export interface StoredConversation {
    */
   tomosDeclarados?: number;
   /**
+   * Os editáveis (capa, LD, separatriz) salvos na pasta do projeto. É o que
+   * destrava o PDF do volume — ver `editaveis-no-projeto.ts`. Opcional: a
+   * conversa gravada antes disto simplesmente ainda não salvou.
+   */
+  editaveisSalvos?: import("./editaveis-no-projeto").EditaveisSalvos;
+  /**
    * Achados de auditoria que o engenheiro já corrigiu, por `auditId`.
    *
    * É progresso de trabalho, não conteúdo do parecer — por isso vive fora do
