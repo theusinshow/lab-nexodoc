@@ -99,6 +99,64 @@ test("obra divergente entre selos -> critico", () => {
   assert.equal(f.severidade, "critico");
 });
 
+/*
+ * 138-26 (29/09/2026): 15 selos dizem "COBERTURA METÁLICA DOS CAMAROTES DO
+ * AUTÓDROMO INTERNACIONAL DE CHAPECÓ" e 1 acrescenta o endereço ("... EMC - 294
+ * - LINHA CACHOEIRA, GÓIO-EN, CHAPECÓ - SC"). É a mesma obra, e a conferência
+ * saía NÃO EMITIR num volume perfeito.
+ */
+const CAMAROTES = "COBERTURA METÁLICA DOS CAMAROTES DO AUTÓDROMO INTERNACIONAL DE CHAPECÓ";
+const CAMAROTES_COM_ENDERECO = `${CAMAROTES} EMC - 294 - LINHA CACHOEIRA, GÓIO-EN, CHAPECÓ - SC`;
+
+test("obra com o endereço junto é a MESMA obra -> info, veredito ok", () => {
+  const facts = [
+    fact({ sheet: 1, obra: CAMAROTES }),
+    fact({ sheet: 2, obra: CAMAROTES }),
+    fact({ sheet: 3, obra: CAMAROTES_COM_ENDERECO }),
+  ];
+  const r = checkSeloFacts(facts);
+  assert.equal(r.veredito, "ok", r.findings.map((f) => f.mensagem).join(" / "));
+  const f = r.findings.find((x) => x.campo === "obra");
+  assert.ok(f, "o acréscimo fica registrado, não some");
+  assert.equal(f.severidade, "info");
+  assert.deepEqual(f.folhas, ["040_26_his_003_a.pdf"], "aponta só a folha que acrescenta");
+});
+
+test("nome curto demais não engole obra diferente", () => {
+  // "Escola Municipal" é prefixo de qualquer escola municipal — não é identidade.
+  const facts = [
+    fact({ sheet: 1, obra: "Escola Municipal" }),
+    fact({ sheet: 2, obra: "Escola Municipal Primeira Linha" }),
+  ];
+  assert.equal(checkSeloFacts(facts).veredito, "critico");
+});
+
+test("obra que só COMEÇA igual mas diverge no meio continua crítica", () => {
+  const facts = [
+    fact({ sheet: 1, obra: CAMAROTES }),
+    fact({ sheet: 2, obra: "COBERTURA METÁLICA DOS CAMAROTES DO AUTÓDROMO DE XANXERÊ" }),
+  ];
+  assert.equal(checkSeloFacts(facts).veredito, "critico");
+});
+
+test("PDF de várias páginas: o detalhe diz a PÁGINA, não repete o arquivo", () => {
+  const facts = Array.from({ length: 8 }, (_, i) =>
+    fact({
+      sheet: i + 1,
+      label: "138_26_met_geral_a.pdf",
+      pagina: i + 1,
+      obra: i === 7 ? "Creche Outro Bairro" : OBRA,
+      totalLido: 8,
+      numeros: [8, i + 1],
+    }),
+  );
+  const f = checkSeloFacts(facts).findings.find((x) => x.campo === "obra");
+  assert.ok(f);
+  assert.match(f.detalhe ?? "", /138_26_met_geral_a\.pdf p\. 1, 2, 3, 4, 5, 6, 7/);
+  assert.match(f.detalhe ?? "", /"Creche Outro Bairro": 138_26_met_geral_a\.pdf p\. 8/);
+  assert.deepEqual(f.folhas, ["138_26_met_geral_a.pdf"], "o canvas continua casando pelo arquivo");
+});
+
 test("total do selo divergente (OCR) sozinho -> info, veredito ok", () => {
   const facts = [
     fact({ sheet: 1 }),

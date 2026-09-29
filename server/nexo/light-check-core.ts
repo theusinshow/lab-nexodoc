@@ -79,6 +79,12 @@ export interface SeloFact {
    * bloco só, que é exatamente o comportamento antigo.
    */
   bloco?: string;
+  /**
+   * Página do selo dentro do PDF. Num PDF combinado as 16 folhas têm o MESMO
+   * `label`, e sem a página o detalhe de um achado repetia o nome do arquivo 16
+   * vezes sem dizer qual folha abrir.
+   */
+  pagina?: number | null;
   /** folha efetiva (autoritativa do nome); null se desconhecida. */
   sheet: number | null;
   /** total lido no selo (pode ser ruído de OCR); null se ausente. */
@@ -114,6 +120,63 @@ function normalizeObra(value: string): string {
 function joinNames(names: string[], max = 6): string {
   if (names.length <= max) return names.join(", ");
   return `${names.slice(0, max).join(", ")} (+${names.length - max})`;
+}
+
+/**
+ * As folhas de um grupo, agrupadas por arquivo: "x.pdf p. 1, 2, 5". Um PDF
+ * combinado vira UMA entrada com as páginas, em vez do mesmo nome N vezes.
+ */
+function listaDeFolhas(fs: SeloFact[]): string {
+  const porArquivo = new Map<string, { paginas: number[]; vezes: number }>();
+  for (const f of fs) {
+    const e = porArquivo.get(f.label) ?? { paginas: [], vezes: 0 };
+    e.vezes++;
+    if (typeof f.pagina === "number" && f.pagina > 0) e.paginas.push(f.pagina);
+    porArquivo.set(f.label, e);
+  }
+  return joinNames(
+    [...porArquivo.entries()].map(([label, { paginas, vezes }]) =>
+      paginas.length > 0
+        ? `${label} p. ${joinNames(paginas.map(String), 12)}`
+        : vezes > 1
+          ? `${label} (${vezes}×)`
+          : label,
+    ),
+  );
+}
+
+/** Os rótulos (arquivos) de vários grupos de fatos, sem repetição. */
+function rotulosDe(grupos: Iterable<SeloFact[]>): string[] {
+  return envolvidas([...grupos].map((g) => g.map((f) => f.label)));
+}
+
+/**
+ * Chave de comparação da obra: além de `normalizeObra`, pontuação vira espaço —
+ * "EMC-294" e "EMC - 294" são o mesmo texto lido de dois jeitos.
+ */
+function chaveDaObra(value: string): string {
+  return normalizeObra(value)
+    .replace(/[^a-z0-9 ]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * Menos palavras que isto não identifica obra: "escola municipal" é prefixo de
+ * toda escola municipal, e fundir por ele esconderia a prancha de outra obra.
+ */
+const PALAVRAS_MINIMAS_DA_OBRA = 4;
+
+/**
+ * Nome B é o nome A com algo acrescentado no FIM — tipicamente o endereço que
+ * um selo traz junto e os outros não. Só no fim: divergir no meio é outra obra.
+ */
+function acrescentaAo(curta: string, longa: string): boolean {
+  return (
+    curta.split(" ").length >= PALAVRAS_MINIMAS_DA_OBRA &&
+    longa.length > curta.length &&
+    longa.startsWith(`${curta} `)
+  );
 }
 
 /** Valor mais frequente (>0) entre números — total dominante. */
@@ -186,11 +249,11 @@ export function checkSeloFacts(
   const rotulos = opts.rotulos ?? {};
 
   // --- Código consistente (CRÍTICO: o erro do "projeto errado") --------------
-  const codigoGroups = new Map<string, string[]>();
+  const codigoGroups = new Map<string, SeloFact[]>();
   for (const f of facts) {
     if (!f.codigo) continue;
     if (!codigoGroups.has(f.codigo)) codigoGroups.set(f.codigo, []);
-    codigoGroups.get(f.codigo)!.push(f.label);
+    codigoGroups.get(f.codigo)!.push(f);
   }
   if (codigoGroups.size > 1) {
     findings.push({
@@ -200,20 +263,38 @@ export function checkSeloFacts(
         " x ",
       )}) — possível mistura de projetos diferentes.`,
       detalhe: [...codigoGroups.entries()]
-        .map(([cod, names]) => `${cod}: ${joinNames(names)}`)
+        .map(([cod, fs]) => `${cod}: ${listaDeFolhas(fs)}`)
         .join(" | "),
-      folhas: envolvidas(codigoGroups.values()),
+      folhas: rotulosDe(codigoGroups.values()),
     });
   }
 
   // --- Obra consistente (CRÍTICO) --------------------------------------------
-  const obraGroups = new Map<string, { display: string; names: string[] }>();
+  type GrupoDeObra = { display: string; facts: SeloFact[]; acrescimos: SeloFact[] };
+  const obraGroups = new Map<string, GrupoDeObra>();
   for (const f of facts) {
     if (!f.obra) continue;
-    const key = normalizeObra(f.obra);
+    const key = chaveDaObra(f.obra);
     if (!key) continue;
-    if (!obraGroups.has(key)) obraGroups.set(key, { display: f.obra, names: [] });
-    obraGroups.get(key)!.names.push(f.label);
+    if (!obraGroups.has(key)) obraGroups.set(key, { display: f.obra, facts: [], acrescimos: [] });
+    obraGroups.get(key)!.facts.push(f);
+  }
+  /*
+   * Um selo que traz o ENDEREÇO junto do nome não é outra obra (138-26: 15
+   * selos com o nome, 1 com o nome + "EMC - 294 - LINHA CACHOEIRA…"). O grupo
+   * mais longo funde no mais curto que ele estende — do mais curto para o mais
+   * longo, para cada nome cair no menor que o contém. Fica registrado como info,
+   * apontando a folha que acrescenta: sumir com a diferença seria esconder.
+   */
+  const chaves = [...obraGroups.keys()].sort((a, b) => a.length - b.length);
+  for (const longa of chaves) {
+    const curta = chaves.find((c) => obraGroups.has(c) && acrescentaAo(c, longa));
+    if (!curta) continue;
+    const alvo = obraGroups.get(curta)!;
+    const g = obraGroups.get(longa)!;
+    alvo.facts.push(...g.facts);
+    alvo.acrescimos.push(...g.facts, ...g.acrescimos);
+    obraGroups.delete(longa);
   }
   if (obraGroups.size > 1) {
     findings.push({
@@ -223,10 +304,21 @@ export function checkSeloFacts(
         .map((g) => `"${g.display}"`)
         .join(" x ")}) — confira se todas as pranchas são da mesma obra.`,
       detalhe: [...obraGroups.values()]
-        .map((g) => `"${g.display}": ${joinNames(g.names)}`)
+        .map((g) => `"${g.display}": ${listaDeFolhas(g.facts)}`)
         .join(" | "),
-      folhas: envolvidas([...obraGroups.values()].map((g) => g.names)),
+      folhas: rotulosDe([...obraGroups.values()].map((g) => g.facts)),
     });
+  } else {
+    const [g] = [...obraGroups.values()];
+    if (g && g.acrescimos.length > 0) {
+      findings.push({
+        severidade: "info",
+        campo: "obra",
+        mensagem: `Mesma obra em todos os selos; ${g.acrescimos.length} deles acrescenta(m) texto depois do nome (em geral o endereço).`,
+        detalhe: `"${g.display}" + acréscimo: ${listaDeFolhas(g.acrescimos)}`,
+        folhas: rotulosDe([g.acrescimos]),
+      });
+    }
   }
 
   const blocos = porBloco(facts);
@@ -258,12 +350,12 @@ export function checkSeloFacts(
    */
   const semBloco = facts.every((f) => !(f.bloco ?? "").trim());
   if (semBloco) {
-    const discGroups = new Map<string, string[]>();
+    const discGroups = new Map<string, SeloFact[]>();
     for (const f of facts) {
       if (f.disciplinas.length === 0) continue;
       const key = f.disciplinas.join("+");
       if (!discGroups.has(key)) discGroups.set(key, []);
-      discGroups.get(key)!.push(f.label);
+      discGroups.get(key)!.push(f);
     }
     if (discGroups.size > 1) {
       findings.push({
@@ -275,9 +367,9 @@ export function checkSeloFacts(
           .map((d) => d.toUpperCase())
           .join(" x ")}).`,
         detalhe: [...discGroups.entries()]
-          .map(([disc, names]) => `${disc.toUpperCase()}: ${joinNames(names)}`)
+          .map(([disc, fs]) => `${disc.toUpperCase()}: ${listaDeFolhas(fs)}`)
           .join(" | "),
-        folhas: envolvidas(discGroups.values()),
+        folhas: rotulosDe(discGroups.values()),
       });
     }
   }
@@ -295,11 +387,11 @@ export function checkSeloFacts(
     // --- Revisão consistente DENTRO do bloco (AVISO) -------------------------
     // Entre blocos ela pode divergir sem defeito: cada disciplina tem o seu
     // ciclo de revisão, e o volume sai com hidrossanitário em A e incêndio em B.
-    const revGroups = new Map<string, string[]>();
+    const revGroups = new Map<string, SeloFact[]>();
     for (const f of doBloco) {
       if (!f.revisao) continue;
       if (!revGroups.has(f.revisao)) revGroups.set(f.revisao, []);
-      revGroups.get(f.revisao)!.push(f.label);
+      revGroups.get(f.revisao)!.push(f);
     }
     if (revGroups.size > 1) {
       findings.push({
@@ -311,9 +403,9 @@ export function checkSeloFacts(
           .map((r) => r.toUpperCase())
           .join(" x ")}).`,
         detalhe: [...revGroups.entries()]
-          .map(([rev, names]) => `rev ${rev.toUpperCase()}: ${joinNames(names)}`)
+          .map(([rev, fs]) => `rev ${rev.toUpperCase()}: ${listaDeFolhas(fs)}`)
           .join(" | "),
-        folhas: envolvidas(revGroups.values()),
+        folhas: rotulosDe(revGroups.values()),
       });
     }
 

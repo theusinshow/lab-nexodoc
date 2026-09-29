@@ -58,6 +58,7 @@ export function seloToFact(s: SeloForLd): SeloFact {
   });
   return {
     label: s.fileName || s.arquivo || "(sem nome)",
+    pagina: s.pageNumber ?? null,
     codigo: parsed.codigo,
     obra: s.obra?.trim() ?? "",
     revisao: parsed.revisao,
