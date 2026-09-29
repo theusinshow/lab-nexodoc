@@ -73,7 +73,21 @@ function Grifado({ trechos, lado }: { trechos: Trecho[]; lado: "antes" | "depois
   );
 }
 
-export function OQueFazer({ acao, corretor }: { acao: string; corretor?: CorretorDoAchado }) {
+/**
+ * UM ESTADO POR ACHADO, e não por lugar na tela.
+ *
+ * O painel de detalhe troca de achado (J/K, setas) sem desmontar o bloco: o
+ * React reaproveitava o mesmo `OQueFazer`, e a caixa aberta — com a resposta —
+ * passava para o achado seguinte. Visto em produção em 29/09/2026: o INC-009
+ * respondeu "confirmar com o projetista estrutural" e o próximo achado, um erro
+ * de digitação, mostrou a mesma frase sem chamada nenhuma. A `key` pelo id do
+ * achado fica AQUI, e não em quem usa, para nenhum uso novo esquecer.
+ */
+export function OQueFazer(props: { acao: string; corretor?: CorretorDoAchado }) {
+  return <OQueFazerDoAchado key={props.corretor?.findingId ?? ""} {...props} />;
+}
+
+function OQueFazerDoAchado({ acao, corretor }: { acao: string; corretor?: CorretorDoAchado }) {
   const idDaCaixa = useId();
   const elegivel = Boolean(corretor && podeGerarTextoCorrigido(corretor.achado));
   const [aberto, setAberto] = useState(false);

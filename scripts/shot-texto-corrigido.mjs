@@ -112,6 +112,22 @@ try {
     console.log("       (sem troca — pulando o copiar)");
   }
 
+  // O PRÓXIMO ACHADO não herda a caixa. Visto em produção em 29/09/2026: o
+  // painel troca de achado sem desmontar o bloco, e a resposta do anterior
+  // aparecia no seguinte, sem chamada nenhuma.
+  const caixaAntes = texto.replace(/\s+/g, " ").trim();
+  await page.locator("[title='Próximo achado (J)']").first().click();
+  await page.waitForTimeout(1500);
+  const botaoDoProximo = page.getByRole("button", { name: /Texto corrigido/i }).first();
+  if (await botaoDoProximo.count()) {
+    check(
+      "o próximo achado começa com a caixa fechada",
+      (await botaoDoProximo.getAttribute("aria-expanded")) === "false",
+    );
+  }
+  const corpo = (await page.locator("body").innerText()).replace(/\s+/g, " ");
+  check("a resposta do achado anterior não aparece no próximo", !corpo.includes(caixaAntes), caixaAntes);
+
   // O F5: o texto tem de estar gravado, e a caixa reabre sem chamar a rota.
   const antes = chamadas.length;
   await abrirAchado();
