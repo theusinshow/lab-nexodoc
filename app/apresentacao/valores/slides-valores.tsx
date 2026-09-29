@@ -154,7 +154,7 @@ export const VALORES: readonly Slide[] = [
     bloco: "A proposta",
     titulo: "Quanto custa operar",
     notas:
-      "O CUSTO POR EXECUÇÃO É MEDIDO; o mensal é estimativa. Atualizar a cotação antes de apresentar.\n\nOS US$ 1,61 são a mesma corrida da folha 05: US$ 1,23 de leitura, US$ 0,37 de validação e US$ 0,01 das quatorze páginas sem texto transcritas.\n\nO TOTAL MENSAL usa dezesseis memoriais, montagem corrente, servidor e banco. Não apresentar esse número como preço nem como retorno: é custo operacional e precisa continuar separado dos R$ 10 mil do piloto.",
+      "O CUSTO POR EXECUÇÃO É MEDIDO; o mensal é estimativa. Atualizar a cotação antes de apresentar: a tela usa a PTAX de venda de 28/09/2026 (R$ 5,2132), e o total é US$ 57 × a cotação — 57 × 5,2132 ≈ R$ 297.\n\nA FAIXA POR MEMORIAL É MEDIDA em produção, leitura profunda, somando leitura, validação e transcrição das páginas sem texto: 129-24 (54 p.) US$ 0,54; 025-24 (155 p.) US$ 0,91; 117-25 (218 p.) US$ 1,06; 027-24 (190 p.) US$ 1,09; 118-25 (234 p.) US$ 1,10. SE PERGUNTAREM POR QUE A FOLHA 05 DIZ US$ 1,61: aquela foi uma corrida anterior do mesmo 117-25 (US$ 1,23 de leitura, US$ 0,37 de validação, US$ 0,01 de transcrição); as de produção saíram mais baratas. O mensal continua calculado pela mais cara — 16 × US$ 1,61 ≈ US$ 26 —, de propósito: estimativa de custo erra para cima.\n\nO TOTAL MENSAL usa dezesseis memoriais, montagem corrente, servidor e banco. Não apresentar esse número como preço nem como retorno: é custo operacional e precisa continuar separado dos R$ 10 mil do piloto.",
     corpo: (
       <>
         <Entra atraso={100}>
@@ -177,8 +177,8 @@ export const VALORES: readonly Slide[] = [
             <div style={{ marginTop: 12 }}>
               <LinhaDeCusto
                 item="Conferência de um memorial"
-                base="218 páginas, leitura profunda"
-                valor="US$ 1,61"
+                base="cinco memoriais em produção"
+                valor="até US$ 1,10"
                 atraso={300}
               />
               <LinhaDeCusto
@@ -204,7 +204,7 @@ export const VALORES: readonly Slide[] = [
             <div style={{ marginTop: 12 }}>
               <LinhaDeCusto
                 item="Conferência de memoriais"
-                base="cerca de 16 por mês"
+                base="cerca de 16 por mês, pela corrida mais cara"
                 valor="US$ 26"
                 atraso={720}
               />
@@ -229,14 +229,14 @@ export const VALORES: readonly Slide[] = [
             </div>
             <Total
               rotuloDo="Ordem de grandeza"
-              valor="≈ R$ 295 / mês"
+              valor="≈ R$ 297 / mês"
               atraso={1180}
             />
             <Entra atraso={1300}>
               <p className="ap-fonte">
                 Convertido a{" "}
-                <span className="ap-premissa">R$ 5,18 por dólar</span> —
-                atualizar a cotação antes de apresentar.
+                <span className="ap-premissa">R$ 5,21 por dólar</span> (PTAX de
+                venda do Banco Central) — atualizar a cotação antes de apresentar.
               </p>
             </Entra>
           </div>

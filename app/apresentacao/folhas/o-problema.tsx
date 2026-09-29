@@ -199,7 +199,7 @@ export const O_PROBLEMA: readonly Slide[] = [
     bloco: "O problema",
     titulo: "O que um erro desses custa",
     notas:
-      "É AQUI que o episódio é narrado, agora que ele não tem folha própria: projeto devolvido, procuradoria acionada, três responsáveis parados três dias. Contar ANTES de avançar — a conta entra fator a fator, e cada fator é uma frase da história: três pessoas, três dias, oito horas. Só depois o total.\n\nA palavra estimativa fica visível na tela; se preferir, troque a faixa pelo valor real antes de apresentar. A coluna da direita chega por último e é o que fecha o slide: ler devagar e não insistir.",
+      "É AQUI que o episódio é narrado, agora que ele não tem folha própria: projeto devolvido, procuradoria acionada, três responsáveis parados três dias. Contar ANTES de avançar — a conta entra fator a fator, e cada fator é uma frase da história: três pessoas, três dias, oito horas. Só depois o total.\n\nA palavra estimativa fica visível na tela. DE ONDE SAI A FAIXA (atualizada em 28/09/2026): é o custo da hora para a empresa, salário mais encargos. Ponta de baixo: salário médio de engenheiro civil em SC, R$ 7.340,80 por 38 h semanais (salario.com.br), cerca de R$ 44 por hora, com 53% de encargos (SINAPI, mensalista SC com desoneração) — R$ 70. Ponta de cima: piso legal da engenharia, 8,5 salários mínimos, R$ 14.589 por 220 h (Lei 4.950-A/66, mínimo de R$ 1.621), cerca de R$ 66 por hora, com 70% de encargos — R$ 110. 72 horas × R$ 70 = R$ 5.040; × R$ 110 = R$ 7.920. Se perguntarem, é conta de custo, não de honorário: um projetista sênior custa mais que isso. A coluna da direita chega por último e é o que fecha o slide: ler devagar e não insistir.",
     corpo: (
       <div className="ap-grade" style={{ flex: 1 }}>
         <div
@@ -266,7 +266,7 @@ export const O_PROBLEMA: readonly Slide[] = [
               }}
             >
               Hora de engenheiro ou arquiteto{" "}
-              <span className="ap-premissa">(estimativa: R$ 50 a R$ 90)</span>
+              <span className="ap-premissa">(estimativa: R$ 70 a R$ 110)</span>
             </p>
           </Entra>
           <div className="ap-cresce" />
@@ -296,7 +296,7 @@ export const O_PROBLEMA: readonly Slide[] = [
               fontVariantNumeric: "tabular-nums",
             }}
           >
-            <Linhas linhas={["R$ 3.600 a R$ 6.480"]} atraso={1900} />
+            <Linhas linhas={["R$ 5.040 a R$ 7.920"]} atraso={1900} />
           </div>
         </div>
         <div
