@@ -55,8 +55,13 @@ import type { SeloResult } from "./selo-render.ts";
  * 5 (24/09/2026): o modelo passou de `gpt-5.6-luna` para `gpt-6-luna`. Sem subir
  * o numero, prancha ja lida continuaria voltando com a leitura do modelo antigo
  * e o teste da troca nao mediria nada.
+ *
+ * 6 (29/09/2026): o prompt passou a copiar o titulo da secao e a obra
+ * LITERALMENTE. No 138-26 os 16 selos dizem METALICO e a leitura devolvia 3
+ * titulos diferentes (inventava "PROJETO ESTRUTURAL METALICO", colava o
+ * CONTEUDO na frente) e, num selo, o ENDERECO junto da OBRA.
  */
-export const VERSAO_DO_LEITOR = 5;
+export const VERSAO_DO_LEITOR = 6;
 
 /** Um arquivo sem leitura guardada, com a chave já calculada (não recalcular). */
 export interface ArquivoInedito {

@@ -69,7 +69,8 @@ const extractionSchema = {
     },
     obra: {
       type: ["string", "null"],
-      description: "Nome da obra/projeto lido no cabeçalho ou rodapé da página.",
+      description:
+        "Somente o valor do campo OBRA do selo, juntando quebras de linha. NUNCA inclua o ENDEREÇO, mesmo quando ele vem logo abaixo, dentro do mesmo quadro.",
     },
     fase: {
       type: ["string", "null"],
@@ -78,7 +79,8 @@ const extractionSchema = {
     },
     tituloSecao: {
       type: ["string", "null"],
-      description: "Título técnico da seção ou disciplina da LD, como PROJETO ESTRUTURAL CONCRETO.",
+      description:
+        "Cópia literal do campo do selo que nomeia a disciplina ou a seção (ex.: o quadro curto ao lado de ARQUIVO com METÁLICO, ou a linha PROJETO HIDROSSANITÁRIO). Não junte com o CONTEÚDO e não acrescente palavras. Se o selo não tiver esse campo, null.",
     },
     data: {
       type: ["string", "null"],
@@ -125,9 +127,9 @@ Extraia do selo da prancha:
 Extraia também do cabeçalho ou rodapé da página, quando visível ou presente no texto extraído:
 - Órgão/cliente
 - Secretaria emissora (linha própria no cabeçalho, ex.: SECRETARIA DE DESENVOLVIMENTO SUSTENTÁVEL E OBRAS ESTRUTURANTES - SEDES; não confundir com a prefeitura/órgão)
-- Nome da obra/projeto
+- Nome da obra (só o campo OBRA; o ENDEREÇO é outro campo e não entra)
 - Fase do projeto
-- Título técnico da seção/disciplina da LD
+- Título da seção/disciplina: o campo do selo que nomeia a disciplina, copiado LITERALMENTE
 - A quem pertence o BRASÃO/logotipo de órgão público (campo logoOrgao)
 
 O campo PRANCHA sempre existe no selo.
@@ -138,6 +140,7 @@ Para cliente, obra, fase e título da seção, use apenas texto presente na pág
 Não reescreva textos.
 Não resuma.
 Não complete informação ausente.
+O título da seção é UM campo copiado como está: se o selo diz METÁLICO, a resposta é METÁLICO — não "PROJETO ESTRUTURAL METÁLICO", nem o CONTEÚDO da prancha seguido de METÁLICO. A mesma folha-modelo dá o mesmo título em todas as pranchas do conjunto.
 
 A IMAGEM É A AUTORIDADE quando ela discordar do texto extraído.
 O texto de algumas pranchas vem de fonte sem mapa de caracteres e é recuperado antes de chegar aqui: as letras saem certas, mas os ACENTOS podem estar trocados (por exemplo "CHAPECI" ou "CHAPECÏ" onde a imagem mostra "CHAPECÓ", "REVITALIZAdO" onde a imagem mostra "REVITALIZAÇÃO"). Nesses campos, escreva o que a IMAGEM mostra, com a acentuação correta.
