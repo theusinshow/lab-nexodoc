@@ -52,7 +52,12 @@ import { AuditCanvas } from "./AuditCanvas";
 import { AuditoriaEmCurso } from "./AuditoriaEmCurso";
 import type { AberturaPorLink } from "./use-abrir-auditoria-por-link";
 import { useReconectarAuditoria } from "./use-reconectar-auditoria";
-import { incompletudeDoParecer } from "@/lib/auditoria-incompleta";
+import {
+  detalheDoParecer,
+  incompletudeDoParecer,
+  resumoDoParecer,
+} from "@/lib/auditoria-incompleta";
+import type { TextoCorrigido } from "@/lib/texto-corrigido";
 
 /**
  * As três vistas de LISTA do parecer. A quarta ("No documento") entra ao lado
@@ -85,6 +90,7 @@ export function PalcoDoNexo({
     achadosResolvidos,
     marcarAchadoResolvido,
     conversationId,
+    saveResult,
   } = useConversation();
   const { emCurso: emCursoGlobal, escolha, escolherVista } = useAuditoria();
   /*
@@ -404,6 +410,32 @@ export function PalcoDoNexo({
     return (refId: string, resolvido: boolean) => marcarAchadoResolvido(id, refId, resolvido);
   }, [salvo?.auditId, marcarAchadoResolvido]);
 
+  /*
+   * O TEXTO CORRIGIDO NO NAVEGADOR. O servidor já gravou no `Audit.report`;
+   * aqui o artefato é regravado NO LUGAR (mesmo `artifactId`), como o chat faz
+   * com o achado que nasce na conversa — o parecer persiste em dois lugares e
+   * os dois precisam concordar. Sem isto, depois do F5 o botão chamaria a rota
+   * de novo (de graça, porque ela devolve o gravado, mas com a espera).
+   */
+  const aoGerarTextoCorrigido = (findingId: string, texto: TextoCorrigido) => {
+    const atual = auditoriaMaisRecente(results);
+    if (!atual) return;
+    const reportNovo = {
+      ...atual.salvo.report,
+      incongruencias: atual.salvo.report.incongruencias.map((f) =>
+        f.id === findingId ? { ...f, texto_corrigido: texto } : f,
+      ),
+    };
+    void saveResult({
+      artifactId: atual.artifactId,
+      kind: "auditoria",
+      summary: resumoDoParecer(reportNovo),
+      files: [],
+      payload: { ...atual.salvo, report: reportNovo },
+      canvas: { label: "Auditoria", detail: detalheDoParecer(reportNovo) },
+    });
+  };
+
   const parecerCom = (opts: { controlado: boolean; achadoEmFoco?: string }) =>
     report ? (
       <AuditResult
@@ -422,6 +454,7 @@ export function PalcoDoNexo({
         view={opts.controlado ? vistaDoParecer : undefined}
         onViewChange={opts.controlado ? setVistaDoParecer : undefined}
         achadoEmFoco={opts.achadoEmFoco}
+        onTextoCorrigido={aoGerarTextoCorrigido}
       />
     ) : null;
 

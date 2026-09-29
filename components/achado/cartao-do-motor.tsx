@@ -14,8 +14,9 @@
  *   não abre outro arquivo no lugar;
  * - realce só quando o modelo mandou (citação única na página).
  */
-import { FileText, Wrench } from "lucide-react";
+import { FileText } from "lucide-react";
 
+import { OQueFazer, type CorretorDoAchado } from "@/components/achado/o-que-fazer";
 import type { CardNavigation, FindingCardModel } from "@/lib/audit-engine/finding-card";
 import { cn } from "@/lib/utils";
 
@@ -38,9 +39,12 @@ function Titulo({ children }: { children: React.ReactNode }) {
 export function CartaoDoMotor({
   modelo,
   aoAbrir,
+  corretor,
 }: {
   modelo: FindingCardModel;
   aoAbrir?: (nav: Extract<CardNavigation, { kind: "open" }>) => void;
+  /** O texto corrigido — o mesmo do cartão legado. Ver `o-que-fazer.tsx`. */
+  corretor?: CorretorDoAchado;
 }) {
   return (
     <div className="grid content-start gap-4">
@@ -107,13 +111,7 @@ export function CartaoDoMotor({
         </section>
       ) : null}
 
-      <section className="nx-cut-6 bg-[var(--status-warning-bg)]/70 p-3">
-        <div className="mb-1.5 flex items-center gap-2 text-[var(--status-warning)]">
-          <Wrench className="size-4" aria-hidden />
-          <h4 className="font-mono text-[11px] font-semibold uppercase tracking-[0.12em]">O que fazer</h4>
-        </div>
-        <p className="max-w-[68ch] text-sm leading-6 text-[var(--status-warning)]">{modelo.action}</p>
-      </section>
+      <OQueFazer acao={modelo.action} corretor={corretor} />
 
       <section className="grid gap-1">
         <Titulo>Estado e limites</Titulo>

@@ -35,6 +35,7 @@ import dynamic from "next/dynamic";
 
 import { Button } from "@/components/ui/button";
 import { CartaoDoMotor } from "@/components/achado/cartao-do-motor";
+import { OQueFazer, type CorretorDoAchado } from "@/components/achado/o-que-fazer";
 import { ConversaDoAchado } from "@/components/achado/conversa-do-achado";
 import { findingCard } from "@/lib/audit-engine/finding-card";
 import { parseEngineFinding } from "@/lib/audit-engine/report-contract";
@@ -218,6 +219,12 @@ type AuditResultProps = {
    * numa lista de 45.
    */
   achadoEmFoco?: string;
+  /**
+   * O texto corrigido que acabou de ser gerado para um achado. O servidor já o
+   * gravou no parecer; quem é dono do parecer na tela funde a cópia do
+   * IndexedDB, para ele sobreviver ao F5 sem nova chamada.
+   */
+  onTextoCorrigido?: CorretorDoAchado["aoGerar"];
 };
 
 export type AuditView = "summary" | "findings" | "report";
@@ -269,6 +276,8 @@ type StructuredFinding = {
   origem?: AuditFinding["origem"];
   /** Veio do parecer anterior, de um capítulo idêntico. Ver `AuditFinding`. */
   herdado_de?: { auditId: string; quando: string };
+  /** O texto corrigido já gravado no achado. Ver `lib/texto-corrigido.ts`. */
+  textoCorrigido?: AuditFinding["texto_corrigido"];
   confianca?: "alta" | "media" | "baixa";
   tier?: FindingTier;
   assurance?: string;
@@ -1013,6 +1022,7 @@ function reportFindingToStructured(finding: AuditFinding): StructuredFinding {
      * acreditar nele.
      */
     herdado_de: finding.herdado_de,
+    textoCorrigido: finding.texto_corrigido,
     // Contrato do motor novo (opcional): quando existe, o cartão usa `findingCard`.
     // Só o contrato VÁLIDO vira cartão do motor; corrompido cai no texto legado
     // (e o veredito já bloqueia a emissão por integridade).
@@ -1335,8 +1345,29 @@ export function AuditResult({
   achadoEmFoco,
   motorFonte: motorFonteDeFora,
   fontes,
+  onTextoCorrigido,
 }: AuditResultProps) {
   const [viewLocal, setViewLocal] = useState<AuditView>("summary");
+  /*
+   * O TEXTO CORRIGIDO de cada achado: quem pode pedir é decidido lá dentro
+   * (`podeGerarTextoCorrigido`); aqui só se entrega o achado como o parecer o
+   * tem. Sem `refId` não há como gravar, e o botão não aparece.
+   */
+  const corretorDo = (finding: StructuredFinding): CorretorDoAchado | undefined =>
+    finding.refId
+      ? {
+          auditId,
+          findingId: finding.refId,
+          achado: {
+            evidencia: finding.evidencia,
+            descricao: finding.descricao,
+            conflito: finding.conflito,
+            sugestao_correcao: finding.acao,
+          },
+          inicial: finding.textoCorrigido,
+          aoGerar: onTextoCorrigido,
+        }
+      : undefined;
   /*
    * A luz dos cartões. Um handler só para os 45 — ele escreve `--mx`/`--my` no
    * elemento que recebeu o evento, sem passar pelo React.
@@ -4794,6 +4825,7 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
                                     motorFonte ?? { hasRevision: () => false },
                                   )}
                                   aoAbrir={motorFonte?.aoAbrir}
+                                  corretor={corretorDo(finding)}
                                 />
                               ) : (
                               <>
@@ -4815,18 +4847,10 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
                             pessoa procura quando volta ao cartão pela segunda
                             vez.
                           */}
-                              <section className="nx-cut-6 bg-[var(--status-warning-bg)]/70 p-3">
-                                <div className="mb-1.5 flex items-center gap-2 text-[var(--status-warning)]">
-                                  <Wrench className="size-4" />
-                                  <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.12em]">
-                                    O que fazer
-                                  </p>
-                                </div>
-                                <p className="max-w-[68ch] text-sm leading-6 text-[var(--status-warning)]">
-                                  {finding.acao ||
-                                    "Ação recomendada não identificada."}
-                                </p>
-                              </section>
+                              <OQueFazer
+                                acao={finding.acao || "Ação recomendada não identificada."}
+                                corretor={corretorDo(finding)}
+                              />
 
                               <TrechosDoAchado
                                 paginas={paginas}
@@ -5753,6 +5777,7 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
                             motorFonte ?? { hasRevision: () => false },
                           )}
                           aoAbrir={motorFonte?.aoAbrir}
+                          corretor={corretorDo(finding)}
                         />
                       </div>
                     ))}

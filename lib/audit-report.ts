@@ -2,6 +2,7 @@ import { countByState, readEngineReport, type EngineFindingV1, type EngineReport
 import type { AiProvider } from "@/lib/ai-providers";
 import type { AuditMode } from "@/lib/audit-mode";
 import type { AnalysisLevel } from "@/lib/analysis-level";
+import type { TextoCorrigido } from "./texto-corrigido.ts";
 /*
  * CAMINHO RELATIVO, e não o alias: este módulo é executado por scripts em node
  * cru (`npm run test:severidade`, `test:audit`), onde `@/` não existe. Os
@@ -109,6 +110,13 @@ export type AuditFinding = {
    * silenciosas.
    */
   herdado_de?: { auditId: string; quando: string };
+  /**
+   * O texto corrigido que a IA gerou quando alguém clicou em "texto corrigido"
+   * (`lib/texto-corrigido.ts`). Gravado para o segundo clique — e o colega que
+   * abrir o mesmo achado — não pagarem de novo. Guarda também o "sem troca",
+   * pelo mesmo motivo. Ausente = ninguém pediu ainda.
+   */
+  texto_corrigido?: TextoCorrigido;
   /**
    * Contrato do motor novo (`lib/audit-engine/report-contract.ts`), versionado e
    * OPCIONAL: estado real da investigação, premissas, fontes por lado, limites.

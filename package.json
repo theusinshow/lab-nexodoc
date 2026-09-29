@@ -213,6 +213,7 @@
     "prova:conferente-assinatura": "node --import ./scripts/lib/resolver-de-imports.mjs scripts/prova-conferente-assinatura.ts",
     "prova:conferente-rede": "node --import ./scripts/lib/resolver-de-imports.mjs scripts/prova-conferente-rede.ts",
     "test:conferente-rede": "node --import ./scripts/lib/resolver-de-imports.mjs scripts/test-conferente-rede.ts",
+    "test:texto-corrigido": "node --import ./scripts/lib/resolver-de-imports.mjs scripts/test-texto-corrigido.ts",
     "test:nexo:escala": "node scripts/test-nexo-escala-de-dado.ts",
     "prova:tokens": "node scripts/prova-tokens-documentados.mjs",
     "prova:badge": "node scripts/prova-badge-a-mao.mjs",
