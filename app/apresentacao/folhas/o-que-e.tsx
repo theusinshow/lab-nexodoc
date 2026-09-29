@@ -683,7 +683,7 @@ export const O_QUE_E: readonly Slide[] = [
     titulo: "Um memorial inteiro, conferido",
     subtitulo: "117_25_md_geral_a.pdf — memorial geral de uma UBS",
     notas:
-      "É A DEMONSTRAÇÃO. O mapa é o memorial página a página; a leitura passa, e onde há achado a página sobe com a cor da gravidade — a mesma grafia do canvas da auditoria. Deixar o mapa terminar antes de falar: são dois segundos e meio, e a sala acompanha sozinha.\n\nTUDO NESTA FOLHA É UMA CORRIDA SÓ: o 117_25 em leitura profunda, gravado no banco em 14/09/2026. 218 páginas, 56 achados, 5,4 minutos, US$ 1,61 somados do registro de uso (leitura, validação e as 14 páginas sem texto que precisaram ser transcritas). Se perguntarem por que a corrida de agosto deu 28: aquela foi no nível padrão, com outro modelo — não é a mesma leitura, e não serve de comparação.\n\nA LEGENDA É O PARECER, SEM ARREDONDAR: 11 impedem emitir, 32 são técnicos ou contratuais, 13 editoriais. Ler só o 11.\n\nO CARTÃO É O QUE A SALA VAI VER NO PRODUTO. Ler o trecho em voz alta: um memorial da UBS Vila Manaus chamando a obra de 'UBS Paraíso', na página 92. Na mesma corrida ele achou outra prefeitura como proprietária (Chapecó, p. 99) e a exigência de um shopping numa UBS (p. 211) — guardar esses dois para a folha 07, que os mostra.\n\nLer os números sem adjetivo — eles não precisam de ajuda.",
+      "É A DEMONSTRAÇÃO. O mapa é o memorial página a página; a leitura passa, e onde há achado a página sobe com a cor da gravidade — a mesma grafia do canvas da auditoria. Deixar o mapa terminar antes de falar: são dois segundos e meio, e a sala acompanha sozinha.\n\nTUDO NESTA FOLHA É UMA CORRIDA SÓ: o 117_25 em leitura profunda, gravado no banco em 14/09/2026. 218 páginas, 56 achados, 5,4 minutos, US$ 1,61 somados do registro de uso (leitura, validação e as 14 páginas sem texto que precisaram ser transcritas). Se perguntarem por que a corrida de agosto deu 28: aquela foi no nível padrão, com outro modelo — não é a mesma leitura, e não serve de comparação.\n\nA LEGENDA É O PARECER, SEM ARREDONDAR: 11 impedem emitir, 32 são técnicos ou contratuais, 13 editoriais. Ler só o 11.\n\nO CARTÃO É O QUE A SALA VAI VER NO PRODUTO. Ler o trecho em voz alta: um memorial da UBS Vila Manaus, na Rua São Francisco de Assis, mandando fazer a limpeza e a microdrenagem de outras ruas — Rua Bento Goiá e Av. Engenheiro Max de Souza —, na página 25. Não dizer de onde são essas ruas: o documento não diz. Na mesma corrida ele achou outra prefeitura como proprietária (Chapecó, p. 99) e a exigência de um shopping numa UBS (p. 211) — guardar esses dois para a folha 07, que os mostra.\n\nLer os números sem adjetivo — eles não precisam de ajuda.",
     corpo: (
       <>
         {/*
@@ -773,8 +773,14 @@ export const O_QUE_E: readonly Slide[] = [
 
         {/*
           O cartão nasce LIGADO à página, como no canvas: a linha desce da marca
-          da p. 92 até o cartão. A posição é a da página no mapa — (92 − ½) da
+          da p. 25 até o cartão. A posição é a da página no mapa — (25 − ½) da
           largura útil dividida por 218 —, e não um número escolhido a olho.
+
+          O ACHADO EM DESTAQUE ERA O DA p. 92 (UBS Paraíso, no capítulo de
+          estrutura). Trocado em 28/09/2026: quem apresenta é da equipe de
+          estrutura, e o exemplar da demonstração não pode ser da própria
+          disciplina. O da p. 25 é crítico, da mesma corrida, e não aparece em
+          nenhuma outra folha. Sem disciplina no parecer, o cartão sai sem sigla.
         */}
         <div style={{ position: "relative", flex: 1, minHeight: 300 }}>
           <span
@@ -782,7 +788,7 @@ export const O_QUE_E: readonly Slide[] = [
             className="ap-desce"
             style={{
               position: "absolute",
-              left: Math.round(((92 - 0.5) / 218) * LARGURA_UTIL),
+              left: Math.round(((25 - 0.5) / 218) * LARGURA_UTIL),
               top: -24,
               width: 1,
               height: 72,
@@ -791,22 +797,22 @@ export const O_QUE_E: readonly Slide[] = [
             }}
           />
           <CartaoDeAchado
-            tipo="Identificação de terceiro empreendimento"
-            evidencia="Este memorial descritivo destina-se ao projeto estrutural da UBS Paraíso – Porte 1, localizada na Rua São Francisco de Assis, S/N, Vila Manaus, Criciúma/SC."
-            pagina={92}
-            disciplina="estrutural"
+            tipo="Endereços de frente de serviço divergentes"
+            evidencia="…realizar a limpeza e microdrenagem da Rua Bento Goiá e Av. Engenheiro Max de Souza."
+            pagina={25}
+            disciplina=""
             gravidade="critico"
             atraso={3950}
             style={{
               position: "absolute",
               top: 48,
-              left: Math.round(((92 - 0.5) / 218) * LARGURA_UTIL) - 26,
+              left: Math.round(((25 - 0.5) / 218) * LARGURA_UTIL) - 26,
             }}
           />
           {/*
             A LEGENDA DO MAPA É O "56" ABERTO: as três cores do mapa com o número
             de cada uma. Mora embaixo à esquerda, no vão que o cartão deixa (ele
-            nasce na p. 92, a 40% da largura), e chega junto do cartão — é a
+            nasce na p. 25 e termina antes de 45% da largura), e chega junto do cartão — é a
             leitura do todo antes do exemplar.
           */}
           <Entra

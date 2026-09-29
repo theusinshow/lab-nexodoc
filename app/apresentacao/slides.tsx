@@ -19,8 +19,8 @@ import type { Slide } from "./palco";
  *  1. **Todo número aqui foi medido, e o que é conta aparece como estimativa.**
  *     Os custos saíram de `AiUsageEvent`; os achados, de execuções reais. Onde
  *     há premissa, a palavra fica na tela, em âmbar.
- *  2. **Nenhuma cifra de preço nas folhas 01 a 19.** Valor do piloto e
- *     propriedade do software vivem em `/apresentacao/valores`, e a folha 17
+ *  2. **Nenhuma cifra de preço nas folhas 01 a 20.** Valor do piloto e
+ *     propriedade do software vivem em `/apresentacao/valores`, e a folha 18
  *     só traz o BOTÃO que abre aquela rota — nunca uma seta a mais.
  *  3. **Nada se mexe sem dizer algo.** Ver a seção de movimento em `palco.css`.
  *

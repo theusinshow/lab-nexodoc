@@ -332,7 +332,7 @@ export function EscalaVertical({
  * O CONFRONTO — a folha de objeção. A pergunta, com as palavras do comprador,
  * em Mono à esquerda (mono é o que os OUTROS dizem); as respostas como leituras
  * numeradas à direita; a leitura final na base. Sem `pergunta`, a esquerda traz
- * o título e a linha fina (a folha 16 afirma em vez de responder).
+ * o título e a linha fina (a folha 17 afirma em vez de responder).
  */
 export function Confronto({
   pergunta,

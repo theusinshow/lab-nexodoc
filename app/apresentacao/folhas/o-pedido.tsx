@@ -15,7 +15,7 @@ import {
 export const O_PEDIDO: readonly Slide[] = [
   {
     rotulo: "Para começar",
-    numero: "18",
+    numero: "19",
     bloco: "A decisão",
     titulo: "O que precisa ficar decidido",
     notas:
@@ -56,7 +56,7 @@ export const O_PEDIDO: readonly Slide[] = [
 
   {
     rotulo: "A decisão",
-    numero: "19",
+    numero: "20",
     bloco: "A decisão",
     titulo: "A decisão",
     notas:

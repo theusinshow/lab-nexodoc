@@ -33,7 +33,7 @@ function ListaDeProva({ children }: { children: ReactNode }) {
 export const POSSIVEIS_PERGUNTAS: readonly Slide[] = [
   {
     rotulo: "Duas provas",
-    numero: "13",
+    numero: "14",
     bloco: "A medição",
     titulo: "Duas capacidades, duas provas",
     notas:
@@ -85,7 +85,7 @@ export const POSSIVEIS_PERGUNTAS: readonly Slide[] = [
 
   {
     rotulo: "Por que não o ChatGPT",
-    numero: "14",
+    numero: "15",
     bloco: "Possíveis perguntas",
     titulo: "Por que não só o ChatGPT",
     notas:
@@ -116,7 +116,7 @@ export const POSSIVEIS_PERGUNTAS: readonly Slide[] = [
 
   {
     rotulo: "Continuidade",
-    numero: "15",
+    numero: "16",
     bloco: "Continuidade",
     titulo: "O que não depende de confiança",
     notas:
@@ -149,7 +149,7 @@ export const POSSIVEIS_PERGUNTAS: readonly Slide[] = [
 
   {
     rotulo: "Como o piloto mede",
-    numero: "16",
+    numero: "17",
     bloco: "O piloto",
     titulo: "Seis meses, três checkpoints",
     notas:

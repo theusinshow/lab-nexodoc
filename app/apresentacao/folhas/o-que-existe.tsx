@@ -3,9 +3,9 @@
 import type { Slide } from "../palco";
 import { EscalaHorizontal, EscalaVertical, MONO } from "../pecas";
 
-/** BLOCO 3 — O QUE EXISTE (folhas 09 a 11). */
+/** BLOCO 3 — O QUE EXISTE (folhas 10 a 12). */
 
-/** As quatro linhas de cada bloco da folha 11, sobre linhas finas. */
+/** As quatro linhas de cada bloco da folha 12, sobre linhas finas. */
 function LinhasDoBloco({ linhas }: { linhas: readonly string[] }) {
   return (
     <ul style={{ margin: "8px 0 0", padding: 0, listStyle: "none" }}>
@@ -31,7 +31,7 @@ function LinhasDoBloco({ linhas }: { linhas: readonly string[] }) {
 export const O_QUE_EXISTE: readonly Slide[] = [
   {
     rotulo: "Limites",
-    numero: "09",
+    numero: "10",
     bloco: "O que existe",
     titulo: "O que ele ainda não faz bem",
     notas:
@@ -68,7 +68,7 @@ export const O_QUE_EXISTE: readonly Slide[] = [
 
   {
     rotulo: "Segurança",
-    numero: "10",
+    numero: "11",
     bloco: "O que existe",
     titulo: "O que protege o documento",
     notas:
@@ -138,7 +138,7 @@ export const O_QUE_EXISTE: readonly Slide[] = [
 
   {
     rotulo: "O que existe hoje",
-    numero: "11",
+    numero: "12",
     bloco: "O que existe",
     titulo: "O que já existe e funciona",
     notas:

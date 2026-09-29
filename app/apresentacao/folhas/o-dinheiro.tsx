@@ -4,7 +4,7 @@ import type { Slide } from "../palco";
 import { Entra, EscalaHorizontal, Leitura, Linhas, MONO } from "../pecas";
 
 /**
- * A PROVA DA MONTAGEM E A PONTE PARA A PROPOSTA (folhas 12 e 17).
+ * A PROVA DA MONTAGEM E A PONTE PARA A PROPOSTA (folhas 13 e 18).
  * A conferência já tem prova de campo na folha 05. A montagem recebe aqui uma
  * prova operacional própria, sem transformar o que o piloto ainda precisa
  * medir em promessa.
@@ -46,7 +46,7 @@ function BotaoDosValores() {
 
 export const O_DINHEIRO_12: Slide = {
   rotulo: "Prova da montagem",
-  numero: "12",
+  numero: "13",
   bloco: "A prova",
   titulo: "Montagem: a prova operacional",
   notas:
@@ -88,7 +88,7 @@ export const O_DINHEIRO_12: Slide = {
 
 export const O_DINHEIRO_17: Slide = {
   rotulo: "A proposta",
-  numero: "17",
+  numero: "18",
   bloco: "O dinheiro",
   titulo: "A proposta está separada",
   notas:

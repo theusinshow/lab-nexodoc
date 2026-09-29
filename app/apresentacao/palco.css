@@ -97,8 +97,10 @@
 }
 
 .ap-trilho__indice {
-  height: 40px;
-  line-height: 40px;
+  /* 38 e não 40: com vinte folhas, 40 px levava o último índice para cima do
+     nome do bloco (72 + 20 × 40 = 872, e o bloco começa em 864). */
+  height: 38px;
+  line-height: 38px;
   text-align: center;
   font-size: 14px;
   font-variant-numeric: tabular-nums;
@@ -110,13 +112,13 @@
   font-weight: 500;
 }
 
-/* A marca desliza com a folha: um passo de 40 px por índice. */
+/* A marca desliza com a folha: um passo de 38 px por índice (ver `.ap-trilho__indice`). */
 .ap-trilho__marca {
   position: absolute;
   left: 128px;
   top: 72px;
   width: 16px;
-  height: 40px;
+  height: 38px;
   background: var(--nexodoc-accent);
   transition: transform var(--ap-curta) var(--ap-entra);
 }
@@ -415,7 +417,7 @@
 
 /*
  * Sete colunas para as leituras, e o texto um degrau abaixo (24). Com seis
- * colunas e 26 px, a resposta longa da folha 13 (oito linhas) empurrava a
+ * colunas e 26 px, a resposta longa da folha 14 (oito linhas) empurrava a
  * terceira leitura para cima do fecho — visto na captura. A pergunta, em Mono,
  * cabe bem em quatro colunas.
  */
@@ -688,7 +690,7 @@
  * descendentes, e a linha precisa começar ABAIXO dessa folga. Com line-height 1
  * (os números grandes) a folga vale 14% da altura, e a 108% o topo do "R$" já
  * aparecia como dois tracinhos antes da revelação — visto no quadro de 1,3 s da
- * folha 08.
+ * folha 09.
  */
 @keyframes ap-mascara {
   from {

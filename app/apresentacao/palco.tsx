@@ -13,7 +13,7 @@ import "./palco.css";
 export interface Slide {
   /** Rótulo curto, para as notas e para o índice. */
   rotulo: string;
-  /** O que aparece no trilho: "01".."19" no deck, "A".."F" no anexo. */
+  /** O que aparece no trilho: "01".."20" no deck, "A".."F" no anexo. */
   numero: string;
   /** O bloco narrativo a que o slide pertence. Vazio na capa. */
   bloco?: string;
@@ -67,7 +67,7 @@ function Trilho({
       </ol>
       <span
         className="ap-trilho__marca"
-        style={{ transform: `translateY(${indice * 40}px)` }}
+        style={{ transform: `translateY(${indice * 38}px)` }}
       />
       <span className="ap-trilho__bloco">{folhas[indice].bloco ?? ""}</span>
     </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import type { Slide } from "../palco";
+import { O_MESMO_ERRO } from "./o-mesmo-erro";
 import {
   Contador,
   Entra,
@@ -12,7 +13,7 @@ import {
 } from "../pecas";
 
 /**
- * BLOCO 2 — O PROBLEMA (folhas 06 a 08). Texto e notas de 09/09/2026; a folha 07
+ * BLOCO 2 — O PROBLEMA (folhas 06 a 09). Texto e notas de 09/09/2026; a folha 07
  * ganhou em 14/09/2026 os trechos do 117_25 que provam cada causa.
  */
 
@@ -189,9 +190,12 @@ export const O_PROBLEMA: readonly Slide[] = [
     ),
   },
 
+  // Folha 08: a prova, em cinco obras, do que a 07 afirma. Mora no próprio arquivo.
+  O_MESMO_ERRO,
+
   {
     rotulo: "A conta",
-    numero: "08",
+    numero: "09",
     bloco: "O problema",
     titulo: "O que um erro desses custa",
     notas:

@@ -247,7 +247,7 @@ async function capturar(pagina, rota) {
       const secao = document.querySelector(".ap-folha:not(.ap-folha--sai)");
       if (!secao) return null;
       // O número da folha mora no TRILHO desde 10/09/2026 (o cabeçalho antigo
-      // saiu): é o índice aceso — "01".."19" no deck, "A".."F" no anexo.
+      // saiu): é o índice aceso — "01".."20" no deck, "A".."F" no anexo.
       const numero =
         document.querySelector(".ap-trilho__indice--atual")?.textContent?.trim() ??
         "";

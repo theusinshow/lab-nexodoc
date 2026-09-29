@@ -19,7 +19,7 @@ if (p.url().includes("/login")) {
   await p.getByRole("button", { name: /Entrar como dev/i }).click();
   await p.waitForURL("**/nexo**");
 }
-for (const [rota, n] of [["/apresentacao", 19], ["/apresentacao/valores", 6]]) {
+for (const [rota, n] of [["/apresentacao", 20], ["/apresentacao/valores", 6]]) {
   await p.goto(`${BASE}${rota}`, { waitUntil: "domcontentloaded" });
   await p.waitForTimeout(600);
   for (let i = 1; i <= n; i++) {
