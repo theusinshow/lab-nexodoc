@@ -15,7 +15,7 @@ export default function ComecarAqui() {
       <section className="lab-secao">
         <ol style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 12 }}>
           {[
-            ["Abra uma tela", "No menu à esquerda, em “Telas para aprovar”. A primeira pronta é o Painel."],
+            ["Abra uma tela", "No menu à esquerda, em “Telas para aprovar”. A primeira pronta é o Início."],
             ["Passe pelas situações", "Os botões numerados em cima da tela mostram cada caso: dia normal, carregando, deu erro, primeiro acesso. Clique em tudo."],
             ["Decida cada situação", "Aprovado, ou Pedir mudança com uma frase dizendo o quê. Um ponto verde ou amarelo marca o que você já decidiu."],
           ].map(([t, d], i) => (
@@ -28,10 +28,10 @@ export default function ComecarAqui() {
         </ol>
         <div style={{ marginTop: 20 }}>
           <Link
-            href="/lab/telas/painel"
+            href="/lab/telas/inicio-d"
             style={{ display: "inline-flex", alignItems: "center", height: 36, padding: "0 18px", borderRadius: 999, background: "var(--ds-action-bg)", color: "var(--ds-action-fg)", fontWeight: 500, textDecoration: "none" }}
           >
-            Começar pelo Painel
+            Começar pelo Início
           </Link>
         </div>
       </section>
