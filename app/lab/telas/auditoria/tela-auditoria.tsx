@@ -5,7 +5,7 @@ import { AlertTriangle, ArrowRight, FileSearch, FileText, RotateCcw, X } from "l
 import { useEffect, useRef, useState } from "react";
 
 import { Botao, Esqueleto, NumeroQueChega, Orbe, Segmento, Selo } from "@/components/ds/basicos";
-import { FaixaDeVeredito, FluxoPorTipo, LinhaDoTempo, MapaDasPaginas, type LinhaDoFluxo, type PassoDaLinha } from "@/components/ds/graficos";
+import { ColunasPorNivel, LinhaDoTempo, MapaDasPaginas, MapaEmBlocos, type GrupoDoMapa, type PassoDaLinha } from "@/components/ds/graficos";
 import { CURVA } from "@/lib/ds/movimento";
 import { useTempo } from "@/lib/ds/tempo";
 import { MarcaDaPrefeitura } from "@/modules/nexo/components/MarcaDaPrefeitura";
@@ -56,26 +56,39 @@ const paginasDe = (b: (typeof BLOCOS)[number]) => Array.from({ length: b.ate - b
 const PONTOS = [1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 2, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 2, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 
 /**
- * Os tipos de erro que o sistema já classifica (lib/audit-report.ts,
- * ERROR_TYPE_LABELS), com a contagem até agora. "Redação / editorial" vira
- * "Redação e gramática" e ganha cor própria.
+ * Os achados até agora por NÍVEL (as faixas de impacto do parecer) e, dentro
+ * de cada nível, por TIPO (lib/audit-report.ts, ERROR_TYPE_LABELS). Redação e
+ * gramática sai da revisão de texto e ganha nível e cor próprios.
  */
-const TIPOS: Omit<LinhaDoFluxo, "vivo">[] = [
-  { id: "identidade", rotulo: "Identidade / documental", valor: 2, tom: "block" },
-  { id: "quantitativo", rotulo: "Quantitativo", valor: 2, tom: "block" },
-  { id: "norma", rotulo: "Norma", valor: 1, tom: "neutro" },
-  { id: "especificacao", rotulo: "Especificação / material", valor: 1, tom: "neutro" },
-  { id: "escopo", rotulo: "Escopo / contratual", valor: 0, tom: "neutro" },
-  { id: "tecnico", rotulo: "Técnico (geral)", valor: 1, tom: "neutro" },
-  { id: "editorial", rotulo: "Redação e gramática", valor: 3, tom: "texto" },
+const NIVEIS: GrupoDoMapa[] = [
+  {
+    id: "block",
+    rotulo: "Bloqueia a emissão",
+    tom: "block",
+    itens: [
+      { id: "identidade", rotulo: "Identidade / documental", valor: 2 },
+      { id: "quantitativo", rotulo: "Quantitativo", valor: 2 },
+    ],
+  },
+  {
+    id: "decide",
+    rotulo: "Decisão técnica",
+    tom: "decide",
+    itens: [
+      { id: "norma", rotulo: "Norma", valor: 1 },
+      { id: "especificacao", rotulo: "Especificação", valor: 1 },
+      { id: "tecnico", rotulo: "Técnico", valor: 1 },
+    ],
+  },
+  { id: "note", rotulo: "Revisão de texto", tom: "note", itens: [{ id: "forma", rotulo: "Numeração e unidades", valor: 0 }] },
+  { id: "texto", rotulo: "Gramática", tom: "texto", itens: [{ id: "editorial", rotulo: "Redação e gramática", valor: 3, tom: "texto" }] },
 ];
-
-const FAIXAS = [
-  { rotulo: "Liberado", tom: "ok" as const, ate: 25 },
-  { rotulo: "Ressalvas", tom: "ok" as const, ate: 50 },
-  { rotulo: "Revisar", tom: "decide" as const, ate: 75 },
-  { rotulo: "Não emitir", tom: "block" as const, ate: 100 },
-];
+const DICA_DO_NIVEL: Record<string, string> = {
+  block: "Corrigir antes de gerar o documento.",
+  decide: "Precisa de aceite do responsável antes de executar.",
+  note: "Numeração, unidades, referências cruzadas.",
+  texto: "Ortografia, concordância, pontuação. Não muda decisão técnica.",
+};
 
 const REGISTRO = [
   { h: "21:08:02", t: "Arquivo recebido: 117_25_md_geral_a.pdf, 3,1 MB" },
@@ -116,7 +129,7 @@ export function TelaAuditoria({ situacao }: { situacao: SituacaoAud }) {
   const [confirmar, setConfirmar] = useState(situacao === "cancelando");
   const [aviso, setAviso] = useState(true);
   const [blocoSobre, setBlocoSobre] = useState<number | null>(null);
-  const [visao, setVisao] = useState<"tipos" | "previa">("tipos");
+  const [visao, setVisao] = useState<"blocos" | "colunas">("blocos");
   const registroRef = useRef<HTMLOListElement>(null);
 
   useEffect(() => {
@@ -368,40 +381,31 @@ export function TelaAuditoria({ situacao }: { situacao: SituacaoAud }) {
             </div>
           </section>
 
-          {/* ---------- de que tipo: fluxo por tipo ou prévia do veredito ---------- */}
+          {/* ---------- de que nível e tipo: blocos ou colunas ---------- */}
           <section className="au-bloco au-tipos">
             <div className="au-bloco-cabeca">
-              <h2>{visao === "tipos" ? "Tipos de erro" : "Prévia do veredito"}</h2>
+              <h2>Por nível</h2>
               <Segmento
-                rotulo="Como ver os achados"
+                rotulo="Como ver os níveis"
                 valor={visao}
                 onTroca={setVisao}
                 opcoes={[
-                  { valor: "tipos", rotulo: "Por tipo" },
-                  { valor: "previa", rotulo: "Prévia" },
+                  { valor: "blocos", rotulo: "Blocos" },
+                  { valor: "colunas", rotulo: "Colunas" },
                 ]}
               />
             </div>
             <AnimatePresence mode="wait" initial={false}>
               <motion.div key={visao} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: dur("enter"), ease: ease(CURVA.out) }}>
-                {visao === "tipos" ? (
-                  <>
-                    <FluxoPorTipo linhas={TIPOS.map((ti) => ({ ...ti, valor: semSinal ? 0 : ti.valor, vivo: rodando && atual === 3 }))} maximo={4} />
-                    <p className="au-nota au-tipos-nota">
-                      <i className="au-tipos-cor au-tipos-cor--block" /> tem bloqueio
-                      <i className="au-tipos-cor au-tipos-cor--texto" /> redação e gramática
-                      {rodando && atual === 3 && <span>As partículas correm onde a leitura ainda pode achar mais.</span>}
-                    </p>
-                  </>
+                {semSinal ? (
+                  <p className="au-nota">Os níveis aparecem quando a primeira etapa com achados terminar.</p>
+                ) : visao === "blocos" ? (
+                  <MapaEmBlocos grupos={NIVEIS} altura={188} />
                 ) : (
-                  <div className="au-previa">
-                    <FaixaDeVeredito posicao={semSinal ? 12.5 : 87.5} faixas={FAIXAS} valor={semSinal ? "nada ainda" : "2 bloqueios"} />
-                    <p className="au-nota">
-                      {concluida
-                        ? "Este já é o veredito do parecer."
-                        : "Pelo que já foi achado. O veredito só fecha no parecer, depois do segundo modelo, que pode derrubar algum bloqueio."}
-                    </p>
-                  </div>
+                  <ColunasPorNivel
+                    colunas={NIVEIS.map((n) => ({ id: n.id, rotulo: n.rotulo, tom: n.tom, valor: n.itens.reduce((a, it) => a + it.valor, 0), dica: DICA_DO_NIVEL[n.id] }))}
+                    teto={5}
+                  />
                 )}
               </motion.div>
             </AnimatePresence>

@@ -590,3 +590,149 @@ export function FluxoPorTipo({ linhas, maximo }: { linhas: LinhaDoFluxo[]; maxim
     </div>
   );
 }
+
+export interface GrupoDoMapa {
+  id: string;
+  rotulo: string;
+  tom: "block" | "decide" | "note" | "texto";
+  itens: { id: string; rotulo: string; valor: number; tom?: "texto" }[];
+}
+
+/**
+ * MAPA EM BLOCOS (treemap, da Matos UI). A área de cada bloco é a parte dele
+ * no total: primeiro o nível (bloqueia, decisão técnica, revisão de texto) em
+ * colunas, depois os tipos de erro dentro de cada nível. O preenchimento é
+ * radial, cinza com um fio da cor do nível; o mouse lê a porcentagem.
+ */
+export function MapaEmBlocos({ grupos, altura = 200 }: { grupos: GrupoDoMapa[]; altura?: number }) {
+  const { dur, k } = useTempo();
+  const [sobre, setSobre] = useState<string | null>(null);
+  const cheios = grupos.map((g) => ({ ...g, itens: g.itens.filter((i) => i.valor > 0) })).filter((g) => g.itens.length);
+  const total = cheios.reduce((s, g) => s + g.itens.reduce((a, i) => a + i.valor, 0), 0);
+  const itemSobre = cheios.flatMap((g) => g.itens.map((i) => ({ ...i, grupo: g }))).find((i) => i.id === sobre);
+  let ordem = 0;
+
+  return (
+    <div className="gr-blocos">
+      <div className="gr-blocos-area" style={{ height: altura }} onMouseLeave={() => setSobre(null)}>
+        {cheios.map((g) => {
+          const soma = g.itens.reduce((a, i) => a + i.valor, 0);
+          return (
+            <div key={g.id} className={`gr-blocos-grupo gr-blocos-grupo--${g.tom}`} style={{ flexGrow: soma }}>
+              {[...g.itens]
+                .sort((a, b) => b.valor - a.valor)
+                .map((i) => {
+                  const n = ordem++;
+                  return (
+                    <motion.button
+                      key={i.id}
+                      type="button"
+                      className={`gr-bloco${i.tom === "texto" ? " gr-bloco--texto" : ""}${sobre && sobre !== i.id ? " gr-bloco--fora" : ""}`}
+                      style={{ flexGrow: i.valor }}
+                      initial={{ opacity: 0, scale: 0.85 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ duration: dur("enter") * 1.4, delay: n * 0.05 * k, ease: ease(CURVA.out) }}
+                      onMouseEnter={() => setSobre(i.id)}
+                      onFocus={() => setSobre(i.id)}
+                      aria-label={`${i.rotulo}: ${i.valor} de ${total}, ${g.rotulo}`}
+                    >
+                      <span className="gr-bloco-rotulo">{i.rotulo}</span>
+                      <b className="gr-bloco-valor">{i.valor}</b>
+                    </motion.button>
+                  );
+                })}
+            </div>
+          );
+        })}
+      </div>
+      <div className="gr-blocos-legenda">
+        {cheios.map((g) => (
+          <span key={g.id} className={`gr-blocos-leg gr-blocos-leg--${g.tom}`}>
+            <i /> {g.rotulo}
+          </span>
+        ))}
+      </div>
+      <div className="gr-mapa-rodape">
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.span key={sobre ?? "padrao"} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: dur("feedback") }}>
+            {itemSobre ? (
+              <>
+                <b>{itemSobre.rotulo}</b>: {itemSobre.valor} de {total}, <span className="ds-num">{Math.round((itemSobre.valor / total) * 100)}%</span> dos achados.{" "}
+                {itemSobre.grupo.rotulo}.
+              </>
+            ) : (
+              "A área de cada bloco é a parte dele nos achados. Passe o mouse para ler."
+            )}
+          </motion.span>
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * COLUNAS POR NÍVEL (Allocation, da Matos UI). Uma coluna embutida por nível
+ * de achado, com trilho de textura; o preenchimento sobe até a contagem, na
+ * cor do nível. Coluna vazia continua lá, só o trilho: "nenhum" também é
+ * informação.
+ */
+export function ColunasPorNivel({
+  colunas,
+  teto,
+  altura = 132,
+}: {
+  colunas: { id: string; rotulo: string; valor: number; tom: "block" | "decide" | "note" | "texto"; dica?: string }[];
+  teto?: number;
+  altura?: number;
+}) {
+  const { dur, k } = useTempo();
+  const [sobre, setSobre] = useState<string | null>(null);
+  const maximo = teto ?? Math.max(1, ...colunas.map((c) => c.valor));
+  const total = colunas.reduce((s, c) => s + c.valor, 0);
+  const c = colunas.find((x) => x.id === sobre);
+
+  return (
+    <div className="gr-nivel">
+      <div className="gr-nivel-caixa" onMouseLeave={() => setSobre(null)}>
+        {colunas.map((col, i) => (
+          <button
+            key={col.id}
+            type="button"
+            className={`gr-nivel-col gr-nivel-col--${col.tom}${sobre && sobre !== col.id ? " gr-nivel--fora" : ""}`}
+            onMouseEnter={() => setSobre(col.id)}
+            onFocus={() => setSobre(col.id)}
+            aria-label={`${col.rotulo}: ${col.valor}`}
+          >
+            <span className="gr-nivel-trilho" style={{ height: altura }}>
+              {col.valor > 0 && (
+                <motion.i
+                  style={{ height: `${Math.max(12, (col.valor / maximo) * 100)}%` }}
+                  initial={{ scaleY: 0 }}
+                  animate={{ scaleY: 1 }}
+                  transition={{ duration: dur("layout") * 1.8, delay: i * 0.07 * k, ease: ease(CURVA.out) }}
+                >
+                  <b>{col.valor}</b>
+                </motion.i>
+              )}
+              {col.valor === 0 && <em>0</em>}
+            </span>
+            <small>{col.rotulo}</small>
+          </button>
+        ))}
+      </div>
+      <div className="gr-mapa-rodape">
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.span key={sobre ?? "padrao"} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: dur("feedback") }}>
+            {c ? (
+              <>
+                <b>{c.rotulo}</b>: {c.valor === 0 ? "nenhum até agora" : `${c.valor} de ${total}`}. {c.dica}
+              </>
+            ) : (
+              "Uma coluna por nível. Passe o mouse para ler."
+            )}
+          </motion.span>
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+}
