@@ -1682,6 +1682,9 @@ function NexoWorkspaceInner({
   const aberturaPorLink = useAbrirAuditoriaPorLink({
     auditoria: contexto.auditoria,
     achado: contexto.achado,
+    // A conversa que já guarda o parecer é reaberta, e não duplicada.
+    // `selectConv` é declarada mais abaixo; só é chamada depois da montagem.
+    abrirConversa: async (id) => Boolean(await selectConv(id)),
   });
 
   /*
@@ -1840,6 +1843,25 @@ function NexoWorkspaceInner({
       if (memorialRetido.dossie) setDossie(memorialRetido.dossie);
     }
     return rec;
+  };
+
+  /*
+   * A CONVERSA QUE ESTÁ ABRINDO, marcada no clique — 29/09/2026.
+   *
+   * `selectConversation` espera a gravação da que sai, a fila e às vezes a
+   * lista do servidor antes de trocar (e deve: é o que impede perder edição).
+   * Medido no build de produção, isso é ~450ms entre o clique e a barra marcar
+   * a escolha, sem nada na tela dizendo que o clique pegou. A marca agora vem
+   * primeiro; a troca de verdade continua esperando tudo o que esperava.
+   */
+  const [abrindo, setAbrindo] = useState<string | null>(null);
+  const abrirPelaBarra = async (id: string) => {
+    setAbrindo(id);
+    try {
+      await selectConv(id);
+    } finally {
+      setAbrindo((atual) => (atual === id ? null : atual));
+    }
   };
 
   /*
@@ -2878,13 +2900,14 @@ function NexoWorkspaceInner({
       <NexoShell
         started={started}
         leitura={aberturaPorLink.pedida}
+        abrindo={abrindo !== null && abrindo !== conv.conversationId}
         barra={<BarraDoNexo projetoPedido={projetoPedido} />}
         sidebar={
           <NexoSidebar
             onNewConversation={reset}
             conversations={conv.conversations}
-            activeId={conv.conversationId}
-            onSelect={selectConv}
+            activeId={abrindo ?? conv.conversationId}
+            onSelect={abrirPelaBarra}
             onDelete={conv.removeConversation}
             onDeleteFolder={apagarPasta}
             onDuplicate={duplicarConv}

@@ -69,6 +69,7 @@ export function CartaoDeProjeto({
   onAlternar,
   onAbrirConversa,
   onVerTudo,
+  estendido = false,
 }: {
   cartao: Cartao;
   aberto: boolean;
@@ -76,6 +77,8 @@ export function CartaoDeProjeto({
   onAlternar: () => void;
   onAbrirConversa: (id: string) => void;
   onVerTudo?: (chave: string) => void;
+  /** Mostra também as conversas de fora do corte (`cartao.ocultas`). */
+  estendido?: boolean;
 }) {
   /*
    * "A ENDEREÇAR", e não "Sem código no carimbo".
@@ -215,7 +218,10 @@ export function CartaoDeProjeto({
         */}
         {aberto ? (
           <ul className="m-0 list-none border-t border-border/50 px-1.5 py-1">
-            {cartao.conversas.map((c) => {
+            {(estendido
+              ? [...cartao.conversas, ...cartao.ocultas]
+              : cartao.conversas
+            ).map((c) => {
               const ativa = c.id === conversaAtiva;
               return (
                 <li key={c.id}>
@@ -242,23 +248,28 @@ export function CartaoDeProjeto({
               );
             })}
 
-            {/* O NONO ITEM NÃO É ROLAGEM. Uma linha que delega ao palco, onde há
-                largura para doze conversas. */}
+            {/* O QUINTO ITEM NÃO É ROLAGEM: é uma linha que estende o cartão com
+                as antigas, e depois recolhe de volta. */}
             {cartao.restantes > 0 ? (
               <li>
                 <button
                   type="button"
                   onClick={() => onVerTudo?.(cartao.chave)}
+                  aria-expanded={estendido}
                   className="flex w-full items-baseline gap-2 px-2 py-1.5 text-left font-mono text-[11px] text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none"
                 >
                   <span className="flex-1 truncate">
-                    {cartao.restantes === 1
-                      ? "a outra conversa"
-                      : `as outras ${cartao.restantes} conversas`}
+                    {estendido
+                      ? "recolher as antigas"
+                      : cartao.restantes === 1
+                        ? "a outra conversa"
+                        : `as outras ${cartao.restantes} conversas`}
                   </span>
-                  <span className="shrink-0 tabular-nums">
-                    desde {quando(cartao.restantesDesde)}
-                  </span>
+                  {estendido ? null : (
+                    <span className="shrink-0 tabular-nums">
+                      desde {quando(cartao.restantesDesde)}
+                    </span>
+                  )}
                 </button>
               </li>
             ) : null}

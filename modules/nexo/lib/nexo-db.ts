@@ -13,6 +13,7 @@
  *   checksum. Não é o arquivo — é o resultado da leitura dele, que custou uma
  *   chamada de modelo por página. Ver [[selo-cache.ts]].
  */
+import { conversaQueGuarda } from "./conversa-da-auditoria";
 import type { SeloResult } from "./selo-render";
 import type { Ajuste, FolhaId } from "./folhas";
 import type { IdentidadeDoProjeto } from "./identidade";
@@ -376,6 +377,19 @@ export async function getConversation(id: string): Promise<StoredConversation | 
   const tx = db.transaction(STORE_CONVERSATIONS, "readonly");
   const rec = await reqToPromise(tx.objectStore(STORE_CONVERSATIONS).get(id));
   return (rec as StoredConversation) ?? null;
+}
+
+/**
+ * A conversa deste navegador que já guarda o parecer desta auditoria — ver
+ * [[conversa-da-auditoria.ts]]. Nula quando nenhuma guarda.
+ */
+export async function conversaComAuditoria(auditId: string): Promise<StoredConversation | null> {
+  const db = await openDb();
+  const tx = db.transaction(STORE_CONVERSATIONS, "readonly");
+  const all = (await reqToPromise(
+    tx.objectStore(STORE_CONVERSATIONS).getAll(),
+  )) as StoredConversation[];
+  return conversaQueGuarda(all, auditId);
 }
 
 /** Lista os resumos das conversas, mais recentes primeiro. */

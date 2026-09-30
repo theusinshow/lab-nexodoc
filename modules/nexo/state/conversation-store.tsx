@@ -735,6 +735,21 @@ export function ConversationStoreProvider({ children }: { children: ReactNode })
   /** Esta conversa já foi ao disco — daqui em diante, mantê-la em dia. */
   const jaPersistiu = useRef(false);
   /*
+   * O QUE A CONVERSA ERA AO ABRIR — 29/09/2026.
+   *
+   * Trocar de conversa dá flush na que sai, e toda gravação carimba
+   * `updatedAt: Date.now()`. Resultado: só de OLHAR uma auditoria de julho ela
+   * pulava para o topo da barra como "agora", e o histórico se reordenava pelo
+   * que a pessoa leu, não pelo que ela fez.
+   *
+   * Guardamos os OBJETOS exatos entregues ao estado na abertura. Todo estado
+   * aqui é imutável (cada mudança troca a referência), então "todos os campos
+   * ainda são os mesmos objetos" quer dizer "nada foi editado" — e aí não há o
+   * que gravar. Pular a gravação, em vez de gravar com a data antiga, deixa a
+   * versão-base da fila e do servidor exatamente como estava.
+   */
+  const baseDaAbertura = useRef<{ id: string; campos: Record<string, unknown> } | null>(null);
+  /*
    * A VERSÃO QUE ESTA ABA CONHECE E A TRAVA DA ABA DESATUALIZADA — 15/09/2026,
    * jornada c3. As gravações entram numa fila (a checagem do disco antes de
    * gravar é assíncrona, e duas gravações seguidas não podem chegar trocadas),
@@ -846,6 +861,16 @@ export function ConversationStoreProvider({ children }: { children: ReactNode })
   // Grava o snapshot atual AGORA (base do debounce E do flush ao trocar conversa).
   const persistNow = useCallback(() => {
     const s = snapshotRef.current;
+    const base = baseDaAbertura.current;
+    if (
+      base &&
+      base.id === s.conversationId &&
+      Object.entries(base.campos).every(
+        ([campo, valor]) => (s as Record<string, unknown>)[campo] === valor,
+      )
+    ) {
+      return;
+    }
     const vazia =
       s.messages.length === 0 &&
       s.seloResults.length === 0 &&
@@ -1568,6 +1593,22 @@ export function ConversationStoreProvider({ children }: { children: ReactNode })
       }
       if (!rec) return null;
       /*
+       * RESULTADO SEM IDENTIDADE NÃO DERRUBA A ABERTURA — 29/09/2026.
+       *
+       * Uma cópia do servidor com `results: [{ kind: "auditoria" }]` (sem
+       * `artifactId`, sem `files`) explodia no `split` da migração logo abaixo,
+       * e a exceção subia daqui: a barra não marcava a conversa, o palco ficava
+       * no que estava e ninguém dizia nada. Para quem clicava, a auditoria antiga
+       * "não abria". O que não tem id não é endereçável por nada nesta tela;
+       * cai fora, e o resto da conversa abre.
+       */
+      rec = {
+        ...rec,
+        results: (rec.results ?? [])
+          .filter((r) => typeof r?.artifactId === "string" && typeof r.kind === "string")
+          .map((r) => (Array.isArray(r.files) ? r : { ...r, files: [] })),
+      };
+      /*
        * AUDITORIA POR PROPOSTA. Conversa gravada antes de 14/09/2026 guarda o
        * parecer com id por documento (`auditoria:117-25`), e com esse id a
        * segunda rodada do mesmo memorial se confundia com a primeira. A
@@ -1731,23 +1772,55 @@ export function ConversationStoreProvider({ children }: { children: ReactNode })
        * Medido em 09/09/2026 com as conversas semeadas no banco de dev, que sao
        * exatamente esse formato -- registro sem `seloResults`.
        */
-      setMessages(rec.messages ?? []);
-      setSeloResultsState(rec.seloResults ?? []);
-      // Conversa gravada antes deste campo existir não tem `ajustes`.
-      setAjustes(rec.ajustes ?? {});
-      setAvulsas(rec.avulsas ?? []);
-      setTotaisPorDisciplina(rec.totaisPorDisciplina ?? {});
-      setIdentidade(rec.identidade ?? {});
-      setProjectId(rec.projectId ?? null);
-      setDecisoes(rec.decisoes ?? {});
-      setTomosDeclarados(rec.tomosDeclarados ?? 0);
-      setEditaveisSalvos(rec.editaveisSalvos ?? null);
-      setAchadosResolvidos(rec.achadosResolvidos ?? {});
-      setAuditorias(rec.auditorias ?? []);
-      setArtefatosApagados(rec.artefatosApagados ?? []);
-      // A auditoria em voo volta com a conversa — quem reconecta é o palco.
-      setAuditoriaPendente(rec.auditoriaPendente ?? null);
-      setMemorialMeta(rec.memorial ?? null);
+      /*
+       * Os valores vão para constantes antes do estado porque os MESMOS
+       * objetos vão para `baseDaAbertura`: um `?? []` escrito duas vezes
+       * criaria dois arrays diferentes, e a conversa pareceria editada.
+       */
+      const aberta = {
+        title: rec.title,
+        messages: rec.messages ?? [],
+        seloResults: rec.seloResults ?? [],
+        // Conversa gravada antes deste campo existir não tem `ajustes`.
+        ajustes: rec.ajustes ?? {},
+        avulsas: rec.avulsas ?? [],
+        totaisPorDisciplina: rec.totaisPorDisciplina ?? {},
+        identidade: rec.identidade ?? {},
+        projectId: rec.projectId ?? null,
+        decisoes: rec.decisoes ?? {},
+        tomosDeclarados: rec.tomosDeclarados ?? 0,
+        editaveisSalvos: rec.editaveisSalvos ?? null,
+        achadosResolvidos: rec.achadosResolvidos ?? {},
+        auditorias: rec.auditorias ?? [],
+        artefatosApagados: rec.artefatosApagados ?? [],
+        // A auditoria em voo volta com a conversa — quem reconecta é o palco.
+        auditoriaPendente: rec.auditoriaPendente ?? null,
+        memorialMeta: rec.memorial ?? null,
+        results: restored,
+      };
+      setMessages(aberta.messages);
+      setSeloResultsState(aberta.seloResults);
+      setAjustes(aberta.ajustes);
+      setAvulsas(aberta.avulsas);
+      setTotaisPorDisciplina(aberta.totaisPorDisciplina);
+      setIdentidade(aberta.identidade);
+      setProjectId(aberta.projectId);
+      setDecisoes(aberta.decisoes);
+      setTomosDeclarados(aberta.tomosDeclarados);
+      setEditaveisSalvos(aberta.editaveisSalvos);
+      setAchadosResolvidos(aberta.achadosResolvidos);
+      setAuditorias(aberta.auditorias);
+      setArtefatosApagados(aberta.artefatosApagados);
+      setAuditoriaPendente(aberta.auditoriaPendente);
+      setMemorialMeta(aberta.memorialMeta);
+      /*
+       * A migração de formato e o parecer recuperado do servidor SÃO mudança:
+       * sem base, a primeira gravação os leva ao disco e ao servidor.
+       */
+      baseDaAbertura.current =
+        migrada.migrou || restored.length !== rec.results.length
+          ? null
+          : { id: rec.id, campos: aberta };
       /*
        * O snapshot só acompanha o estado no próximo render, e o dono chama
        * `recuperarMemorial()` logo em seguida — que lê do snapshot. Sem esta

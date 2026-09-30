@@ -36,6 +36,7 @@
     "test:conversa-achado": "node scripts/test-conversa-do-achado.ts",
     "test:quem-avisar": "node scripts/test-quem-avisar.ts",
     "test:fonte-documento": "node scripts/test-fonte-do-documento.ts",
+    "test:conversa-da-auditoria": "node scripts/test-conversa-da-auditoria.ts",
     "test:link-achado": "node scripts/test-link-do-achado.ts",
     "test:contexto-da-url": "node scripts/test-contexto-da-url.ts",
     "test:fonte-da-evidencia": "node scripts/test-fonte-da-evidencia.ts",

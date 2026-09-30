@@ -1480,6 +1480,21 @@ textarea {
   height: 100%;
 }
 
+/* A CONVERSA ABRINDO (29/09/2026). A barra ja marcou a escolha; o palco e o chat
+   que vao sair esmaecem para dizer "trocando". O ATRASO de 120ms e o ponto: a
+   abertura que vem do disco leva ~110ms e nao deve piscar -- so a que espera
+   a rede ganha o sinal. Na volta, sem atraso: o conteudo novo aparece inteiro. */
+.nexo-shell__stage,
+.nexo-shell__copilot {
+  transition: opacity var(--duration-fast) var(--ease-feedback);
+}
+.nexo-shell[data-abrindo] .nexo-shell__stage,
+.nexo-shell[data-abrindo] .nexo-shell__copilot {
+  opacity: 0.55;
+  cursor: progress;
+  transition: opacity var(--duration-base) var(--ease-feedback) 120ms;
+}
+
 /* O recado de tela estreita fica no DOM sempre; quem o mostra e a media query
    logo abaixo. Medir a janela no cliente pintaria a tela errada no primeiro
    quadro. A regra base vem ANTES da media query de proposito: com a mesma
@@ -2334,4 +2349,72 @@ textarea {
 @keyframes nx-entra-da-direita {
   from { transform: translateX(12px); opacity: 0; }
   to   { transform: translateX(0);    opacity: 1; }
+}
+
+/* A LINHA DA NAVEGACAO (29/09/2026) -- ver components/layout/progresso-da-navegacao.tsx.
+
+   Fina, no topo, na cor primaria. "indo" avanca rapido no comeco e cada vez mais
+   devagar (nunca chega a 100% sozinha: quem completa e a chegada). O ATRASO de
+   80ms e o que impede o pisca em navegacao ja pre-carregada, que troca antes. */
+.nx-progresso {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 60;
+  height: 2px;
+  background: var(--primary);
+  transform-origin: 0 50%;
+  transform: scaleX(0);
+  opacity: 0;
+  pointer-events: none;
+}
+.nx-progresso[data-fase="indo"] {
+  opacity: 1;
+  animation: nx-progresso-indo 8s cubic-bezier(0.1, 0.7, 0.2, 1) 80ms both;
+  transition: opacity 0s linear 80ms;
+}
+.nx-progresso[data-fase="chegando"] {
+  transform: scaleX(1);
+  opacity: 0;
+  transition:
+    transform var(--duration-fast) var(--ease-feedback),
+    opacity var(--duration-base) var(--ease-feedback) var(--duration-fast);
+}
+@keyframes nx-progresso-indo {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(0.92); }
+}
+
+/* O link clicado, enquanto o destino nao chega: nao muda de tamanho nem de
+   lugar, so acende -- e o cursor diz que o sistema esta trabalhando. */
+a[data-navegando] {
+  cursor: progress;
+  color: var(--foreground);
+  animation: nx-link-navegando 1.2s var(--ease-feedback) 80ms infinite alternate;
+}
+@keyframes nx-link-navegando {
+  from { opacity: 1; }
+  to { opacity: 0.6; }
+}
+
+/* A TRANSICAO ENTRE PAGINAS (29/09/2026) -- ver components/layout/transicao-de-pagina.tsx.
+
+   Curta e sem viagem: a velha apaga depressa, a nova sobe 6px enquanto acende.
+   Deslocamento maior daria sensacao de "slide de apresentacao" numa ferramenta
+   de trabalho; zero deslocamento deixaria o crossfade parecendo um piscar.
+   O transform aqui e no PSEUDO-ELEMENTO do snapshot, nao na pagina: nao cria
+   bloco de contencao para nada `position: fixed` de dentro dela. */
+::view-transition-old(.nx-pagina-sai) {
+  animation: nx-pagina-sai var(--duration-fast) var(--ease-feedback) both;
+}
+::view-transition-new(.nx-pagina-entra) {
+  animation: nx-pagina-entra var(--duration-slow) var(--ease-entrance) 40ms both;
+}
+@keyframes nx-pagina-sai {
+  to { opacity: 0; }
+}
+@keyframes nx-pagina-entra {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
 }

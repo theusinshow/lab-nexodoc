@@ -423,6 +423,21 @@ export async function consultarAuditoria(auditId: string): Promise<EstadoDaAudit
       },
     };
   }
+  /*
+   * CONCLUÍDA SEM PARECER É DESFECHO, e não "ainda rodando" — 29/09/2026.
+   *
+   * O ramo de cima exige o `report`; sem ele a linha caía lá no fim como
+   * "rodando", e o ABRIR de uma auditoria antiga respondia "tente de novo em
+   * alguns minutos" para sempre sobre trabalho encerrado há semanas. Acontece
+   * com linha gravada antes de o parecer ir para o banco, ou semeada sem ele.
+   */
+  if (corpo.status === "COMPLETED") {
+    return {
+      situacao: "irrecuperavel",
+      motivo:
+        "Esta auditoria foi concluída, mas o parecer dela não ficou guardado no servidor.",
+    };
+  }
   if (corpo.status === "FAILED") {
     return { situacao: "falhou", motivo: corpo.error ?? "A auditoria falhou no servidor." };
   }

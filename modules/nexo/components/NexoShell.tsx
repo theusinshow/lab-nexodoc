@@ -25,6 +25,7 @@ export function NexoShell({
   stage,
   copilot,
   leitura = false,
+  abrindo = false,
 }: {
   started: boolean;
   /**
@@ -33,6 +34,11 @@ export function NexoShell({
    * achado no celular; montar e gerar continuam pedindo tela maior.
    */
   leitura?: boolean;
+  /**
+   * Uma conversa escolhida na barra ainda está carregando. O palco e o chat
+   * esmaecem (com atraso, no CSS) para o clique ter resposta antes da troca.
+   */
+  abrindo?: boolean;
   /**
    * A faixa do topo. O componente lá dentro decide não existir (devolve `null`)
    * quando não há obra lida nem auditoria rodando — por isso quem a esconde é o
@@ -57,6 +63,8 @@ export function NexoShell({
       data-projetos-recolhidos={areas.projetos || undefined}
       data-chat-recolhido={(started && areas.chat) || undefined}
       data-leitura={(started && leitura) || undefined}
+      data-abrindo={abrindo || undefined}
+      aria-busy={abrindo || undefined}
       className={cn(
         "nexo-shell",
         started ? "nexo-shell--active" : "nexo-shell--welcome",

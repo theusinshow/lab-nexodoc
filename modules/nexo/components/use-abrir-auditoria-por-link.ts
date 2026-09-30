@@ -29,6 +29,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { lerLinkDoAchado } from "@/lib/link-do-achado";
 
 import { consultarAuditoria } from "../lib/audit";
+import { conversaComAuditoria } from "../lib/nexo-db";
 import { useConversation } from "../state/conversation-store";
 import { detalheDoParecer, resumoDoParecer } from "@/lib/auditoria-incompleta";
 
@@ -65,6 +66,11 @@ export type AberturaPorLink = {
 export function useAbrirAuditoriaPorLink(params: {
   auditoria: string | null;
   achado: string | null;
+  /**
+   * Abre uma conversa que já existe (o `selectConv` da tela). Devolve se abriu.
+   * Sem ele, o link sempre grava o parecer na conversa atual.
+   */
+  abrirConversa?: (id: string) => Promise<boolean>;
 }): AberturaPorLink {
   /*
    * OS DOIS PARÂMETROS, lidos pela MESMA regra que monta o link no e-mail
@@ -72,7 +78,8 @@ export function useAbrirAuditoriaPorLink(params: {
    * achado exige saber de qual parecer ele é.
    */
   const { auditId, findingId } = lerLinkDoAchado(params);
-  const { getResult, saveResult } = useConversation();
+  const { getResult, saveResult, conversationId } = useConversation();
+  const { abrirConversa } = params;
 
   /*
    * O DESFECHO da tentativa, e não o "carregando".
@@ -100,6 +107,25 @@ export function useAbrirAuditoriaPorLink(params: {
   const abrir = useCallback(
     async (id: string) => {
       try {
+        /*
+         * UMA CONVERSA JÁ GUARDA ESTE PARECER? Abre ela — 29/09/2026.
+         *
+         * Sem isto, cada clique no mesmo link gravava o parecer numa conversa
+         * nova, e a barra enchia de "Nova conversa" idênticas. A procura é no
+         * disco deste navegador: quem recebeu o achado de outra pessoa não tem
+         * a conversa dela, e segue para o servidor como antes.
+         */
+        if (abrirConversa) {
+          const existente = await conversaComAuditoria(id).catch(() => null);
+          if (
+            existente &&
+            (existente.id === conversationId || (await abrirConversa(existente.id)))
+          ) {
+            setDesfecho({ id, falha: null, tipo: null });
+            return;
+          }
+        }
+
         const resposta = await consultarAuditoria(id);
 
         if (resposta.situacao === "rodando") {
@@ -180,7 +206,7 @@ export function useAbrirAuditoriaPorLink(params: {
         });
       }
     },
-    [saveResult],
+    [saveResult, abrirConversa, conversationId],
   );
 
   const jaEstaAberta = Boolean(auditId) && Boolean(getResult(`auditoria:${auditId}`));

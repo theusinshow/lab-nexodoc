@@ -78,6 +78,16 @@ export interface CartaoDeProjeto {
   conversas: ConversaDoCartao[];
   /** Quantas ficaram de fora do corte. */
   restantes: number;
+  /**
+   * AS QUE FICARAM DE FORA, e não só a contagem.
+   *
+   * O cartão dizia "as outras 24 conversas" e o botão não levava a lugar
+   * nenhum — a vista do projeto no palco, que ele prometia, nunca foi
+   * construída. Uma auditoria de cinco rodadas atrás simplesmente não tinha
+   * como ser aberta pela barra (29/09/2026). Com a lista aqui, o próprio
+   * cartão se estende quando pedem.
+   */
+  ocultas: ConversaDoCartao[];
   /** Desde quando são as que ficaram de fora. `0` quando não há. */
   restantesDesde: number;
 }
@@ -85,9 +95,9 @@ export interface CartaoDeProjeto {
 /**
  * QUATRO, e o quinto vira uma linha.
  *
- * O corte é o que dá altura previsível ao cartão aberto. O nono item não é
- * rolagem: é "as outras 8 conversas · desde 04/07", que abre o projeto no palco,
- * onde há largura para doze.
+ * O corte é o que dá altura previsível ao cartão aberto. O quinto item é
+ * "as outras 8 conversas · desde 04/07", e clicar nele estende o cartão com
+ * as ocultas — é o único caminho até uma conversa antiga pela barra.
  */
 export const TETO_DE_CONVERSAS = 4;
 
@@ -165,6 +175,16 @@ function desfechoDa(c: ConversaResumida): string {
   return `${c.folhas} folha${c.folhas === 1 ? "" : "s"} lidas`;
 }
 
+function paraOCartao(c: ConversaResumida): ConversaDoCartao {
+  return {
+    id: c.id,
+    titulo: c.title,
+    desfecho: desfechoDa(c),
+    updatedAt: c.updatedAt,
+    rodando: Boolean(c.auditoriaPendente),
+  };
+}
+
 /**
  * Os cartões, do projeto mais recente para o mais antigo.
  *
@@ -219,14 +239,9 @@ export function cartoesDeProjeto(
         (k) => ROTULO_CURTO[k] ?? k.toUpperCase(),
       ),
       rodando,
-      conversas: visiveis.map((c) => ({
-        id: c.id,
-        titulo: c.title,
-        desfecho: desfechoDa(c),
-        updatedAt: c.updatedAt,
-        rodando: Boolean(c.auditoriaPendente),
-      })),
+      conversas: visiveis.map(paraOCartao),
       restantes: cortadas.length,
+      ocultas: cortadas.map(paraOCartao),
       // A data da MAIS ANTIGA das cortadas: "desde 04/07" diz o alcance do que
       // ficou escondido, e "desde ontem" diria o contrário do que se quer saber.
       restantesDesde: cortadas.length > 0 ? cortadas[cortadas.length - 1].updatedAt : 0,
@@ -281,8 +296,16 @@ export function filtrarCartoes(
       achados.push(c);
       continue;
     }
-    const dentro = c.conversas.filter((x) => paraBusca(x.titulo).includes(q));
-    if (dentro.length > 0) achados.push({ ...c, conversas: dentro });
+    /*
+     * As OCULTAS entram na busca: procurar pelo nome de uma conversa antiga e
+     * receber "Nenhum projeto" era o corte de quatro mentindo sobre o que existe.
+     */
+    const dentro = [...c.conversas, ...c.ocultas].filter((x) =>
+      paraBusca(x.titulo).includes(q),
+    );
+    if (dentro.length > 0) {
+      achados.push({ ...c, conversas: dentro, ocultas: [], restantes: 0 });
+    }
   }
   return achados;
 }

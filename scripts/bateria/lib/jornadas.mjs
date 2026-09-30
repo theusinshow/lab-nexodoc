@@ -6,6 +6,7 @@ import { pathToFileURL } from "node:url";
 
 import { chromium } from "playwright";
 
+import { consultar } from "./banco.mjs";
 import { criarContexto } from "./contexto.mjs";
 
 const RAIZ = "scripts/bateria/jornadas";
@@ -49,6 +50,22 @@ export async function rodarJornadas({ base, filtro, pastaDeArtefatos }) {
       }
 
       console.log(`\n  ${jornada.id} · ${jornada.titulo}`);
+
+      /*
+       * AS AUDITORIAS DA JORNADA ANTERIOR SAEM — 29/09/2026.
+       *
+       * O navegador de cada jornada nasce limpo, mas o banco não: a5, a8 e c3
+       * auditam o MESMO memorial de fixture no MESMO projeto, e a segunda a
+       * rodar achava a primeira como base e era recusada por "documento
+       * idêntico". Juntas ficavam vermelhas; sozinhas, verdes. O resto do banco
+       * (projeto, membros) fica: é o cenário, não o resultado de outra jornada.
+       * DELETE, e não TRUNCATE CASCADE: o CASCADE esvaziaria DocumentArtifact
+       * inteira (inclusive o que o seed cria); o DELETE segue as FKs — feedback,
+       * arquivos e texto da auditoria vão junto, artefatos só perdem o vínculo.
+       */
+      await consultar('DELETE FROM "Audit"').catch((err) => {
+        console.log(`      aviso: não limpou as auditorias: ${err instanceof Error ? err.message : err}`);
+      });
 
       // O mesmo vale para montar o contexto (navegador, tour guiado): se
       // quebrar aqui, uma jornada não pode esconder o resultado das outras.

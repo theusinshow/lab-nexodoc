@@ -14,6 +14,14 @@ const nextConfig: NextConfig = {
   distDir: process.env.NEXODOC_DIST_DIR || ".next",
   serverExternalPackages: ["pdfjs-dist"],
   /*
+   * O `<ViewTransition>` do React — a transição entre páginas
+   * (components/layout/transicao-de-pagina.tsx). Sem a flag o componente
+   * existe mas não anima nada.
+   */
+  experimental: {
+    viewTransition: true,
+  },
+  /*
    * Os arquivos que as rotas LEEM do disco em tempo de execução. O rastreador
    * não os enxerga: o caminho é montado com `process.cwd()`, então sem esta
    * lista o pacote de produção sai sem os modelos e a geração falha só lá.
