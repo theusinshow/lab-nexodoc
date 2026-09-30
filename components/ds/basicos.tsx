@@ -207,5 +207,6 @@ export function NumeroQueChega({ valor }: { valor: number }) {
     raf = requestAnimationFrame(passo);
     return () => cancelAnimationFrame(raf);
   }, [valor]);
-  return <span className="ds-num">{mostrado}</span>;
+  // Separador de milhar em português: 1.284, não 1284.
+  return <span className="ds-num">{mostrado.toLocaleString("pt-BR")}</span>;
 }

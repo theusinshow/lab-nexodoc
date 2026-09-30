@@ -14,6 +14,7 @@ import { Topo } from "../_comum/topo";
 import { DEPOIS_DE_LER, TAREFAS, type IdTarefa } from "../inicio-d/tela-inicio-d";
 import "../inicio-d/inicio-d.css";
 import "./inicio-d2.css";
+import { ResumoDoEscritorio } from "./resumo-do-escritorio";
 
 export type SituacaoD2 = "padrao" | "buscando" | "tarefa-escolhida" | "arquivo-recebido" | "arrastando" | "nada-com-voce" | "primeiro-acesso";
 
@@ -33,7 +34,7 @@ const COM_VOCE = [
 /** O que a tarefa precisa, curto o bastante para caber inteiro na fileira. */
 const PRECISA_CURTO: Record<IdTarefa, string> = {
   auditar: "memorial em PDF",
-  volume: "capas, LDs e pranchas prontos",
+  volume: "PDFs prontos",
   ld: "pranchas em PDF",
   conferir: "pranchas em PDF",
 };
@@ -126,7 +127,7 @@ export function TelaInicioD2({ situacao }: { situacao: SituacaoD2 }) {
                   <b>{t.nome}</b>
                   <AnimatePresence mode="wait" initial={false}>
                     <motion.span key={alvo === t.id ? "s" : "p"} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: dur("feedback") }}>
-                      {alvo === t.id ? t.soltar : `Precisa de ${PRECISA_CURTO[t.id]}`}
+                      {alvo === t.id ? t.soltar : t.id === "volume" ? `Precisa dos ${PRECISA_CURTO[t.id]}` : `Precisa de ${PRECISA_CURTO[t.id]}`}
                     </motion.span>
                   </AnimatePresence>
                 </span>
@@ -286,6 +287,13 @@ export function TelaInicioD2({ situacao }: { situacao: SituacaoD2 }) {
             )}
           </section>
         </motion.div>
+
+        {/* O que o Nexo já fez: some no primeiro acesso, onde tudo seria zero. */}
+        {!primeiro && (
+          <motion.div layout="position" transition={mola("smooth")}>
+            <ResumoDoEscritorio />
+          </motion.div>
+        )}
       </div>
     </div>
   );

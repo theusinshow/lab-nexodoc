@@ -134,3 +134,16 @@
   cursor: pointer;
 }
 .ds .d2-todos:hover { color: var(--ds-text-primary); }
+
+/* ---------- o Nexo no escritório ---------- */
+.ds .d2-resumo { margin-top: 12px; padding: 14px 16px 16px; border-radius: var(--ds-radius-card); box-shadow: var(--ds-edge); background: rgb(255 255 255 / 0.012); }
+.ds .d2-resumo-cabeca { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.ds .d2-resumo-cabeca h2 { margin: 0; font-size: var(--ds-text-xs); font-weight: 500; }
+.ds .d2-resumo-cabeca h2 span { margin-left: 6px; font-weight: 400; color: var(--ds-text-tertiary); }
+.ds .d2-resumo-grade { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.ds .d2-num { display: grid; gap: 4px; align-content: start; padding: 0 16px; border-left: 1px solid var(--ds-line-subtle); }
+.ds .d2-num:first-child { padding-left: 0; border-left: 0; }
+.ds .d2-num b { font-size: 28px; font-weight: 300; letter-spacing: -0.03em; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.ds .d2-num > span { font-size: 11.5px; color: var(--ds-text-tertiary); line-height: 1.4; }
+.ds .d2-num-barra { display: block; height: 3px; margin-top: 4px; border-radius: 999px; background: rgb(255 255 255 / 0.07); overflow: hidden; }
+.ds .d2-num-barra i { display: block; height: 100%; border-radius: 999px; background: var(--ds-state-ok); transform-origin: left; }
