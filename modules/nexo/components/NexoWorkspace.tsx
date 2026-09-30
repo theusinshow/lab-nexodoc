@@ -34,6 +34,11 @@ import { nomeNaCapa } from "@/server/nexo/disciplinas";
 import { summarizeSelos } from "../lib/agent-context";
 import { partitionByRole } from "../lib/attachments";
 import { preVoarLote } from "../lib/pre-voo-do-anexo";
+import {
+  avisoDePranchasDevolvidas,
+  pranchasJaLidas,
+  temDocumentosGerados,
+} from "../lib/pranchas-reanexadas";
 import { arquivosQueNaoSaoPrancha } from "../lib/estado-do-anexo";
 import {
   resolveSheetNumbersComOrigem,
@@ -1273,6 +1278,32 @@ function NexoWorkspaceInner({
             "A auditoria roda normalmente agora, mas se você sair e voltar vai precisar anexar o arquivo de novo.",
         });
       });
+    }
+
+    /*
+     * REANEXO: as mesmas pranchas voltando para uma conversa que já gerou os
+     * documentos. Só devolve os bytes ao volume — sem ler, sem ficha, sem
+     * perguntar de novo prefeitura e centro de custo. Ver `pranchas-reanexadas.ts`.
+     */
+    if (
+      pranchas.length > 0 &&
+      images.length === 0 &&
+      !memorial &&
+      indecisos.length === 0 &&
+      temDocumentosGerados(conv.results) &&
+      pranchasJaLidas(
+        pranchas.map((f) => f.name),
+        selosRef.current,
+      )
+    ) {
+      const nomes = new Set(pranchas.map((f) => f.name));
+      setPranchaFiles((prev) => [...prev.filter((f) => !nomes.has(f.name)), ...pranchas]);
+      conv.appendMessage({
+        id: crypto.randomUUID(),
+        role: "assistant",
+        content: avisoDePranchasDevolvidas(pranchas.length),
+      });
+      return;
     }
 
     /*
