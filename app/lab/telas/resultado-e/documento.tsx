@@ -9,7 +9,6 @@ import { CURVA } from "@/lib/ds/movimento";
 import { useTempo } from "@/lib/ds/tempo";
 
 import { DESFECHO_NOME, DISCIPLINA, IMPACTOS, PAGINAS_DO_MEMORIAL, type Achado, type Impacto } from "./dados";
-import { Etiqueta } from "./etiqueta";
 import { larguraDaLinha, linhaDoTrecho } from "./visor";
 
 const ease = (c: readonly number[]) => [...c] as [number, number, number, number];
@@ -19,6 +18,21 @@ const LINHAS = 20;
 const EU = "Victor";
 
 export type ModoDoDocumento = "normal" | "mudas" | "remoto";
+
+const curto = (a: Achado) => a.id.replace("ACH-", "");
+
+/**
+ * A ETIQUETA: retângulo reto na cor do nível, o código em branco no meio. Ela
+ * carrega o estado — cheia é pendente, vazada (só o contorno, código riscado) é
+ * tratada —, então dá para ver de longe o que falta numa página sem ler nada.
+ */
+function Etiqueta({ a, aceso, curta }: { a: Achado; aceso: boolean; curta?: boolean }) {
+  return (
+    <span className={`nd-etq${curta ? " nd-etq--margem" : ""} nd--${a.impacto}${a.desfecho ? " nd-etq--tratada" : ""}${aceso ? " nd-etq--acesa" : ""}`} aria-hidden={curta}>
+      {curta ? curto(a) : a.id}
+    </span>
+  );
+}
 
 /** A miniatura da página: linhas de texto falso, o grifo no trecho e a etiqueta na margem. */
 function Miniatura({

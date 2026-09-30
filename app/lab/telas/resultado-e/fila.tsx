@@ -10,7 +10,6 @@ import { useTempo } from "@/lib/ds/tempo";
 
 import { DESFECHO_NOME, DISCIPLINAS, IMPACTOS, PESSOAS, TIPOS_DE_ERRO, type Achado, type Desfecho, type Disciplina, type Impacto, type TipoDeErro } from "./dados";
 import { SeloDaDisciplina } from "./disciplina";
-import { Etiqueta } from "./etiqueta";
 import "./filtros.css";
 import "./enxuta.css";
 
@@ -378,16 +377,20 @@ export function Fila({
                             setAba("evidencia");
                           }}
                         >
-                          <Etiqueta a={a} />
+                          <span className="rs-linha-id">{a.id}</span>
                           <span className="rs-linha-titulo">{a.titulo}</span>
                           <span className="rs-linha-meta">
                             {a.desfecho ? (
                               <span className="rs-linha-desfecho">
-                                {DESFECHO_NOME[a.desfecho.tipo]}
+                                <Check size={12} /> {DESFECHO_NOME[a.desfecho.tipo]}
                               </span>
                             ) : (
                               <>
-                                {agrupar === "impacto" && <SeloDaDisciplina disc={a.disc} neutro />}
+                                {agrupar === "disciplina" ? (
+                                  <i className="rs-ponto rd-ponto-neutro" title={IMPACTOS.find((i) => i.id === a.impacto)?.nome} />
+                                ) : (
+                                  <SeloDaDisciplina disc={a.disc} neutro />
+                                )}
                                 {a.responsavel ? <Avatar iniciais={a.responsavel.slice(0, 2).toUpperCase()} pequeno /> : <span className="rs-sem-dono">sem dono</span>}
                               </>
                             )}
@@ -429,8 +432,10 @@ export function Fila({
       {/* ================= o achado aberto ================= */}
       <section className="rs-detalhe" aria-label={`Achado ${atual.id}`}>
         <div className="rs-detalhe-topo">
-          <Etiqueta a={atual} />
-          <span className={`rs-detalhe-nivel nd--${atual.impacto}`}>{IMPACTOS.find((i) => i.id === atual.impacto)?.nome}</span>
+          <span className="rs-detalhe-id">{atual.id}</span>
+          <Selo tom={atual.impacto} ponto>
+            {IMPACTOS.find((i) => i.id === atual.impacto)?.nome}
+          </Selo>
           <SeloDaDisciplina disc={atual.disc} nome />
           <span className="rs-origem">{atual.origem === "regra" ? "Regra verificada: página e trecho conferidos" : "Sugerido pela IA: confira o trecho"}</span>
           <span className="rs-navegar">

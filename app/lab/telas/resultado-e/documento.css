@@ -65,6 +65,16 @@
 .ds .nd-colunas .nd-marca { height: 5px; }
 /* ---------- a etiqueta: retângulo reto, cor do nível, código em branco ---------- */
 .ds .nd-marca-linha { position: relative; display: block; }
+.ds .nd-etq { display: inline-block; padding: 2px 5px; background: var(--nd-tom); color: #fff; font-family: var(--ds-font-mono); font-size: 10.5px; font-weight: 600; line-height: 1.3; letter-spacing: 0.02em; white-space: nowrap; transition: background var(--ds-dur-state), color var(--ds-dur-state), box-shadow var(--ds-dur-feedback); }
+/* tratada: vazada — só o contorno, o código riscado */
+.ds .nd-etq--tratada { background: transparent; color: var(--nd-tom); box-shadow: inset 0 0 0 1.25px var(--nd-tom); text-decoration: line-through; text-decoration-thickness: 1px; }
+/* acesa: um anel afastado, que não mexe no tamanho */
+.ds .nd-etq--acesa { box-shadow: 0 0 0 2px var(--ds-surface-page), 0 0 0 3.5px var(--nd-tom); }
+.ds .nd-etq--tratada.nd-etq--acesa { box-shadow: inset 0 0 0 1.25px var(--nd-tom), 0 0 0 2px var(--ds-surface-page), 0 0 0 3.5px var(--nd-tom); }
+/* na margem da página: a mesma etiqueta, pequena, colada na borda do texto */
+.ds .nd-etq--margem { position: absolute; right: 0; top: 50%; padding: 1px 3px; font-size: 8px; line-height: 1.2; transform: translate(calc(100% + 2px), -50%); }
+.ds .nd-folha .nd-etq--acesa { box-shadow: 0 0 0 1.5px var(--ds-p-paper), 0 0 0 2.5px var(--nd-tom); }
+.ds .nd-folha .nd-etq--tratada.nd-etq--acesa { box-shadow: inset 0 0 0 1.25px var(--nd-tom), 0 0 0 1.5px var(--ds-p-paper), 0 0 0 2.5px var(--nd-tom); }
 .ds .nd-colunas .nd-folha--margem { padding-right: 16%; }
 .ds .nd-marca--tratada { opacity: 0.35; }
 
