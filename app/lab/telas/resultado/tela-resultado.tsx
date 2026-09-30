@@ -14,6 +14,8 @@ import { ACHADOS, type Achado } from "./dados";
 import { Fila, type Filtro } from "./fila";
 import { Resumo, estadoDaEmissao, type EstadoEmissao } from "./resumo";
 import "./resultado.css";
+import { Relatorio } from "../resultado-c/relatorio";
+import "../resultado-c/relatorio.css";
 
 export type SituacaoRes =
   | "nao-emitir"
@@ -105,6 +107,12 @@ export function TelaResultado({ situacao }: { situacao: SituacaoRes }) {
   const [aba, setAba] = useState<Aba>(p.aba);
   const [filaInicial, setFilaInicial] = useState(p.fila);
   const [carregando, setCarregando] = useState(situacao === "abrindo");
+  const [pdf, setPdf] = useState<"nada" | "abrindo" | "erro">(situacao === ("parecer-gerando" as SituacaoRes) ? "abrindo" : situacao === ("parecer-erro" as SituacaoRes) ? "erro" : "nada");
+  useEffect(() => {
+    if (pdf !== "abrindo" || situacao === ("parecer-gerando" as SituacaoRes)) return;
+    const t = setTimeout(() => setPdf("nada"), 2200);
+    return () => clearTimeout(t);
+  }, [pdf, situacao]);
 
   useEffect(() => {
     if (!carregando) return;
@@ -199,21 +207,7 @@ export function TelaResultado({ situacao }: { situacao: SituacaoRes }) {
               </span>
             </button>
 
-            <div className="rs-exportar">
-              <Menu
-                rotulo={
-                  <>
-                    <Download /> Exportar
-                  </>
-                }
-                variante="quiet"
-                itens={[
-                  { rotulo: "Parecer em PDF", dica: "O documento que vai para o cliente", icone: <FileText size={14} /> },
-                  { rotulo: "Relatório da auditoria", dica: "Texto corrido, todos os achados", icone: <ScrollText size={14} /> },
-                  { rotulo: "Matriz de achados", dica: "Planilha, um achado por linha", icone: <FileSpreadsheet size={14} /> },
-                ]}
-              />
-            </div>
+
           </div>
           <div className="rs-painel-abas">
             <Segmento
@@ -223,10 +217,27 @@ export function TelaResultado({ situacao }: { situacao: SituacaoRes }) {
               opcoes={[
                 { valor: "resumo", rotulo: "Resumo" },
                 { valor: "achados", rotulo: <>Achados <em>{pendentes ? `${pendentes} pendentes` : "tudo tratado"}</em></> },
-                { valor: "parecer", rotulo: "Parecer" },
+                { valor: "parecer", rotulo: "Relatório" },
                 { valor: "documento", rotulo: "No documento" },
               ]}
             />
+            <div className="rs-exportar">
+              <Botao variante="ghost" tamanho="sm" onClick={() => setPdf("abrindo")}>
+                <FileText /> Parecer em PDF
+              </Botao>
+              <Menu
+                rotulo={
+                  <>
+                    <Download /> Exportar
+                  </>
+                }
+                variante="quiet"
+                itens={[
+                  { rotulo: "Relatório da auditoria", dica: "Texto corrido, todos os achados", icone: <ScrollText size={14} /> },
+                  { rotulo: "Matriz de achados", dica: "Planilha, um achado por linha", icone: <FileSpreadsheet size={14} /> },
+                ]}
+              />
+            </div>
           </div>
         </header>
 
@@ -252,15 +263,41 @@ export function TelaResultado({ situacao }: { situacao: SituacaoRes }) {
             >
               {aba === "resumo" && <Resumo achados={achados} parcial={p.parcial} comparado={p.comparado} revisao={revisao} onAbrir={abrir} />}
               {aba === "achados" && <Fila key={filaInicial.selecionado} achados={achados} onMudar={mudar} inicial={filaInicial} />}
-              {(aba === "parecer" || aba === "documento") && (
+              {aba === "parecer" && <Relatorio achados={achados} parcial={p.parcial} revisao={revisao} onPdf={() => setPdf("abrindo")} />}
+              {aba === "documento" && (
                 <div className="rs-depois">
-                  {aba === "parecer" ? "O parecer" : "O documento com os achados no lugar"} é a próxima tela do laboratório.
+                  O documento com os achados no lugar é a próxima tela do laboratório.
                 </div>
               )}
             </motion.div>
           </AnimatePresence>
         )}
       </div>
+      <AnimatePresence>
+        {pdf !== "nada" && (
+          <motion.div
+            className="rs-aviso-pdf"
+            role="status"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 8 }}
+            transition={{ duration: dur("enter"), ease: ease(CURVA.out) }}
+          >
+            {pdf === "abrindo" ? (
+              <>
+                <i /> Gerando o parecer; ele abre numa aba nova para você conferir.
+              </>
+            ) : (
+              <>
+                Não foi possível gerar o parecer em PDF.
+                <Botao variante="quiet" tamanho="sm" onClick={() => setPdf("abrindo")}>
+                  Tentar de novo
+                </Botao>
+              </>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

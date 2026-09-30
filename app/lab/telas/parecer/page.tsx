@@ -1,15 +1,15 @@
 import { VitrineDoParecer } from "./vitrine";
 
-export const metadata = { title: "Parecer — Laboratório" };
+export const metadata = { title: "Relatório — Laboratório" };
 
 export default function PaginaDoParecer() {
   return (
     <>
       <header className="lab-cabeca" style={{ marginBottom: 24 }}>
         <p className="lab-trilha">Telas para aprovar</p>
-        <h1>Parecer</h1>
+        <h1>Relatório</h1>
         <p className="lab-lede">
-          O documento que sai para o cliente, na aba Parecer do Resultado. Mostrado como papel, com o que se faz com ele ao lado.
+          A aba Relatório do Resultado: o parecer em texto corrido, como hoje. O papel diagramado sai pelo Parecer em PDF, no painel.
         </p>
       </header>
       <VitrineDoParecer />
