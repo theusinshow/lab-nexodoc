@@ -66,7 +66,9 @@ export function Vitrine<S extends string>({
         <Aprovacao key={atual} id={`tela.${telaId}.${atual}`} rotulo={`${sit.nome}`} />
       </div>
 
-      <Moldura>{render(atual)}</Moldura>
+      {/* Com a tela cheia aberta, a miniatura sai de cena: duas cópias vivas
+          ouviriam o mesmo teclado. */}
+      <Moldura>{!cheia && render(atual)}</Moldura>
 
       <AnimatePresence>
         {cheia && (

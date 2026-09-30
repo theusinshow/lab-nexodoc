@@ -420,6 +420,11 @@
 .ds .ds-menu button:hover,
 .ds .ds-menu button:focus-visible { background: rgb(255 255 255 / 0.06); outline: none; }
 .ds .ds-menu button[aria-checked="true"] svg { color: var(--ds-nexo); }
+.ds .ds-menu--acoes { min-width: 260px; }
+.ds .ds-menu--acoes button { height: auto; min-height: 34px; padding: 7px 10px; align-items: flex-start; }
+.ds .ds-menu--acoes button > span:first-child { margin-top: 1px; color: var(--ds-text-secondary); }
+.ds .ds-menu-texto { display: grid; gap: 1px; }
+.ds .ds-menu-texto small { font-size: 11.5px; color: var(--ds-text-tertiary); }
 
 /* ---------- esqueleto ---------- */
 .ds .ds-skel {

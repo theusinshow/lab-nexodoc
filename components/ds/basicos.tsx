@@ -210,3 +210,86 @@ export function NumeroQueChega({ valor }: { valor: number }) {
   // Separador de milhar em português: 1.284, não 1284.
   return <span className="ds-num">{mostrado.toLocaleString("pt-BR")}</span>;
 }
+
+/**
+ * MENU DE AÇÕES. Como o Seletor, cresce do botão; mas cada item FAZ algo em
+ * vez de escolher um valor (Exportar, Mais ações). Esc consumido chama
+ * preventDefault, para o Esc global da tela não agir junto.
+ */
+export function Menu({
+  rotulo,
+  itens,
+  variante = "ghost",
+  tamanho = "sm",
+  alinhar = "right",
+}: {
+  rotulo: ReactNode;
+  itens: { rotulo: string; dica?: string; icone?: ReactNode; onClick?: () => void }[];
+  variante?: Variante;
+  tamanho?: "sm";
+  alinhar?: "left" | "right";
+}) {
+  const [aberto, setAberto] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const { dur } = useTempo();
+
+  useEffect(() => {
+    if (!aberto) return;
+    const fora = (e: MouseEvent) => {
+      if (!ref.current?.contains(e.target as Node)) setAberto(false);
+    };
+    const esc = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      e.preventDefault();
+      setAberto(false);
+    };
+    document.addEventListener("mousedown", fora);
+    document.addEventListener("keydown", esc, true);
+    return () => {
+      document.removeEventListener("mousedown", fora);
+      document.removeEventListener("keydown", esc, true);
+    };
+  }, [aberto]);
+
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <Botao variante={variante} tamanho={tamanho} aria-haspopup="menu" aria-expanded={aberto} onClick={() => setAberto((a) => !a)}>
+        {rotulo}
+        <motion.span animate={{ rotate: aberto ? 180 : 0 }} transition={{ duration: dur("state"), ease: [...CURVA.out] }} style={{ display: "inline-flex" }}>
+          <ChevronDown />
+        </motion.span>
+      </Botao>
+      <AnimatePresence>
+        {aberto && (
+          <motion.div
+            role="menu"
+            className="ds-menu ds-menu--acoes"
+            style={{ top: "calc(100% + 6px)", [alinhar]: 0, transformOrigin: `top ${alinhar}` }}
+            initial={{ opacity: 0, scale: 0.96, y: -4 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.98, transition: { duration: dur("feedback"), ease: [...CURVA.exit] } }}
+            transition={{ duration: dur("enter"), ease: [...CURVA.out] }}
+          >
+            {itens.map((i) => (
+              <button
+                key={i.rotulo}
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  i.onClick?.();
+                  setAberto(false);
+                }}
+              >
+                <span style={{ width: 16, display: "inline-flex" }}>{i.icone}</span>
+                <span className="ds-menu-texto">
+                  {i.rotulo}
+                  {i.dica && <small>{i.dica}</small>}
+                </span>
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
