@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 
 import { CURVA } from "@/lib/ds/movimento";
 import { useTempo } from "@/lib/ds/tempo";
@@ -205,6 +205,164 @@ export function FaixaDeVeredito({ posicao, faixas }: { posicao: number; faixas: 
           );
         })}
         <motion.i className="gr-losango" initial={{ left: "0%" }} animate={{ left: `${posicao}%` }} transition={mola("gentle")} />
+      </div>
+    </div>
+  );
+}
+
+export interface Coluna {
+  /** Texto do rodapé quando o mouse está sobre a coluna. */
+  rotulo: ReactNode;
+  /** Rótulo do eixo; só as colunas marcadas mostram. */
+  eixo?: string;
+  valor: number;
+  /** Parte do valor em tom claro (ex.: resolvidos dentro dos encontrados). */
+  parte?: number;
+}
+
+/**
+ * COLUNAS EM PÍLULA. Uma pílula por dia ou semana sobre o trilho com
+ * textura; a parte (resolvidos) sobe por dentro do total em tom claro. A
+ * última coluna é "agora" e ganha o iris. Sem eixo Y: o número que importa
+ * está escrito acima do gráfico, e o mouse lê cada coluna.
+ */
+export function ColunasEmPilula({
+  colunas,
+  altura = 112,
+  compacto = false,
+  padrao,
+}: {
+  colunas: Coluna[];
+  altura?: number;
+  compacto?: boolean;
+  /** Rodapé quando o mouse não está sobre nenhuma coluna. */
+  padrao?: ReactNode;
+}) {
+  const { dur, k } = useTempo();
+  const [sobre, setSobre] = useState<number | null>(null);
+  const maximo = Math.max(1, ...colunas.map((c) => c.valor));
+  const pct = (v: number) => `${(v / maximo) * 100}%`;
+  const crescer = (atraso: number) => ({ duration: dur("layout") * 1.6, delay: atraso, ease: ease(CURVA.out) });
+
+  return (
+    <div className={`gr-colunas${compacto ? " gr-colunas--compacto" : ""}`}>
+      <div className={`gr-colunas-area${sobre !== null ? " gr-colunas--foco" : ""}`} style={{ height: altura }} onMouseLeave={() => setSobre(null)}>
+        {colunas.map((c, i) => (
+          <span
+            key={i}
+            className={`gr-coluna${i === colunas.length - 1 ? " gr-coluna--hoje" : ""}${sobre === i ? " gr-coluna--sobre" : ""}`}
+            onMouseEnter={compacto ? undefined : () => setSobre(i)}
+          >
+            {c.valor > 0 && (
+              <motion.i className="gr-coluna-total" style={{ height: pct(c.valor) }} initial={{ scaleY: 0 }} animate={{ scaleY: 1 }} transition={crescer(i * 0.012 * k)} />
+            )}
+            {!!c.parte && (
+              <motion.i className="gr-coluna-parte" style={{ height: pct(c.parte) }} initial={{ scaleY: 0 }} animate={{ scaleY: 1 }} transition={crescer(0.12 * k + i * 0.012 * k)} />
+            )}
+          </span>
+        ))}
+      </div>
+      {!compacto && (
+        <>
+          <div className="gr-colunas-eixo" aria-hidden>
+            {colunas.map((c, i) => (
+              <span key={i}>{c.eixo}</span>
+            ))}
+          </div>
+          <div className="gr-mapa-rodape">
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.span key={sobre ?? "padrao"} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: dur("feedback") }}>
+                {sobre === null ? padrao : colunas[sobre]?.rotulo}
+              </motion.span>
+            </AnimatePresence>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+export interface DiaDeUso {
+  data: Date;
+  valor: number;
+  /** Fora do período escolhido: fica apagado, mas o desenho não muda. */
+  fora?: boolean;
+}
+
+export const MESES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+const SEMANA = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
+
+/**
+ * MAPA DE ATIVIDADE (heatmap por dia). Semanas em colunas, segunda a
+ * domingo nas linhas; o tom é quanto o Nexo trabalhou no dia. Trocar o
+ * período não redesenha: apaga o que ficou de fora, para o olho não perder
+ * o lugar.
+ */
+export function MapaDeAtividade({ dias, unidade }: { dias: DiaDeUso[]; unidade: [string, string] }) {
+  const { dur, k } = useTempo();
+  const [sobre, setSobre] = useState<number | null>(null);
+  const maximo = Math.max(1, ...dias.map((d) => d.valor));
+  // segunda = 0
+  const deslocamento = dias.length ? (dias[0].data.getDay() + 6) % 7 : 0;
+  const semanas = Math.ceil((dias.length + deslocamento) / 7);
+  const meses: { coluna: number; nome: string }[] = [];
+  dias.forEach((d, i) => {
+    if (d.data.getDate() === 1 || i === 0) meses.push({ coluna: Math.floor((i + deslocamento) / 7), nome: MESES[d.data.getMonth()] });
+  });
+  const ativos = dias.filter((d) => !d.fora && d.valor > 0).length;
+  const d = sobre !== null ? dias[sobre] : null;
+  const grade = { gridTemplateColumns: `repeat(${semanas}, minmax(0, 1fr))` };
+
+  return (
+    <div className="gr-atividade">
+      <div className="gr-atividade-meses" style={grade} aria-hidden>
+        {meses.map((m) => (
+          <span key={m.nome} style={{ gridColumn: `${m.coluna + 1} / span 3` }}>
+            {m.nome}
+          </span>
+        ))}
+      </div>
+      <div className="gr-atividade-grade" style={grade} onMouseLeave={() => setSobre(null)}>
+        {dias.map((dia, i) => {
+          const pos = i + deslocamento;
+          const coluna = Math.floor(pos / 7);
+          const linha = pos % 7;
+          return (
+            <motion.span
+              key={i}
+              className={`gr-dia${dia.valor > 0 ? " gr-dia--uso" : ""}${dia.fora ? " gr-dia--fora" : ""}${i === dias.length - 1 ? " gr-dia--hoje" : ""}`}
+              style={{ gridColumn: coluna + 1, gridRow: linha + 1, ["--tom" as string]: dia.valor > 0 ? 0.2 + (dia.valor / maximo) * 0.7 : 0 }}
+              initial={{ opacity: 0, scale: 0.5 }}
+              animate={{ opacity: dia.fora ? 0.22 : 1, scale: 1 }}
+              transition={{ duration: dur("enter"), delay: (coluna + linha) * 0.018 * k, ease: ease(CURVA.out) }}
+              onMouseEnter={() => setSobre(i)}
+            />
+          );
+        })}
+      </div>
+      <div className="gr-mapa-rodape">
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.span key={sobre ?? "padrao"} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: dur("feedback") }}>
+            {d ? (
+              <>
+                <b>
+                  {SEMANA[d.data.getDay()]}, {d.data.getDate()} {MESES[d.data.getMonth()]}
+                </b>
+                : {d.valor === 0 ? "sem uso" : `${d.valor} ${d.valor === 1 ? unidade[0] : unidade[1]}`}
+              </>
+            ) : (
+              <>
+                <span className="ds-num">{ativos}</span> dias com o Nexo em uso{" "}
+                <span className="gr-mapa-escala" aria-hidden>
+                  <i />
+                  <i />
+                  <i />
+                  <i />
+                </span>
+              </>
+            )}
+          </motion.span>
+        </AnimatePresence>
       </div>
     </div>
   );

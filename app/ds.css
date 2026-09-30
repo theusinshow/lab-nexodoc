@@ -563,3 +563,37 @@
 .ds .gr-faixa-seg em { position: absolute; top: 16px; left: 0; font-style: normal; font-size: 11.5px; color: var(--ds-text-tertiary); white-space: nowrap; }
 .ds .gr-faixa-seg--ativa em { color: var(--ds-text-primary); }
 .ds .gr-losango { position: absolute; top: -9px; width: 12px; height: 12px; margin-left: -6px; transform: rotate(45deg); border-radius: 2px; background: var(--ds-p-paper); box-shadow: 0 0 0 3px var(--ds-surface-card); }
+
+/* ---------- colunas em pílula ---------- */
+.ds .gr-colunas { display: grid; gap: 8px; min-width: 0; }
+.ds .gr-colunas-area { display: flex; align-items: stretch; gap: 4px; }
+.ds .gr-coluna {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  border-radius: 999px;
+  background:
+    repeating-linear-gradient(135deg, rgb(255 255 255 / 0.035) 0 2px, transparent 2px 7px),
+    rgb(255 255 255 / 0.03);
+  overflow: hidden;
+  transition: opacity var(--ds-dur-feedback);
+}
+.ds .gr-coluna-total, .ds .gr-coluna-parte { position: absolute; left: 0; right: 0; bottom: 0; min-height: 4px; border-radius: 999px; transform-origin: bottom; }
+.ds .gr-coluna-total { background: #5b5f6b; }
+.ds .gr-coluna-parte { background: #c9ccd4; }
+.ds .gr-coluna--hoje { box-shadow: inset 0 0 0 1px var(--ds-nexo-line); }
+.ds .gr-coluna--hoje .gr-coluna-total { background: var(--ds-nexo-strong); }
+.ds .gr-coluna--hoje .gr-coluna-parte { background: var(--ds-nexo); }
+.ds .gr-colunas--foco .gr-coluna:not(.gr-coluna--sobre) { opacity: 0.35; }
+.ds .gr-colunas-eixo { display: flex; gap: 4px; }
+.ds .gr-colunas-eixo span { flex: 1; min-width: 0; white-space: nowrap; font-family: var(--ds-font-mono); font-size: 10.5px; color: var(--ds-text-tertiary); }
+.ds .gr-colunas--compacto .gr-colunas-area { gap: 2px; }
+.ds .gr-colunas--compacto .gr-coluna { background: rgb(255 255 255 / 0.04); }
+
+/* ---------- mapa de atividade ---------- */
+.ds .gr-atividade { display: grid; gap: 6px; }
+.ds .gr-atividade-meses { display: grid; gap: 3px; font-size: 10.5px; color: var(--ds-text-tertiary); }
+.ds .gr-atividade-grade { display: grid; grid-template-rows: repeat(7, auto); gap: 3px; }
+.ds .gr-dia { aspect-ratio: 1; border-radius: 3px; background: rgb(255 255 255 / 0.045); transition: opacity var(--ds-dur-state); }
+.ds .gr-dia--uso { background: rgb(255 255 255 / var(--tom)); }
+.ds .gr-dia--hoje { box-shadow: 0 0 0 1.5px var(--ds-nexo); }
