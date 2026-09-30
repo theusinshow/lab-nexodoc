@@ -1,0 +1,114 @@
+/* A CONVERSA COM O NEXO: registro de turnos, sem balão; o que se confere é objeto. */
+.ds .cv-principal { display: grid; gap: 12px; }
+.ds .cv-turnos { display: grid; gap: 4px; padding: 8px 0 4px; }
+
+/* ---------- o turno ---------- */
+.ds .cv-turno { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 16px; padding: 14px 0; border-top: 1px solid var(--ds-line-subtle); }
+.ds .cv-turno:first-child { border-top: 0; }
+.ds .cv-autor { display: flex; align-items: center; gap: 8px; align-self: start; padding-top: 1px; font-size: var(--ds-text-2xs); color: var(--ds-text-secondary); }
+.ds .cv-autor time { margin-left: auto; font-family: var(--ds-font-mono); font-size: 10.5px; color: var(--ds-text-tertiary); }
+.ds .cv-conteudo { display: grid; gap: 10px; min-width: 0; max-width: 720px; }
+.ds .cv-texto { margin: 0; font-size: var(--ds-text-sm); line-height: 1.6; color: var(--ds-text-primary); }
+.ds .cv-turno--voce .cv-texto { color: var(--ds-text-secondary); }
+.ds .cv-mono { font-family: var(--ds-font-mono); font-size: 0.92em; font-weight: 400; }
+.ds .cv-cursor { display: inline-block; width: 7px; height: 1.05em; margin-left: 3px; vertical-align: -2px; background: var(--ds-nexo); animation: cv-piscar 1s steps(2) infinite; }
+@keyframes cv-piscar { 50% { opacity: 0; } }
+
+/* ---------- anexos ---------- */
+.ds .cv-anexos { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.ds .cv-anexos li { display: grid; grid-template-columns: 16px minmax(0, 1fr) auto auto; align-items: center; gap: 10px; font-size: var(--ds-text-2xs); color: var(--ds-text-secondary); }
+.ds .cv-anexos li svg { color: var(--ds-text-tertiary); }
+.ds .cv-anexo-nome { font-family: var(--ds-font-mono); font-size: 12px; color: var(--ds-text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ds .cv-anexo-tipo { color: var(--ds-text-tertiary); }
+
+/* ---------- a ficha ---------- */
+.ds .cv-ficha { border-radius: var(--ds-radius-card); background: var(--ds-surface-card); box-shadow: var(--ds-edge); overflow: hidden; }
+.ds .cv-ficha dl { margin: 0; padding: 6px 16px; }
+.ds .cv-ficha dl > div { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 14px; padding: 9px 0; border-top: 1px solid var(--ds-line-subtle); font-size: var(--ds-text-xs); }
+.ds .cv-ficha dl > div:first-child { border-top: 0; }
+.ds .cv-ficha dt { color: var(--ds-text-tertiary); }
+.ds .cv-ficha dd { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 0; color: var(--ds-text-primary); }
+.ds .cv-ok { color: var(--ds-state-ok); }
+.ds .cv-nota-campo { font-size: var(--ds-text-2xs); color: var(--ds-text-tertiary); }
+.ds .cv-ficha-pe, .ds .cv-plano-pe { display: flex; align-items: center; justify-content: flex-end; gap: 8px; padding: 10px 12px; border-top: 1px solid var(--ds-line-subtle); background: rgb(255 255 255 / 0.012); }
+.ds .cv-plano-pe > :first-child { margin-right: auto; }
+.ds .cv-analise { display: inline-flex; align-items: center; gap: 12px; }
+.ds .cv-analise small { font-size: var(--ds-text-2xs); color: var(--ds-text-tertiary); }
+
+/* ---------- escolher o projeto ---------- */
+.ds .cv-escolha { display: grid; gap: 2px; padding: 6px; border-radius: var(--ds-radius-card); background: var(--ds-surface-card); box-shadow: var(--ds-edge); }
+.ds .cv-opcao { display: flex; align-items: flex-start; gap: 12px; padding: 10px; border: 0; border-radius: 10px; background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+.ds .cv-opcao:hover { background: rgb(255 255 255 / 0.03); }
+.ds .cv-opcao > span:last-child { display: grid; gap: 2px; }
+.ds .cv-opcao b { font-size: var(--ds-text-xs); font-weight: 500; }
+.ds .cv-opcao small { font-size: var(--ds-text-2xs); color: var(--ds-text-tertiary); }
+.ds .cv-radio { display: grid; place-items: center; width: 16px; height: 16px; flex: none; margin-top: 1px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--ds-line-strong); }
+.ds .cv-radio i { width: 8px; height: 8px; border-radius: 50%; background: var(--ds-nexo); }
+.ds .cv-opcao[aria-checked="true"] .cv-radio { box-shadow: inset 0 0 0 1.5px var(--ds-nexo); }
+.ds .cv-acoes { display: flex; justify-content: flex-end; }
+
+/* ---------- o plano ---------- */
+.ds .cv-plano { border-radius: var(--ds-radius-card); background: var(--ds-surface-card); box-shadow: var(--ds-edge); overflow: hidden; }
+.ds .cv-plano ol { list-style: none; margin: 0; padding: 6px 16px; counter-reset: plano; }
+.ds .cv-plano li { display: grid; grid-template-columns: 24px 180px minmax(0, 1fr); gap: 10px; padding: 9px 0; border-top: 1px solid var(--ds-line-subtle); font-size: var(--ds-text-xs); counter-increment: plano; }
+.ds .cv-plano li:first-child { border-top: 0; }
+.ds .cv-plano li::before { content: counter(plano); font-family: var(--ds-font-mono); font-size: 11px; color: var(--ds-text-tertiary); }
+.ds .cv-plano-nome { color: var(--ds-text-primary); }
+.ds .cv-plano-detalhe { color: var(--ds-text-secondary); }
+.ds .cv-plano--falta .cv-plano-detalhe { color: var(--ds-sev-decide); }
+.ds .cv-decisoes { display: grid; grid-template-columns: repeat(4, minmax(0, auto)); justify-content: start; gap: 8px 28px; padding: 12px 16px; border-top: 1px solid var(--ds-line-subtle); }
+.ds .cv-decisoes label { display: grid; gap: 4px; }
+.ds .cv-decisoes label > span:first-child { font-size: 11px; color: var(--ds-text-tertiary); }
+.ds .cv-decisao-valor { display: inline-flex; align-items: center; gap: 8px; min-height: 28px; font-size: var(--ds-text-xs); color: var(--ds-text-primary); }
+.ds .cv-contador { gap: 6px; }
+.ds .cv-contador button { display: grid; place-items: center; width: 22px; height: 22px; padding: 0; border: 0; border-radius: 6px; background: rgb(255 255 255 / 0.06); color: var(--ds-text-secondary); cursor: pointer; }
+.ds .cv-contador button:disabled { opacity: 0.35; cursor: default; }
+.ds .cv-contador b { min-width: 14px; text-align: center; font-weight: 500; }
+.ds .cv-falta { margin-right: auto; font-size: var(--ds-text-2xs); color: var(--ds-sev-decide); }
+
+/* ---------- a diferença ---------- */
+.ds .cv-diff { border-radius: var(--ds-radius-card); background: var(--ds-surface-card); box-shadow: var(--ds-edge); overflow: hidden; }
+.ds .cv-diff-cabeca { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; border-bottom: 1px solid var(--ds-line-subtle); font-size: var(--ds-text-2xs); color: var(--ds-text-secondary); }
+.ds .cv-diff ol { list-style: none; margin: 0; padding: 6px 16px; }
+.ds .cv-diff li { display: flex; align-items: baseline; gap: 10px; padding: 6px 0; font-size: var(--ds-text-xs); color: var(--ds-text-secondary); }
+.ds .cv-diff li small { font-size: 11px; color: var(--ds-text-tertiary); }
+.ds .cv-diff--sai { color: var(--ds-text-primary) !important; text-decoration: line-through; text-decoration-color: var(--ds-sev-block); text-decoration-thickness: 1.5px; }
+.ds .cv-diff--sai::before { content: "−"; margin-left: -12px; width: 2px; font-family: var(--ds-font-mono); color: var(--ds-sev-block); text-decoration: none; }
+.ds .cv-diff--sai small { color: var(--ds-sev-block) !important; }
+
+/* ---------- erro ---------- */
+.ds .cv-erro { display: flex; align-items: center; gap: 12px; padding: 10px 10px 10px 14px; border-radius: var(--ds-radius-row); background: var(--ds-state-error-wash); box-shadow: inset 0 0 0 1px var(--ds-sev-block-line); font-size: var(--ds-text-2xs); line-height: 1.5; color: var(--ds-text-secondary); }
+.ds .cv-erro > svg { flex: none; color: var(--ds-state-error); }
+.ds .cv-erro b { font-weight: 500; color: var(--ds-state-error); }
+
+/* ---------- respostas rápidas e o campo ---------- */
+.ds .cv-rapidas { display: flex; gap: 8px; padding-left: 136px; }
+.ds .cv-rapida { display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 12px; border: 0; border-radius: 999px; background: none; box-shadow: inset 0 0 0 1px var(--ds-line-default); font: inherit; font-size: var(--ds-text-xs); color: var(--ds-text-secondary); cursor: pointer; }
+.ds .cv-rapida:hover { color: var(--ds-text-primary); box-shadow: inset 0 0 0 1px var(--ds-line-strong); }
+.ds .cv-rapida--sim { color: var(--ds-text-primary); box-shadow: inset 0 0 0 1px var(--ds-nexo-line); background: var(--ds-nexo-wash); }
+
+.ds .cv-campo { position: sticky; bottom: 12px; display: flex; align-items: flex-end; gap: 8px; margin-left: 136px; padding: 8px 8px 8px 10px; border-radius: var(--ds-radius-composer); background: var(--ds-surface-raised); box-shadow: var(--ds-edge-strong), 0 12px 30px rgb(0 0 0 / 0.35); }
+.ds .cv-campo textarea { flex: 1; min-height: 34px; max-height: 160px; padding: 7px 4px; border: 0; background: none; font: inherit; font-size: var(--ds-text-sm); line-height: 1.45; color: var(--ds-text-primary); resize: none; }
+.ds .cv textarea:focus-visible:focus-visible { box-shadow: none; }
+.ds .cv-campo textarea::placeholder { color: var(--ds-text-tertiary); }
+.ds .cv-anexar, .ds .cv-enviar { display: grid; place-items: center; width: 34px; height: 34px; flex: none; padding: 0; border: 0; border-radius: 50%; background: none; color: var(--ds-text-secondary); cursor: pointer; }
+.ds .cv-anexar:hover { background: rgb(255 255 255 / 0.06); color: var(--ds-text-primary); }
+.ds .cv-enviar { background: var(--ds-p-paper); color: var(--ds-text-on-paper); }
+.ds .cv-enviar:disabled { background: rgb(255 255 255 / 0.08); color: var(--ds-text-tertiary); cursor: default; }
+.ds .cv-enviar--parar { background: rgb(255 255 255 / 0.1); color: var(--ds-text-primary); box-shadow: inset 0 0 0 1px var(--ds-line-strong); }
+.ds .cv-dica { display: flex; align-items: center; gap: 4px; margin: -4px 0 0 146px; font-size: 11.5px; color: var(--ds-text-tertiary); }
+
+/* ---------- a coluna ---------- */
+.ds .cv-bloco { display: grid; gap: 8px; padding: 14px; }
+.ds .cv-bloco h3 { margin: 0; font-size: 11.5px; font-weight: 400; color: var(--ds-text-tertiary); }
+.ds .cv-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.ds .cv-lista li { display: grid; grid-template-columns: 14px minmax(0, 1fr); column-gap: 8px; align-items: center; font-size: var(--ds-text-2xs); color: var(--ds-text-primary); }
+.ds .cv-lista li svg { color: var(--ds-text-tertiary); }
+.ds .cv-lista li .cv-ok { color: var(--ds-state-ok); }
+.ds .cv-lista li .cv-mono { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ds .cv-lista li small { grid-column: 2; font-size: 11px; color: var(--ds-text-tertiary); }
+.ds .re-acao:disabled { opacity: 0.4; cursor: default; }
+.ds .re-acao:disabled:hover { background: none; }
+/* o primeiro turno começa na mesma linha da coluna da direita */
+.ds .cv-turnos { padding-top: 0; }
+.ds .cv-turno:first-child { padding-top: 2px; }
