@@ -1,265 +1,237 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
-import { ArrowUp, Check, Download, FileText, MessageSquarePlus, Paperclip, ShieldCheck, Square } from "lucide-react";
-import { useState } from "react";
+import { ArrowUp, ChevronDown, MessageSquarePlus, Paperclip, RotateCcw, Square, X } from "lucide-react";
+import { useState, type ReactNode } from "react";
 
 import { Botao, Tecla } from "@/components/ds/basicos";
 import { useTempo } from "@/lib/ds/tempo";
 import { MarcaDaPrefeitura } from "@/modules/nexo/components/MarcaDaPrefeitura";
 
 import { Topo } from "../_comum/topo";
-import "../resultado-e/resultado.css";
-import "../resultado-e/trilho.css";
-import { Anexos, Diferenca, EscolhaDeAnalise, EscolhaDeProjeto, ErroDeResposta, Escrevendo, Ficha, Plano, RespostasRapidas, Turno, type ItemDoPlano } from "./turnos";
+import { DeVoce, Diferenca, DoNexo, Escrevendo, Lacuna, Passo, PecaDeArquivo, Plano, Saidas, Vazio, type Arquivo } from "./turnos";
 import "./conversa.css";
 
 export type SituacaoConversa =
+  | "nova"
+  | "anexando"
   | "confirmar-auditoria"
   | "escolher-projeto"
   | "plano-de-geracao"
   | "capa-sem-prefeitura"
   | "alteracao-pendente"
   | "respondendo"
-  | "erro-resposta"
-  | "respostas-rapidas";
+  | "erro-resposta";
 
-const PRANCHAS = [
-  { nome: "117_25_ARQ_rev-B.pdf", tipo: "pranchas ARQ", paginas: 12 },
-  { nome: "117_25_EST_rev-A.pdf", tipo: "pranchas EST", paginas: 8 },
-  { nome: "117_25_HID_rev-A.pdf", tipo: "pranchas HID", paginas: 6 },
-  { nome: "117_25_ELE_rev-A.pdf", tipo: "pranchas ELE", paginas: 7 },
-];
-const PLANO: ItemDoPlano[] = [
-  { id: "ld", nome: "Lista de documentos", detalhe: "33 folhas em 4 disciplinas, lidas dos carimbos" },
-  { id: "capa", nome: "Capa", detalhe: "Prefeitura de Criciúma, tomo 1 de 1" },
-  { id: "sep", nome: "Separatrizes", detalhe: "4: ARQ, EST, HID e ELE" },
+const MEMORIAL: Arquivo[] = [{ nome: "117_25_md_geral_a.pdf", paginas: 42 }];
+const PRANCHAS: Arquivo[] = [
+  { nome: "117_25_ARQ_rev-B.pdf", paginas: 12 },
+  { nome: "117_25_EST_rev-A.pdf", paginas: 8 },
+  { nome: "117_25_HID_rev-A.pdf", paginas: 6 },
+  { nome: "117_25_ELE_rev-A.pdf", paginas: 7 },
 ];
 
-/** Os turnos de cada situação: o que já foi dito e o que o Nexo pede agora. */
-function Turnos({ situacao }: { situacao: SituacaoConversa }) {
-  const memorial = [{ nome: "117_25_md_geral_a.pdf", tipo: "memorial", paginas: 42 }];
+/** O CAMPO: os arquivos em cima, o texto, e embaixo o que se anexa, o modo e enviar (ou parar). */
+function Campo({ arquivos, respondendo, texto: inicial = "", modo }: { arquivos?: Arquivo[]; respondendo?: boolean; texto?: string; modo?: boolean }) {
+  const { dur } = useTempo();
+  const [texto, setTexto] = useState(inicial);
+  const pode = !!texto.trim() || !!arquivos?.length;
+  return (
+    <form className="cx-campo" onSubmit={(e) => e.preventDefault()}>
+      {arquivos && arquivos.length > 0 && (
+        <div className="cx-campo-arquivos">
+          {arquivos.map((a) => (
+            <span key={a.nome} className="cx-campo-peca">
+              <PecaDeArquivo a={a} />
+              <button type="button" aria-label={`Tirar ${a.nome}`}>
+                <X size={12} />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+      <textarea rows={1} value={texto} onChange={(e) => setTexto(e.target.value)} placeholder={respondendo ? "O Nexo está respondendo" : "Peça, pergunte ou solte os PDFs"} aria-label="Mensagem para o Nexo" />
+      <div className="cx-campo-pe">
+        <button type="button" className="cx-campo-botao" aria-label="Anexar PDFs" title="Anexar PDFs">
+          <Paperclip size={16} />
+        </button>
+        {modo && (
+          <button type="button" className="cx-modo" title="Como o Nexo audita">
+            Análise profunda <ChevronDown size={13} />
+          </button>
+        )}
+        <AnimatePresence mode="wait" initial={false}>
+          {respondendo ? (
+            <motion.button key="parar" type="button" className="cx-enviar cx-enviar--parar" aria-label="Parar" initial={{ scale: 0.85, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.85, opacity: 0 }} transition={{ duration: dur("feedback") }}>
+              <Square size={11} fill="currentColor" />
+            </motion.button>
+          ) : (
+            <motion.button key="enviar" type="submit" className="cx-enviar" aria-label="Enviar (Enter)" disabled={!pode} initial={{ scale: 0.85, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.85, opacity: 0 }} transition={{ duration: dur("feedback") }}>
+              <ArrowUp size={16} />
+            </motion.button>
+          )}
+        </AnimatePresence>
+      </div>
+    </form>
+  );
+}
+
+/** Os turnos de cada situação. */
+function Fio({ situacao }: { situacao: SituacaoConversa }): ReactNode {
   switch (situacao) {
     case "confirmar-auditoria":
       return (
         <>
-          <Turno autor="voce" hora="21:07">
-            <Anexos arquivos={memorial} />
-            <p className="cv-texto">audita esse memorial, é o da UBS</p>
-          </Turno>
-          <Turno autor="nexo" hora="21:07" atraso={0.15}>
-            <p className="cv-texto">Li o arquivo. Confere antes de eu começar:</p>
-            <Ficha
-              linhas={[
-                { rotulo: "Documento", valor: "Memorial descritivo geral, 42 páginas com texto", ok: true },
-                { rotulo: "Obra", valor: <>117-25, UBS da Rua São Francisco de Assis <span className="cv-nota-campo">casou com o projeto</span></>, ok: true },
-                { rotulo: "Prefeitura", valor: <><MarcaDaPrefeitura prefeitura="Criciúma" forma="sinal" /> Criciúma</>, ok: true },
-                { rotulo: "Revisão", valor: "A, emissão inicial, 12/09/2026" },
-                { rotulo: "Análise", valor: <EscolhaDeAnalise /> },
-              ]}
-              rodape={
-                <>
-                  <Botao variante="ghost" tamanho="sm">
-                    Agora não
-                  </Botao>
-                  <Botao variante="primary" tamanho="sm">
-                    Auditar <Tecla>↵</Tecla>
-                  </Botao>
-                </>
-              }
-            />
-          </Turno>
+          <DeVoce arquivos={MEMORIAL} texto="audita esse memorial, é o da UBS" />
+          <DoNexo atraso={0.15}>
+            <Passo texto="Li o memorial: 42 páginas com texto, revisão A" />
+            <p className="cx-texto">
+              É o memorial geral da <b>UBS da Rua São Francisco de Assis</b>, obra <span className="cx-mono">117-25</span>, prefeitura de Criciúma. Casou com o projeto que você já tem.
+            </p>
+            <p className="cx-frase">
+              Faço a análise <Lacuna valor="profunda" opcoes={["profunda", "rápida"]} />: capítulo a capítulo, com um segundo modelo revisando cada achado. Leva uns 4 minutos, e você pode fechar a aba.
+            </p>
+            <Saidas itens={[{ texto: "Auditar", principal: true }, { texto: "É outra obra" }, { texto: "Agora não" }]} />
+          </DoNexo>
         </>
       );
     case "escolher-projeto":
       return (
         <>
-          <Turno autor="voce" hora="21:12">
-            <Anexos arquivos={[{ nome: "118_25_md_geral_a.pdf", tipo: "memorial", paginas: 36 }]} />
-            <p className="cv-texto">audita</p>
-          </Turno>
-          <Turno autor="nexo" hora="21:12" atraso={0.15}>
-            <p className="cv-texto">
-              A capa diz <b className="cv-mono">118-25</b>, Ginásio Poliesportivo do Bairro Pinheirinho, e esse código não está nos seus projetos. Onde eu guardo esta auditoria?
+          <DeVoce arquivos={[{ nome: "118_25_md_geral_a.pdf", paginas: 36 }]} texto="audita" />
+          <DoNexo atraso={0.15}>
+            <Passo texto="Li o memorial: 36 páginas, revisão A" />
+            <p className="cx-texto">
+              A capa diz <span className="cx-mono">118-25</span>, Ginásio Poliesportivo do Bairro Pinheirinho, e esse código não está nos seus projetos. Onde eu guardo?
             </p>
-            <EscolhaDeProjeto />
-            <div className="cv-acoes">
-              <Botao variante="primary" tamanho="sm">
-                Guardar e auditar <Tecla>↵</Tecla>
-              </Botao>
-            </div>
-          </Turno>
+            <Saidas
+              itens={[
+                { texto: "Criar o projeto 118-25", principal: true },
+                { texto: "Guardar na SIM118-25, Ginásio do Pinheirinho (Siderópolis)" },
+                { texto: "Escolher outro projeto" },
+              ]}
+            />
+          </DoNexo>
         </>
       );
     case "plano-de-geracao":
-    case "capa-sem-prefeitura":
-    case "respostas-rapidas":
+    case "capa-sem-prefeitura": {
+      const falta = situacao === "capa-sem-prefeitura";
       return (
         <>
-          <Turno autor="voce" hora="21:20">
-            <Anexos arquivos={PRANCHAS} />
-            <p className="cv-texto">gera a LD e a capa do volume</p>
-          </Turno>
-          <Turno autor="nexo" hora="21:20" atraso={0.15}>
-            <p className="cv-texto">{situacao === "capa-sem-prefeitura" ? "Li os 4 arquivos, 33 folhas. Os carimbos não dizem a prefeitura; sem ela a capa não sai." : "Li os 4 arquivos, 33 folhas. Vou gerar isto:"}</p>
-            <Plano itens={PLANO} semPrefeitura={situacao === "capa-sem-prefeitura"} />
-          </Turno>
+          <DeVoce arquivos={PRANCHAS} texto="gera a LD e a capa do volume" />
+          <DoNexo atraso={0.15}>
+            <Passo texto="Li 4 arquivos, 33 folhas em 4 disciplinas" />
+            <p className="cx-texto">{falta ? "Os carimbos não dizem a prefeitura, e sem ela a capa não sai. Escolha na frase abaixo." : "Vou gerar estes três. Não usa IA: sai em segundos."}</p>
+            <Plano semPrefeitura={falta} />
+            {falta ? (
+              <p className="cx-aviso">Falta a prefeitura da capa. A LD e as separatrizes já podem sair sem ela.</p>
+            ) : null}
+            <Saidas itens={falta ? [{ texto: "Gerar só a LD e as separatrizes", principal: true }, { texto: "Ver como sai" }] : [{ texto: "Gerar", principal: true }, { texto: "Ver como sai" }, { texto: "Só a LD" }]} />
+          </DoNexo>
         </>
       );
+    }
     case "alteracao-pendente":
       return (
         <>
-          <Turno autor="nexo" hora="21:22">
-            <p className="cv-texto">
-              Gerados: a lista de documentos, a capa e 4 separatrizes. <button type="button" className="rs-link">Abrir a LD</button>
-            </p>
-          </Turno>
-          <Turno autor="voce" hora="21:31" atraso={0.1}>
-            <p className="cv-texto">tira a ARQ-12 da LD, a folha foi cancelada</p>
-          </Turno>
-          <Turno autor="nexo" hora="21:31" atraso={0.25}>
-            <p className="cv-texto">Fica assim:</p>
+          <DoNexo>
+            <Passo texto="Gerados: LD, capa e 4 separatrizes" />
+            <div className="cx-pecas">
+              <PecaDeArquivo gerado a={{ nome: "LD_117-25_rev-A.pdf", paginas: 3 }} />
+              <PecaDeArquivo gerado a={{ nome: "Capa_117-25_tomo-1.pdf", paginas: 1 }} />
+              <PecaDeArquivo gerado a={{ nome: "Separatrizes_117-25.pdf", paginas: 4 }} />
+            </div>
+          </DoNexo>
+          <DeVoce texto="tira a ARQ-12 da LD, a folha foi cancelada" atraso={0.1} />
+          <DoNexo atraso={0.25}>
+            <p className="cx-texto">Fica assim: sai uma folha, continuam 32. A capa e as separatrizes não mudam.</p>
             <Diferenca />
-          </Turno>
+            <Saidas itens={[{ texto: "Aplicar", principal: true }, { texto: "Descartar" }]} />
+          </DoNexo>
         </>
       );
     case "respondendo":
       return (
         <>
-          <Turno autor="voce" hora="21:40">
-            <p className="cv-texto">por que a NBR 5626 de 1998 é problema se o dimensionamento está certo?</p>
-          </Turno>
-          <Turno autor="nexo" hora="21:40" atraso={0.1}>
-            <Escrevendo texto="Porque a vistoria da prefeitura confere o memorial contra a norma vigente, e a edição de 2020 substituiu a de 1998. Se o dimensionamento continua válido pela 2020, basta atualizar a citação no cap. 6; se mudou, o quadro de pressões também precisa ser revisto. No ACH-004, a Carla já registrou que o dimensionamento foi conferido pela 2020, então é só a citação." />
-          </Turno>
+          <DeVoce texto="por que a NBR 5626 de 1998 é problema se o dimensionamento está certo?" />
+          <DoNexo atraso={0.1}>
+            <Passo texto="Consultando o parecer da revisão A" emCurso />
+            <Escrevendo texto="Porque a vistoria da prefeitura confere o memorial contra a norma vigente, e a edição de 2020 substituiu a de 1998. Se o dimensionamento continua válido pela 2020, basta atualizar a citação no capítulo 6. No ACH-004, a Carla já registrou que conferiu pela 2020, então é só a citação." />
+          </DoNexo>
         </>
       );
     case "erro-resposta":
       return (
         <>
-          <Turno autor="voce" hora="21:44">
-            <p className="cv-texto">resume os bloqueios em duas linhas pra mandar pro cliente</p>
-          </Turno>
-          <Turno autor="nexo" hora="21:44" atraso={0.1}>
-            <ErroDeResposta />
-          </Turno>
+          <DeVoce texto="resume os bloqueios em duas linhas pra mandar pro cliente" />
+          <DoNexo atraso={0.1}>
+            <p className="cx-erro">
+              A resposta não chegou: o modelo não respondeu a tempo. Nada foi gerado nem gasto.
+              <button type="button" className="cx-erro-botao">
+                <RotateCcw size={13} /> Tentar de novo
+              </button>
+            </p>
+          </DoNexo>
         </>
       );
+    default:
+      return null;
   }
 }
 
 /**
- * A CONVERSA COM O NEXO. A mesma estrutura do Resultado: o conteúdo à
- * esquerda, a coluna fixa à direita com o que existe nesta conversa (arquivos,
- * o que já foi gerado, as ações). O campo de escrever fica no pé da conversa;
- * enquanto o Nexo responde, o botão de enviar vira Parar.
+ * A CONVERSA COM O NEXO. Uma coluna só, centrada, sem nada disputando: o que
+ * você manda é um bloco suave à direita; o que o Nexo responde é texto limpo,
+ * com o que ele fez numa linha de estado e as saídas empilhadas embaixo, cada
+ * uma com a sua tecla. As decisões moram na frase ("capa da prefeitura de
+ * [Criciúma]"), não num formulário. O que ele gera aparece como peça, ali.
  */
 export function TelaConversa({ situacao }: { situacao: SituacaoConversa }) {
-  const { dur } = useTempo();
-  const [texto, setTexto] = useState(situacao === "erro-resposta" ? "resume os bloqueios em duas linhas pra mandar pro cliente" : "");
-  const respondendo = situacao === "respondendo";
-  const gerados = situacao === "alteracao-pendente";
-  const arquivos =
-    situacao === "confirmar-auditoria" || situacao === "respondendo" || situacao === "erro-resposta"
-      ? [{ nome: "117_25_md_geral_a.pdf", tipo: "memorial" }]
-      : situacao === "escolher-projeto"
-        ? [{ nome: "118_25_md_geral_a.pdf", tipo: "memorial" }]
-        : PRANCHAS.map((p) => ({ nome: p.nome, tipo: p.tipo }));
+  const nova = situacao === "nova" || situacao === "anexando";
+  const titulo =
+    situacao === "nova" || situacao === "anexando"
+      ? "Conversa nova"
+      : situacao === "respondendo" || situacao === "erro-resposta"
+        ? "Perguntas sobre a auditoria"
+        : situacao === "confirmar-auditoria" || situacao === "escolher-projeto"
+          ? "Auditar o memorial"
+          : "LD, capa e separatrizes";
+  const campo = (
+    <Campo
+      arquivos={situacao === "anexando" ? [{ nome: "117_25_md_geral_a.pdf", paginas: 42 }, { nome: "117_25_ARQ_rev-B.pdf", paginas: 12, lendo: true }] : undefined}
+      respondendo={situacao === "respondendo"}
+      texto={situacao === "erro-resposta" ? "resume os bloqueios em duas linhas pra mandar pro cliente" : situacao === "anexando" ? "audita o memorial e confere as pranchas de arquitetura" : ""}
+      modo={nova}
+    />
+  );
 
   return (
-    <div className="rs rd re cv">
+    <div className="cx">
       <Topo atual="Painel" />
-      <div className="re-titulo">
-        <header className="re-cabeca">
-          <div className="rs-obra">
-            <MarcaDaPrefeitura prefeitura="Criciúma" forma="sinal" />
-            <span className="ds-code">{situacao === "escolher-projeto" ? "sem projeto" : "117-25"}</span>
-            <span>{situacao === "escolher-projeto" ? "a obra lida ainda não tem projeto" : "UBS da Rua São Francisco de Assis"}</span>
-          </div>
-          <h1>{situacao === "respondendo" || situacao === "erro-resposta" ? "Perguntas sobre a auditoria" : situacao === "confirmar-auditoria" || situacao === "escolher-projeto" ? "Auditar o memorial" : "LD, capa e separatrizes"}</h1>
-        </header>
-      </div>
+      <header className="cx-cabeca">
+        <span className="cx-cabeca-obra">
+          <MarcaDaPrefeitura prefeitura="Criciúma" forma="sinal" />
+          <span className="cx-mono">{situacao === "escolher-projeto" ? "sem projeto" : "117-25"}</span>
+        </span>
+        <span className="cx-cabeca-titulo">{titulo}</span>
+        <Botao variante="quiet" tamanho="sm" className="cx-nova">
+          <MessageSquarePlus /> Nova conversa <Tecla>N</Tecla>
+        </Botao>
+      </header>
 
-      <div className="re-corpo">
-        <main className="re-principal cv-principal">
-          <div className="cv-turnos">
-            <Turnos situacao={situacao} />
-          </div>
-
-          {situacao === "respostas-rapidas" && <RespostasRapidas />}
-
-          {/* o campo de escrever: anexar, o texto, e enviar (ou parar) */}
-          <form className="cv-campo" onSubmit={(e) => e.preventDefault()}>
-            <button type="button" className="cv-anexar" aria-label="Anexar PDFs" title="Anexar PDFs (ou solte na tela)">
-              <Paperclip size={16} />
-            </button>
-            <textarea rows={1} value={texto} onChange={(e) => setTexto(e.target.value)} placeholder={respondendo ? "O Nexo está respondendo…" : "Peça, pergunte ou solte os PDFs aqui"} />
-            <AnimatePresence mode="wait" initial={false}>
-              {respondendo ? (
-                <motion.button key="parar" type="button" className="cv-enviar cv-enviar--parar" aria-label="Parar" initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.8, opacity: 0 }} transition={{ duration: dur("feedback") }}>
-                  <Square size={12} fill="currentColor" />
-                </motion.button>
-              ) : (
-                <motion.button key="enviar" type="submit" className="cv-enviar" aria-label="Enviar (Enter)" disabled={!texto.trim()} initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.8, opacity: 0 }} transition={{ duration: dur("feedback") }}>
-                  <ArrowUp size={16} />
-                </motion.button>
-              )}
-            </AnimatePresence>
-          </form>
-          <p className="cv-dica">
-            <Tecla>↵</Tecla> envia, <Tecla>Shift</Tecla> <Tecla>↵</Tecla> quebra a linha. O Nexo não gera nada sem você confirmar.
-          </p>
+      {nova ? (
+        <main className="cx-fio cx-fio--vazio">
+          <Vazio campo={campo} />
         </main>
-
-        {/* ================= a coluna: o que existe nesta conversa ================= */}
-        <aside className="re-trilho cv-trilho" aria-label="Nesta conversa">
-          <section className="cv-bloco">
-            <h3>Arquivos</h3>
-            <ul className="cv-lista">
-              {arquivos.map((a) => (
-                <li key={a.nome}>
-                  <FileText size={13} />
-                  <span className="cv-mono">{a.nome}</span>
-                  <small>{a.tipo}</small>
-                </li>
-              ))}
-            </ul>
-          </section>
-          <section className="cv-bloco">
-            <h3>Gerados</h3>
-            {gerados ? (
-              <ul className="cv-lista">
-                {["Lista de documentos", "Capa", "Separatrizes, 4"].map((g) => (
-                  <li key={g}>
-                    <Check size={13} className="cv-ok" />
-                    <span>{g}</span>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="rs-nota">Nada ainda. O que o Nexo gerar aparece aqui.</p>
-            )}
-          </section>
-          <section className="re-acoes">
-            <button type="button" className="re-acao" disabled={!gerados}>
-              <Download />
-              <span>
-                Baixar os editáveis<small>ZIP com os .docx e .xlsx</small>
-              </span>
-            </button>
-            <button type="button" className="re-acao" disabled={!gerados}>
-              <ShieldCheck />
-              <span>
-                Conferir o selo<small>o carimbo de cada folha</small>
-              </span>
-            </button>
-            <button type="button" className="re-acao re-acao--discreta">
-              <MessageSquarePlus />
-              Nova conversa
-            </button>
-          </section>
-        </aside>
-      </div>
+      ) : (
+        <>
+          <main className="cx-fio">
+            <Fio situacao={situacao} />
+          </main>
+          <div className="cx-rodape">{campo}</div>
+        </>
+      )}
     </div>
   );
 }
