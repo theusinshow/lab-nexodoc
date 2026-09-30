@@ -1,10 +1,11 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
-import { AlertTriangle, Check, FileSearch, FileText, RotateCcw, X } from "lucide-react";
+import { AlertTriangle, FileSearch, FileText, RotateCcw, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { Botao, Esqueleto, Orbe, Selo } from "@/components/ds/basicos";
+import { LinhaDoTempo, MapaDasPaginas, type PassoDaLinha } from "@/components/ds/graficos";
 import { CURVA } from "@/lib/ds/movimento";
 import { useTempo } from "@/lib/ds/tempo";
 import { MarcaDaPrefeitura } from "@/modules/nexo/components/MarcaDaPrefeitura";
@@ -15,109 +16,105 @@ import "./auditoria.css";
 export type SituacaoAud = "enviando" | "em-curso" | "passou" | "retomada" | "cancelando" | "falhou" | "concluida";
 
 /**
- * As etapas do motor, com os NOMES e as DESCRIÇÕES que o código usa hoje
- * (lib/audit-progress.ts e AuditoriaEmCurso.tsx). "confronto" fica de fora
- * porque há um arquivo só — o motor não a anuncia, e a tela não promete
- * trabalho que não vai acontecer.
+ * As etapas do motor com os nomes de hoje (lib/audit-progress.ts). O rótulo
+ * curto vai no gráfico; o que cada uma faz e o que apurou vão no registro.
+ * "confronto" fica de fora: com um arquivo só o motor não a anuncia.
  */
 const ETAPAS = [
-  { id: "extracao", nome: "Abrindo o memorial", detalhe: "Extrai o texto de todas as páginas do PDF.", previsto: 15, feito: "42 páginas com texto, nenhuma só com desenho" },
-  { id: "regras", nome: "Conferindo identidade e coerência", detalhe: "Regras determinísticas, sem IA: obra divergente, contradição entre capítulos.", previsto: 20, feito: "obra, município e código batem com o projeto" },
-  { id: "global", nome: "Lendo o documento", detalhe: "Uma leitura da IA sobre o documento: é a etapa mais longa.", previsto: 110, feito: "leitura completa, 11 pontos marcados" },
-  { id: "blocos", nome: "Lendo capítulo a capítulo", detalhe: "Blocos por capítulo, para alcançar o que a leitura única não cobriu.", previsto: 70, feito: "12 blocos, 4 pontos novos" },
-  { id: "evidencia", nome: "Conferindo as evidências no texto", detalhe: "Descarta achado que não se ancora em trecho real do documento.", previsto: 25, feito: "15 pontos, 13 com trecho real, 2 descartados" },
-  { id: "validacao", nome: "Revisando cada achado com um segundo modelo", detalhe: "Segunda passada: rebaixa o incerto em vez de apagá-lo.", previsto: 40, feito: "13 achados, 2 rebaixados" },
-  { id: "parecer", nome: "Fechando o parecer", detalhe: "Ordena por impacto e fecha o veredito de emissão.", previsto: 10, feito: "não emitir: 2 bloqueios" },
+  { id: "extracao", rotulo: "Abrindo o memorial", previsto: 15, real: 12, fazendo: "Extraindo o texto de todas as páginas" },
+  { id: "regras", rotulo: "Identidade e coerência", previsto: 20, real: 19, fazendo: "Conferindo obra, município e código" },
+  { id: "global", rotulo: "Lendo o documento", previsto: 110, real: 98, fazendo: "Leitura da IA sobre o documento inteiro" },
+  { id: "blocos", rotulo: "Capítulo a capítulo", previsto: 70, real: 64, fazendo: "Bloco 10 de 12: cap. 10, Cobertura" },
+  { id: "evidencia", rotulo: "Evidências no texto", previsto: 25, real: 22, fazendo: "Conferindo cada ponto contra o trecho" },
+  { id: "validacao", rotulo: "Segundo modelo", previsto: 40, real: 37, fazendo: "Revisando cada achado com um segundo modelo" },
+  { id: "parecer", rotulo: "Fechando o parecer", previsto: 10, real: 9, fazendo: "Ordenando por impacto" },
 ] as const;
 
-/** O registro: o que o Nexo foi apurando, com a hora em que apurou. */
+/** Pontos marcados por página (42 páginas) — onde os problemas se juntam. */
+const PONTOS = [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 2, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 2, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+
 const REGISTRO = [
   { h: "21:08:02", t: "Arquivo recebido: 117_25_md_geral_a.pdf, 3,1 MB" },
-  { h: "21:08:14", t: "42 páginas com texto; nenhuma página só com desenho" },
+  { h: "21:08:14", t: "42 páginas com texto; nenhuma só com desenho" },
   { h: "21:08:21", t: "Capa e carimbo: obra 117-25, Criciúma, revisão A" },
   { h: "21:08:33", t: "Regras locais: 38 aplicadas, 2 não se aplicam a UBS" },
-  { h: "21:10:24", t: "Leitura global concluída: 11 pontos marcados" },
-  { h: "21:10:31", t: "Bloco 1/12: cap. 1, Disposições gerais" },
-  { h: "21:10:40", t: "Bloco 3/12: cap. 3, Fundações. 1 ponto novo" },
-  { h: "21:10:52", t: "Bloco 5/12: cap. 5, Alvenarias" },
-  { h: "21:11:03", t: "Bloco 7/12: cap. 7, Instalações hidrossanitárias" },
-  { h: "21:11:11", t: "Bloco 8/12: cap. 8, Instalações elétricas. 1 ponto novo" },
-  { h: "21:11:20", t: "Bloco 9/12: cap. 9, Quadro de quantitativos" },
-  { h: "21:11:29", t: "Bloco 10/12: cap. 10, Cobertura" },
+  { h: "21:10:24", t: "Leitura global: 8 pontos marcados" },
+  { h: "21:10:40", t: "Bloco 3/12, Fundações: 1 ponto novo (p. 14)" },
+  { h: "21:11:03", t: "Bloco 7/12, Instalações hidrossanitárias" },
+  { h: "21:11:11", t: "Bloco 8/12, Instalações elétricas: 1 ponto novo" },
+  { h: "21:11:20", t: "Bloco 9/12, Quadro de quantitativos (p. 31)" },
+  { h: "21:11:29", t: "Bloco 10/12, Cobertura" },
 ];
 
+const ease = (c: readonly number[]) => [...c] as [number, number, number, number];
 function mmss(s: number) {
   return `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 }
 
-const ease = (c: readonly number[]) => [...c] as [number, number, number, number];
-
 /**
- * AUDITORIA RODANDO — técnica, como o resto. As etapas reais numa tabela
- * (estado, tempo gasto, tempo previsto) e, ao lado, o REGISTRO do que o Nexo
- * vai apurando. A única coisa que se mexe é o que está trabalhando: a etapa
- * atual pulsa, a barra anda, o registro recebe linha nova.
+ * AUDITORIA RODANDO, v2 — no idioma dos gráficos da Matos UI. A LINHA DO
+ * TEMPO mostra as etapas como pílulas no eixo do tempo (o que falta aparece
+ * tracejado onde deve cair, e um marcador diz "agora"); o MAPA DAS PÁGINAS
+ * mostra onde os pontos se concentram enquanto a leitura anda.
  */
 export function TelaAuditoria({ situacao }: { situacao: SituacaoAud }) {
   const { dur, k } = useTempo();
-  const atualInicial = situacao === "concluida" ? ETAPAS.length : situacao === "enviando" || situacao === "retomada" ? -1 : 3;
-  const [atual, setAtual] = useState(atualInicial);
-  const [decorrido, setDecorrido] = useState(situacao === "passou" ? 247 : situacao === "concluida" ? 312 : situacao === "enviando" ? 2 : 161);
+  const concluida0 = situacao === "concluida";
+  const atual = concluida0 ? ETAPAS.length : situacao === "enviando" || situacao === "retomada" ? -1 : 3;
   const [naEtapa, setNaEtapa] = useState(situacao === "passou" ? 101 : 34);
-  const [linhas, setLinhas] = useState(situacao === "enviando" || situacao === "retomada" ? 0 : situacao === "concluida" ? REGISTRO.length : 9);
+  const [linhas, setLinhas] = useState(situacao === "enviando" || situacao === "retomada" ? 0 : concluida0 ? REGISTRO.length : 8);
+  const [lidas, setLidas] = useState(concluida0 ? 42 : situacao === "enviando" || situacao === "retomada" ? 0 : 33);
   const [confirmar, setConfirmar] = useState(situacao === "cancelando");
   const [aviso, setAviso] = useState(true);
-  const [envio, setEnvio] = useState(situacao === "enviando" ? 18 : 100);
   const falhou = situacao === "falhou";
   const concluida = atual >= ETAPAS.length;
   const rodando = !concluida && !falhou && situacao !== "retomada";
   const registroRef = useRef<HTMLOListElement>(null);
 
-  // O relógio e a etapa atual andam enquanto roda.
-  useEffect(() => {
-    if (!rodando || confirmar) return;
-    const id = setInterval(() => {
-      setDecorrido((d) => d + 1);
-      setNaEtapa((n) => n + 1);
-    }, 1000 * k);
-    return () => clearInterval(id);
-  }, [rodando, confirmar, k]);
-  // O registro recebe linha nova de tempos em tempos.
   useEffect(() => {
     if (!rodando || confirmar || situacao === "enviando") return;
-    const id = setInterval(() => setLinhas((n) => (n < REGISTRO.length ? n + 1 : n)), 2600 * k);
-    return () => clearInterval(id);
+    const id = setInterval(() => setNaEtapa((n) => n + 1), 1000 * k);
+    const id2 = setInterval(() => setLinhas((n) => Math.min(REGISTRO.length, n + 1)), 3000 * k);
+    const id3 = setInterval(() => setLidas((n) => (n < 39 ? n + 1 : n)), 2200 * k);
+    return () => {
+      clearInterval(id);
+      clearInterval(id2);
+      clearInterval(id3);
+    };
   }, [rodando, confirmar, situacao, k]);
   useEffect(() => {
     registroRef.current?.scrollTo({ top: registroRef.current.scrollHeight, behavior: "smooth" });
   }, [linhas]);
-  // Enviando: a barra de envio enche e a auditoria começa.
-  useEffect(() => {
-    if (situacao !== "enviando") return;
-    const id = setInterval(() => {
-      setEnvio((e) => {
-        if (e >= 100) {
-          clearInterval(id);
-          setAtual(0);
-          setLinhas(1);
-          return 100;
-        }
-        return e + 9;
-      });
-    }, 240 * k);
-    return () => clearInterval(id);
-  }, [situacao, k]);
 
-  const feitas = Math.max(0, Math.min(atual, ETAPAS.length));
-  const pct = concluida ? 100 : Math.round(((feitas + (atual >= 0 ? 0.55 : 0)) / ETAPAS.length) * 100);
+  // Monta as pílulas: feitas com o tempo real, a atual com o decorrido, as que
+  // faltam com o previsto, cada uma começando onde a anterior terminou.
+  let t = 0;
+  const passos: PassoDaLinha[] = ETAPAS.map((e, i) => {
+    const inicio = t;
+    let estado: PassoDaLinha["estado"] = "futuro";
+    let duracao = 0;
+    if (i < atual || concluida) {
+      estado = "feito";
+      duracao = e.real;
+    } else if (i === atual) {
+      estado = falhou ? "erro" : "atual";
+      duracao = naEtapa;
+    }
+    t = inicio + (estado === "futuro" ? e.previsto : estado === "atual" ? Math.max(naEtapa, e.previsto) : duracao);
+    return { id: e.id, rotulo: e.rotulo, inicio, duracao, previsto: e.previsto, estado };
+  });
+  const total = Math.max(330, t);
+  const agora = rodando && atual >= 0 ? passos[atual].inicio + naEtapa : situacao === "enviando" ? 2 : null;
+  const decorrido = concluida ? passos.reduce((s, p) => s + p.duracao, 0) : falhou ? passos[atual].inicio + naEtapa : agora ?? 0;
+  const restante = Math.max(0, t - decorrido);
   const passou = situacao === "passou";
+  const blocoPaginas = [lidas + 1, lidas + 2].filter((n) => n <= 42);
 
   return (
     <div className="au">
       <Topo atual="Painel" trabalhando={rodando} />
 
       <div className="au-corpo">
-        {/* ---------- cabeçalho ---------- */}
         <header className="au-cabeca">
           <div className="au-obra">
             <MarcaDaPrefeitura prefeitura="Criciúma" forma="sinal" />
@@ -125,9 +122,18 @@ export function TelaAuditoria({ situacao }: { situacao: SituacaoAud }) {
             <span>UBS da Rua São Francisco de Assis</span>
           </div>
           <div className="au-titulo">
-            <h1>{concluida ? "Auditoria concluída" : falhou ? "A auditoria parou" : situacao === "enviando" && envio < 100 ? "Enviando o memorial" : "Auditoria em curso"}</h1>
+            <h1>{concluida ? "Auditoria concluída" : falhou ? "A auditoria parou" : situacao === "enviando" ? "Enviando o memorial" : "Auditoria em curso"}</h1>
             <div className="au-titulo-dir">
-              <span className="au-relogio ds-num">{mmss(decorrido)}</span>
+              <span className="au-metrica">
+                <small>{concluida ? "levou" : "decorrido"}</small>
+                <b className="ds-num">{mmss(decorrido)}</b>
+              </span>
+              {rodando && (
+                <span className="au-metrica">
+                  <small>restante</small>
+                  <b className={`ds-num${passou ? " au-ambar" : ""}`}>~{mmss(restante)}</b>
+                </span>
+              )}
               {rodando && !confirmar && (
                 <Botao variante="ghost" tamanho="sm" onClick={() => setConfirmar(true)}>
                   <X />
@@ -141,7 +147,6 @@ export function TelaAuditoria({ situacao }: { situacao: SituacaoAud }) {
           </p>
         </header>
 
-        {/* ---------- cancelar: confirmação no lugar ---------- */}
         <AnimatePresence initial={false}>
           {confirmar && (
             <motion.div
@@ -169,52 +174,25 @@ export function TelaAuditoria({ situacao }: { situacao: SituacaoAud }) {
           )}
         </AnimatePresence>
 
-        {/* ---------- progresso ---------- */}
-        <div className="au-progresso">
-          <div className="au-barra">
-            <motion.i
-              className={concluida ? "au-barra--ok" : falhou ? "au-barra--erro" : ""}
-              animate={{ width: `${situacao === "enviando" && envio < 100 ? envio * 0.08 : pct}%` }}
-              transition={{ duration: dur("layout") * 2, ease: ease(CURVA.out) }}
-            />
-          </div>
-          <div className="au-progresso-texto ds-num">
-            <span>
-              {situacao === "enviando" && envio < 100
-                ? `Enviando, ${Math.min(envio, 100)}%`
-                : situacao === "retomada"
-                  ? "Rodando no servidor"
-                  : concluida
-                    ? `${ETAPAS.length} de ${ETAPAS.length} etapas`
-                    : `Etapa ${Math.max(1, feitas + 1)} de ${ETAPAS.length}`}
-            </span>
-            <span>{concluida ? "Parecer pronto" : falhou ? "Parou na etapa 4" : situacao === "retomada" ? "" : passou ? "A etapa atual passou do previsto" : "Cerca de 3 min restantes"}</span>
-          </div>
-        </div>
-
-        {/* ---------- concluída: o resultado em uma linha ---------- */}
-        <AnimatePresence initial={false}>
-          {concluida && (
-            <motion.div className="au-pronto" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: dur("enter"), ease: ease(CURVA.out) }}>
-              <div className="au-pronto-veredito">
-                <Selo tom="block" ponto>
-                  Não emitir ainda
-                </Selo>
-                <span className="ds-num">2 bloqueios, 3 decisões técnicas, 4 de revisão de texto</span>
-              </div>
-              <div className="au-pronto-acoes">
-                <Botao variante="ghost" tamanho="sm">
-                  Exportar parecer em PDF
-                </Botao>
-                <Botao variante="primary">
-                  <FileSearch />
-                  Abrir o parecer
-                </Botao>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
+        {concluida && (
+          <motion.div className="au-pronto" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: dur("enter"), ease: ease(CURVA.out) }}>
+            <div className="au-pronto-veredito">
+              <Selo tom="block" ponto>
+                Não emitir ainda
+              </Selo>
+              <span className="ds-num">2 bloqueios, 3 decisões técnicas, 4 de revisão de texto</span>
+            </div>
+            <div className="au-pronto-acoes">
+              <Botao variante="ghost" tamanho="sm">
+                Exportar parecer em PDF
+              </Botao>
+              <Botao variante="primary">
+                <FileSearch />
+                Abrir o parecer
+              </Botao>
+            </div>
+          </motion.div>
+        )}
         {falhou && (
           <div className="au-falha" role="alert">
             <div>
@@ -231,85 +209,61 @@ export function TelaAuditoria({ situacao }: { situacao: SituacaoAud }) {
           </div>
         )}
 
+        {/* ---------- a linha do tempo ---------- */}
+        <section className="au-bloco au-bloco--linha">
+          <div className="au-bloco-cabeca">
+            <h2>Linha do tempo</h2>
+            <span className="au-legenda">
+              <i className="au-leg au-leg--feito" /> feito
+              <i className="au-leg au-leg--lento" /> mais lento
+              {rodando && (
+                <>
+                  <i className="au-leg au-leg--agora" /> agora
+                </>
+              )}
+              {!concluida && (
+                <>
+                  <i className="au-leg au-leg--futuro" /> previsto
+                </>
+              )}
+            </span>
+          </div>
+          {situacao === "retomada" ? (
+            <div className="au-retomada">
+              <p>Esta análise já estava rodando no servidor. O resultado aparece aqui quando ela terminar.</p>
+              <span className="au-nota">A linha do tempo desta sessão não volta depois de recarregar a página; a auditoria segue igual.</span>
+              <Esqueleto largura="100%" altura={18} raio={999} />
+              <Esqueleto largura="70%" altura={18} raio={999} />
+            </div>
+          ) : (
+            <LinhaDoTempo passos={passos} agora={agora} total={total} />
+          )}
+          {rodando && atual >= 0 && (
+            <div className="au-fazendo">
+              <Orbe tamanho={13} estado="trabalhando" />
+              <span className="au-brilho">{(ETAPAS as readonly { fazendo: string }[])[atual]?.fazendo}</span>
+              {passou && <Selo tom="decide">passou do previsto</Selo>}
+            </div>
+          )}
+        </section>
+
         <div className="au-grade">
-          {/* ---------- etapas ---------- */}
+          {/* ---------- o mapa das páginas ---------- */}
           <section className="au-bloco">
-            <h2>Etapas</h2>
-            {situacao === "retomada" ? (
-              <div className="au-retomada">
-                <p>Esta análise já estava rodando no servidor. O resultado aparece aqui quando ela terminar.</p>
-                <span className="au-nota">As etapas desta sessão não voltam depois de recarregar a página; a auditoria segue igual.</span>
-                {[0, 1, 2].map((i) => (
-                  <Esqueleto key={i} largura={[280, 240, 300][i]} altura={11} />
-                ))}
-              </div>
-            ) : (
-              <table className="au-etapas">
-                <thead>
-                  <tr>
-                    <th aria-label="Estado" />
-                    <th>Etapa</th>
-                    <th className="au-dir">Tempo</th>
-                    <th className="au-dir">Previsto</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {ETAPAS.map((e, i) => {
-                    const feita = i < feitas;
-                    const agora = i === atual && !concluida;
-                    const erro = falhou && i === 3;
-                    const tempo = feita ? [12, 19, 98, 64, 22, 37, 9][i] : agora ? naEtapa : null;
-                    return (
-                      <tr key={e.id} className={feita ? "au-feita" : agora ? (erro ? "au-erro" : "au-agora") : "au-futura"}>
-                        <td className="au-marca">
-                          {feita ? (
-                            <span className="au-m au-m--feita">
-                              <Check size={11} strokeWidth={3} />
-                            </span>
-                          ) : agora && erro ? (
-                            <span className="au-m au-m--erro">
-                              <X size={11} strokeWidth={3} />
-                            </span>
-                          ) : agora ? (
-                            <span className="au-m au-m--agora">
-                              <i />
-                            </span>
-                          ) : (
-                            <span className="au-m" />
-                          )}
-                        </td>
-                        <td>
-                          <span className="au-nome">
-                            {e.nome}
-                            {agora && passou && <Selo tom="decide">passou do previsto</Selo>}
-                          </span>
-                          {(agora || feita) && (
-                            <span className="au-detalhe">
-                              {feita ? e.feito : erro ? "O modelo não respondeu após três tentativas." : agora ? `${e.detalhe}${e.id === "blocos" ? " Bloco 10 de 12." : ""}` : ""}
-                            </span>
-                          )}
-                          {agora && !erro && e.id === "blocos" && (
-                            <span className="au-sub">
-                              <motion.i animate={{ width: `${(10 / 12) * 100}%` }} transition={{ duration: dur("layout") }} />
-                            </span>
-                          )}
-                        </td>
-                        <td className={`au-dir au-tempo${agora && passou ? " au-tempo--passou" : ""}`}>{tempo !== null ? mmss(tempo) : ""}</td>
-                        <td className="au-dir au-previsto">{mmss(e.previsto)}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            )}
+            <div className="au-bloco-cabeca">
+              <h2>Páginas do memorial</h2>
+              <span className="au-nota ds-num">
+                {lidas} de 42 lidas, {PONTOS.slice(0, lidas).reduce((a, b) => a + b, 0)} pontos
+              </span>
+            </div>
+            <MapaDasPaginas paginas={PONTOS} lidas={lidas} atuais={rodando && atual === 3 ? blocoPaginas : []} />
           </section>
 
-          {/* ---------- registro ---------- */}
-          <aside className="au-bloco au-registro">
-            <h2>
-              Registro
-              {rodando && situacao !== "enviando" && <Orbe tamanho={11} estado="trabalhando" />}
-            </h2>
+          {/* ---------- o registro ---------- */}
+          <section className="au-bloco au-registro">
+            <div className="au-bloco-cabeca">
+              <h2>Registro</h2>
+            </div>
             {linhas === 0 ? (
               <p className="au-nota" style={{ padding: "0 12px" }}>
                 {situacao === "retomada" ? "O registro desta sessão se perdeu ao recarregar." : "Enviando o documento para análise…"}
@@ -318,12 +272,7 @@ export function TelaAuditoria({ situacao }: { situacao: SituacaoAud }) {
               <ol ref={registroRef}>
                 <AnimatePresence initial={false}>
                   {REGISTRO.slice(0, linhas).map((l) => (
-                    <motion.li
-                      key={l.h}
-                      initial={{ opacity: 0, y: 6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: dur("enter"), ease: ease(CURVA.out) }}
-                    >
+                    <motion.li key={l.h} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: dur("enter"), ease: ease(CURVA.out) }}>
                       <time>{l.h}</time>
                       <span>{l.t}</span>
                     </motion.li>
@@ -348,7 +297,7 @@ export function TelaAuditoria({ situacao }: { situacao: SituacaoAud }) {
                 </label>
               </div>
             )}
-          </aside>
+          </section>
         </div>
       </div>
     </div>

@@ -112,31 +112,3 @@
 .ds .au-chave { position: relative; width: 32px; height: 18px; flex: none; padding: 0; border: 0; border-radius: 999px; background: var(--ds-surface-overlay); box-shadow: var(--ds-edge-strong); cursor: pointer; transition: background var(--ds-dur-state); }
 .ds .au-chave[aria-checked="true"] { background: var(--ds-nexo-strong); }
 .ds .au-chave span { position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: var(--ds-p-paper); }
-
-/* ---------- v2: linha do tempo + mapa das páginas ---------- */
-.ds .au-metrica { display: grid; justify-items: end; line-height: 1.1; margin-right: 6px; }
-.ds .au-metrica small { font-size: 11px; color: var(--ds-text-tertiary); }
-.ds .au-metrica b { font-family: var(--ds-font-mono); font-size: 16px; font-weight: 400; color: var(--ds-text-primary); }
-.ds .au-ambar { color: var(--ds-sev-decide) !important; }
-.ds .au-bloco--linha { padding: 6px 20px 16px 12px; margin-bottom: 12px; }
-.ds .au-bloco-cabeca { display: flex; align-items: center; gap: 10px; margin: 8px 6px 14px 12px; }
-.ds .au-bloco-cabeca h2 { margin: 0 !important; }
-.ds .au-bloco-cabeca .au-nota, .ds .au-legenda { margin-left: auto; }
-.ds .au-legenda { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--ds-text-tertiary); }
-.ds .au-leg { width: 18px; height: 8px; border-radius: 999px; margin-left: 8px; }
-.ds .au-leg--feito { background: #5b5f6b; }
-.ds .au-leg--lento { background: #c9ccd4; }
-.ds .au-leg--agora { background: var(--ds-nexo); }
-.ds .au-leg--futuro { box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.2); }
-.ds .au-fazendo { display: flex; align-items: center; gap: 10px; margin: 14px 0 0 264px; font-size: var(--ds-text-xs); }
-.ds .au-brilho {
-  background: linear-gradient(90deg, var(--ds-text-tertiary) 0%, var(--ds-text-primary) 40%, var(--ds-text-tertiary) 80%);
-  background-size: 200% 100%;
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  animation: ds-varrer 2.4s linear infinite;
-}
-.ds .au-grade { grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr) !important; }
-.ds .au-grade .au-bloco { padding: 6px 16px 14px; }
-.ds .au-grade .au-bloco-cabeca { margin-left: 2px; }

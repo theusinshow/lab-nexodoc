@@ -461,3 +461,105 @@
 .ds .ds-orbe[data-estado="trabalhando"],
 .ds .ds-orbe[data-estado="trabalhando"]::after { animation-duration: 4s; }
 @keyframes ds-girar { to { transform: rotate(360deg); } }
+
+/* =====================================================================
+ * GRÁFICOS (components/ds/graficos.tsx) — monocromáticos, no idioma da
+ * Matos UI: pílula sobre trilho texturizado, marcador fino, uma cor de
+ * destaque por vez.
+ * ===================================================================== */
+
+/* ---------- linha do tempo ---------- */
+.ds .gr-linha { position: relative; display: grid; gap: 6px; }
+.ds .gr-passo,
+.ds .gr-eixo,
+.ds .gr-agora-linha-wrap { display: grid; grid-template-columns: 250px minmax(0, 1fr) 64px; align-items: center; column-gap: 14px; }
+.ds .gr-passo { height: 30px; transition: opacity var(--ds-dur-state) var(--ds-ease-feedback); }
+.ds .gr-passo--fora { opacity: 0.45; }
+.ds .gr-passo-rotulo { font-size: var(--ds-text-xs); color: var(--ds-text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: right; }
+.ds .gr-passo--atual .gr-passo-rotulo, .ds .gr-passo--erro .gr-passo-rotulo { color: var(--ds-text-primary); }
+.ds .gr-passo--futuro .gr-passo-rotulo { color: var(--ds-text-tertiary); }
+.ds .gr-trilho {
+  position: relative;
+  height: 18px;
+  border-radius: 999px;
+  background:
+    repeating-linear-gradient(135deg, rgb(255 255 255 / 0.035) 0 2px, transparent 2px 7px),
+    rgb(255 255 255 / 0.03);
+}
+.ds .gr-pilula {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 18px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: #5b5f6b;
+  overflow: hidden;
+}
+.ds .gr-pilula-valor { font-family: var(--ds-font-mono); font-size: 10.5px; color: rgb(255 255 255 / 0.85); white-space: nowrap; }
+.ds .gr-pilula--lenta { background: #c9ccd4; }
+.ds .gr-pilula--lenta .gr-pilula-valor { color: var(--ds-text-on-paper); }
+.ds .gr-passo--atual .gr-pilula { background: var(--ds-nexo); }
+.ds .gr-passo--atual .gr-pilula .gr-pilula-valor { color: var(--ds-text-on-paper); }
+.ds .gr-passo--atual .gr-pilula::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.45), transparent);
+  transform: translateX(-100%);
+  animation: gr-correr 1.8s var(--ds-ease-out) infinite;
+}
+.ds .gr-pilula--passou { background: var(--ds-sev-decide) !important; }
+.ds .gr-passo--futuro .gr-pilula { background: none; box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.18); border: 0; background-image: repeating-linear-gradient(90deg, rgb(255 255 255 / 0.12) 0 4px, transparent 4px 8px); background-size: 100% 1px; background-repeat: no-repeat; background-position: 0 50%; }
+.ds .gr-passo--erro .gr-pilula { background: var(--ds-state-error); }
+.ds .gr-previsto { position: absolute; top: -2px; bottom: -2px; border-radius: 999px; box-shadow: inset 0 0 0 1px var(--ds-nexo-line); pointer-events: none; }
+@keyframes gr-correr { to { transform: translateX(100%); } }
+.ds .gr-passo-tempo { font-family: var(--ds-font-mono); font-size: 11.5px; color: var(--ds-text-secondary); text-align: right; font-variant-numeric: tabular-nums; }
+.ds .gr-passo--futuro .gr-passo-tempo { color: var(--ds-text-tertiary); }
+.ds .gr-passo--erro .gr-passo-tempo { color: var(--ds-state-error); }
+.ds .gr-eixo { height: 22px; }
+.ds .gr-eixo-marcas { position: relative; height: 100%; border-top: 1px solid var(--ds-line-subtle); }
+.ds .gr-eixo-marcas i { position: absolute; top: 5px; transform: translateX(-50%); font-style: normal; font-family: var(--ds-font-mono); font-size: 10.5px; color: var(--ds-text-tertiary); }
+.ds .gr-eixo-marcas i:first-child { transform: none; }
+.ds .gr-agora { position: absolute; top: 4px; transform: translateX(-50%); padding: 0 6px; border-radius: 999px; background: var(--ds-nexo); color: var(--ds-text-on-paper); font-size: 10.5px; font-weight: 600; line-height: 15px; }
+.ds .gr-agora-linha-wrap { position: absolute; inset: 0 0 22px 0; pointer-events: none; }
+.ds .gr-agora-trilho { position: relative; height: 100%; }
+.ds .gr-agora-trilho i { position: absolute; top: -4px; bottom: 0; width: 0; border-left: 1px dashed var(--ds-nexo-line); }
+
+/* ---------- mapa das páginas ---------- */
+.ds .gr-mapa { display: grid; gap: 12px; }
+.ds .gr-mapa-grade { display: grid; gap: 5px; }
+.ds .gr-pagina {
+  aspect-ratio: 1;
+  border-radius: 5px;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.08);
+  background: transparent;
+  transition: background var(--ds-dur-state);
+}
+.ds .gr-pagina--lida { box-shadow: none; background: rgb(255 255 255 / calc(0.06 + var(--tom))); }
+.ds .gr-pagina--atual { box-shadow: inset 0 0 0 1.5px var(--ds-nexo); background: var(--ds-nexo-wash); animation: gr-ler 1.4s ease-in-out infinite; }
+@keyframes gr-ler { 50% { background: rgb(163 166 255 / 0.28); } }
+.ds .gr-mapa-rodape { min-height: 18px; font-size: var(--ds-text-2xs); color: var(--ds-text-tertiary); }
+.ds .gr-mapa-rodape b { color: var(--ds-text-primary); font-weight: 500; }
+.ds .gr-mapa-escala { display: inline-flex; gap: 3px; margin-left: 6px; vertical-align: -1px; }
+.ds .gr-mapa-escala i { width: 10px; height: 10px; border-radius: 3px; }
+.ds .gr-mapa-escala i:nth-child(1) { background: rgb(255 255 255 / 0.06); }
+.ds .gr-mapa-escala i:nth-child(2) { background: rgb(255 255 255 / 0.3); }
+.ds .gr-mapa-escala i:nth-child(3) { background: rgb(255 255 255 / 0.55); }
+.ds .gr-mapa-escala i:nth-child(4) { background: rgb(255 255 255 / 0.85); }
+
+/* ---------- faixa de veredito ---------- */
+.ds .gr-faixa { padding: 26px 0 8px; }
+.ds .gr-faixa-trilho { position: relative; height: 10px; }
+.ds .gr-faixa-seg { position: absolute; top: 0; bottom: 0; border-radius: 999px; opacity: 0.35; transition: opacity var(--ds-dur-state); }
+.ds .gr-faixa-seg + .gr-faixa-seg { margin-left: 3px; }
+.ds .gr-faixa-seg--ok { background: var(--ds-state-ok); }
+.ds .gr-faixa-seg--decide { background: var(--ds-sev-decide); }
+.ds .gr-faixa-seg--block { background: var(--ds-sev-block); }
+.ds .gr-faixa-seg--ativa { opacity: 1; }
+.ds .gr-faixa-seg em { position: absolute; top: 16px; left: 0; font-style: normal; font-size: 11.5px; color: var(--ds-text-tertiary); white-space: nowrap; }
+.ds .gr-faixa-seg--ativa em { color: var(--ds-text-primary); }
+.ds .gr-losango { position: absolute; top: -9px; width: 12px; height: 12px; margin-left: -6px; transform: rotate(45deg); border-radius: 2px; background: var(--ds-p-paper); box-shadow: 0 0 0 3px var(--ds-surface-card); }
