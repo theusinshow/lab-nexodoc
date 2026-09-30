@@ -161,3 +161,73 @@
 @media (prefers-reduced-motion: reduce) {
   .ds .mp-g-esqueleto { animation: none; }
 }
+
+/* ================= o canvas ================= */
+.ds .mp-canvas { position: relative; height: 620px; background: rgb(0 0 0 / 0.12); }
+.ds .mp-canvas .react-flow { --xy-background-color: transparent; background: transparent; }
+.ds .mp-canvas .react-flow__pane { cursor: grab; }
+.ds .mp-canvas .react-flow__pane.dragging { cursor: grabbing; }
+.ds .mp-canvas .react-flow__node { cursor: default; }
+.ds .mp-canvas .react-flow__node-folha { cursor: pointer; }
+.ds .mp-alca { width: 1px !important; height: 1px !important; min-width: 0 !important; min-height: 0 !important; border: 0 !important; background: transparent !important; opacity: 0; }
+.ds .mp-seta path, .ds .mp-canvas .react-flow__edge-path { stroke: rgb(255 255 255 / 0.16); stroke-width: 1; }
+
+/* o nó: superfície do painel, um degrau acima; a folha tem o fio da disciplina */
+.ds .mp-no { position: relative; box-sizing: border-box; height: 108px; border-radius: 8px; background: var(--ds-surface-raised); box-shadow: var(--ds-edge); overflow: hidden; transition: box-shadow 0.3s, opacity 0.35s, background 0.25s; }
+.ds .mp-no--folha { width: 140px; }
+.ds .mp-no--folha:hover { background: rgb(from var(--ds-surface-raised) calc(r + 6) calc(g + 6) calc(b + 7)); }
+.ds .mp-no-fio { position: absolute; left: 0; right: 0; top: 0; height: 2px; background: var(--dc-cor); opacity: 0.85; }
+.ds .mp-no-corpo { display: flex; flex-direction: column; gap: 6px; height: 100%; padding: 11px 11px 10px 12px; }
+.ds .mp-no-linha { display: flex; align-items: center; gap: 6px; }
+.ds .mp-no-num { font-family: var(--ds-font-mono); font-size: 12px; color: var(--ds-text-secondary); font-variant-numeric: tabular-nums; }
+.ds .mp-no-num small { font-size: 10px; color: var(--ds-text-tertiary); }
+.ds .mp-no-sigla { font-family: var(--ds-font-mono); font-size: 10.5px; letter-spacing: 0.04em; color: var(--ds-text-tertiary); }
+.ds .mp-no-marca { flex: none; width: 6px; height: 6px; margin-left: auto; border-radius: 50%; }
+.ds .mp-no-marca.mp-tom--critico { background: var(--ds-sev-block); }
+.ds .mp-no-marca.mp-tom--aviso { background: var(--ds-sev-decide); }
+.ds .mp-no-marca.mp-tom--neutro { box-shadow: inset 0 0 0 1.2px var(--ds-text-secondary); }
+.ds .mp-no-marca.mp-tom--mao { border-radius: 1.5px; background: var(--ds-text-secondary); }
+.ds .mp-no-titulo { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; margin: 0; font-size: 12px; line-height: 1.3; letter-spacing: 0.01em; color: var(--ds-text-primary); }
+.ds .mp-no-carimbo { margin: auto 0 0; font-family: var(--ds-font-mono); font-size: 10.5px; color: var(--ds-text-tertiary); }
+/* de longe: só o padrão, o número grande e a marca */
+.ds .mp-no--longe .mp-no-corpo { justify-content: center; align-items: center; }
+.ds .mp-no--longe .mp-no-num { font-size: 40px; letter-spacing: -0.03em; color: var(--ds-text-secondary); }
+.ds .mp-no--longe .mp-no-num small { display: none; }
+.ds .mp-no--longe .mp-no-marca { position: absolute; top: 12px; right: 12px; width: 16px; height: 16px; }
+.ds .mp-no--longe .mp-no-doc-nome { font-size: 22px; }
+.ds .mp-no--longe .mp-no-estado { font-size: 18px; }
+.ds .mp-no--sel { box-shadow: 0 0 0 1.5px var(--ds-text-primary), 0 12px 30px rgb(0 0 0 / 0.45); }
+.ds .mp-no--apagado { opacity: 0.18; }
+.ds .mp-no--lendo { background: rgb(255 255 255 / 0.025); box-shadow: inset 0 0 0 1px var(--ds-line-subtle); }
+.ds .mp-no--lendo .mp-no-fio { opacity: 0.2; }
+
+/* documentos: mesma altura das folhas, sem fio; "a gerar" é tracejado */
+.ds .mp-no--doc { width: 180px; }
+.ds .mp-no-doc-nome { margin: 0; font-size: 13.5px; color: var(--ds-text-primary); }
+.ds .mp-no-doc-detalhe { margin: 0; font-size: 12px; color: var(--ds-text-tertiary); }
+.ds .mp-no-estado { margin: auto 0 0; font-size: 12px; color: var(--ds-text-tertiary); }
+.ds .mp-no--a-gerar { background: transparent; box-shadow: none; outline: 1px dashed rgb(255 255 255 / 0.22); outline-offset: -1px; }
+.ds .mp-no--a-gerar .mp-no-doc-nome { color: var(--ds-text-secondary); }
+.ds .mp-no--gerado .mp-no-estado--gerado { color: var(--ds-text-tertiary); }
+.ds .mp-no--corrigido, .ds .mp-no--desatualizado, .ds .mp-no--sobra { box-shadow: inset 0 0 0 1px rgb(from var(--ds-sev-decide) r g b / 0.55); }
+.ds .mp-no-estado--corrigido, .ds .mp-no-estado--desatualizado, .ds .mp-no-estado--sobra { color: var(--ds-sev-decide) !important; }
+.ds .mp-no--volume.mp-no--gerado { background: var(--ds-surface-card); }
+
+/* rótulo da fileira e da disciplina: texto solto no canvas, sem caixa */
+.ds .mp-no-rotulo { width: 132px; }
+.ds .mp-no-rotulo p { margin: 0; font-size: 17px; color: var(--ds-text-primary); letter-spacing: -0.01em; }
+.ds .mp-no-rotulo span { font-size: 12.5px; color: var(--ds-text-tertiary); }
+.ds .mp-no-rotulo--resto p { color: var(--ds-sev-decide); }
+.ds .mp-no-grupo { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+.ds .mp-no-grupo .ds-num { font-size: 11px; color: var(--ds-text-tertiary); }
+
+/* controles no canto: zoom em número, sem a barra padrão do React Flow */
+.ds .mp-zoom { position: absolute; left: 16px; bottom: 16px; z-index: 5; display: flex; align-items: center; gap: 2px; padding: 3px; border-radius: 10px; background: var(--ds-surface-overlay); box-shadow: var(--ds-shadow-overlay); }
+.ds .mp-zoom button { display: grid; place-items: center; width: 28px; height: 28px; border: 0; border-radius: 7px; background: none; color: var(--ds-text-secondary); cursor: pointer; transition: background 0.2s, color 0.2s; }
+.ds .mp-zoom button:hover { background: rgb(255 255 255 / 0.07); color: var(--ds-text-primary); }
+.ds .mp-zoom .ds-num { min-width: 44px; font-size: 12px; text-align: center; color: var(--ds-text-secondary); }
+.ds .mp-zoom i { width: 1px; height: 16px; margin: 0 3px; background: var(--ds-line-default); }
+.ds .mp-minimapa { right: 12px !important; bottom: 12px !important; margin: 0 !important; border-radius: 10px; background: var(--ds-surface-overlay) !important; box-shadow: var(--ds-shadow-overlay); overflow: hidden; }
+.ds .mp-minimapa .react-flow__minimap-mask { fill: rgb(10 10 12 / 0.6); stroke: rgb(255 255 255 / 0.3); stroke-width: 1; }
+.ds .mp-minimapa .react-flow__minimap-node { fill: rgb(255 255 255 / 0.4) !important; stroke: none !important; }
+.ds .mp-miolo { min-height: 0; }

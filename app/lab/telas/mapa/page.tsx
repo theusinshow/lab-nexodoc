@@ -9,8 +9,8 @@ export default function PaginaDoMapa() {
         <p className="lab-trilha">Telas para aprovar</p>
         <h1>Mapa do volume</h1>
         <p className="lab-lede">
-          Conferir o que o Nexo leu de cada folha antes de gerar. Um painel só: os tomos em cima, a tabela das folhas no meio e, à
-          direita, o checklist do que falta conferir.
+          Conferir o que o Nexo leu de cada folha antes de gerar. O canvas de hoje, com a pele nova: fileiras por tomo, zoom que
+          muda o quanto o nó conta, e à direita o checklist do que falta conferir.
         </p>
       </header>
       <VitrineDoMapa />

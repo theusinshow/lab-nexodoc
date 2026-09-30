@@ -123,8 +123,8 @@ export function documentosDoTomo(t: Tomo): Documento[] {
   const tt = String(t.n).padStart(2, "0");
   return [
     { id: `capa-${t.n}`, tipo: "capa", nome: "Capa", detalhe: `tomo ${tt}, Criciúma`, arquivo: `Capa_117-25_TOMO-${tt}.pdf` },
-    { id: `ld-${t.n}`, tipo: "ld", nome: "Lista de documentos", detalhe: t.n === 1 ? "20 folhas, 3 p." : "13 folhas, 2 p.", arquivo: `LD_117-25_TOMO-${tt}.pdf` },
     { id: `sep-${t.n}`, tipo: "separatriz", nome: "Separatrizes", detalhe: t.disciplinas.length === 2 ? "2 disciplinas" : "", arquivo: `Separatrizes_117-25_TOMO-${tt}.pdf` },
+    { id: `ld-${t.n}`, tipo: "ld", nome: "Lista de documentos", detalhe: t.n === 1 ? "20 folhas, 3 p." : "13 folhas, 2 p.", arquivo: `LD_117-25_TOMO-${tt}.pdf` },
   ];
 }
 
