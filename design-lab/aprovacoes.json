@@ -183,5 +183,80 @@
     "status": "aprovado",
     "nota": "Aprovado pelo Matheus no chat em 01/10: \"pode arquivar as outras e seguir pro No documento\" (versão E, coluna à direita).",
     "em": "2026-09-30T14:27:32.450151Z"
+  },
+  "tela.conversa.nova": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, vamos para a próxima tela\" (Conversa v2 com movimento em crossfade e ritmo vertical).",
+    "em": "2026-09-30T18:47:38.764897Z"
+  },
+  "tela.conversa.anexando": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, vamos para a próxima tela\" (Conversa v2 com movimento em crossfade e ritmo vertical).",
+    "em": "2026-09-30T18:47:38.764897Z"
+  },
+  "tela.conversa.confirmar-auditoria": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, vamos para a próxima tela\" (Conversa v2 com movimento em crossfade e ritmo vertical).",
+    "em": "2026-09-30T18:47:38.764897Z"
+  },
+  "tela.conversa.escolher-projeto": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, vamos para a próxima tela\" (Conversa v2 com movimento em crossfade e ritmo vertical).",
+    "em": "2026-09-30T18:47:38.764897Z"
+  },
+  "tela.conversa.arquivo-sem-selo": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, vamos para a próxima tela\" (Conversa v2 com movimento em crossfade e ritmo vertical).",
+    "em": "2026-09-30T18:47:38.764897Z"
+  },
+  "tela.conversa.auditoria-pronta": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, vamos para a próxima tela\" (Conversa v2 com movimento em crossfade e ritmo vertical).",
+    "em": "2026-09-30T18:47:38.764897Z"
+  },
+  "tela.conversa.plano-de-geracao": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, vamos para a próxima tela\" (Conversa v2 com movimento em crossfade e ritmo vertical).",
+    "em": "2026-09-30T18:47:38.764897Z"
+  },
+  "tela.conversa.capa-sem-prefeitura": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, vamos para a próxima tela\" (Conversa v2 com movimento em crossfade e ritmo vertical).",
+    "em": "2026-09-30T18:47:38.764897Z"
+  },
+  "tela.conversa.gerando": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, vamos para a próxima tela\" (Conversa v2 com movimento em crossfade e ritmo vertical).",
+    "em": "2026-09-30T18:47:38.764897Z"
+  },
+  "tela.conversa.alteracao-pendente": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, vamos para a próxima tela\" (Conversa v2 com movimento em crossfade e ritmo vertical).",
+    "em": "2026-09-30T18:47:38.764897Z"
+  },
+  "tela.conversa.montar-volume": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, vamos para a próxima tela\" (Conversa v2 com movimento em crossfade e ritmo vertical).",
+    "em": "2026-09-30T18:47:38.764897Z"
+  },
+  "tela.conversa.volume-montado": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, vamos para a próxima tela\" (Conversa v2 com movimento em crossfade e ritmo vertical).",
+    "em": "2026-09-30T18:47:38.764897Z"
+  },
+  "tela.conversa.conferir-selo": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, vamos para a próxima tela\" (Conversa v2 com movimento em crossfade e ritmo vertical).",
+    "em": "2026-09-30T18:47:38.764897Z"
+  },
+  "tela.conversa.respondendo": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, vamos para a próxima tela\" (Conversa v2 com movimento em crossfade e ritmo vertical).",
+    "em": "2026-09-30T18:47:38.764897Z"
+  },
+  "tela.conversa.erro-resposta": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, vamos para a próxima tela\" (Conversa v2 com movimento em crossfade e ritmo vertical).",
+    "em": "2026-09-30T18:47:38.764897Z"
   }
 }

@@ -1,0 +1,191 @@
+/*
+ * O MAPA DO VOLUME. Grade de ferramenta, não canvas: fileira por tomo, folhas
+ * de largura e altura fixas por densidade, inspetor fixo à direita.
+ * A única cor da folha é o fio da disciplina; o resto é marca, e marca é rara.
+ */
+.ds .mp { position: relative; display: flex; flex-direction: column; min-height: 100%; background: var(--ds-surface-page); }
+.ds .mp-mono { font-family: var(--ds-font-mono); font-size: 0.92em; }
+
+/* ---------- cabeça ---------- */
+.ds .mp-cabeca { display: flex; align-items: baseline; gap: 14px; padding: 20px 32px 16px; }
+.ds .mp-cabeca-obra { display: inline-flex; align-items: center; gap: 8px; align-self: center; font-size: 12px; color: var(--ds-text-tertiary); }
+.ds .mp-cabeca h1 { margin: 0; font-size: 20px; font-weight: 400; letter-spacing: -0.015em; }
+.ds .mp-cabeca-estado { display: inline-grid; font-size: 12.5px; color: var(--ds-text-tertiary); }
+.ds .mp-cabeca-estado > * { grid-area: 1 / 1; }
+.ds .mp-voltar { margin-left: auto; align-self: center; }
+
+/* ---------- barra: tomos, divisão, densidade ---------- */
+.ds .mp-barra { display: flex; align-items: center; gap: 14px; padding: 0 32px 14px; border-bottom: 1px solid var(--ds-line-subtle); }
+.ds .mp-seg { display: inline-flex; gap: 2px; padding: 3px; border-radius: 9px; background: rgb(255 255 255 / 0.035); box-shadow: inset 0 0 0 1px var(--ds-line-subtle); }
+.ds .mp-seg button { position: relative; display: inline-flex; align-items: center; gap: 8px; height: 28px; padding: 0 10px; border: 0; border-radius: 6px; background: none; font: inherit; font-size: 12.5px; color: var(--ds-text-secondary); cursor: pointer; transition: color 0.2s, background 0.2s; }
+.ds .mp-seg button:hover { color: var(--ds-text-primary); }
+.ds .mp-seg button .ds-num { font-size: 11px; color: var(--ds-text-tertiary); }
+.ds .mp-seg button[aria-selected="true"] { background: rgb(255 255 255 / 0.07); color: var(--ds-text-primary); }
+.ds .mp-seg--resto { color: var(--ds-sev-decide) !important; }
+.ds .mp-divisao { font-size: 12px; color: var(--ds-text-tertiary); }
+.ds .mp-seg--densidade { margin-left: auto; }
+.ds .mp-seg--densidade button > span, .ds .mp-seg--densidade button > .ds-kbd { position: relative; z-index: 1; }
+.ds .mp-seg--densidade button[aria-checked="true"] { color: var(--ds-text-primary); }
+.ds .mp-seg-fundo { position: absolute; inset: 0; border-radius: 6px; background: rgb(255 255 255 / 0.08); }
+.ds .mp-progresso { height: 1.5px; margin-top: -1px; background: transparent; }
+.ds .mp-progresso i { display: block; height: 100%; background: var(--ds-nexo); transform-origin: left; transform: scaleX(0); }
+
+/* ---------- corpo: mapa | inspetor ---------- */
+.ds .mp-corpo { display: grid; grid-template-columns: minmax(0, 1fr) 340px; flex: 1; min-height: 0; }
+.ds .mp-mapa { display: grid; align-content: start; gap: 36px; padding: 24px 32px 48px; min-width: 0; }
+
+/* o aviso de volume velho: uma linha, dentro do mapa, não um cartão */
+.ds .mp-aviso { display: flex; align-items: center; gap: 12px; padding: 10px 12px 10px 14px; border-radius: 10px; background: rgb(255 255 255 / 0.03); box-shadow: inset 0 0 0 1px var(--ds-line-default); }
+.ds .mp-aviso p { flex: 1; margin: 0; font-size: var(--ds-text-xs); color: var(--ds-text-secondary); }
+.ds .mp-aviso b { font-weight: 500; color: var(--ds-text-primary); }
+
+/* ---------- a fileira do tomo ---------- */
+.ds .mp-tomo { display: grid; gap: 18px; scroll-margin-top: 16px; }
+.ds .mp-tomo-cabeca { display: flex; align-items: baseline; gap: 12px; }
+.ds .mp-tomo-cabeca h2 { margin: 0; font-size: var(--ds-text-sm); font-weight: 500; }
+.ds .mp-tomo-cabeca span { font-size: 12px; color: var(--ds-text-tertiary); }
+.ds .mp-tomo-acao { margin-left: auto; align-self: center; }
+.ds .mp-tomo--resto .mp-tomo-cabeca h2 { color: var(--ds-sev-decide); }
+.ds .mp-tomo--resto .mp-doc { opacity: 0.7; }
+
+/* documentos do tomo, na ordem do volume, e o volume no fim */
+.ds .mp-docs { display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px; }
+.ds .mp-doc, .ds .mp-vol { display: grid; grid-template-rows: auto auto 1fr; gap: 2px; width: 184px; min-height: 76px; padding: 10px 8px 8px 12px; border-radius: 8px; background: var(--ds-surface-card); box-shadow: var(--ds-edge); }
+.ds .mp-doc-tipo { font-size: 12.5px; color: var(--ds-text-primary); }
+.ds .mp-doc-detalhe { font-size: 11.5px; color: var(--ds-text-tertiary); }
+.ds .mp-doc-pe { display: flex; align-items: flex-end; justify-content: space-between; gap: 6px; min-width: 0; }
+.ds .mp-doc-arquivo { overflow: hidden; font-family: var(--ds-font-mono); font-size: 10.5px; color: var(--ds-text-tertiary); white-space: nowrap; text-overflow: ellipsis; }
+.ds .mp-doc-estado { font-size: 11.5px; color: var(--ds-text-tertiary); }
+.ds .mp-doc-estado--velho { color: var(--ds-sev-decide); }
+.ds .mp-doc-estado--ok { color: var(--ds-state-ok); }
+.ds .mp-doc-pe button { display: grid; place-items: center; flex: none; width: 24px; height: 24px; border: 0; border-radius: 6px; background: none; color: var(--ds-text-tertiary); cursor: pointer; transition: background 0.2s, color 0.2s; }
+.ds .mp-doc-pe button:hover { background: rgb(255 255 255 / 0.06); color: var(--ds-text-primary); }
+.ds .mp-doc--a-gerar { background: none; box-shadow: none; outline: 1px dashed var(--ds-line-strong); outline-offset: -1px; }
+.ds .mp-doc--a-gerar .mp-doc-tipo { color: var(--ds-text-secondary); }
+/* com o plano na mesa, o que vai ser gerado acende em iris: é disso que a barra fala */
+.ds .mp-doc--a-gerar { transition: outline-color 0.5s; }
+.ds .mp-mapa--plano .mp-doc--a-gerar { outline-color: rgb(163 166 255 / 0.55); }
+.ds .mp-mapa--plano .mp-doc--a-gerar .mp-doc-tipo { color: var(--ds-text-primary); }
+.ds .mp-mapa--plano .mp-doc--a-gerar .mp-doc-estado { color: var(--ds-nexo); }
+.ds .mp-doc--desatualizado { box-shadow: inset 0 0 0 1px rgb(from var(--ds-sev-decide) r g b / 0.5); }
+.ds .mp-docs-seta { align-self: center; width: 28px; height: 1px; margin: 0 2px; background: var(--ds-line-strong); position: relative; }
+.ds .mp-docs-seta::after { content: ""; position: absolute; right: 0; top: -3px; border: 3.5px solid transparent; border-left: 5px solid var(--ds-line-strong); border-right: 0; }
+.ds .mp-vol { background: var(--ds-surface-raised); }
+.ds .mp-vol--nao-montado { background: none; box-shadow: none; outline: 1px dashed var(--ds-line-default); outline-offset: -1px; }
+.ds .mp-vol--desatualizado { box-shadow: inset 0 0 0 1px rgb(from var(--ds-sev-decide) r g b / 0.5); }
+
+/* ---------- a disciplina e suas folhas ---------- */
+.ds .mp-grupo { display: grid; gap: 8px; }
+.ds .mp-grupo-cabeca { display: flex; align-items: center; gap: 8px; margin: 0; }
+.ds .mp-grupo-cabeca .ds-num { font-size: 11px; color: var(--ds-text-tertiary); }
+.ds .mp-folhas { display: flex; flex-wrap: wrap; gap: 6px; }
+.ds .mp-folhas--d1 { gap: 4px; }
+
+/* a folha: largura e altura fixas por densidade; o fio de cima é a disciplina */
+.ds .mp-folha { position: relative; display: block; overflow: hidden; padding: 0; border: 0; border-radius: 6px; background: var(--ds-surface-card); box-shadow: var(--ds-edge); font: inherit; color: var(--ds-text-primary); text-align: left; cursor: pointer; transition: box-shadow 0.25s, opacity 0.3s, background 0.25s; }
+.ds .mp-folha:hover { background: var(--ds-surface-raised); }
+.ds .mp-folha--d1 { width: 48px; height: 34px; }
+.ds .mp-folha--d2 { width: 124px; height: 88px; }
+.ds .mp-folha--d3 { width: 124px; height: 126px; }
+.ds .mp-folha-fio { position: absolute; left: 0; right: 0; top: 0; height: 2px; background: var(--dc-cor); }
+.ds .mp-folha-troca { display: grid; height: 100%; }
+.ds .mp-folha-corpo { grid-area: 1 / 1; display: flex; flex-direction: column; gap: 4px; min-width: 0; padding: 8px 8px 7px 9px; }
+.ds .mp-folha--d1 .mp-folha-corpo { justify-content: center; padding: 4px 6px 2px; }
+.ds .mp-folha-linha { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
+.ds .mp-folha-num { font-family: var(--ds-font-mono); font-size: 11px; color: var(--ds-text-secondary); font-variant-numeric: tabular-nums; }
+.ds .mp-folha-num small { font-size: 10px; color: var(--ds-text-tertiary); }
+.ds .mp-folha-num--falta { color: var(--ds-sev-decide); }
+.ds .mp-folha-titulo { display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; font-size: 10.5px; line-height: 1.3; letter-spacing: 0.01em; color: var(--ds-text-primary); }
+.ds .mp-folha-carimbo { display: grid; gap: 1px; margin-top: auto; padding-top: 5px; border-top: 1px solid var(--ds-line-subtle); font-family: var(--ds-font-mono); font-size: 9.5px; color: var(--ds-text-tertiary); }
+.ds .mp-folha--sel { box-shadow: 0 0 0 1.5px var(--ds-nexo); background: var(--ds-surface-raised); }
+.ds .mp-folha--apagada { opacity: 0.22; }
+.ds .mp-folha--lendo { cursor: default; background: rgb(255 255 255 / 0.02); box-shadow: inset 0 0 0 1px var(--ds-line-subtle); }
+.ds .mp-folha--lendo .mp-folha-fio { opacity: 0.25; }
+.ds .mp-folha--lendo .mp-folha-num { color: var(--ds-text-tertiary); }
+.ds .mp-folha-vazio { display: block; height: 22px; margin-top: 2px; border-radius: 3px; background: linear-gradient(90deg, rgb(255 255 255 / 0.03), rgb(255 255 255 / 0.07), rgb(255 255 255 / 0.03)); background-size: 200% 100%; animation: ds-varrer 2.4s linear infinite; }
+
+/* ---------- as marcas: ponto (conferência), anel (deduzido), quadrado branco (à mão) ---------- */
+.ds .mp-marcas { display: inline-flex; align-items: center; gap: 3px; }
+.ds .mp-m { display: inline-block; flex: none; width: 6px; height: 6px; border-radius: 50%; }
+.ds .mp-m--critico { background: var(--ds-sev-block); }
+.ds .mp-m--aviso { background: var(--ds-sev-decide); }
+.ds .mp-m--ordem { box-shadow: inset 0 0 0 1.2px var(--ds-text-secondary); }
+.ds .mp-m--mao { border-radius: 1.5px; background: var(--ds-text-primary); }
+.ds .mp-m--sem-numero { width: 8px; height: 1.5px; border-radius: 1px; background: var(--ds-sev-decide); }
+.ds .mp-folha--d1 .mp-folha-linha { justify-content: center; flex-direction: column; gap: 2px; }
+.ds .mp-folha--d1 .mp-marcas { position: absolute; top: 5px; right: 4px; }
+
+/* ---------- inspetor ---------- */
+.ds .mp-insp { position: relative; border-left: 1px solid var(--ds-line-subtle); }
+.ds .mp-insp-troca { position: sticky; top: 0; display: grid; }
+.ds .mp-insp-camada { grid-area: 1 / 1; min-width: 0; }
+.ds .mp-insp-bloco { display: grid; gap: 14px; padding: 22px 24px 32px; }
+.ds .mp-insp-titulo { margin: 0; font-size: 12.5px; color: var(--ds-text-secondary); }
+.ds .mp-insp-titulo--sep { margin-top: 10px; padding-top: 18px; border-top: 1px solid var(--ds-line-subtle); }
+.ds .mp-insp-nota { margin: 0; font-size: 12px; line-height: 1.5; color: var(--ds-text-tertiary); }
+.ds .mp-disc-lista { display: grid; gap: 8px; margin: 0; }
+.ds .mp-disc-lista > div { display: flex; justify-content: space-between; gap: 12px; }
+.ds .mp-disc-lista dt .dc { font-size: 12px; }
+.ds .mp-disc-lista dd { margin: 0; font-size: 12px; color: var(--ds-text-tertiary); }
+
+.ds .mp-filtros { display: grid; gap: 2px; margin: 0 -10px; }
+.ds .mp-filtro { display: grid; grid-template-columns: 16px minmax(0, 1fr) auto; align-items: start; gap: 8px; padding: 8px 10px; border: 0; border-radius: 8px; background: none; font: inherit; text-align: left; color: var(--ds-text-secondary); cursor: pointer; transition: background 0.2s; }
+.ds .mp-filtro:hover { background: rgb(255 255 255 / 0.04); }
+.ds .mp-filtro--ativo { background: rgb(255 255 255 / 0.07); }
+.ds .mp-filtro-marca { display: grid; place-items: center; height: 18px; }
+.ds .mp-filtro-texto { display: grid; gap: 1px; }
+.ds .mp-filtro-texto b { font-weight: 400; font-size: 12.5px; color: var(--ds-text-primary); }
+.ds .mp-filtro-texto span { font-size: 11.5px; color: var(--ds-text-tertiary); }
+.ds .mp-filtro-n { font-size: 12px; color: var(--ds-text-secondary); line-height: 18px; }
+
+.ds .mp-teclas { display: grid; gap: 8px; margin: 0; }
+.ds .mp-teclas > div { display: grid; grid-template-columns: 76px 1fr; align-items: center; gap: 10px; }
+.ds .mp-teclas dt { display: flex; gap: 3px; }
+.ds .mp-teclas dd { margin: 0; font-size: 12px; color: var(--ds-text-tertiary); }
+
+.ds .mp-insp-cabeca { display: flex; align-items: center; justify-content: space-between; }
+.ds .mp-insp-nav { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; color: var(--ds-text-tertiary); }
+.ds .mp-insp-nav button { display: grid; place-items: center; width: 26px; height: 26px; border: 0; border-radius: 6px; background: none; color: var(--ds-text-secondary); cursor: pointer; transition: background 0.2s; }
+.ds .mp-insp-nav button:hover:not(:disabled) { background: rgb(255 255 255 / 0.06); color: var(--ds-text-primary); }
+.ds .mp-insp-nav button:disabled { opacity: 0.3; cursor: default; }
+.ds .mp-insp-id { margin: -4px 0 0; font-family: var(--ds-font-mono); font-size: 22px; letter-spacing: -0.01em; }
+.ds .mp-insp-carimbo { margin: -6px 0 0; font-size: var(--ds-text-sm); line-height: 1.45; letter-spacing: 0.01em; }
+.ds .mp-insp-diverge { display: flex; gap: 8px; margin: 0; font-size: 12.5px; line-height: 1.5; color: var(--ds-text-secondary); }
+.ds .mp-insp-diverge .mp-m { margin-top: 6px; }
+.ds .mp-campos { display: grid; margin: 0; border-top: 1px solid var(--ds-line-subtle); }
+.ds .mp-campo { display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--ds-line-subtle); }
+.ds .mp-campo dt { font-size: 12px; color: var(--ds-text-tertiary); }
+.ds .mp-campo dd { display: grid; gap: 2px; margin: 0; min-width: 0; font-size: 12.5px; color: var(--ds-text-primary); overflow-wrap: anywhere; }
+.ds .mp-campo small { font-size: 11.5px; color: var(--ds-text-tertiary); }
+.ds .mp-falta { color: var(--ds-sev-decide); }
+
+.ds .mp-acoes { display: flex; flex-wrap: wrap; gap: 6px; }
+.ds .mp-acoes--coluna { display: grid; gap: 2px; margin: 0 -10px; }
+.ds .mp-acao { display: flex; align-items: center; gap: 10px; height: 34px; padding: 0 10px; border: 0; border-radius: 8px; background: none; font: inherit; font-size: 12.5px; color: var(--ds-text-secondary); text-align: left; cursor: pointer; transition: background 0.2s, color 0.2s; }
+.ds .mp-acao svg { color: var(--ds-text-tertiary); }
+.ds .mp-acao .ds-kbd { margin-left: auto; }
+.ds .mp-acao:hover { background: rgb(255 255 255 / 0.05); color: var(--ds-text-primary); }
+.ds .mp-acao--perigo:hover { color: var(--ds-sev-block); }
+.ds .mp-acao--perigo:hover svg { color: var(--ds-sev-block); }
+.ds .mp-insp-fechar { display: inline-flex; align-items: center; gap: 8px; justify-self: start; padding: 0; border: 0; background: none; font: inherit; font-size: 12px; color: var(--ds-text-tertiary); cursor: pointer; }
+.ds .mp-insp-fechar:hover { color: var(--ds-text-primary); }
+
+/* correção: os campos do carimbo, editáveis */
+.ds .mp-form { display: grid; gap: 12px; }
+.ds .mp-form label { display: grid; gap: 5px; }
+.ds .mp-form label > span { font-size: 12px; color: var(--ds-text-tertiary); }
+.ds .mp-form input, .ds .mp-form textarea { width: 100%; padding: 7px 10px; border: 0; border-radius: 7px; background: rgb(255 255 255 / 0.04); box-shadow: inset 0 0 0 1px var(--ds-line-default); font: inherit; font-size: 12.5px; letter-spacing: 0.01em; color: var(--ds-text-primary); resize: none; transition: box-shadow 0.25s; }
+.ds .mp-form input:focus-visible, .ds .mp-form textarea:focus-visible { outline: none; box-shadow: inset 0 0 0 1px rgb(163 166 255 / 0.6); }
+.ds .mp-form input::placeholder { color: var(--ds-sev-decide); }
+.ds .mp-form-dupla { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+/* ---------- o plano, embaixo, quando está pronto para confirmar ---------- */
+.ds .mp-plano { position: sticky; bottom: 20px; z-index: 5; display: flex; align-items: center; gap: 12px; margin-top: -8px; padding: 14px 14px 14px 20px; border-radius: 14px; background: var(--ds-surface-overlay); box-shadow: var(--ds-shadow-overlay); }
+.ds .mp-plano-texto { display: grid; gap: 4px; flex: 1; min-width: 0; }
+.ds .mp-plano-texto p { margin: 0; font-size: var(--ds-text-xs); color: var(--ds-text-secondary); }
+.ds .mp-plano-texto b { font-weight: 500; color: var(--ds-text-primary); }
+.ds .mp-plano-alerta { display: flex; align-items: center; gap: 8px; font-size: 12px !important; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ds .mp-folha-vazio { animation: none; }
+}
