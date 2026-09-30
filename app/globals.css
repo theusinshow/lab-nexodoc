@@ -2395,3 +2395,26 @@ a[data-navegando] {
   from { opacity: 1; }
   to { opacity: 0.6; }
 }
+
+/* A TRANSICAO ENTRE PAGINAS (29/09/2026) -- ver components/layout/transicao-de-pagina.tsx.
+
+   Curta e sem viagem: a velha apaga depressa, a nova sobe 6px enquanto acende.
+   Deslocamento maior daria sensacao de "slide de apresentacao" numa ferramenta
+   de trabalho; zero deslocamento deixaria o crossfade parecendo um piscar.
+   O transform aqui e no PSEUDO-ELEMENTO do snapshot, nao na pagina: nao cria
+   bloco de contencao para nada `position: fixed` de dentro dela. */
+::view-transition-old(.nx-pagina-sai) {
+  animation: nx-pagina-sai var(--duration-fast) var(--ease-feedback) both;
+}
+::view-transition-new(.nx-pagina-entra) {
+  animation: nx-pagina-entra var(--duration-slow) var(--ease-entrance) 40ms both;
+}
+@keyframes nx-pagina-sai {
+  to { opacity: 0; }
+}
+@keyframes nx-pagina-entra {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
