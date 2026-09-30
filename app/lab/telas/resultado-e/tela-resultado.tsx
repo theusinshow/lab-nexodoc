@@ -45,7 +45,9 @@ export type SituacaoRes =
   | "por-disciplina"
   | "documento"
   | "doc-mudas"
-  | "doc-remoto";
+  | "doc-remoto"
+  | "doc-numero"
+  | "doc-regua";
 
 type Aba = "resumo" | "achados" | "parecer" | "documento";
 
@@ -129,6 +131,8 @@ function partida(s: SituacaoRes) {
     case "documento":
     case "doc-mudas":
     case "doc-remoto":
+    case "doc-numero":
+    case "doc-regua":
       return { ...base, aba: "documento" as Aba };
     case "encerrado":
       return { ...base, aba: "achados" as Aba, fila: { selecionado: "ACH-004" } };
@@ -277,6 +281,7 @@ export function TelaResultado({ situacao }: { situacao: SituacaoRes }) {
                   <NoDocumento
                     achados={achados}
                     modo={situacao === "doc-mudas" ? "mudas" : situacao === "doc-remoto" ? "remoto" : "normal"}
+                    estilo={situacao === "doc-numero" ? "numero" : situacao === "doc-regua" ? "regua" : "etiqueta"}
                     onVerNoMemorial={(id) => setVisor({ aberto: true, achado: id })}
                     onAbrir={(id) => abrir(id)}
                   />

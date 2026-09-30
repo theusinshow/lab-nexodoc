@@ -19,20 +19,30 @@ const LINHAS = 20;
 export type ModoDoDocumento = "normal" | "mudas" | "remoto";
 
 /**
- * O DELTA DE REVISÃO — o triângulo numerado que a prancha usa para apontar uma
- * alteração. Aqui ele aponta o achado: na margem da página, na altura do
- * trecho, e de novo na nota embaixo, com o mesmo número. É o vocabulário que o
- * engenheiro já lê, no lugar de um cartão.
+ * Três maneiras de ligar o achado à página, para comparar:
+ * - etiqueta: retângulo reto na cor do nível, o código em branco no meio;
+ * - numero: só o número, em mono, na cor do nível — nenhuma forma;
+ * - regua: a barra de revisão na margem, como a prancha marca o que mudou.
  */
-function Delta({ n, tom, aceso }: { n: number; tom: string; aceso?: boolean }) {
+export type EstiloDaMarca = "etiqueta" | "numero" | "regua";
+
+const curto = (a: Achado) => a.id.replace("ACH-", "");
+
+/** O marcador na margem da página, na altura do trecho. */
+function MarcaNaMargem({ estilo, a, aceso }: { estilo: EstiloDaMarca; a: Achado; aceso: boolean }) {
+  if (estilo === "regua") return <span className={`nd-m-regua nd--${a.impacto}${aceso ? " nd-m--aceso" : ""}`} aria-hidden />;
   return (
-    <svg className={`nd-delta nd--${tom}${aceso ? " nd-delta--aceso" : ""}`} viewBox="0 0 20 18" aria-hidden>
-      <path d="M10 1.5 L18.5 16.5 L1.5 16.5 Z" />
-      <text x="10" y="14">
-        {n}
-      </text>
-    </svg>
+    <span className={`nd-m-${estilo} nd--${a.impacto}${aceso ? " nd-m--aceso" : ""}`} aria-hidden>
+      {curto(a)}
+    </span>
   );
+}
+
+/** O marcador da nota, embaixo da página: o mesmo gesto da margem, em tamanho de leitura. */
+function MarcaNaNota({ estilo, a, aceso }: { estilo: EstiloDaMarca; a: Achado; aceso: boolean }) {
+  if (estilo === "etiqueta") return <span className={`nd-n-etiqueta nd--${a.impacto}${aceso ? " nd-m--aceso" : ""}`}>{a.id}</span>;
+  if (estilo === "numero") return <span className={`nd-n-numero nd--${a.impacto}`}>{curto(a)}</span>;
+  return <span className={`nd-n-regua nd--${a.impacto}`} aria-hidden />;
 }
 
 /** A miniatura da página: linhas de texto falso e, no lugar de cada achado, a marca na cor do nível. */
@@ -42,30 +52,31 @@ function Miniatura({
   aceso,
   remoto,
   onAcender,
-  deltas,
+  estilo,
 }: {
   pagina: number;
   achados: Achado[];
   aceso: string | null;
   remoto: boolean;
   onAcender: (id: string | null) => void;
-  deltas?: boolean;
+  /** Sem estilo, a miniatura não marca a margem (é a grade das 42). */
+  estilo?: EstiloDaMarca;
 }) {
   if (remoto) return <div className="nd-folha nd-folha--remota" aria-label={`Página ${pagina}, arquivo fora desta máquina`} />;
   return (
-    <div className="nd-folha" aria-label={`Página ${pagina}`}>
+    <div className={`nd-folha${estilo ? ` nd-folha--${estilo}` : ""}`} aria-label={`Página ${pagina}`}>
       {Array.from({ length: LINHAS }, (_, l) => {
         const a = achados.find((x, i) => Math.round((linhaDoTrecho(x, i) / 40) * LINHAS) === l);
         if (a)
           return (
             <span key={l} className="nd-marca-linha">
               <i
-                className={`nd-marca nd--${a.impacto}${aceso === a.id ? " nd-marca--acesa" : ""}${aceso && aceso !== a.id ? " nd--apagada" : ""}`}
+                className={`nd-marca${estilo === "numero" ? " nd-marca--sublinhado" : ""} nd--${a.impacto}${aceso === a.id ? " nd-marca--acesa" : ""}${aceso && aceso !== a.id ? " nd--apagada" : ""}`}
                 style={{ width: `${larguraDaLinha(pagina, l)}%` }}
                 onMouseEnter={() => onAcender(a.id)}
                 onMouseLeave={() => onAcender(null)}
               />
-              {deltas && <Delta n={achados.indexOf(a) + 1} tom={a.impacto} aceso={aceso === a.id} />}
+              {estilo && <MarcaNaMargem estilo={estilo} a={a} aceso={aceso === a.id} />}
             </span>
           );
         return <i key={l} className="nd-linha" style={{ width: `${larguraDaLinha(pagina, l)}%` }} />;
@@ -84,11 +95,13 @@ function Miniatura({
 export function NoDocumento({
   achados,
   modo,
+  estilo = "etiqueta",
   onVerNoMemorial,
   onAbrir,
 }: {
   achados: Achado[];
   modo: ModoDoDocumento;
+  estilo?: EstiloDaMarca;
   onVerNoMemorial: (id: string) => void;
   onAbrir: (id: string) => void;
 }) {
@@ -162,21 +175,22 @@ export function NoDocumento({
                     <i className={`nd-leg nd--${pior(p)}`} />
                   </header>
                   <button type="button" className="nd-folha-botao" onClick={() => onVerNoMemorial(daPagina[0].id)} title="Ver no memorial">
-                    <Miniatura pagina={p} achados={daPagina} aceso={aceso} remoto={remoto} onAcender={setAceso} deltas />
+                    <Miniatura pagina={p} achados={daPagina} aceso={aceso} remoto={remoto} onAcender={setAceso} estilo={estilo} />
                   </button>
                   <ol className="nd-notas">
-                    {daPagina.map((a, n) => (
+                    {daPagina.map((a) => (
                       <li
                         key={a.id}
-                        className={`nd-nota${aceso === a.id ? " nd-nota--acesa" : ""}${a.desfecho ? " nd-nota--tratada" : ""}`}
+                        className={`nd-nota nd-nota--${estilo}${aceso === a.id ? " nd-nota--acesa" : ""}${a.desfecho ? " nd-nota--tratada" : ""}`}
                         onMouseEnter={() => setAceso(a.id)}
                         onMouseLeave={() => setAceso(null)}
                       >
-                        <Delta n={n + 1} tom={a.impacto} aceso={aceso === a.id} />
+                        <MarcaNaNota estilo={estilo} a={a} aceso={aceso === a.id} />
                         <button type="button" className="nd-nota-texto" onClick={() => onAbrir(a.id)}>
                           <b>{a.titulo}</b>
                           <small>
-                            {a.id} {DISCIPLINA[a.disc].sigla}
+                            {estilo === "etiqueta" ? "" : `${a.id} `}
+                            {DISCIPLINA[a.disc].sigla}
                             {a.desfecho ? `, ${DESFECHO_NOME[a.desfecho.tipo].toLowerCase()}` : ""}
                           </small>
                         </button>
