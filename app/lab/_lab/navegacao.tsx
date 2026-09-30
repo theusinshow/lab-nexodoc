@@ -10,14 +10,15 @@ import { useLab } from "./contexto";
 
 /** As fases do redesenho, na ordem em que se aprovam. As futuras aparecem
  *  desligadas: o lab mostra o caminho inteiro desde o primeiro dia. */
-const FASES: { href: string; rotulo: string; fase: string; pronta: boolean }[] = [
-  { href: "/lab", rotulo: "Visão geral", fase: "", pronta: true },
-  { href: "/lab/inventario", rotulo: "Inventário", fase: "0", pronta: true },
-  { href: "/lab/fundamentos", rotulo: "Fundamentos", fase: "1", pronta: true },
-  { href: "/lab/componentes", rotulo: "Componentes", fase: "2", pronta: false },
-  { href: "/lab/micro", rotulo: "Micro-interações", fase: "3", pronta: false },
-  { href: "/lab/telas", rotulo: "Telas", fase: "4", pronta: false },
-  { href: "/lab/fluxos", rotulo: "Fluxos", fase: "4", pronta: false },
+const FASES: { href: string; rotulo: string; fase: string; pronta: boolean; grupo?: string }[] = [
+  { href: "/lab", rotulo: "Começar aqui", fase: "", pronta: true },
+  { href: "/lab/telas/painel", rotulo: "Painel", fase: "", pronta: true, grupo: "Telas para aprovar" },
+  { href: "/lab/telas/nexo", rotulo: "Conversa nova", fase: "", pronta: false },
+  { href: "/lab/telas/chat", rotulo: "Entrada no chat", fase: "", pronta: false },
+  { href: "/lab/telas/auditoria", rotulo: "Auditoria rodando", fase: "", pronta: false },
+  { href: "/lab/telas/resultado", rotulo: "Resultado", fase: "", pronta: false },
+  { href: "/lab/fundamentos", rotulo: "Fundamentos", fase: "", pronta: true, grupo: "Bastidores" },
+  { href: "/lab/inventario", rotulo: "Inventário", fase: "", pronta: true },
 ];
 
 export function NavegacaoDoLab() {
@@ -36,16 +37,22 @@ export function NavegacaoDoLab() {
 
       {FASES.map((f) => {
         const ativo = caminho === f.href;
+        const grupo = f.grupo ? <p key={`g-${f.grupo}`} className="lab-nav-grupo">{f.grupo}</p> : null;
         if (!f.pronta) {
           return (
-            <span key={f.href} className="lab-link" aria-disabled="true">
-              {f.rotulo}
-              <span className="lab-fase">fase {f.fase}</span>
+            <span key={f.href} style={{ display: "contents" }}>
+              {grupo}
+              <span className="lab-link" aria-disabled="true">
+                {f.rotulo}
+                <span className="lab-fase">em breve</span>
+              </span>
             </span>
           );
         }
         return (
-          <Link key={f.href} href={f.href} aria-current={ativo ? "page" : undefined}>
+          <span key={f.href} style={{ display: "contents" }}>
+          {grupo}
+          <Link href={f.href} aria-current={ativo ? "page" : undefined}>
             {ativo && (
               <motion.span
                 layoutId="lab-nav-fundo"
@@ -54,8 +61,8 @@ export function NavegacaoDoLab() {
               />
             )}
             <span>{f.rotulo}</span>
-            {f.fase && <span className="lab-fase" style={{ marginLeft: "auto", fontSize: 11, color: "var(--ds-text-tertiary)" }}>fase {f.fase}</span>}
           </Link>
+          </span>
         );
       })}
 

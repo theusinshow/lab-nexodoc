@@ -1,7 +1,6 @@
 import { MarcaDaPrefeitura } from "@/modules/nexo/components/MarcaDaPrefeitura";
 
 import { AmostraDeCor } from "../_lab/amostra-de-cor";
-import { Aprovacao } from "../_lab/aprovacao";
 import { PlaygroundDeMovimento } from "../_lab/playground-de-movimento";
 
 export const metadata = { title: "Fundamentos — Laboratório" };
@@ -20,7 +19,6 @@ function Secao({ id, titulo, children, texto }: { id: string; titulo: string; te
           <h2>{titulo}</h2>
           <p>{texto}</p>
         </div>
-        <Aprovacao id={`fund.${id}`} rotulo={titulo} />
       </div>
       {children}
     </section>
@@ -37,7 +35,7 @@ export default function Fundamentos() {
   return (
     <>
       <header className="lab-cabeca">
-        <p className="lab-trilha">Laboratório / Fase 1</p>
+        <p className="lab-trilha">Bastidores</p>
         <h1>Fundamentos</h1>
         <p className="lab-lede">
           As decisões de base, das quais todo componente e toda tela derivam. Cada valor aqui é lido ao vivo do{" "}

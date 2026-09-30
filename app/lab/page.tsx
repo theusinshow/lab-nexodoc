@@ -1,56 +1,46 @@
-import { contarInventario } from "@/lib/design-lab/inventario";
+import Link from "next/link";
 
-import { AndamentoDasFases } from "./_lab/andamento";
-import { ITENS_DO_INVENTARIO, ITENS_DOS_FUNDAMENTOS } from "./_lab/itens";
-
-export default function VisaoGeral() {
-  const n = contarInventario();
+export default function ComecarAqui() {
   return (
     <>
       <header className="lab-cabeca">
         <p className="lab-trilha">Laboratório</p>
-        <h1>O redesenho do Nexo, peça por peça</h1>
+        <h1>Aprovar o redesenho, tela por tela</h1>
         <p className="lab-lede">
-          Cada fundamento, componente, micro-interação e tela do sistema novo passa por aqui antes de chegar ao app.
-          Você olha, exercita e decide; a decisão fica gravada no repositório e é ela que a implementação segue.
+          Cada tela do Nexo aparece aqui já no visual novo, funcionando. Você olha, clica e decide. Nada muda no app até
+          você aprovar.
         </p>
       </header>
 
       <section className="lab-secao">
-        <div className="lab-secao-cabeca">
-          <div>
-            <h2>Fases</h2>
-            <p>
-              Uma fase só começa quando a anterior está aprovada. O inventário tem{" "}
-              <b className="ds-num">{n.telas} telas</b>, <b className="ds-num">{n.situacoes} situações</b> e{" "}
-              <b className="ds-num">{n.controles} controles</b>, e cada um deles precisa ter um lugar no desenho novo.
-            </p>
-          </div>
+        <ol style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 12 }}>
+          {[
+            ["Abra uma tela", "No menu à esquerda, em “Telas para aprovar”. A primeira pronta é o Painel."],
+            ["Passe pelas situações", "Os botões numerados em cima da tela mostram cada caso: dia normal, carregando, deu erro, primeiro acesso. Clique em tudo."],
+            ["Decida cada situação", "Aprovado, ou Pedir mudança com uma frase dizendo o quê. Um ponto verde ou amarelo marca o que você já decidiu."],
+          ].map(([t, d], i) => (
+            <li key={t} className="lab-cartao" style={{ padding: 20, display: "grid", gap: 8, alignContent: "start" }}>
+              <span className="lab-nota ds-num">Passo {i + 1}</span>
+              <b style={{ fontWeight: 500, fontSize: "var(--ds-text-lg)" }}>{t}</b>
+              <span style={{ color: "var(--ds-text-secondary)" }}>{d}</span>
+            </li>
+          ))}
+        </ol>
+        <div style={{ marginTop: 20 }}>
+          <Link
+            href="/lab/telas/painel"
+            style={{ display: "inline-flex", alignItems: "center", height: 36, padding: "0 18px", borderRadius: 999, background: "var(--ds-action-bg)", color: "var(--ds-action-fg)", fontWeight: 500, textDecoration: "none" }}
+          >
+            Começar pelo Painel
+          </Link>
         </div>
-        <AndamentoDasFases
-          fases={[
-            { numero: "0", nome: "Inventário", href: "/lab/inventario", itens: ITENS_DO_INVENTARIO, descricao: "Toda tela, situação e controle que existe hoje. Confirme que nada ficou de fora." },
-            { numero: "1", nome: "Fundamentos", href: "/lab/fundamentos", itens: ITENS_DOS_FUNDAMENTOS, descricao: "Cor, tipo, espaço, raio, elevação, movimento e foco." },
-            { numero: "2", nome: "Componentes", itens: [], descricao: "Cada peça em todos os estados: botão, campo, lista, aba, menu, compositor." },
-            { numero: "3", nome: "Micro-interações", itens: [], descricao: "Cada movimento isolado, com repetição e câmera lenta." },
-            { numero: "4", nome: "Telas e fluxos", itens: [], descricao: "Cada tela em cada situação, e os caminhos inteiros animados." },
-            { numero: "5", nome: "Migração", itens: [], descricao: "Tokens, moldura e tela por tela no app, com a bateria verde." },
-          ]}
-        />
       </section>
 
       <section className="lab-secao">
-        <div className="lab-secao-cabeca">
-          <div>
-            <h2>Como decidir aqui</h2>
-            <p>
-              Todo item tem um selo com três estados. <b>Aprovado</b> libera o item para a próxima fase.{" "}
-              <b>Pedir mudança</b> abre uma nota: escreva o que mudar e por quê. <b>Pendente</b> é o começo de tudo.
-              As chaves no rodapé do trilho deixam qualquer animação quatro vezes mais lenta, ou a desligam como faz quem
-              pede menos movimento ao sistema.
-            </p>
-          </div>
-        </div>
+        <p className="lab-nota" style={{ maxWidth: "70ch" }}>
+          Dica: a chave “Câmera lenta” no canto inferior esquerdo deixa as animações 4 vezes mais lentas, para julgar os
+          detalhes. “Bastidores” no menu é a minha lista de conferência e as regras de base; não precisa aprovar nada lá.
+        </p>
       </section>
     </>
   );

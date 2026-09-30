@@ -314,3 +314,80 @@
   color: var(--ds-text-tertiary);
   min-height: 16px;
 }
+
+/* ---------- vitrine de tela ---------- */
+.vt-situacoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.vt-situacoes button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 14px 0 10px;
+  border: 0;
+  border-radius: var(--ds-radius-pill);
+  background: var(--ds-surface-card);
+  box-shadow: var(--ds-edge);
+  color: var(--ds-text-secondary);
+  font: inherit;
+  font-size: var(--ds-text-xs);
+  cursor: pointer;
+  transition: background var(--ds-dur-feedback), color var(--ds-dur-feedback), box-shadow var(--ds-dur-feedback), transform var(--ds-dur-press);
+}
+.vt-situacoes button:hover { color: var(--ds-text-primary); box-shadow: var(--ds-edge-strong); }
+.vt-situacoes button:active { transform: scale(0.97); }
+.vt-situacoes button[aria-selected="true"] {
+  background: var(--ds-action-bg);
+  color: var(--ds-action-fg);
+  box-shadow: none;
+}
+.vt-n {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  font-size: 11px;
+  background: rgb(255 255 255 / 0.07);
+}
+.vt-situacoes button[aria-selected="true"] .vt-n { background: rgb(0 0 0 / 0.1); }
+.vt-situacoes i { width: 7px; height: 7px; border-radius: 50%; }
+.vt-situacoes i[data-status="aprovado"] { background: var(--ds-state-ok); }
+.vt-situacoes i[data-status="mudar"] { background: var(--ds-state-attention); }
+.vt-barra {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 16px;
+  align-items: start;
+}
+.vt-barra p { margin: 6px 0 0; color: var(--ds-text-secondary); max-width: 70ch; }
+.vt-barra p b { color: var(--ds-text-primary); font-weight: 500; }
+.vt-barra > .ds-btn { margin-top: 2px; }
+.vt-moldura {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--ds-radius-panel);
+  box-shadow: 0 0 0 1px var(--ds-line-default), 0 40px 100px -30px rgb(0 0 0 / 0.9);
+}
+.vt-cheia {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  background: var(--ds-surface-page);
+}
+.vt-cheia-barra {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 40px;
+  padding: 0 8px 0 16px;
+  font-size: var(--ds-text-2xs);
+  border-bottom: 1px solid var(--ds-line-subtle);
+  background: var(--ds-surface-sunken);
+}
+.vt-cheia-tela { flex: 1; overflow: auto; }

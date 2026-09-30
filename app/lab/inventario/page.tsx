@@ -1,6 +1,5 @@
 import { contarInventario, INVENTARIO } from "@/lib/design-lab/inventario";
 
-import { Aprovacao } from "../_lab/aprovacao";
 
 export const metadata = { title: "Inventário — Laboratório" };
 
@@ -9,13 +8,13 @@ export default function Inventario() {
   return (
     <>
       <header className="lab-cabeca">
-        <p className="lab-trilha">Laboratório / Fase 0</p>
+        <p className="lab-trilha">Bastidores</p>
         <h1>Inventário</h1>
         <p className="lab-lede">
           Tudo o que o Nexo mostra hoje: <span className="ds-num">{n.telas}</span> telas,{" "}
           <span className="ds-num">{n.situacoes}</span> situações e <span className="ds-num">{n.controles}</span>{" "}
-          controles. Aprove cada tela quando a lista dela estiver completa. Se faltar uma situação que você vive no dia a
-          dia, peça mudança e escreva qual.
+          controles. É a lista que garante que nenhuma tela, caso ou botão fique de fora do redesenho — cada situação daqui
+          vira um botão na vitrine da tela.
         </p>
       </header>
 
@@ -37,7 +36,6 @@ export default function Inventario() {
                     </div>
                     <p style={{ margin: "6px 0 0", color: "var(--ds-text-secondary)", maxWidth: "70ch" }}>{t.trabalho}</p>
                   </div>
-                  <Aprovacao id={`inv.${t.id}`} rotulo={`inventário de ${t.nome}`} />
                 </div>
 
                 <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.1fr) minmax(0, 1fr)", gap: 28 }}>

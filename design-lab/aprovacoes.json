@@ -1,1 +1,12 @@
-{}
+{
+  "inv.login": {
+    "status": "aprovado",
+    "nota": "",
+    "em": "2026-09-30T01:13:03.053Z"
+  },
+  "inv.sem-acesso": {
+    "status": "aprovado",
+    "nota": "",
+    "em": "2026-09-30T01:12:59.514Z"
+  }
+}

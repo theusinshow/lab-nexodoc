@@ -1,6 +1,7 @@
 "use client";
 
 import { MotionConfig } from "motion/react";
+import { ProvedorDeEscala } from "@/lib/ds/tempo";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
 /**
@@ -93,7 +94,9 @@ export function ProvedorDoLab({ children }: { children: React.ReactNode }) {
 
   return (
     <LabContexto.Provider value={valor}>
-      <MotionConfig reducedMotion={reduzido ? "always" : "user"}>{children}</MotionConfig>
+      <ProvedorDeEscala value={lento ? 4 : 1}>
+        <MotionConfig reducedMotion={reduzido ? "always" : "user"}>{children}</MotionConfig>
+      </ProvedorDeEscala>
     </LabContexto.Provider>
   );
 }
