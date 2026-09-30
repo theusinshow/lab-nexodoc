@@ -1,5 +1,6 @@
 "use client";
 
+import { rotuloDoAchado, textoComRotulos } from "@/lib/rotulo-do-achado";
 import {
   AlertTriangle,
   Check,
@@ -906,7 +907,7 @@ async function createFindingSnapshot(
   index: number,
 ) {
   const rows = [
-    `Achado ${index + 1}${finding.refId ? ` | ${finding.refId}` : ""}`,
+    `Achado ${index + 1}${finding.refId ? ` | ${rotuloDoAchado(finding.refId)}` : ""}`,
     finding.title,
     `Documento: ${finding.documento || "não informado"}`,
     `Página provável: ${finding.pagina || "não identificada"}`,
@@ -965,7 +966,7 @@ async function createFindingSnapshot(
 
   context.drawImage(image, 0, 0);
   const link = document.createElement("a");
-  link.download = `nexodoc-achado-${finding.refId ?? index + 1}.png`;
+  link.download = `nexodoc-achado-${rotuloDoAchado(finding.refId) ?? index + 1}.png`;
   link.href = canvas.toDataURL("image/png");
   link.click();
 }
@@ -978,8 +979,15 @@ function reportFindingToStructured(finding: AuditFinding): StructuredFinding {
         ? "ok"
         : "warning";
 
+  /*
+   * A SIGLA QUE SE LÊ É ACH, não INC — ver [[lib/rotulo-do-achado.ts]]. O
+   * `refId` segue sendo o id GRAVADO (é chave de feedback, fila e filtros);
+   * trocam os textos que o Nexo escreveu, onde a nota de consolidação cita
+   * outro achado ("consolidada no INC-019"). A evidência e o termo de busca
+   * NÃO: são citação do memorial, e lá "INC" pode ser a prancha de incêndio.
+   */
   return {
-    title: finding.tipo,
+    title: textoComRotulos(finding.tipo),
     refId: finding.id,
     severity,
     documento: finding.arquivo,
@@ -987,8 +995,8 @@ function reportFindingToStructured(finding: AuditFinding): StructuredFinding {
     local: finding.local,
     evidencia: finding.evidencia,
     termoBusca: finding.termo_busca ?? finding.evidencia,
-    conflito: finding.conflito,
-    acao: finding.sugestao_correcao,
+    conflito: textoComRotulos(finding.conflito),
+    acao: textoComRotulos(finding.sugestao_correcao),
     categoria: finding.categoria ?? finding.capitulo,
     /*
      * OS DOIS CAMPOS SEPARADOS, e não um caindo no outro.
@@ -998,7 +1006,7 @@ function reportFindingToStructured(finding: AuditFinding): StructuredFinding {
      * preenchem. A tela mostrava um só texto onde o parecer traz dois, e o fato
      * observável não aparecia em canto nenhum.
      */
-    descricao: finding.descricao,
+    descricao: textoComRotulos(finding.descricao),
     referencia: finding.referencia_comparada,
     /*
      * FONTE ÚNICA da faixa. Era `finding.impacto ?? classify(...)`, que prefere
@@ -1033,7 +1041,7 @@ function reportFindingToStructured(finding: AuditFinding): StructuredFinding {
     disciplina: classifyFindingDiscipline(finding),
     tipoErro: classifyFindingErrorType(finding),
     raw: [
-      `${finding.id}: ${finding.tipo}`,
+      `${rotuloDoAchado(finding.id)}: ${textoComRotulos(finding.tipo)}`,
       `Prioridade: ${finding.prioridade}`,
       finding.severity_reason
         ? `Motivo da severidade: ${finding.severity_reason}`
@@ -1732,7 +1740,10 @@ export function AuditResult({
     !termo ||
     paraBusca(
       [
+        // As duas formas: quem digita a sigla que lê (ACH-014) e quem cola o
+        // id de um link antigo (INC-014) acham o mesmo achado.
         finding.refId,
+        rotuloDoAchado(finding.refId),
         finding.title,
         finding.descricao,
         finding.evidencia,
@@ -2739,7 +2750,7 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
     const link = linkDoAchado({ base: window.location.origin, auditId, findingId });
     try {
       await navigator.clipboard.writeText(link);
-      setPop({ tom: "ok", texto: `Link do achado ${findingId} copiado.` });
+      setPop({ tom: "ok", texto: `Link do achado ${rotuloDoAchado(findingId)} copiado.` });
     } catch {
       setPop({ tom: "falha", texto: `Não deu para copiar. O link é: ${link}` });
     }
@@ -3325,7 +3336,8 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
                 ) : null}
                 <DropdownItem
                   onClick={() => {
-                    void navigator.clipboard.writeText(content);
+                    // O texto GRAVADO de parecer antigo cita INC-xxx: sai com a sigla que se lê.
+                    void navigator.clipboard.writeText(textoComRotulos(content));
                     close();
                   }}
                 >
@@ -3352,7 +3364,7 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
                 </DropdownItem>
                 <DropdownItem
                   onClick={() => {
-                    downloadMarkdown(content);
+                    downloadMarkdown(textoComRotulos(content));
                     close();
                   }}
                 >
@@ -4159,7 +4171,7 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
                                     type="checkbox"
                                     checked={selecionados.has(finding.refId)}
                                     onChange={() => alternarSelecao(finding.refId!)}
-                                    aria-label={`Selecionar ${finding.refId} para atribuir`}
+                                    aria-label={`Selecionar ${rotuloDoAchado(finding.refId)} para atribuir`}
                                     className={cn(
                                       "mt-0.5 size-4 shrink-0 accent-primary transition-opacity",
                                       selecionados.size > 0
@@ -4189,7 +4201,7 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
                                         background: julgado ? COR_DO_PIN[finding.severity] : "transparent",
                                       }}
                                     />
-                                    <span className="text-foreground">{finding.refId ?? `Achado ${index + 1}`}</span>
+                                    <span className="text-foreground">{rotuloDoAchado(finding.refId) ?? `Achado ${index + 1}`}</span>
                                     {/* Agrupada por impacto, a faixa já está no cabeçalho do grupo. */}
                                     {ordem !== "impacto" ? <span className="truncate">· {getImpactLabel(faixa)}</span> : null}
                                     <span className="shrink-0">{rotuloDePaginas(paginas, finding.pagina)}</span>
@@ -4496,7 +4508,7 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
                               */}
                               <p className="mb-2.5 flex flex-wrap items-center gap-x-1.5 font-mono text-xs text-muted-foreground">
                                 {finding.refId ? (
-                                  <span className="text-foreground">{finding.refId}</span>
+                                  <span className="text-foreground">{rotuloDoAchado(finding.refId)}</span>
                                 ) : (
                                   <span className="text-foreground">Achado {index + 1}</span>
                                 )}

@@ -95,8 +95,10 @@ test("sugestão da IA NÃO vai para o papel", () => {
     }),
   );
   const texto = blocos.map((b) => b.texto).join(" | ");
-  assert.ok(texto.includes("INC-001"));
-  assert.ok(!texto.includes("INC-002"));
+  // O papel imprime a sigla que se lê (ACH), não o id gravado (INC).
+  assert.ok(texto.includes("ACH-001"));
+  assert.ok(!texto.includes("INC-001"), "o id gravado não vai para o papel");
+  assert.ok(!texto.includes("ACH-002"));
 });
 
 test("análise PARCIAL é dita no papel, logo abaixo do veredito", () => {

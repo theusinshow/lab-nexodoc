@@ -144,9 +144,16 @@ test("ler_achado devolve o achado inteiro do parecer", () => {
   assert.ok(saida.includes("A prancha indica 50mm"));
 });
 
+test("ler_achado pela sigla que o modelo leu (ACH-001) acha o INC-001 gravado", () => {
+  const saida = lerAchado(ctx, "ACH-001");
+  assert.ok(saida.includes("Espessura de telha divergente"), saida);
+  assert.ok(saida.includes('"id": "ACH-001"'), "o achado volta com a sigla que se lê");
+});
+
 test("ler_achado de id inexistente lista os ids validos", () => {
   const saida = lerAchado(ctx, "INC-999");
-  assert.ok(/INC-001/.test(saida), `nao ajudou o modelo a se corrigir: ${saida}`);
+  // A lista sai com a sigla que o modelo leu no parecer (ACH), não o id gravado.
+  assert.ok(/ACH-001/.test(saida), `nao ajudou o modelo a se corrigir: ${saida}`);
 });
 
 test("sem memoria, as ferramentas de documento dizem que nao ha texto", () => {
@@ -213,7 +220,7 @@ test("achado que repete defeito ja no parecer e recusado pela impressao digital"
     evidencia: 'Pagina 44: "Telha metalica termoacustica de 30mm"',
   } as never);
   assert.equal(r.ok, false);
-  assert.ok(/INC-001/.test(r.mensagem), `nao apontou o achado existente: ${r.mensagem}`);
+  assert.ok(/ACH-001/.test(r.mensagem), `nao apontou o achado existente: ${r.mensagem}`);
 });
 
 test("sem memoria do documento, registrar_achado NAO grava as cegas", () => {

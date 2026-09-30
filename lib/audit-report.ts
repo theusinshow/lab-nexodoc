@@ -12,6 +12,7 @@ import type { TextoCorrigido } from "./texto-corrigido.ts";
  */
 import { ehLeituraDoDocumentoPelaIa, incompletudeDoParecer } from "./auditoria-incompleta.ts";
 import { plural } from "./plural.ts";
+import { rotuloDoAchado, textoComRotulos } from "./rotulo-do-achado.ts";
 
 /**
  * Um capítulo do documento, reduzido ao que identifica o CONTEÚDO dele.
@@ -1119,7 +1120,7 @@ export function getFindingAssurance(finding: AuditFinding) {
 }
 
 function formatFindingLine(finding: AuditFinding) {
-  return `- ${finding.id}: ${finding.tipo} | Página ${finding.pagina || "não identificada"} | ${finding.conflito || finding.descricao}`;
+  return `- ${rotuloDoAchado(finding.id)}: ${textoComRotulos(finding.tipo)} | Página ${finding.pagina || "não identificada"} | ${finding.conflito || finding.descricao}`;
 }
 
 export function makeTextReport(report: AuditReport) {
@@ -1144,7 +1145,7 @@ export function makeTextReport(report: AuditReport) {
       : principalFindings
           .map((finding) => {
             return [
-              `Achado ${finding.id}: ${finding.tipo}`,
+              `Achado ${rotuloDoAchado(finding.id)}: ${textoComRotulos(finding.tipo)}`,
               `Prioridade: ${finding.prioridade}`,
               `Verificação: ${getFindingAssurance(finding)}`,
               `Documento: ${finding.arquivo ?? report.arquivo ?? report.arquivos_analisados[0]?.arquivo ?? "não informado"}`,

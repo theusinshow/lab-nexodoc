@@ -9,6 +9,7 @@
  */
 import type { AuditReport } from "../../../lib/audit-report.ts";
 import { incompletudeDoParecer } from "../../../lib/auditoria-incompleta.ts";
+import { achadoComRotulos } from "../../../lib/rotulo-do-achado.ts";
 
 export function instrucoesDoAdvogado(args: { temMemoria: boolean }): string {
   const base = `
@@ -59,6 +60,15 @@ finja ter lido.`;
  * Colar as 73 páginas aqui seria o "contexto cheio" que a spec recusou — e com
  * o documento inteiro na frente, o modelo erra o número da página.
  */
+/*
+ * O modelo lê o parecer com a sigla que o engenheiro lê — ACH-014, não o
+ * INC-014 gravado (ver [[lib/rotulo-do-achado.ts]]). Senão ele responde
+ * "INC-014" e a conversa usa um nome que a tela não usa mais.
+ */
+function parecerComRotulos(report: AuditReport): AuditReport {
+  return { ...report, incongruencias: (report.incongruencias ?? []).map(achadoComRotulos) };
+}
+
 export function primeiraEntrada(args: {
   pergunta: string;
   historico: { role: "user" | "assistant"; content: string }[];
@@ -83,7 +93,7 @@ ATENÇÃO — ${incompleta.titulo}. ${incompleta.explicacao} Diga isso ao engenh
 
   return `
 Parecer desta auditoria:${aviso}
-${JSON.stringify(args.report, null, 2)}
+${JSON.stringify(parecerComRotulos(args.report), null, 2)}
 
 Histórico recente da conversa:
 ${hist}
