@@ -28,6 +28,7 @@ import type {
   FindingPriority,
 } from "../../../lib/audit-report.ts";
 import { impressaoDoAchado } from "../../../lib/impressao-do-achado.ts";
+import { achadoComRotulos, idDoAchado, rotuloDoAchado } from "../../../lib/rotulo-do-achado.ts";
 import type { MemoriaDoDocumento } from "../../../lib/memoria-do-documento.ts";
 
 /**
@@ -172,16 +173,18 @@ export function lerPaginas(ctx: ContextoDoChat, de: number, ate: number): string
 
 export function lerAchado(ctx: ContextoDoChat, id: string): string {
   const achados = ctx.report.incongruencias ?? [];
-  const alvo = achados.find((f) => f.id === id || esqueleto(f.id) === esqueleto(id));
+  // O modelo pede pela sigla que leu (ACH-003); o parecer grava INC-003.
+  const pedido = idDoAchado(id);
+  const alvo = achados.find((f) => f.id === pedido || esqueleto(f.id) === esqueleto(pedido));
 
   if (!alvo) {
     // Listar os ids válidos ENSINA o modelo a se corrigir na volta seguinte,
     // em vez de deixá-lo tentar outro palpite.
-    const ids = achados.map((f) => f.id).join(", ") || "(o parecer não tem achados)";
+    const ids = achados.map((f) => rotuloDoAchado(f.id)).join(", ") || "(o parecer não tem achados)";
     return `Não existe achado "${id}" neste parecer. IDs disponíveis: ${ids}`;
   }
 
-  return JSON.stringify(alvo as AuditFinding, null, 2);
+  return JSON.stringify(achadoComRotulos(alvo as AuditFinding), null, 2);
 }
 
 export const FERRAMENTAS_DE_LEITURA: FunctionTool[] = [
@@ -231,7 +234,7 @@ export const FERRAMENTAS_DE_LEITURA: FunctionTool[] = [
   {
     type: "function",
     name: "ler_achado",
-    description: "O achado inteiro do parecer, com todos os campos, pelo id (ex.: INC-003).",
+    description: "O achado inteiro do parecer, com todos os campos, pelo id (ex.: ACH-003).",
     strict: false,
     parameters: {
       type: "object",
@@ -382,7 +385,7 @@ export function registrarAchado(
     return {
       ok: false,
       mensagem:
-        `Este defeito já está no parecer como ${jaExiste.id} ("${jaExiste.tipo}"). ` +
+        `Este defeito já está no parecer como ${rotuloDoAchado(jaExiste.id)} ("${jaExiste.tipo}"). ` +
         "Se a sua leitura for diferente da dele, diga isso na resposta em vez de registrar de novo.",
     };
   }
@@ -390,7 +393,7 @@ export function registrarAchado(
   return {
     ok: true,
     achado: candidato,
-    mensagem: `Achado registrado como ${candidato.id}, com a evidência conferida na página ${candidato.pagina}.`,
+    mensagem: `Achado registrado como ${rotuloDoAchado(candidato.id)}, com a evidência conferida na página ${candidato.pagina}.`,
   };
 }
 

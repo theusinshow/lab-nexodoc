@@ -22,6 +22,7 @@
  */
 import { getPrisma } from "@/lib/db";
 import { cidadeDoCliente } from "@/lib/cliente-do-projeto";
+import { rotuloDoAchado } from "@/lib/rotulo-do-achado";
 import {
   ondeParou,
   projetosRecentes,
@@ -319,7 +320,11 @@ export async function painelDe(args: {
         : null,
       // Sem rótulo gravado, o `targetKey` (`finding:INC-014`) é o que sobra —
       // feio, mas localizável. Melhor que uma linha sem texto nenhum.
-      titulo: linha.findingLabel?.trim() || linha.targetKey,
+      titulo:
+        linha.findingLabel?.trim() ||
+        (linha.targetKey.startsWith("finding:")
+          ? rotuloDoAchado(linha.targetKey.slice("finding:".length))
+          : linha.targetKey),
       direcao,
       pessoa,
       dias,

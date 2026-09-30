@@ -1,5 +1,6 @@
 "use client";
 
+import { textoComRotulos } from "@/lib/rotulo-do-achado";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Loader2, FileText, X, Copy, Check, ArrowDown } from "lucide-react";
 import type { NexoAgentTurn, NexoChatMessage, LdPreviewData } from "../types";
@@ -617,7 +618,10 @@ export function NexoChat({
               )}
               <MessageBubble
                 role={m.role}
-                content={m.content}
+                /* Resposta antiga do Nexo cita INC-014; a sigla que se lê é
+                   ACH (lib/rotulo-do-achado.ts). O que a pessoa escreveu fica
+                   como ela escreveu. */
+                content={m.role === "assistant" ? textoComRotulos(m.content) : m.content}
                 reveal={m.role === "assistant" && m.id === revealId}
               />
               {m.interrupted && (

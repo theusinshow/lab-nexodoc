@@ -25,6 +25,7 @@ import type { AuditFinding, AuditReport } from "./audit-report";
  */
 import { avaliarEmissao } from "./audit-report.ts";
 import { findingCard } from "./audit-engine/finding-card.ts";
+import { rotuloDoAchado, textoComRotulos } from "./rotulo-do-achado.ts";
 
 /** Os estilos do papel. O desenhador traduz cada um numa fonte e num corpo. */
 export type EstiloDoBloco =
@@ -228,13 +229,14 @@ export function blocosDoParecer(report: AuditReport): Bloco[] {
       estilo: "achado",
       // A linha de identificação é MONO porque é o que se confere contra o
       // documento: id, peso e página, sempre nesta ordem, sempre nesta coluna.
-      texto: `${a.id} · ${a.prioridade} · p.${a.pagina}${a.capitulo ? ` · ${a.capitulo}` : ""}`,
+      // `ACH`, não o `INC` gravado: ver [[rotulo-do-achado.ts]].
+      texto: `${rotuloDoAchado(a.id)} · ${a.prioridade} · p.${a.pagina}${a.capitulo ? ` · ${a.capitulo}` : ""}`,
       respiroAntes: 12,
       abreAssunto: true,
     });
-    blocos.push({ estilo: "texto", texto: a.tipo, abreAssunto: true });
+    blocos.push({ estilo: "texto", texto: textoComRotulos(a.tipo), abreAssunto: true });
     if (a.descricao?.trim())
-      blocos.push({ estilo: "texto", texto: a.descricao.trim() });
+      blocos.push({ estilo: "texto", texto: textoComRotulos(a.descricao.trim()) });
     if (a.evidencia?.trim()) {
       blocos.push({
         estilo: "rotulo",
@@ -255,7 +257,7 @@ export function blocosDoParecer(report: AuditReport): Bloco[] {
         // causa da linha de baixo, e os dois descem juntos.
         abreAssunto: true,
       });
-      blocos.push({ estilo: "texto", texto: a.conflito.trim() });
+      blocos.push({ estilo: "texto", texto: textoComRotulos(a.conflito.trim()) });
     }
     if (a.sugestao_correcao?.trim()) {
       blocos.push({
@@ -266,7 +268,7 @@ export function blocosDoParecer(report: AuditReport): Bloco[] {
         // causa da linha de baixo, e os dois descem juntos.
         abreAssunto: true,
       });
-      blocos.push({ estilo: "texto", texto: a.sugestao_correcao.trim() });
+      blocos.push({ estilo: "texto", texto: textoComRotulos(a.sugestao_correcao.trim()) });
     }
     /*
      * ESTADO E LIMITES, só para achado do motor novo: legado não tem o dado, e
