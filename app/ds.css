@@ -737,3 +737,34 @@
 .ds .gr-nivel-trilho em { position: absolute; left: 0; right: 0; bottom: 8px; text-align: center; font-style: normal; font-size: 13px; color: var(--ds-text-tertiary); }
 .ds .gr-nivel-col small { font-size: 11px; line-height: 1.25; text-align: center; color: var(--ds-text-tertiary); }
 .ds .gr-nivel-col:hover small { color: var(--ds-text-primary); }
+
+/* ---------- níveis em faixa ---------- */
+.ds .gr-niveis { display: grid; gap: 12px; --gr-tom: #9aa1ad; }
+.ds .gr-niveis--block { --gr-tom: var(--ds-sev-block); }
+.ds .gr-niveis--decide { --gr-tom: var(--ds-sev-decide); }
+.ds .gr-niveis--note { --gr-tom: #9aa1ad; }
+.ds .gr-niveis--texto { --gr-tom: var(--ds-sev-texto); }
+.ds .gr-niveis--fora { opacity: 0.3; }
+.ds .gr-niveis-faixa { display: flex; gap: 3px; height: 10px; }
+.ds .gr-niveis-seg { flex-basis: 0; border-radius: 999px; background: var(--gr-tom); transform-origin: left; transition: opacity var(--ds-dur-feedback); }
+.ds .gr-niveis-linhas { list-style: none; margin: 0; padding: 0; }
+.ds .gr-niveis-linha {
+  display: grid;
+  grid-template-columns: 3px minmax(0, 1fr) auto 44px;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 2px;
+  border-top: 1px solid var(--ds-line-subtle);
+  transition: opacity var(--ds-dur-feedback);
+}
+.ds .gr-niveis-cor { align-self: stretch; border-radius: 999px; background: var(--gr-tom); }
+.ds .gr-niveis-texto { display: grid; gap: 1px; min-width: 0; }
+.ds .gr-niveis-texto b { font-size: var(--ds-text-xs); font-weight: 400; color: var(--ds-text-primary); }
+.ds .gr-niveis-texto small { font-size: 11px; color: var(--ds-text-tertiary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ds .gr-niveis-fichas { display: flex; gap: 3px; }
+.ds .gr-niveis-fichas i { width: 5px; height: 14px; border-radius: 999px; background: var(--gr-tom); opacity: 0.85; transform-origin: bottom; }
+.ds .gr-niveis-conta { display: grid; justify-items: end; line-height: 1.1; }
+.ds .gr-niveis-conta b { font-size: 16px; font-weight: 400; color: var(--ds-text-primary); }
+.ds .gr-niveis-conta small { font-size: 10.5px; color: var(--ds-text-tertiary); }
+.ds .gr-niveis--vazio .gr-niveis-cor { opacity: 0.35; }
+.ds .gr-niveis--vazio .gr-niveis-conta b { color: var(--ds-text-tertiary); }

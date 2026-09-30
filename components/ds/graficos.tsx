@@ -736,3 +736,69 @@ export function ColunasPorNivel({
     </div>
   );
 }
+
+/**
+ * NÍVEIS EM FAIXA. Uma faixa só, dividida pelo peso de cada nível — a
+ * proporção num olhar —, e embaixo uma linha por nível: os tipos que o
+ * compõem, a contagem e uma pílula por achado. O mouse numa linha acende o
+ * trecho dela na faixa, e vice-versa.
+ */
+export function NiveisEmFaixa({ niveis }: { niveis: GrupoDoMapa[] }) {
+  const { dur, k } = useTempo();
+  const [sobre, setSobre] = useState<string | null>(null);
+  const soma = (g: GrupoDoMapa) => g.itens.reduce((a, i) => a + i.valor, 0);
+  const total = niveis.reduce((s, g) => s + soma(g), 0);
+
+  return (
+    <div className="gr-niveis" onMouseLeave={() => setSobre(null)}>
+      <div className="gr-niveis-faixa" aria-hidden>
+        {niveis
+          .filter((g) => soma(g) > 0)
+          .map((g, i) => (
+            <motion.span
+              key={g.id}
+              className={`gr-niveis-seg gr-niveis--${g.tom}${sobre && sobre !== g.id ? " gr-niveis--fora" : ""}`}
+              style={{ flexGrow: soma(g) }}
+              initial={{ scaleX: 0 }}
+              animate={{ scaleX: 1 }}
+              transition={{ duration: dur("layout") * 1.6, delay: i * 0.08 * k, ease: ease(CURVA.out) }}
+              onMouseEnter={() => setSobre(g.id)}
+            />
+          ))}
+      </div>
+      <ul className="gr-niveis-linhas">
+        {niveis.map((g, gi) => {
+          const n = soma(g);
+          const tipos = g.itens.filter((i) => i.valor > 0);
+          return (
+            <li
+              key={g.id}
+              className={`gr-niveis-linha gr-niveis--${g.tom}${sobre && sobre !== g.id ? " gr-niveis--fora" : ""}${n === 0 ? " gr-niveis--vazio" : ""}`}
+              onMouseEnter={() => setSobre(g.id)}
+            >
+              <i className="gr-niveis-cor" />
+              <span className="gr-niveis-texto">
+                <b>{g.rotulo}</b>
+                <small>{tipos.length ? tipos.map((t) => `${t.rotulo} ${t.valor}`).join(", ") : "nenhum até agora"}</small>
+              </span>
+              <span className="gr-niveis-fichas" aria-hidden>
+                {Array.from({ length: n }, (_, i) => (
+                  <motion.i
+                    key={i}
+                    initial={{ opacity: 0, scaleY: 0.3 }}
+                    animate={{ opacity: 1, scaleY: 1 }}
+                    transition={{ duration: dur("enter"), delay: 0.2 + gi * 0.08 * k + i * 0.04 * k, ease: ease(CURVA.out) }}
+                  />
+                ))}
+              </span>
+              <span className="gr-niveis-conta">
+                <b className="ds-num">{n}</b>
+                {total > 0 && n > 0 && <small className="ds-num">{Math.round((n / total) * 100)}%</small>}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}

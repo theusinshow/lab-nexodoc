@@ -1,11 +1,11 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
-import { AlertTriangle, ArrowRight, FileSearch, FileText, RotateCcw, X } from "lucide-react";
+import { AlertTriangle, FileSearch, FileText, RotateCcw, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
-import { Botao, Esqueleto, NumeroQueChega, Orbe, Segmento, Selo } from "@/components/ds/basicos";
-import { ColunasPorNivel, LinhaDoTempo, MapaDasPaginas, MapaEmBlocos, type GrupoDoMapa, type PassoDaLinha } from "@/components/ds/graficos";
+import { Botao, Esqueleto, NumeroQueChega, Orbe, Selo } from "@/components/ds/basicos";
+import { LinhaDoTempo, MapaDasPaginas, NiveisEmFaixa, type GrupoDoMapa, type PassoDaLinha } from "@/components/ds/graficos";
 import { CURVA } from "@/lib/ds/movimento";
 import { useTempo } from "@/lib/ds/tempo";
 import { MarcaDaPrefeitura } from "@/modules/nexo/components/MarcaDaPrefeitura";
@@ -83,12 +83,6 @@ const NIVEIS: GrupoDoMapa[] = [
   { id: "note", rotulo: "Revisão de texto", tom: "note", itens: [{ id: "forma", rotulo: "Numeração e unidades", valor: 0 }] },
   { id: "texto", rotulo: "Gramática", tom: "texto", itens: [{ id: "editorial", rotulo: "Redação e gramática", valor: 3, tom: "texto" }] },
 ];
-const DICA_DO_NIVEL: Record<string, string> = {
-  block: "Corrigir antes de gerar o documento.",
-  decide: "Precisa de aceite do responsável antes de executar.",
-  note: "Numeração, unidades, referências cruzadas.",
-  texto: "Ortografia, concordância, pontuação. Não muda decisão técnica.",
-};
 
 const REGISTRO = [
   { h: "21:08:02", t: "Arquivo recebido: 117_25_md_geral_a.pdf, 3,1 MB" },
@@ -129,7 +123,6 @@ export function TelaAuditoria({ situacao }: { situacao: SituacaoAud }) {
   const [confirmar, setConfirmar] = useState(situacao === "cancelando");
   const [aviso, setAviso] = useState(true);
   const [blocoSobre, setBlocoSobre] = useState<number | null>(null);
-  const [visao, setVisao] = useState<"blocos" | "colunas">("blocos");
   const registroRef = useRef<HTMLOListElement>(null);
 
   useEffect(() => {
@@ -190,6 +183,10 @@ export function TelaAuditoria({ situacao }: { situacao: SituacaoAud }) {
   const restante = Math.max(0, t - decorrido);
   const passou = situacao === "passou";
   const blocoEmFoco = BLOCOS.find((b) => b.n === blocoSobre);
+  const maisMarcadas = PONTOS.map((n, i) => ({ p: i + 1, n }))
+    .filter((x) => x.n > 0 && paginasLidas.includes(x.p))
+    .sort((a, b) => b.n - a.n || a.p - b.p)
+    .slice(0, 4);
 
   const fatos = [
     { rotulo: "páginas com texto", valor: semSinal ? null : 42 },
@@ -339,9 +336,8 @@ export function TelaAuditoria({ situacao }: { situacao: SituacaoAud }) {
         </section>
 
         <div className="au-grade">
-          <div className="au-coluna">
           {/* ---------- onde: páginas e blocos ---------- */}
-          <section className="au-bloco">
+          <section className="au-bloco au-paginas">
             <div className="au-bloco-cabeca">
               <h2>Páginas do memorial</h2>
               <span className="au-nota ds-num">{paginasLidas.length} de 42 lidas capítulo a capítulo</span>
@@ -379,68 +375,52 @@ export function TelaAuditoria({ situacao }: { situacao: SituacaoAud }) {
                 )}
               </p>
             </div>
-          </section>
-
-          {/* ---------- de que nível e tipo: blocos ou colunas ---------- */}
-          <section className="au-bloco au-tipos">
-            <div className="au-bloco-cabeca">
-              <h2>Por nível</h2>
-              <Segmento
-                rotulo="Como ver os níveis"
-                valor={visao}
-                onTroca={setVisao}
-                opcoes={[
-                  { valor: "blocos", rotulo: "Blocos" },
-                  { valor: "colunas", rotulo: "Colunas" },
-                ]}
-              />
-            </div>
-            <AnimatePresence mode="wait" initial={false}>
-              <motion.div key={visao} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: dur("enter"), ease: ease(CURVA.out) }}>
-                {semSinal ? (
-                  <p className="au-nota">Os níveis aparecem quando a primeira etapa com achados terminar.</p>
-                ) : visao === "blocos" ? (
-                  <MapaEmBlocos grupos={NIVEIS} altura={188} />
-                ) : (
-                  <ColunasPorNivel
-                    colunas={NIVEIS.map((n) => ({ id: n.id, rotulo: n.rotulo, tom: n.tom, valor: n.itens.reduce((a, it) => a + it.valor, 0), dica: DICA_DO_NIVEL[n.id] }))}
-                    teto={5}
-                  />
-                )}
-              </motion.div>
-            </AnimatePresence>
-          </section>
-          </div>
-
-          <div className="au-coluna">
-            {/* ---------- o que já se achou ---------- */}
-            <section className="au-bloco au-achados">
-              <div className="au-bloco-cabeca">
-                <h2>Achados até agora</h2>
+            {!semSinal && (
+              <div className="au-maiores">
+                Mais marcadas até agora
+                {maisMarcadas.map((m) => (
+                  <button key={m.p} type="button" title={`Página ${m.p}: ${m.n} pontos`}>
+                    p. {m.p} <span style={{ color: "var(--ds-text-tertiary)" }}>{m.n}</span>
+                  </button>
+                ))}
               </div>
-              <ul>
-                <li>
-                  <span>Regras locais</span>
-                  <b className="ds-num">{semSinal ? "—" : 2}</b>
-                </li>
-                <li>
-                  <span>Leitura global</span>
-                  <b className="ds-num">{semSinal ? "—" : 6}</b>
-                </li>
-                <li className={atual === 3 && !falhou ? "au-achados--agora" : undefined}>
-                  <span>Capítulo a capítulo{atual === 3 && !falhou ? ", ainda lendo" : ""}</span>
-                  <b className="ds-num">{semSinal ? "—" : achadosBlocos}</b>
-                </li>
-                <li className="au-achados--depois">
-                  <span>Segundo modelo</span>
-                  <b>{concluida ? "manteve 9 de 11" : "depois"}</b>
-                </li>
-              </ul>
-              <p className="au-nota">Cada etapa conta quando termina. O segundo modelo ainda pode derrubar alguns antes do parecer.</p>
-            </section>
+            )}
+          </section>
+
+          {/* ---------- o que já se achou: por nível e por etapa ---------- */}
+          <section className="au-bloco au-achados">
+            <div className="au-bloco-cabeca">
+              <h2>Achados até agora</h2>
+              <span className="au-nota">antes do segundo modelo</span>
+            </div>
+            {semSinal ? (
+              <p className="au-nota">Os achados aparecem quando a primeira etapa terminar.</p>
+            ) : (
+              <NiveisEmFaixa niveis={NIVEIS} />
+            )}
+            <div className="au-etapas-conta" aria-label="Achados por etapa">
+              <span>
+                <small>Regras locais</small>
+                <b className="ds-num">{semSinal ? "—" : 2}</b>
+              </span>
+              <span>
+                <small>Leitura global</small>
+                <b className="ds-num">{semSinal ? "—" : 6}</b>
+              </span>
+              <span className={atual === 3 && !falhou ? "au-etapas-conta--agora" : undefined}>
+                <small>Capítulo a capítulo</small>
+                <b className="ds-num">{semSinal ? "—" : achadosBlocos}</b>
+              </span>
+              <span className="au-etapas-conta--depois">
+                <small>Segundo modelo</small>
+                <b>{concluida ? "manteve 9 de 11" : "depois"}</b>
+              </span>
+            </div>
+          </section>
+        </div>
 
             {/* ---------- o registro ---------- */}
-            <section className="au-bloco au-registro">
+            <section className="au-bloco au-registro au-registro--largo">
               <div className="au-bloco-cabeca">
                 <h2>Registro</h2>
               </div>
@@ -467,8 +447,6 @@ export function TelaAuditoria({ situacao }: { situacao: SituacaoAud }) {
                 </ol>
               )}
             </section>
-          </div>
-        </div>
 
         {/* ---------- o que vem depois ---------- */}
         {!concluida && !falhou && (
@@ -476,7 +454,6 @@ export function TelaAuditoria({ situacao }: { situacao: SituacaoAud }) {
             <span className="au-depois-texto">
               Pode fechar a aba: a auditoria continua no servidor e fica em Continuar, no Início. Quando terminar, o resultado abre aqui, com o
               veredito e a fila de achados.
-              <ArrowRight size={13} />
             </span>
             <label>
               <button type="button" role="switch" aria-checked={aviso} className="au-chave" onClick={() => setAviso((a) => !a)}>

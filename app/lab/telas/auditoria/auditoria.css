@@ -176,10 +176,6 @@
 .ds .au-blocos-rodape b { font-weight: 500; color: var(--ds-text-primary); }
 
 .ds .au-coluna { display: grid; gap: 12px; align-content: start; min-width: 0; }
-.ds .au-achados ul { list-style: none; margin: 0 0 10px; padding: 0; }
-.ds .au-achados li { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 7px 2px; border-top: 1px solid var(--ds-line-subtle); font-size: var(--ds-text-xs); color: var(--ds-text-secondary); }
-.ds .au-achados li:first-child { border-top: 0; }
-.ds .au-achados li b { font-weight: 400; font-size: 15px; color: var(--ds-text-primary); }
 .ds .au-achados--agora span { color: var(--ds-text-primary); }
 .ds .au-achados--agora b { color: var(--ds-nexo) !important; }
 .ds .au-achados--depois b { font-size: var(--ds-text-2xs) !important; color: var(--ds-text-tertiary) !important; }
@@ -202,3 +198,23 @@
 .ds .au-tipos-cor--texto { background: var(--ds-sev-texto); }
 .ds .au-previa { display: grid; gap: 8px; padding: 6px 4px 4px; }
 .ds .au-previa .gr-faixa { padding-bottom: 58px; }
+
+/* ---------- v4: estrutura. Duas colunas da mesma altura, registro na largura toda ---------- */
+.ds .au-grade { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) !important; align-items: stretch !important; }
+.ds .au-paginas, .ds .au-achados { display: flex; flex-direction: column; }
+.ds .au-maiores { display: flex; align-items: center; gap: 8px; margin-top: auto; padding-top: 12px; border-top: 1px solid var(--ds-line-subtle); font-size: var(--ds-text-2xs); color: var(--ds-text-tertiary); }
+.ds .au-maiores button { height: 24px; padding: 0 9px; border: 0; border-radius: 999px; background: rgb(255 255 255 / 0.06); font: inherit; font-size: 11.5px; color: var(--ds-text-primary); cursor: pointer; font-variant-numeric: tabular-nums; }
+.ds .au-maiores button:hover { background: rgb(255 255 255 / 0.1); }
+.ds .au-paginas .au-blocos { margin-bottom: 14px; }
+.ds .au-achados .gr-niveis { margin-bottom: 14px; }
+.ds .au-etapas-conta { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: auto; padding-top: 12px; border-top: 1px solid var(--ds-line-subtle); }
+.ds .au-etapas-conta span { display: grid; gap: 2px; padding: 0 12px; border-left: 1px solid var(--ds-line-subtle); }
+.ds .au-etapas-conta span:first-child { padding-left: 2px; border-left: 0; }
+.ds .au-etapas-conta small { font-size: 11px; color: var(--ds-text-tertiary); white-space: nowrap; }
+.ds .au-etapas-conta b { font-size: 16px; font-weight: 400; color: var(--ds-text-primary); }
+.ds .au-etapas-conta--agora small { color: var(--ds-nexo-soft); }
+.ds .au-etapas-conta--agora b { color: var(--ds-nexo); }
+.ds .au-etapas-conta--depois b { font-size: 12px; line-height: 19px; color: var(--ds-text-tertiary); }
+.ds .au-registro--largo { margin-top: 12px; }
+.ds .au-registro--largo ol { max-height: 150px; }
+.ds .au-registro--largo li { grid-template-columns: 70px minmax(0, 1fr); }
