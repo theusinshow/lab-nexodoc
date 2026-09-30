@@ -1617,10 +1617,9 @@ function VolumesDoConjunto({
         </div>
       )}
       {/*
-        PASSO 2: os editáveis na pasta do projeto, ANTES do PDF do volume.
-        Substitui o antigo "Baixar os editáveis (ZIP)", que ninguém era obrigado
-        a clicar — e o ODT morria no navegador. O ZIP continua como saída de
-        quem não consegue gravar direto (ver o componente).
+        PASSO 2: o ZIP dos editáveis, ANTES do PDF do volume. O botão já existia,
+        mas ninguém era obrigado a clicar — e o ODT morria no navegador. Agora
+        é ele que destrava o PDF (ver o componente).
       */}
       {editaveis.length > 0 && <SalvarEditaveisNoProjeto selos={props.selos} />}
       {tomos.map((t) => (

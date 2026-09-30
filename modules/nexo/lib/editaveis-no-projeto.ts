@@ -11,10 +11,10 @@
 
 /** O registro de que os editáveis foram salvos, guardado na conversa. */
 export interface EditaveisSalvos {
-  /** Nome da pasta escolhida (o navegador não expõe o caminho). "" no ZIP. */
+  /** Nome da pasta no antigo modo "pasta". "" no ZIP. */
   pasta: string;
   quando: number;
-  /** "pasta" = gravado direto; "zip" = baixado, o usuário move à mão. */
+  /** "zip" = baixado, o usuário move à mão (único caminho). "pasta" só em registros antigos. */
   modo: "pasta" | "zip";
   /** Os nomes que foram gravados (ou entraram no ZIP). */
   arquivos: string[];
@@ -54,9 +54,9 @@ export interface Liberacao {
 }
 
 export const MOTIVO_NAO_SALVOU =
-  "Salve os editáveis no projeto antes de baixar o volume.";
+  "Baixe os editáveis (ZIP) antes de baixar o volume.";
 export const MOTIVO_ENVELHECEU =
-  "A capa, a LD ou a separatriz mudou depois de salvar — salve os editáveis de novo.";
+  "A capa, a LD ou a separatriz mudou depois do ZIP — baixe os editáveis de novo.";
 
 export function liberacaoDoVolume(
   salvos: EditaveisSalvos | null | undefined,
@@ -67,20 +67,4 @@ export function liberacaoDoVolume(
     return { liberado: false, motivo: MOTIVO_ENVELHECEU };
   }
   return { liberado: true, motivo: null };
-}
-
-/**
- * O nome que não colide com a pasta: "capa.odt" → "capa (2).odt". Sem caixa,
- * porque no Windows "Capa.odt" e "capa.odt" são o mesmo arquivo.
- */
-export function nomeLivre(nome: string, existentes: ReadonlySet<string>): string {
-  const ocupados = new Set([...existentes].map((n) => n.toLowerCase()));
-  if (!ocupados.has(nome.toLowerCase())) return nome;
-  const ponto = nome.lastIndexOf(".");
-  const base = ponto > 0 ? nome.slice(0, ponto) : nome;
-  const ext = ponto > 0 ? nome.slice(ponto) : "";
-  for (let n = 2; ; n++) {
-    const candidato = `${base} (${n})${ext}`;
-    if (!ocupados.has(candidato.toLowerCase())) return candidato;
-  }
 }

@@ -1,5 +1,5 @@
 /**
- * As regras da trava "salve os editáveis antes de baixar o volume".
+ * As regras da trava "baixe os editáveis antes de baixar o volume".
  *
  *   node scripts/test-editaveis-no-projeto.ts
  */
@@ -8,7 +8,6 @@ import assert from "node:assert/strict";
 import {
   assinaturaDosDocumentos,
   liberacaoDoVolume,
-  nomeLivre,
   type EditaveisSalvos,
 } from "../modules/nexo/lib/editaveis-no-projeto.ts";
 
@@ -59,7 +58,7 @@ test("assinatura muda quando um documento é regerado", () => {
 test("nada salvo -> volume travado, com o motivo", () => {
   const l = liberacaoDoVolume(null, [capa, ld, sep, vol]);
   assert.equal(l.liberado, false);
-  assert.match(l.motivo ?? "", /salve os editáveis/i);
+  assert.match(l.motivo ?? "", /baixe os editáveis/i);
 });
 
 test("salvo com a assinatura de agora -> liberado", () => {
@@ -79,28 +78,12 @@ test("regerar a LD depois de salvar -> travado de novo, dizendo por quê", () =>
   const s = salvos([capa, ld, sep, vol]);
   const l = liberacaoDoVolume(s, [capa, { ...ld, generatedAt: 999 }, sep, vol]);
   assert.equal(l.liberado, false);
-  assert.match(l.motivo ?? "", /mudou depois de salvar/);
+  assert.match(l.motivo ?? "", /mudou depois do ZIP/);
 });
 
 test("salvo pelo ZIP também libera", () => {
   const results = [capa, ld, sep, vol];
   assert.equal(liberacaoDoVolume(salvos(results, { modo: "zip" }), results).liberado, true);
-});
-
-test("nome livre: sem conflito devolve o próprio nome", () => {
-  assert.equal(nomeLivre("capa.odt", new Set(["ld.odt"])), "capa.odt");
-});
-
-test("nome livre: conflito vira 'nome (2).odt', e pula os que já existem", () => {
-  assert.equal(nomeLivre("capa.odt", new Set(["capa.odt"])), "capa (2).odt");
-  assert.equal(
-    nomeLivre("capa.odt", new Set(["capa.odt", "capa (2).odt", "capa (3).odt"])),
-    "capa (4).odt",
-  );
-});
-
-test("nome livre: compara sem caixa, como o Windows", () => {
-  assert.equal(nomeLivre("Capa.odt", new Set(["capa.odt"])), "Capa (2).odt");
 });
 
 console.log(`\n${passed} teste(s) passaram.`);
