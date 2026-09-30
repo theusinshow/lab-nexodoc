@@ -216,3 +216,6 @@
 .ds .pd-continuar li button:hover .pd-c-seta { transform: translateX(3px); color: var(--ds-text-primary); }
 .ds .pd-primeiro { display: flex; align-items: center; gap: 14px; padding: 16px; border-radius: var(--ds-radius-card); box-shadow: var(--ds-edge); color: var(--ds-text-secondary); font-size: var(--ds-text-xs); }
 .ds .pd-primeiro span { flex: 1; }
+
+/* O quadro em volta já mostra o foco; o campo dentro dele não repete o anel. */
+.ds .pd-compositor textarea:focus-visible:focus-visible { box-shadow: none; }

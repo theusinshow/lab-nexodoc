@@ -12,12 +12,13 @@ import { useLab } from "./contexto";
  *  desligadas: o lab mostra o caminho inteiro desde o primeiro dia. */
 const FASES: { href: string; rotulo: string; fase: string; pronta: boolean; grupo?: string }[] = [
   { href: "/lab", rotulo: "Começar aqui", fase: "", pronta: true },
-  { href: "/lab/telas/inicio-e", rotulo: "Início E (a mesa)", fase: "", pronta: true, grupo: "Telas para aprovar" },
+  { href: "/lab/telas/inicio-f", rotulo: "Início F (barra de comando)", fase: "", pronta: true, grupo: "Telas para aprovar" },
   { href: "/lab/telas/inicio-d", rotulo: "Início D (tarefa primeiro)", fase: "", pronta: true },
   { href: "/lab/telas/chat", rotulo: "Entrada no chat", fase: "", pronta: false },
   { href: "/lab/telas/auditoria", rotulo: "Auditoria rodando", fase: "", pronta: false },
   { href: "/lab/telas/resultado", rotulo: "Resultado", fase: "", pronta: false },
-  { href: "/lab/telas/painel", rotulo: "Painel A", fase: "", pronta: true, grupo: "Arquivadas" },
+  { href: "/lab/telas/inicio-e", rotulo: "Início E (a mesa)", fase: "", pronta: true, grupo: "Arquivadas" },
+  { href: "/lab/telas/painel", rotulo: "Painel A", fase: "", pronta: true },
   { href: "/lab/telas/painel-b", rotulo: "Painel B (mesa de trabalho)", fase: "", pronta: true },
   { href: "/lab/telas/projetos-c", rotulo: "Projetos C (linha de produção)", fase: "", pronta: true },
   { href: "/lab/fundamentos", rotulo: "Fundamentos", fase: "", pronta: true, grupo: "Bastidores" },

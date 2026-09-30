@@ -416,3 +416,6 @@
 /* O compositor inteiro mostra o foco; o campo dentro dele não repete. */
 .ds .pb-compositor textarea:focus,
 .ds .pb-compositor textarea:focus-visible { outline: none; box-shadow: none; }
+
+/* O quadro em volta já mostra o foco; o campo dentro dele não repete o anel. */
+.ds .pb-compositor textarea:focus-visible:focus-visible { box-shadow: none; }
