@@ -15,6 +15,7 @@ const FASES: { href: string; rotulo: string; fase: string; pronta: boolean; grup
   { href: "/lab/telas/inicio-d2", rotulo: "Início (D revisto)", fase: "", pronta: true, grupo: "Telas para aprovar" },
   { href: "/lab/telas/auditoria", rotulo: "Auditoria rodando", fase: "", pronta: true },
   { href: "/lab/telas/resultado", rotulo: "Resultado da auditoria", fase: "", pronta: true },
+  { href: "/lab/telas/resultado-c", rotulo: "Resultado, versão C", fase: "", pronta: true },
   { href: "/lab/telas/resultado-v1", rotulo: "Resultado (primeira versão)", fase: "", pronta: true, grupo: "Arquivadas" },
   { href: "/lab/telas/auditoria-cheia", rotulo: "Auditoria (versão cheia)", fase: "", pronta: true },
   { href: "/lab/telas/auditoria-v1", rotulo: "Auditoria (primeira versão)", fase: "", pronta: true },
