@@ -17,6 +17,44 @@ export const IMPACTOS: { id: Impacto; nome: string; dica: string }[] = [
   { id: "texto", nome: "Gramática", dica: "Ortografia, acentuação, concordância. Não muda decisão técnica." },
 ];
 
+/**
+ * As disciplinas que o sistema reconhece (lib/audit-report.ts,
+ * DISCIPLINE_LABELS), com a sigla que a prancha usa e a cor de cada uma. As
+ * oito primeiras cores vêm de hoje (app/globals.css, --discipline-*); as quatro
+ * últimas não tinham cor e ganharam uma aqui.
+ */
+export type Disciplina =
+  | "arquitetura" | "estrutural" | "hidrossanitario" | "eletrico" | "ppci" | "climatizacao"
+  | "terraplenagem" | "paisagismo" | "cabeamento" | "gases_medicinais" | "acessibilidade" | "geral";
+
+export const DISCIPLINAS: { id: Disciplina; nome: string; sigla: string }[] = [
+  { id: "arquitetura", nome: "Arquitetura", sigla: "ARQ" },
+  { id: "estrutural", nome: "Estrutural", sigla: "EST" },
+  { id: "hidrossanitario", nome: "Hidrossanitário", sigla: "HID" },
+  { id: "eletrico", nome: "Elétrico", sigla: "ELE" },
+  { id: "ppci", nome: "PPCI / Incêndio", sigla: "PCI" },
+  { id: "climatizacao", nome: "Climatização", sigla: "CLI" },
+  { id: "terraplenagem", nome: "Terraplenagem / Urbanização", sigla: "TER" },
+  { id: "paisagismo", nome: "Paisagismo", sigla: "PAI" },
+  { id: "cabeamento", nome: "Cabeamento / CFTV", sigla: "CAB" },
+  { id: "gases_medicinais", nome: "Gases medicinais", sigla: "GAS" },
+  { id: "acessibilidade", nome: "Acessibilidade", sigla: "ACE" },
+  { id: "geral", nome: "Geral / Documental", sigla: "GER" },
+];
+export const DISCIPLINA = Object.fromEntries(DISCIPLINAS.map((d) => [d.id, d])) as Record<Disciplina, (typeof DISCIPLINAS)[number]>;
+
+/** Os tipos de erro (lib/audit-report.ts, ERROR_TYPE_LABELS). */
+export type TipoDeErro = "identidade" | "escopo" | "norma" | "quantitativo" | "especificacao" | "editorial" | "tecnico";
+export const TIPOS_DE_ERRO: { id: TipoDeErro; nome: string }[] = [
+  { id: "identidade", nome: "Identidade / documental" },
+  { id: "escopo", nome: "Escopo / contratual" },
+  { id: "norma", nome: "Norma" },
+  { id: "quantitativo", nome: "Quantitativo" },
+  { id: "especificacao", nome: "Especificação / material" },
+  { id: "editorial", nome: "Redação / editorial" },
+  { id: "tecnico", nome: "Técnico (geral)" },
+];
+
 export const DESFECHO_NOME: Record<Desfecho, string> = {
   corrigido: "Corrigido",
   "falso-positivo": "Falso positivo",
@@ -26,6 +64,8 @@ export const DESFECHO_NOME: Record<Desfecho, string> = {
 export interface Achado {
   id: string;
   impacto: Impacto;
+  disc: Disciplina;
+  tipo: TipoDeErro;
   disciplina: string;
   titulo: string;
   pagina: number;
@@ -50,7 +90,9 @@ export const ACHADOS: Achado[] = [
   {
     id: "ACH-001",
     impacto: "block",
-    disciplina: "Geral",
+    disc: "geral",
+    tipo: "identidade",
+    disciplina: "Geral / Documental",
     titulo: "Revisão B no carimbo, revisão A na capa",
     pagina: 1,
     origem: "regra",
@@ -64,7 +106,9 @@ export const ACHADOS: Achado[] = [
   {
     id: "ACH-002",
     impacto: "block",
-    disciplina: "Quantitativos",
+    disc: "estrutural",
+    tipo: "quantitativo",
+    disciplina: "Estrutural",
     titulo: "Volume de concreto diverge entre memorial e quadro",
     pagina: 14,
     origem: "regra",
@@ -78,6 +122,8 @@ export const ACHADOS: Achado[] = [
   {
     id: "ACH-003",
     impacto: "decide",
+    disc: "arquitetura",
+    tipo: "quantitativo",
     disciplina: "Arquitetura",
     titulo: "Área coberta de 1.240 m² no texto, 1.180 m² no quadro",
     pagina: 9,
@@ -92,6 +138,8 @@ export const ACHADOS: Achado[] = [
   {
     id: "ACH-004",
     impacto: "decide",
+    disc: "hidrossanitario",
+    tipo: "norma",
     disciplina: "Hidrossanitário",
     titulo: "NBR 5626 citada na edição de 1998; a vigente é de 2020",
     pagina: 19,
@@ -106,7 +154,9 @@ export const ACHADOS: Achado[] = [
   {
     id: "ACH-005",
     impacto: "decide",
-    disciplina: "Elétrica",
+    disc: "eletrico",
+    tipo: "tecnico",
+    disciplina: "Elétrico",
     titulo: "Quadro de cargas sem a reserva de 20% pedida no cap. 8",
     pagina: 22,
     origem: "ia",
@@ -119,7 +169,9 @@ export const ACHADOS: Achado[] = [
   {
     id: "ACH-006",
     impacto: "note",
-    disciplina: "Geral",
+    disc: "geral",
+    tipo: "editorial",
+    disciplina: "Geral / Documental",
     titulo: "Numeração de capítulos pula do 6 para o 8",
     pagina: 27,
     origem: "regra",
@@ -133,7 +185,9 @@ export const ACHADOS: Achado[] = [
   {
     id: "ACH-007",
     impacto: "texto",
-    disciplina: "Geral",
+    disc: "eletrico",
+    tipo: "editorial",
+    disciplina: "Elétrico",
     titulo: "Concordância: “os quadro de distribuição”",
     pagina: 27,
     origem: "ia",
@@ -147,7 +201,9 @@ export const ACHADOS: Achado[] = [
   {
     id: "ACH-008",
     impacto: "texto",
-    disciplina: "Geral",
+    disc: "geral",
+    tipo: "editorial",
+    disciplina: "Geral / Documental",
     titulo: "Município grafado “Criciuma”, sem acento",
     pagina: 31,
     origem: "regra",
@@ -160,6 +216,8 @@ export const ACHADOS: Achado[] = [
   {
     id: "ACH-009",
     impacto: "note",
+    disc: "arquitetura",
+    tipo: "editorial",
     disciplina: "Arquitetura",
     titulo: "Tabela de esquadrias sem título",
     pagina: 33,

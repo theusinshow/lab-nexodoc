@@ -1,0 +1,44 @@
+/* FILTROS DA FILA e AGRUPAR POR DISCIPLINA. */
+.ds .fl-barra { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.ds .fl-botao { display: inline-flex; align-items: center; gap: 7px; height: 28px; padding: 0 10px; border: 0; border-radius: 999px; background: none; box-shadow: inset 0 0 0 1px var(--ds-line-default); font: inherit; font-size: var(--ds-text-2xs); color: var(--ds-text-secondary); cursor: pointer; transition: background var(--ds-dur-feedback), color var(--ds-dur-feedback); }
+.ds .fl-botao:hover { color: var(--ds-text-primary); }
+.ds .fl-botao--ligado { background: var(--ds-nexo-wash); box-shadow: inset 0 0 0 1px var(--ds-nexo-line); color: var(--ds-nexo-soft); }
+.ds .fl-botao b { min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px; background: var(--ds-nexo); color: var(--ds-text-on-paper); font-size: 10.5px; font-weight: 600; line-height: 16px; }
+.ds .fl-agrupar { display: inline-flex; align-items: center; gap: 8px; font-size: 11.5px; color: var(--ds-text-tertiary); }
+.ds .rs-lista-topo .fl-agrupar .ds-seg { width: auto; }
+.ds .rs-lista-topo .fl-agrupar .ds-seg button { flex: none; padding: 0 10px; }
+
+.ds .fl-painel { overflow: hidden; }
+.ds .fl-painel-dentro { display: grid; gap: 10px; margin-top: 2px; padding: 12px; border-radius: var(--ds-radius-row); background: var(--ds-surface-sunken); box-shadow: var(--ds-edge); }
+.ds .fl-selects { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.ds .fl-selects > span { display: grid; gap: 4px; font-size: 11px; color: var(--ds-text-tertiary); }
+.ds .fl-selects .ds-btn { width: 100%; justify-content: space-between; }
+.ds .fl-linha { display: grid; gap: 6px; }
+.ds .fl-rotulo { font-size: 11px; color: var(--ds-text-tertiary); }
+.ds .fl-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.ds .fl-chip { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 9px; border: 0; border-radius: 999px; background: rgb(255 255 255 / 0.04); box-shadow: inset 0 0 0 1px var(--ds-line-subtle); font: inherit; font-size: 12px; color: var(--ds-text-secondary); cursor: pointer; transition: background var(--ds-dur-feedback), color var(--ds-dur-feedback), box-shadow var(--ds-dur-feedback); }
+.ds .fl-chip:hover { color: var(--ds-text-primary); }
+.ds .fl-chip em { font-style: normal; font-size: 10.5px; color: var(--ds-text-tertiary); font-variant-numeric: tabular-nums; }
+.ds .fl-chip[aria-pressed="true"] { background: var(--ds-surface-raised); box-shadow: inset 0 0 0 1px var(--ds-line-strong); color: var(--ds-text-primary); }
+.ds .fl-chip--disc[aria-pressed="true"] { background: color-mix(in srgb, var(--dc-cor) 14%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dc-cor) 50%, transparent); }
+.ds .fl-pe { display: flex; align-items: center; justify-content: space-between; font-size: 11.5px; color: var(--ds-text-tertiary); }
+
+/* o ponto quadrado da disciplina (o redondo é do nível) */
+.ds .dc-ponto { width: 7px; height: 7px; flex: none; border-radius: 2px; background: var(--dc-cor); }
+.ds .rs-grupo--disc h4 { color: var(--dc-cor); }
+.ds .rs-grupo--disc h4 .ds-num { color: var(--ds-text-tertiary); }
+.ds .rs-linha-meta .dc { min-width: 30px; }
+
+/* Resumo C: selo da disciplina na linha e o card Por disciplina */
+.ds .rc-linha .rc-linha-corpo { grid-template-columns: 62px minmax(0, 1fr) 36px auto auto; }
+.ds .rc-disc-faixa { display: flex; gap: 3px; height: 8px; }
+.ds .rc-disc-faixa i { flex-basis: 0; border-radius: 999px; background: var(--dc-cor); transform-origin: left; }
+.ds .rc-disc ul { list-style: none; margin: 0 -8px; padding: 0; }
+.ds .rc-disc li button { display: flex; align-items: center; gap: 9px; width: 100%; height: 34px; padding: 0 8px; border: 0; border-radius: 9px; background: none; font: inherit; font-size: var(--ds-text-2xs); color: var(--ds-text-primary); text-align: left; cursor: pointer; }
+.ds .rc-disc li button:hover { background: rgb(255 255 255 / 0.04); }
+.ds .rc-disc-nome { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ds .rc-disc-conta { font-size: 11.5px; color: var(--ds-text-tertiary); white-space: nowrap; }
+.ds .rc-disc-conta b { font-weight: 500; color: var(--ds-text-primary); }
+.ds .rc-disc-ok { color: var(--ds-state-ok); }
+.ds .rc-disc-seta { color: var(--ds-text-tertiary); opacity: 0; transition: opacity var(--ds-dur-feedback); }
+.ds .rc-disc li button:hover .rc-disc-seta { opacity: 1; }

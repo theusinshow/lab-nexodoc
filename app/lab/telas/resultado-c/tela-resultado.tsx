@@ -10,8 +10,8 @@ import { useTempo } from "@/lib/ds/tempo";
 import { MarcaDaPrefeitura } from "@/modules/nexo/components/MarcaDaPrefeitura";
 
 import { Topo } from "../_comum/topo";
-import { ACHADOS, type Achado } from "./dados";
-import { Fila, type Filtro } from "./fila";
+import { ACHADOS, type Achado, type Disciplina } from "./dados";
+import { Fila, type Filtro, type InicialDaFila } from "./fila";
 import { estadoDaEmissao, type EstadoEmissao } from "./resumo";
 import { ResumoC } from "./resumo-c";
 import "./resultado-c.css";
@@ -37,7 +37,9 @@ export type SituacaoRes =
   | "parecer"
   | "parecer-gerando"
   | "parecer-erro"
-  | "memorial";
+  | "memorial"
+  | "filtros"
+  | "por-disciplina";
 
 type Aba = "resumo" | "achados" | "parecer" | "documento";
 
@@ -76,7 +78,7 @@ function Anel({ fracao, completo }: { fracao: number | null; completo: boolean }
 
 /** O ponto de partida de cada situação: que achados, que aba, o que já vem aberto. */
 function partida(s: SituacaoRes) {
-  const base = { achados: ACHADOS, aba: "resumo" as Aba, parcial: false, comparado: false, fila: { selecionado: "ACH-002" } as { selecionado: string; filtro?: Filtro; busca?: string; decisao?: boolean; marcados?: string[] } };
+  const base = { achados: ACHADOS, aba: "resumo" as Aba, parcial: false, comparado: false, fila: { selecionado: "ACH-002" } as InicialDaFila };
   switch (s) {
     case "revisar":
       // outra revisão: os bloqueios não existem mais
@@ -99,6 +101,10 @@ function partida(s: SituacaoRes) {
     case "parecer-gerando":
     case "parecer-erro":
       return { ...base, aba: "parecer" as Aba };
+    case "filtros":
+      return { ...base, aba: "achados" as Aba, fila: { selecionado: "ACH-003", discs: ["arquitetura"] as Disciplina[], painel: true } };
+    case "por-disciplina":
+      return { ...base, aba: "achados" as Aba, fila: { selecionado: "ACH-002", agrupar: "disciplina" as const } };
     case "encerrado":
       return { ...base, aba: "achados" as Aba, fila: { selecionado: "ACH-004" } };
     default:
@@ -272,7 +278,12 @@ export function TelaResultado({ situacao }: { situacao: SituacaoRes }) {
               exit={{ opacity: 0, transition: { duration: dur("feedback") } }}
               transition={{ duration: dur("enter"), ease: ease(CURVA.out) }}
             >
-              {aba === "resumo" && <ResumoC achados={achados} parcial={p.parcial} comparado={p.comparado} onAbrir={abrir} onMudar={(id, d) => mudar(id, d)} onVerNoMemorial={(id) => setVisor({ aberto: true, achado: id })} />}
+              {aba === "resumo" && <ResumoC achados={achados} parcial={p.parcial} comparado={p.comparado} onAbrir={abrir} onMudar={(id, d) => mudar(id, d)} onVerNoMemorial={(id) => setVisor({ aberto: true, achado: id })}
+                  onAbrirDisciplina={(d) => {
+                    setFilaInicial({ selecionado: achados.find((a) => a.disc === d && !a.desfecho)?.id ?? achados.find((a) => a.disc === d)!.id, discs: [d], painel: true });
+                    setAba("achados");
+                  }}
+                />}
               {aba === "achados" && <Fila key={filaInicial.selecionado} achados={achados} onMudar={mudar} inicial={filaInicial} onAbrirPagina={(id) => setVisor({ aberto: true, achado: id })} />}
               {aba === "parecer" && <Relatorio achados={achados} parcial={p.parcial} revisao={revisao} onPdf={() => setPdf("abrindo")} />}
               {aba === "documento" && (

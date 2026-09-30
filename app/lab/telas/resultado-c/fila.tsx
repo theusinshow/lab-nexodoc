@@ -1,16 +1,32 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
-import { Check, ChevronDown, ChevronUp, FileSearch, FileText, Link2, Mail, Search, Undo2, UserPlus, X } from "lucide-react";
+import { Check, ChevronDown, ChevronUp, FileSearch, FileText, Link2, Mail, Search, SlidersHorizontal, Undo2, UserPlus, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { Avatar, Botao, Menu, Segmento, Selo, Tecla } from "@/components/ds/basicos";
+import { Avatar, Botao, Menu, Segmento, Selo, Seletor, Tecla } from "@/components/ds/basicos";
 import { CURVA } from "@/lib/ds/movimento";
 import { useTempo } from "@/lib/ds/tempo";
 
-import { DESFECHO_NOME, IMPACTOS, PESSOAS, type Achado, type Desfecho } from "./dados";
+import { DESFECHO_NOME, DISCIPLINAS, IMPACTOS, PESSOAS, TIPOS_DE_ERRO, type Achado, type Desfecho, type Disciplina, type Impacto, type TipoDeErro } from "./dados";
+import { SeloDaDisciplina } from "./disciplina";
+import "./filtros.css";
 
 export type Filtro = "todos" | "meus" | "sem" | "pendentes" | "encerrados";
+type Ordem = "impacto" | "pagina" | "disciplina" | "referencia";
+type Agrupar = "impacto" | "disciplina";
+export interface InicialDaFila {
+  selecionado: string;
+  filtro?: Filtro;
+  busca?: string;
+  decisao?: boolean;
+  marcados?: string[];
+  niveis?: Impacto[];
+  discs?: Disciplina[];
+  tipos?: TipoDeErro[];
+  agrupar?: Agrupar;
+  painel?: boolean;
+}
 
 const ease = (c: readonly number[]) => [...c] as [number, number, number, number];
 const EU = "Victor";
@@ -37,7 +53,7 @@ export function Fila({
   onAbrirPagina?: (id: string) => void;
   achados: Achado[];
   onMudar: (id: string, desfecho: Achado["desfecho"] | undefined, responsavel?: string | null) => void;
-  inicial: { selecionado: string; filtro?: Filtro; busca?: string; decisao?: boolean; marcados?: string[] };
+  inicial: InicialDaFila;
 }) {
   const { dur, mola } = useTempo();
   const [filtro, setFiltro] = useState<Filtro>(inicial.filtro ?? "todos");
@@ -50,6 +66,26 @@ export function Fila({
   const [aba, setAba] = useState<"evidencia" | "conversa" | "historico">("evidencia");
   const [ultimo, setUltimo] = useState<{ id: string; tipo: Desfecho } | null>(null);
   const buscaRef = useRef<HTMLInputElement>(null);
+  const [niveis, setNiveis] = useState<Impacto[]>(inicial.niveis ?? []);
+  const [discs, setDiscs] = useState<Disciplina[]>(inicial.discs ?? []);
+  const [tipos, setTipos] = useState<TipoDeErro[]>(inicial.tipos ?? []);
+  const [responsavel, setResponsavel] = useState("qualquer");
+  const [ordem, setOrdem] = useState<Ordem>("impacto");
+  const [agrupar, setAgrupar] = useState<Agrupar>(inicial.agrupar ?? "impacto");
+  const [painel, setPainel] = useState(!!inicial.painel);
+  const nFiltros = niveis.length + discs.length + tipos.length + (responsavel !== "qualquer" ? 1 : 0);
+  const limparFiltros = () => {
+    setNiveis([]);
+    setDiscs([]);
+    setTipos([]);
+    setResponsavel("qualquer");
+  };
+  const alternarEm = <T,>(lista: T[], set: (v: T[]) => void, v: T) => set(lista.includes(v) ? lista.filter((x) => x !== v) : [...lista, v]);
+  // disciplinas na ordem de frequência, como hoje: a mais comum primeiro
+  const discsPresentes = DISCIPLINAS.map((d) => ({ ...d, n: achados.filter((a) => a.disc === d.id).length }))
+    .filter((d) => d.n)
+    .sort((a, b) => b.n - a.n);
+  const tiposPresentes = TIPOS_DE_ERRO.map((t) => ({ ...t, n: achados.filter((a) => a.tipo === t.id).length })).filter((t) => t.n);
 
   const contagem: Record<Filtro, number> = {
     todos: achados.length,
@@ -60,7 +96,23 @@ export function Fila({
   };
   const visiveis = useMemo(() => {
     const q = busca.trim().toLowerCase();
-    return IMPACTOS.flatMap((i) => achados.filter((a) => a.impacto === i.id)).filter((a) => {
+    const pos = (a: Achado) => IMPACTOS.findIndex((i) => i.id === a.impacto);
+    const chave: Record<Ordem, (a: Achado) => number | string> = {
+      impacto: (a) => pos(a) * 1000 + a.pagina,
+      pagina: (a) => a.pagina,
+      disciplina: (a) => DISCIPLINAS.findIndex((d) => d.id === a.disc) * 1000 + pos(a),
+      referencia: (a) => a.id,
+    };
+    const cmp = (x: Achado, y: Achado) => {
+      const a = chave[ordem](x);
+      const b = chave[ordem](y);
+      return a < b ? -1 : a > b ? 1 : 0;
+    };
+    return [...achados].sort(cmp).filter((a) => {
+      if (niveis.length && !niveis.includes(a.impacto)) return false;
+      if (discs.length && !discs.includes(a.disc)) return false;
+      if (tipos.length && !tipos.includes(a.tipo)) return false;
+      if (responsavel !== "qualquer" && a.responsavel !== responsavel) return false;
       if (filtro === "meus" && !(a.responsavel === EU && !a.desfecho)) return false;
       if (filtro === "sem" && !(!a.responsavel && !a.desfecho)) return false;
       if (filtro === "pendentes" && a.desfecho) return false;
@@ -68,7 +120,12 @@ export function Fila({
       if (!q) return true;
       return [a.id, a.titulo, a.disciplina, `p. ${a.pagina}`, a.evidencia.trecho].some((t) => t.toLowerCase().includes(q));
     });
-  }, [achados, filtro, busca]);
+  }, [achados, filtro, busca, niveis, discs, tipos, responsavel, ordem]);
+
+  const grupos =
+    agrupar === "impacto"
+      ? IMPACTOS.map((i) => ({ id: i.id as string, nome: i.nome, marca: <i className={`rs-ponto rs-ponto--${i.id}`} />, itens: visiveis.filter((a) => a.impacto === i.id) }))
+      : DISCIPLINAS.map((d) => ({ id: d.id as string, nome: d.nome, marca: <i className={`dc-ponto dc--${d.id}`} />, itens: visiveis.filter((a) => a.disc === d.id) }));
 
   const atual = achados.find((a) => a.id === selecionado) ?? achados[0];
   const posicao = visiveis.findIndex((a) => a.id === atual.id);
@@ -165,6 +222,97 @@ export function Fila({
               { valor: "encerrados", rotulo: <>Encerrados <em>{contagem.encerrados}</em></> },
             ]}
           />
+          <div className="fl-barra">
+            <button type="button" className={`fl-botao${painel || nFiltros ? " fl-botao--ligado" : ""}`} aria-expanded={painel} onClick={() => setPainel((v) => !v)}>
+              <SlidersHorizontal size={14} />
+              Filtros
+              {nFiltros > 0 && <b className="ds-num">{nFiltros}</b>}
+            </button>
+            <span className="fl-agrupar">
+              Agrupar por
+              <Segmento
+                rotulo="Agrupar por"
+                valor={agrupar}
+                onTroca={setAgrupar}
+                opcoes={[
+                  { valor: "impacto", rotulo: "Impacto" },
+                  { valor: "disciplina", rotulo: "Disciplina" },
+                ]}
+              />
+            </span>
+          </div>
+          <AnimatePresence initial={false}>
+            {painel && (
+              <motion.div className="fl-painel" initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: dur("layout"), ease: ease(CURVA.out) }}>
+                <div className="fl-painel-dentro">
+                  <div className="fl-selects">
+                    <span>
+                      Responsável
+                      <Seletor valor={responsavel} onTroca={setResponsavel} opcoes={[{ valor: "qualquer", rotulo: "Qualquer" }, ...PESSOAS]} />
+                    </span>
+                    <span>
+                      Ordem
+                      <Seletor
+                        valor={ordem}
+                        onTroca={setOrdem}
+                        opcoes={[
+                          { valor: "impacto", rotulo: "Por impacto" },
+                          { valor: "pagina", rotulo: "Por página" },
+                          { valor: "disciplina", rotulo: "Por disciplina" },
+                          { valor: "referencia", rotulo: "Por referência" },
+                        ]}
+                      />
+                    </span>
+                  </div>
+                  <div className="fl-linha">
+                    <span className="fl-rotulo">Gravidade</span>
+                    <div className="fl-chips">
+                      {IMPACTOS.map((i) => (
+                        <button key={i.id} type="button" aria-pressed={niveis.includes(i.id)} className="fl-chip" onClick={() => alternarEm(niveis, setNiveis, i.id)}>
+                          <i className={`rs-ponto rs-ponto--${i.id}`} />
+                          {i.nome}
+                          <em>{achados.filter((a) => a.impacto === i.id).length}</em>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="fl-linha">
+                    <span className="fl-rotulo">Disciplina</span>
+                    <div className="fl-chips">
+                      {discsPresentes.map((d) => (
+                        <button key={d.id} type="button" aria-pressed={discs.includes(d.id)} className={`fl-chip fl-chip--disc dc--${d.id}`} onClick={() => alternarEm(discs, setDiscs, d.id)}>
+                          <i className="dc-ponto" />
+                          {d.nome}
+                          <em>{d.n}</em>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="fl-linha">
+                    <span className="fl-rotulo">Tipo</span>
+                    <div className="fl-chips">
+                      {tiposPresentes.map((t) => (
+                        <button key={t.id} type="button" aria-pressed={tipos.includes(t.id)} className="fl-chip" onClick={() => alternarEm(tipos, setTipos, t.id)}>
+                          {t.nome}
+                          <em>{t.n}</em>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="fl-pe">
+                    <span className="ds-num">
+                      {visiveis.length} de {achados.length} achados
+                    </span>
+                    {nFiltros > 0 && (
+                      <button type="button" className="rs-link" onClick={limparFiltros}>
+                        Limpar filtros
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         <div className="rs-linhas">
@@ -178,20 +326,21 @@ export function Fila({
                 onClick={() => {
                   setBusca("");
                   setFiltro("todos");
+                  limparFiltros();
                 }}
               >
                 Limpar busca e filtros
               </Botao>
             </div>
           ) : (
-            IMPACTOS.map((imp) => {
-              const doGrupo = visiveis.filter((a) => a.impacto === imp.id);
+            grupos.map((grupo) => {
+              const doGrupo = grupo.itens;
               if (!doGrupo.length) return null;
               return (
-                <div key={imp.id} className="rs-grupo">
+                <div key={grupo.id} className={`rs-grupo${agrupar === "disciplina" ? ` rs-grupo--disc dc--${grupo.id}` : ""}`}>
                   <h4>
-                    <i className={`rs-ponto rs-ponto--${imp.id}`} />
-                    {imp.nome}
+                    {grupo.marca}
+                    {grupo.nome}
                     <span className="ds-num">{doGrupo.length}</span>
                   </h4>
                   {doGrupo.map((a) => {
@@ -236,6 +385,7 @@ export function Fila({
                               </span>
                             ) : (
                               <>
+                                {agrupar === "disciplina" ? <i className={`rs-ponto rs-ponto--${a.impacto}`} title={IMPACTOS.find((i) => i.id === a.impacto)?.nome} /> : <SeloDaDisciplina disc={a.disc} />}
                                 <span className="ds-num">p. {a.pagina}</span>
                                 {a.responsavel ? <Avatar iniciais={a.responsavel.slice(0, 2).toUpperCase()} pequeno /> : <span className="rs-sem-dono">sem dono</span>}
                               </>
@@ -282,7 +432,7 @@ export function Fila({
           <Selo tom={atual.impacto} ponto>
             {IMPACTOS.find((i) => i.id === atual.impacto)?.nome}
           </Selo>
-          <Selo>{atual.disciplina}</Selo>
+          <SeloDaDisciplina disc={atual.disc} nome />
           <span className="rs-origem">{atual.origem === "regra" ? "Regra verificada: página e trecho conferidos" : "Sugerido pela IA: confira o trecho"}</span>
           <span className="rs-navegar">
             <span className="ds-num">{posicao < 0 ? "fora do filtro" : `${posicao + 1} de ${visiveis.length}`}</span>

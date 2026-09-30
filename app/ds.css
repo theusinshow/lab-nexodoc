@@ -119,6 +119,11 @@
   --ds-disc-cli: var(--discipline-cli);
   --ds-disc-ter: var(--discipline-ter);
   --ds-disc-pai: var(--discipline-pai);
+  /* as quatro que não tinham cor */
+  --ds-disc-cab: #d6a472;
+  --ds-disc-gas: #86c4a8;
+  --ds-disc-ace: #7fa7e6;
+  --ds-disc-ger: #9aa2b1;
 
   /* ---------- tipo ---------- */
   /* As famílias moram em .ds: a variável do next/font só existe ali. */
@@ -786,3 +791,20 @@
   .ds { zoom: 1.25; }
 }
 .ds .au-painel .au-arquivo, .ds .rs-painel .rs-arquivo { flex-wrap: nowrap; white-space: nowrap; overflow: hidden; }
+
+/* ---------- selo de disciplina: ponto + sigla, na cor da disciplina ---------- */
+.ds .dc { display: inline-flex; align-items: center; gap: 5px; font-family: var(--ds-font-mono); font-size: 10.5px; letter-spacing: 0.02em; color: var(--dc-cor); white-space: nowrap; }
+.ds .dc i { width: 6px; height: 6px; border-radius: 2px; background: var(--dc-cor); }
+.ds .dc--nome { font-family: var(--ds-font-sans); font-size: var(--ds-text-2xs); letter-spacing: 0; }
+.ds .dc--arquitetura { --dc-cor: var(--ds-disc-arq); }
+.ds .dc--estrutural { --dc-cor: var(--ds-disc-est); }
+.ds .dc--hidrossanitario { --dc-cor: var(--ds-disc-hid); }
+.ds .dc--eletrico { --dc-cor: var(--ds-disc-ele); }
+.ds .dc--ppci { --dc-cor: var(--ds-disc-pci); }
+.ds .dc--climatizacao { --dc-cor: var(--ds-disc-cli); }
+.ds .dc--terraplenagem { --dc-cor: var(--ds-disc-ter); }
+.ds .dc--paisagismo { --dc-cor: var(--ds-disc-pai); }
+.ds .dc--cabeamento { --dc-cor: var(--ds-disc-cab); }
+.ds .dc--gases_medicinais { --dc-cor: var(--ds-disc-gas); }
+.ds .dc--acessibilidade { --dc-cor: var(--ds-disc-ace); }
+.ds .dc--geral { --dc-cor: var(--ds-disc-ger); }

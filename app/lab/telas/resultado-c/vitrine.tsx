@@ -13,6 +13,8 @@ const SITUACOES: { id: SituacaoRes; nome: string; dica: string }[] = [
   { id: "nao-abriu", nome: "Não abriu", dica: "Parecer não encontrado: diz o porquê provável e por onde seguir." },
   { id: "memorial", nome: "Ver no memorial", dica: "O memorial original num visor por cima da tela, na página do achado: o trecho grifado na cor do nível, o número na margem, os outros achados da página ao lado e as páginas com achado embaixo. J e K pulam entre elas, ← → folheia, Esc fecha." },
   { id: "fila", nome: "Fila", dica: "J e K andam, C marca corrigido, D abre a decisão, F é falso positivo, / busca. Corrigir mostra Desfazer (Z) por 6 segundos." },
+  { id: "filtros", nome: "Filtros", dica: "Os filtros de hoje: responsável, ordem, gravidade, disciplina (na ordem de frequência, cada uma com a sua cor) e tipo. O botão Filtros mostra quantos estão ligados; Limpar filtros zera." },
+  { id: "por-disciplina", nome: "Por disciplina", dica: "Agrupar por disciplina: cada grupo com a cor dela, e o ponto redondo de cada linha passa a dizer o nível. Na aba Resumo, o card Por disciplina abre a fila já filtrada." },
   { id: "decisao", nome: "Decisão técnica", dica: "O motivo é escrito ali mesmo, sem janela por cima. Esc cancela." },
   { id: "selecionando", nome: "Selecionando", dica: "Marcou achados: a barra de atribuir sobe de baixo. Esc limpa." },
   { id: "vazio-filtro", nome: "Busca vazia", dica: "Nada casa com a busca: diz onde ela procura e oferece limpar." },

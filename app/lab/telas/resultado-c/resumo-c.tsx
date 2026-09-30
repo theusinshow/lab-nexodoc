@@ -9,7 +9,8 @@ import { FaixaDeVeredito, MapaDasPaginas } from "@/components/ds/graficos";
 import { CURVA } from "@/lib/ds/movimento";
 import { useTempo } from "@/lib/ds/tempo";
 
-import { DESFECHO_NOME, IMPACTOS, PAGINAS_DO_MEMORIAL, pontosPorPagina, type Achado } from "./dados";
+import { DESFECHO_NOME, DISCIPLINAS, IMPACTOS, PAGINAS_DO_MEMORIAL, pontosPorPagina, type Achado, type Disciplina } from "./dados";
+import { SeloDaDisciplina } from "./disciplina";
 import { estadoDaEmissao, type EstadoEmissao } from "./resumo";
 
 const FAIXAS = [
@@ -37,7 +38,9 @@ export function ResumoC({
   onAbrir,
   onMudar,
   onVerNoMemorial,
+  onAbrirDisciplina,
 }: {
+  onAbrirDisciplina: (d: Disciplina) => void;
   onVerNoMemorial: (id: string) => void;
   achados: Achado[];
   parcial: boolean;
@@ -51,6 +54,12 @@ export function ResumoC({
   const n = (i: string) => achados.filter((a) => a.impacto === i).length;
   const pendentes = achados.filter((a) => !a.desfecho);
   const tratados = achados.filter((a) => a.desfecho);
+  const porDisciplina = DISCIPLINAS.map((d) => {
+    const dela = achados.filter((a) => a.disc === d.id);
+    return { ...d, total: dela.length, pendentes: dela.filter((a) => !a.desfecho).length };
+  })
+    .filter((d) => d.total)
+    .sort((a, b) => b.pendentes - a.pendentes || b.total - a.total);
 
   const porque = {
     incompleto: "3 de 12 blocos não foram lidos. Os achados valem, mas não dá para liberar.",
@@ -105,6 +114,7 @@ export function ResumoC({
                       <button type="button" className="rc-linha-corpo" onClick={() => onAbrir(a.id)}>
                         <span className="rc-id">{a.id}</span>
                         <span className="rc-titulo">{a.titulo}</span>
+                        <SeloDaDisciplina disc={a.disc} />
                         <span className="rc-meta ds-num">p. {a.pagina}</span>
                         {a.responsavel ? <Avatar iniciais={a.responsavel.slice(0, 2).toUpperCase()} pequeno /> : <span className="rc-sem">sem dono</span>}
                       </button>
@@ -180,6 +190,36 @@ export function ResumoC({
               Auditar de novo
             </Botao>
           )}
+        </section>
+
+        {/* ---------- por disciplina: a proporção numa faixa, e cada uma abre a fila filtrada ---------- */}
+        <section className="rc-cartao rc-disc">
+          <h3>Por disciplina</h3>
+          <div className="rc-disc-faixa" aria-hidden>
+            {porDisciplina.map((d) => (
+              <motion.i key={d.id} className={`dc--${d.id}`} style={{ flexGrow: d.total }} initial={{ scaleX: 0 }} animate={{ scaleX: 1 }} transition={{ duration: dur("layout") * 1.4, ease: ease(CURVA.out) }} />
+            ))}
+          </div>
+          <ul>
+            {porDisciplina.map((d) => (
+              <li key={d.id}>
+                <button type="button" className={`dc--${d.id}`} onClick={() => onAbrirDisciplina(d.id)}>
+                  <i className="dc-ponto" />
+                  <span className="rc-disc-nome">{d.nome}</span>
+                  <span className="rc-disc-conta ds-num">
+                    {d.pendentes ? (
+                      <>
+                        <b>{d.pendentes}</b> de {d.total} {d.pendentes === 1 ? "pendente" : "pendentes"}
+                      </>
+                    ) : (
+                      <span className="rc-disc-ok">{d.total === 1 ? "1 tratado" : `${d.total} tratados`}</span>
+                    )}
+                  </span>
+                  <ArrowRight size={13} className="rc-disc-seta" />
+                </button>
+              </li>
+            ))}
+          </ul>
         </section>
 
         {comparado && (
