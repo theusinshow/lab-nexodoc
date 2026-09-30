@@ -1,25 +1,34 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
-import { ArrowUp, ChevronDown, MessageSquarePlus, Paperclip, RotateCcw, Square, X } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { ArrowDown, ArrowUp, ChevronDown, MessageSquarePlus, Paperclip, Square, X } from "lucide-react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import { Botao, Tecla } from "@/components/ds/basicos";
+import { CURVA } from "@/lib/ds/movimento";
 import { useTempo } from "@/lib/ds/tempo";
 import { MarcaDaPrefeitura } from "@/modules/nexo/components/MarcaDaPrefeitura";
 
 import { Topo } from "../_comum/topo";
-import { DeVoce, Diferenca, DoNexo, Escrevendo, Lacuna, Passo, PecaDeArquivo, Plano, Saidas, Vazio, type Arquivo } from "./turnos";
+import { Conferencia, DeVoce, FimDaResposta, Diferenca, DoNexo, Erro, Gerando, Lacuna, Passo, PecaDeArquivo, Plano, Respondendo, Saidas, Vazio, type Arquivo } from "./turnos";
 import "./conversa.css";
+
+const ease = (c: readonly number[]) => [...c] as [number, number, number, number];
 
 export type SituacaoConversa =
   | "nova"
   | "anexando"
   | "confirmar-auditoria"
   | "escolher-projeto"
+  | "arquivo-sem-selo"
+  | "auditoria-pronta"
   | "plano-de-geracao"
   | "capa-sem-prefeitura"
+  | "gerando"
   | "alteracao-pendente"
+  | "montar-volume"
+  | "volume-montado"
+  | "conferir-selo"
   | "respondendo"
   | "erro-resposta";
 
@@ -30,43 +39,65 @@ const PRANCHAS: Arquivo[] = [
   { nome: "117_25_HID_rev-A.pdf", paginas: 6 },
   { nome: "117_25_ELE_rev-A.pdf", paginas: 7 },
 ];
+const GERADOS = [
+  { id: "ld", fazendo: "Montando a lista de documentos", feito: { nome: "LD_117-25_rev-A.pdf", paginas: 3 } },
+  { id: "capa", fazendo: "Desenhando a capa", feito: { nome: "Capa_117-25_tomo-01.pdf", paginas: 1 } },
+  { id: "sep", fazendo: "Gerando as 4 separatrizes", feito: { nome: "Separatrizes_117-25.pdf", paginas: 4 } },
+];
 
-/** O CAMPO: os arquivos em cima, o texto, e embaixo o que se anexa, o modo e enviar (ou parar). */
-function Campo({ arquivos, respondendo, texto: inicial = "", modo }: { arquivos?: Arquivo[]; respondendo?: boolean; texto?: string; modo?: boolean }) {
-  const { dur } = useTempo();
+/**
+ * O CAMPO: os arquivos em cima, o texto, e embaixo o que se anexa, o modo e
+ * enviar. Os arquivos entram e saem com layout (os vizinhos escorregam para o
+ * lugar); enviar vira Parar girando, e acende quando há o que mandar.
+ */
+function Campo({ arquivos: iniciais, respondendo, texto: inicial = "", modo }: { arquivos?: Arquivo[]; respondendo?: boolean; texto?: string; modo?: boolean }) {
+  const { dur, k } = useTempo();
   const [texto, setTexto] = useState(inicial);
-  const pode = !!texto.trim() || !!arquivos?.length;
+  const [arquivos, setArquivos] = useState(iniciais ?? []);
+  const pode = !!texto.trim() || arquivos.length > 0;
   return (
     <form className="cx-campo" onSubmit={(e) => e.preventDefault()}>
-      {arquivos && arquivos.length > 0 && (
-        <div className="cx-campo-arquivos">
-          {arquivos.map((a) => (
-            <span key={a.nome} className="cx-campo-peca">
-              <PecaDeArquivo a={a} />
-              <button type="button" aria-label={`Tirar ${a.nome}`}>
-                <X size={12} />
-              </button>
-            </span>
-          ))}
-        </div>
-      )}
-      <textarea rows={1} value={texto} onChange={(e) => setTexto(e.target.value)} placeholder={respondendo ? "O Nexo está respondendo" : "Peça, pergunte ou solte os PDFs"} aria-label="Mensagem para o Nexo" />
+      <AnimatePresence initial={false}>
+        {arquivos.length > 0 && (
+          <motion.div className="cx-campo-arquivos" initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0, paddingBottom: 0 }} transition={{ duration: dur("state") }}>
+            <AnimatePresence mode="popLayout">
+              {arquivos.map((a, i) => (
+                <motion.span
+                  key={a.nome}
+                  layout
+                  className="cx-campo-peca"
+                  initial={{ opacity: 0, scale: 0.9, y: 6 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.9, transition: { duration: dur("feedback") } }}
+                  transition={{ duration: dur("enter"), delay: i * 0.12 * k, ease: ease(CURVA.out) }}
+                >
+                  <PecaDeArquivo a={a} />
+                  <button type="button" aria-label={`Tirar ${a.nome}`} onClick={() => setArquivos((l) => l.filter((x) => x.nome !== a.nome))}>
+                    <X size={12} />
+                  </button>
+                </motion.span>
+              ))}
+            </AnimatePresence>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <textarea rows={1} value={texto} onChange={(e) => setTexto(e.target.value)} placeholder={respondendo ? "O Nexo está respondendo" : "Peça em texto: “cria a LD e a capa dessas pranchas”, ou solte os PDFs"} aria-label="Mensagem para o Nexo" />
       <div className="cx-campo-pe">
-        <button type="button" className="cx-campo-botao" aria-label="Anexar PDFs" title="Anexar PDFs">
+        <motion.button type="button" className="cx-campo-botao" aria-label="Anexar PDFs" title="Anexar PDFs" whileTap={{ scale: 0.9, rotate: -12 }}>
           <Paperclip size={16} />
-        </button>
+        </motion.button>
         {modo && (
           <button type="button" className="cx-modo" title="Como o Nexo audita">
             Análise profunda <ChevronDown size={13} />
           </button>
         )}
-        <AnimatePresence mode="wait" initial={false}>
+        <AnimatePresence mode="popLayout" initial={false}>
           {respondendo ? (
-            <motion.button key="parar" type="button" className="cx-enviar cx-enviar--parar" aria-label="Parar" initial={{ scale: 0.85, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.85, opacity: 0 }} transition={{ duration: dur("feedback") }}>
+            <motion.button key="parar" type="button" className="cx-enviar cx-enviar--parar" aria-label="Parar" initial={{ scale: 0.6, opacity: 0, rotate: -90 }} animate={{ scale: 1, opacity: 1, rotate: 0 }} exit={{ scale: 0.6, opacity: 0, rotate: 90 }} whileTap={{ scale: 0.9 }} transition={{ duration: dur("state"), ease: ease(CURVA.out) }}>
               <Square size={11} fill="currentColor" />
             </motion.button>
           ) : (
-            <motion.button key="enviar" type="submit" className="cx-enviar" aria-label="Enviar (Enter)" disabled={!pode} initial={{ scale: 0.85, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.85, opacity: 0 }} transition={{ duration: dur("feedback") }}>
+            <motion.button key="enviar" type="submit" className="cx-enviar" aria-label="Enviar (Enter)" disabled={!pode} initial={{ scale: 0.6, opacity: 0, rotate: 90 }} animate={{ scale: 1, opacity: 1, rotate: 0 }} exit={{ scale: 0.6, opacity: 0, rotate: -90 }} whileTap={pode ? { scale: 0.88, y: -2 } : undefined} transition={{ duration: dur("state"), ease: ease(CURVA.out) }}>
               <ArrowUp size={16} />
             </motion.button>
           )}
@@ -83,7 +114,7 @@ function Fio({ situacao }: { situacao: SituacaoConversa }): ReactNode {
       return (
         <>
           <DeVoce arquivos={MEMORIAL} texto="audita esse memorial, é o da UBS" />
-          <DoNexo atraso={0.15}>
+          <DoNexo atraso={0.2}>
             <Passo texto="Li o memorial: 42 páginas com texto, revisão A" />
             <p className="cx-texto">
               É o memorial geral da <b>UBS da Rua São Francisco de Assis</b>, obra <span className="cx-mono">117-25</span>, prefeitura de Criciúma. Casou com o projeto que você já tem.
@@ -99,18 +130,37 @@ function Fio({ situacao }: { situacao: SituacaoConversa }): ReactNode {
       return (
         <>
           <DeVoce arquivos={[{ nome: "118_25_md_geral_a.pdf", paginas: 36 }]} texto="audita" />
-          <DoNexo atraso={0.15}>
+          <DoNexo atraso={0.2}>
             <Passo texto="Li o memorial: 36 páginas, revisão A" />
             <p className="cx-texto">
               A capa diz <span className="cx-mono">118-25</span>, Ginásio Poliesportivo do Bairro Pinheirinho, e esse código não está nos seus projetos. Onde eu guardo?
             </p>
-            <Saidas
-              itens={[
-                { texto: "Criar o projeto 118-25", principal: true },
-                { texto: "Guardar na SIM118-25, Ginásio do Pinheirinho (Siderópolis)" },
-                { texto: "Escolher outro projeto" },
-              ]}
-            />
+            <Saidas itens={[{ texto: "Criar o projeto 118-25", principal: true }, { texto: "Guardar na SIM118-25, Ginásio do Pinheirinho (Siderópolis)" }, { texto: "Escolher outro projeto" }]} />
+          </DoNexo>
+        </>
+      );
+    case "arquivo-sem-selo":
+      return (
+        <>
+          <DeVoce arquivos={[...MEMORIAL, { nome: "117_25_detalhes_esquadrias.pdf", paginas: 3 }]} texto="audita e confere com a prancha de esquadrias" />
+          <DoNexo atraso={0.2}>
+            <Passo texto="Li o memorial: 42 páginas, revisão A" />
+            <Passo texto="O carimbo não pôde ser lido em 117_25_detalhes_esquadrias.pdf" aviso />
+            <p className="cx-texto">São 3 páginas sem carimbo onde as pranchas o têm. Se for prancha, eu leio o selo de outro jeito; se não, a obra fica lida só do próprio memorial, sem prancha para confrontar.</p>
+            <Saidas itens={[{ texto: "Tratar este PDF como prancha (ler o selo)", principal: true }, { texto: "Auditar só o memorial" }, { texto: "Tirar este arquivo" }]} />
+          </DoNexo>
+        </>
+      );
+    case "auditoria-pronta":
+      return (
+        <>
+          <DeVoce arquivos={MEMORIAL} texto="audita esse memorial, é o da UBS" />
+          <DoNexo atraso={0.2}>
+            <Passo texto="Auditei o memorial geral, revisão A, em 4 min 12 s" />
+            <p className="cx-texto">
+              <b>14 achados.</b> 3 impedem a entrega, 6 pedem uma decisão sua e 5 são de texto. O mais sério é a NBR 5626 citada na edição de 1998, no capítulo 6.
+            </p>
+            <Saidas itens={[{ texto: "Abrir o resultado", principal: true }, { texto: "Perguntar sobre um achado" }, { texto: "Auditar de novo (nova rodada)" }]} />
           </DoNexo>
         </>
       );
@@ -120,34 +170,85 @@ function Fio({ situacao }: { situacao: SituacaoConversa }): ReactNode {
       return (
         <>
           <DeVoce arquivos={PRANCHAS} texto="gera a LD e a capa do volume" />
-          <DoNexo atraso={0.15}>
+          <DoNexo atraso={0.2}>
             <Passo texto="Li 4 arquivos, 33 folhas em 4 disciplinas" />
             <p className="cx-texto">{falta ? "Os carimbos não dizem a prefeitura, e sem ela a capa não sai. Escolha na frase abaixo." : "Vou gerar estes três. Não usa IA: sai em segundos."}</p>
             <Plano semPrefeitura={falta} />
-            {falta ? (
-              <p className="cx-aviso">Falta a prefeitura da capa. A LD e as separatrizes já podem sair sem ela.</p>
-            ) : null}
+            {falta ? <p className="cx-aviso">Falta a prefeitura da capa. A LD e as separatrizes já podem sair sem ela.</p> : null}
             <Saidas itens={falta ? [{ texto: "Gerar só a LD e as separatrizes", principal: true }, { texto: "Ver como sai" }] : [{ texto: "Gerar", principal: true }, { texto: "Ver como sai" }, { texto: "Só a LD" }]} />
           </DoNexo>
         </>
       );
     }
+    case "gerando":
+      return (
+        <>
+          <DeVoce arquivos={PRANCHAS} texto="gera a LD e a capa do volume" />
+          <DoNexo atraso={0.2}>
+            <Passo texto="Li 4 arquivos, 33 folhas em 4 disciplinas" />
+            <Gerando itens={GERADOS} />
+            <Saidas itens={[{ texto: "Montar o volume", principal: true }, { texto: "Baixar os editáveis (ZIP)" }]} />
+          </DoNexo>
+        </>
+      );
     case "alteracao-pendente":
       return (
         <>
           <DoNexo>
             <Passo texto="Gerados: LD, capa e 4 separatrizes" />
             <div className="cx-pecas">
-              <PecaDeArquivo gerado a={{ nome: "LD_117-25_rev-A.pdf", paginas: 3 }} />
-              <PecaDeArquivo gerado a={{ nome: "Capa_117-25_tomo-1.pdf", paginas: 1 }} />
-              <PecaDeArquivo gerado a={{ nome: "Separatrizes_117-25.pdf", paginas: 4 }} />
+              {GERADOS.map((g) => (
+                <PecaDeArquivo key={g.id} gerado a={g.feito} />
+              ))}
             </div>
           </DoNexo>
           <DeVoce texto="tira a ARQ-12 da LD, a folha foi cancelada" atraso={0.1} />
-          <DoNexo atraso={0.25}>
+          <DoNexo atraso={0.3}>
             <p className="cx-texto">Fica assim: sai uma folha, continuam 32. A capa e as separatrizes não mudam.</p>
             <Diferenca />
             <Saidas itens={[{ texto: "Aplicar", principal: true }, { texto: "Descartar" }]} />
+          </DoNexo>
+        </>
+      );
+    case "montar-volume":
+      return (
+        <>
+          <DeVoce texto="monta o volume com tudo" />
+          <DoNexo atraso={0.2}>
+            <Passo texto="Juntei memorial, LD, capa, 4 separatrizes e 33 pranchas: 412 páginas" />
+            <p className="cx-texto">Passa do que um tomo costuma aguentar na encadernação da prefeitura.</p>
+            <p className="cx-frase">
+              Divido em <Lacuna valor="2 tomos" opcoes={["1 tomo", "2 tomos", "3 tomos"]} />, com o tomo 02 começando em{" "}
+              <Lacuna valor="HID-01, Instalações hidráulicas" opcoes={["EST-01, Locação e cargas", "HID-01, Instalações hidráulicas", "ELE-01, Entrada de energia"]} />.
+            </p>
+            <Saidas itens={[{ texto: "Montar os 2 volumes", principal: true }, { texto: "Ver a divisão" }, { texto: "Um tomo só" }]} />
+          </DoNexo>
+        </>
+      );
+    case "volume-montado":
+      return (
+        <>
+          <DeVoce texto="monta o volume com tudo" />
+          <DoNexo atraso={0.2}>
+            <Passo texto="Volume montado: 2 tomos, 412 páginas" />
+            <div className="cx-pecas cx-pecas--coluna">
+              <PecaDeArquivo gerado nova a={{ nome: "Volume_117-25_TOMO-01.pdf", paginas: 238 }} atraso={0.35} />
+              <PecaDeArquivo gerado nova a={{ nome: "Volume_117-25_TOMO-02.pdf", paginas: 174 }} atraso={0.5} />
+            </div>
+            <Passo texto="O volume foi montado, mas a conferência não pôde rodar: a ELE-04 não tem selo legível" aviso />
+            <Saidas itens={[{ texto: "Conferir de novo", principal: true }, { texto: "Abrir a ELE-04" }, { texto: "Baixar os editáveis (ZIP)" }]} />
+          </DoNexo>
+        </>
+      );
+    case "conferir-selo":
+      return (
+        <>
+          <DeVoce arquivos={PRANCHAS} texto="confere o selo das pranchas com o memorial" />
+          <DoNexo atraso={0.2}>
+            <Passo texto="Li os selos de 33 pranchas" />
+            <Conferencia />
+            <p className="cx-fonte">A obra foi lida do carimbo das pranchas, uma fonte independente do memorial.</p>
+            <Saidas itens={[{ texto: "Abrir ARQ-03 e ARQ-07", principal: true }, { texto: "Auditar o memorial" }]} />
           </DoNexo>
         </>
       );
@@ -155,29 +256,69 @@ function Fio({ situacao }: { situacao: SituacaoConversa }): ReactNode {
       return (
         <>
           <DeVoce texto="por que a NBR 5626 de 1998 é problema se o dimensionamento está certo?" />
-          <DoNexo atraso={0.1}>
-            <Passo texto="Consultando o parecer da revisão A" emCurso />
-            <Escrevendo texto="Porque a vistoria da prefeitura confere o memorial contra a norma vigente, e a edição de 2020 substituiu a de 1998. Se o dimensionamento continua válido pela 2020, basta atualizar a citação no capítulo 6. No ACH-004, a Carla já registrou que conferiu pela 2020, então é só a citação." />
-          </DoNexo>
+          <Respondendo texto="Porque a vistoria da prefeitura confere o memorial contra a norma vigente, e a edição de 2020 substituiu a de 1998. Se o dimensionamento continua válido pela 2020, basta atualizar a citação no capítulo 6. No ACH-004, a Carla já registrou que conferiu pela 2020, então é só a citação." />
         </>
       );
     case "erro-resposta":
       return (
         <>
           <DeVoce texto="resume os bloqueios em duas linhas pra mandar pro cliente" />
-          <DoNexo atraso={0.1}>
-            <p className="cx-erro">
-              A resposta não chegou: o modelo não respondeu a tempo. Nada foi gerado nem gasto.
-              <button type="button" className="cx-erro-botao">
-                <RotateCcw size={13} /> Tentar de novo
-              </button>
-            </p>
+          <DoNexo atraso={0.2}>
+            <Erro />
           </DoNexo>
         </>
       );
     default:
       return null;
   }
+}
+
+const TITULO: Record<SituacaoConversa, string> = {
+  nova: "Conversa nova",
+  anexando: "Conversa nova",
+  "confirmar-auditoria": "Auditar o memorial",
+  "escolher-projeto": "Auditar o memorial",
+  "arquivo-sem-selo": "Auditar o memorial",
+  "auditoria-pronta": "Auditar o memorial",
+  "plano-de-geracao": "LD, capa e separatrizes",
+  "capa-sem-prefeitura": "LD, capa e separatrizes",
+  gerando: "LD, capa e separatrizes",
+  "alteracao-pendente": "LD, capa e separatrizes",
+  "montar-volume": "Montar o volume",
+  "volume-montado": "Montar o volume",
+  "conferir-selo": "Conferir o selo",
+  respondendo: "Perguntas sobre a auditoria",
+  "erro-resposta": "Perguntas sobre a auditoria",
+};
+
+/** Sobe até o primeiro ancestral que rola: é nele que se mede a distância do fim. */
+function rolador(el: HTMLElement | null): HTMLElement | Window {
+  for (let p = el?.parentElement; p; p = p.parentElement) {
+    const o = getComputedStyle(p).overflowY;
+    if ((o === "auto" || o === "scroll") && p.scrollHeight > p.clientHeight) return p;
+  }
+  return window;
+}
+
+/** Longe do fim, aparece "Ir para as últimas mensagens" em cima do campo. */
+function useLongeDoFim(ref: React.RefObject<HTMLElement | null>) {
+  const [longe, setLonge] = useState(false);
+  useEffect(() => {
+    const r = rolador(ref.current);
+    const medir = () => {
+      const falta = r instanceof Window ? document.documentElement.scrollHeight - (window.scrollY + window.innerHeight) : r.scrollHeight - (r.scrollTop + r.clientHeight);
+      setLonge(falta > 240);
+    };
+    medir();
+    r.addEventListener("scroll", medir, { passive: true });
+    return () => r.removeEventListener("scroll", medir);
+  }, [ref]);
+  const descer = () => {
+    const r = rolador(ref.current);
+    if (r instanceof Window) window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "smooth" });
+    else r.scrollTo({ top: r.scrollHeight, behavior: "smooth" });
+  };
+  return { longe, descer };
 }
 
 /**
@@ -188,33 +329,29 @@ function Fio({ situacao }: { situacao: SituacaoConversa }): ReactNode {
  * [Criciúma]"), não num formulário. O que ele gera aparece como peça, ali.
  */
 export function TelaConversa({ situacao }: { situacao: SituacaoConversa }) {
+  const { dur } = useTempo();
+  const ref = useRef<HTMLDivElement>(null);
+  const { longe, descer } = useLongeDoFim(ref);
   const nova = situacao === "nova" || situacao === "anexando";
-  const titulo =
-    situacao === "nova" || situacao === "anexando"
-      ? "Conversa nova"
-      : situacao === "respondendo" || situacao === "erro-resposta"
-        ? "Perguntas sobre a auditoria"
-        : situacao === "confirmar-auditoria" || situacao === "escolher-projeto"
-          ? "Auditar o memorial"
-          : "LD, capa e separatrizes";
+  const [respondendo, setRespondendo] = useState(situacao === "respondendo");
   const campo = (
     <Campo
       arquivos={situacao === "anexando" ? [{ nome: "117_25_md_geral_a.pdf", paginas: 42 }, { nome: "117_25_ARQ_rev-B.pdf", paginas: 12, lendo: true }] : undefined}
-      respondendo={situacao === "respondendo"}
+      respondendo={respondendo}
       texto={situacao === "erro-resposta" ? "resume os bloqueios em duas linhas pra mandar pro cliente" : situacao === "anexando" ? "audita o memorial e confere as pranchas de arquitetura" : ""}
       modo={nova}
     />
   );
 
   return (
-    <div className="cx">
+    <div className="cx" ref={ref}>
       <Topo atual="Painel" />
       <header className="cx-cabeca">
         <span className="cx-cabeca-obra">
           <MarcaDaPrefeitura prefeitura="Criciúma" forma="sinal" />
           <span className="cx-mono">{situacao === "escolher-projeto" ? "sem projeto" : "117-25"}</span>
         </span>
-        <span className="cx-cabeca-titulo">{titulo}</span>
+        <span className="cx-cabeca-titulo">{TITULO[situacao]}</span>
         <Botao variante="quiet" tamanho="sm" className="cx-nova">
           <MessageSquarePlus /> Nova conversa <Tecla>N</Tecla>
         </Botao>
@@ -227,9 +364,30 @@ export function TelaConversa({ situacao }: { situacao: SituacaoConversa }) {
       ) : (
         <>
           <main className="cx-fio">
-            <Fio situacao={situacao} />
+            <FimDaResposta.Provider value={() => setRespondendo(false)}>
+              <Fio situacao={situacao} />
+            </FimDaResposta.Provider>
           </main>
-          <div className="cx-rodape">{campo}</div>
+          <div className="cx-rodape">
+            <div className="cx-rodape-dentro">
+              <AnimatePresence>
+                {longe && (
+                  <motion.button
+                    type="button"
+                    className="cx-descer"
+                    onClick={descer}
+                    initial={{ opacity: 0, y: 8, x: "-50%", scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, x: "-50%", scale: 1 }}
+                    exit={{ opacity: 0, y: 8, x: "-50%", scale: 0.95 }}
+                    transition={{ duration: dur("enter"), ease: ease(CURVA.out) }}
+                  >
+                    <ArrowDown size={13} /> Ir para as últimas mensagens
+                  </motion.button>
+                )}
+              </AnimatePresence>
+              {campo}
+            </div>
+          </div>
         </>
       )}
     </div>
