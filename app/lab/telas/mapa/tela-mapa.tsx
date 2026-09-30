@@ -325,9 +325,9 @@ function Mapa({ situacao }: { situacao: SituacaoMapa }) {
   );
 }
 
-/** No lab, a forma do cartão vem da URL (?cartao=prancha), para comparar no canvas de verdade. */
+/** No lab, a forma do cartão vem da URL (?cartao=prancha); o padrão é o carimbo, para comparar no canvas de verdade. */
 function useCartaoDaUrl(): EstiloDoCartao {
-  const [e, setE] = useState<EstiloDoCartao>("prancha");
+  const [e, setE] = useState<EstiloDoCartao>("carimbo");
   useEffect(() => {
     const c = new URLSearchParams(window.location.search).get("cartao");
     if (c && ESTILOS.some((x) => x.id === c)) setE(c as EstiloDoCartao);

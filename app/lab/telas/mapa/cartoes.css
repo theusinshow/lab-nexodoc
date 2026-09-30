@@ -154,3 +154,13 @@
 
 /* volume: o livro, com a lombada das páginas atrás */
 .ds .pp--volume .pp-papel { background: #deddd7; }
+
+/* ---------- B. Carimbo (o escolhido): título longo continua legível ---------- */
+/* no trabalho, a célula do título tem 4 linhas; de perto, 3 (a linha do código ocupa o pé).
+   O número e a disciplina ficam sempre inteiros: quem cede é o título, com reticências. */
+.ds .ct--carimbo.ct--media .ct-cel--titulo b { -webkit-line-clamp: 4; }
+.ds .ct--carimbo.ct--perto .ct-cel--titulo b { -webkit-line-clamp: 3; }
+.ds .ct--carimbo .ct-cel:first-child b, .ds .ct--carimbo .ct-sigla { white-space: nowrap; }
+.ds .ct--carimbo.ct--sel { box-shadow: 0 0 0 1.5px var(--ds-text-primary), 0 12px 30px rgb(0 0 0 / 0.45) !important; }
+.ds .ct-tabela:not(.ct-tabela--perto) { grid-template-rows: auto 1fr; }
+.ds .ct--carimbo .ct-cel { align-content: start; }

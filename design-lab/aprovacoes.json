@@ -258,5 +258,40 @@
     "status": "aprovado",
     "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, vamos para a próxima tela\" (Conversa v2 com movimento em crossfade e ritmo vertical).",
     "em": "2026-09-30T18:47:38.764897Z"
+  },
+  "tela.mapa.lendo-selos": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"mapa dos volumes aprovado\" (canvas com a pele nova; cartão da folha = B. Carimbo; capa/LD/separatrizes como papel).",
+    "em": "2026-09-30T20:37:07.327397Z"
+  },
+  "tela.mapa.lido": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"mapa dos volumes aprovado\" (canvas com a pele nova; cartão da folha = B. Carimbo; capa/LD/separatrizes como papel).",
+    "em": "2026-09-30T20:37:07.327397Z"
+  },
+  "tela.mapa.folha-aberta": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"mapa dos volumes aprovado\" (canvas com a pele nova; cartão da folha = B. Carimbo; capa/LD/separatrizes como papel).",
+    "em": "2026-09-30T20:37:07.327397Z"
+  },
+  "tela.mapa.corrigindo": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"mapa dos volumes aprovado\" (canvas com a pele nova; cartão da folha = B. Carimbo; capa/LD/separatrizes como papel).",
+    "em": "2026-09-30T20:37:07.327397Z"
+  },
+  "tela.mapa.vou-gerar": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"mapa dos volumes aprovado\" (canvas com a pele nova; cartão da folha = B. Carimbo; capa/LD/separatrizes como papel).",
+    "em": "2026-09-30T20:37:07.327397Z"
+  },
+  "tela.mapa.desatualizado": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"mapa dos volumes aprovado\" (canvas com a pele nova; cartão da folha = B. Carimbo; capa/LD/separatrizes como papel).",
+    "em": "2026-09-30T20:37:07.327397Z"
+  },
+  "tela.mapa.fora-da-divisao": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"mapa dos volumes aprovado\" (canvas com a pele nova; cartão da folha = B. Carimbo; capa/LD/separatrizes como papel).",
+    "em": "2026-09-30T20:37:07.327397Z"
   }
 }
