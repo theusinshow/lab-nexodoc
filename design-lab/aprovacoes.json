@@ -78,5 +78,20 @@
     "status": "aprovado",
     "nota": "Aprovado pelo Matheus no chat em 30/09: \"Curti, pode ser assim mesmo, definido\".",
     "em": "2026-09-30T02:29:27.937561Z"
+  },
+  "tela.parecer.parecer": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 30/09: \"relatorio aprovado\" (aba Relatório em texto corrido).",
+    "em": "2026-09-30T05:27:38.693239Z"
+  },
+  "tela.parecer.parecer-erro": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 30/09: \"relatorio aprovado\" (aba Relatório em texto corrido).",
+    "em": "2026-09-30T05:27:38.693239Z"
+  },
+  "tela.parecer.parecer-gerando": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 30/09: \"relatorio aprovado\" (aba Relatório em texto corrido).",
+    "em": "2026-09-30T05:27:38.693239Z"
   }
 }
