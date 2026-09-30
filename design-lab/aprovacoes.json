@@ -44,6 +44,21 @@
     "nota": "Aprovado pelo Matheus no chat em 30/09: \"Fechado, vamos para o proximo\" (versão enxuta, relógio em anel).",
     "em": "2026-09-30T04:51:13.842663Z"
   },
+  "tela.documento.doc-mudas": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, vamos para a próxima tela\" (etiqueta só no No documento).",
+    "em": "2026-09-30T17:22:31.187834Z"
+  },
+  "tela.documento.doc-remoto": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, vamos para a próxima tela\" (etiqueta só no No documento).",
+    "em": "2026-09-30T17:22:31.187834Z"
+  },
+  "tela.documento.documento": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, vamos para a próxima tela\" (etiqueta só no No documento).",
+    "em": "2026-09-30T17:22:31.187834Z"
+  },
   "tela.inicio-d2.arquivo-recebido": {
     "status": "aprovado",
     "nota": "Aprovado pelo Matheus no chat em 30/09: \"Curti, pode ser assim mesmo, definido\".",
