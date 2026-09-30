@@ -128,7 +128,6 @@
 .ds .au-leg--lento { background: #c9ccd4; }
 .ds .au-leg--agora { background: var(--ds-nexo); }
 .ds .au-leg--futuro { box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.2); }
-.ds .au-fazendo { display: flex; align-items: center; gap: 10px; margin: 14px 0 0 264px; font-size: var(--ds-text-xs); }
 .ds .au-brilho {
   background: linear-gradient(90deg, var(--ds-text-tertiary) 0%, var(--ds-text-primary) 40%, var(--ds-text-tertiary) 80%);
   background-size: 200% 100%;
@@ -137,6 +136,57 @@
   color: transparent;
   animation: ds-varrer 2.4s linear infinite;
 }
-.ds .au-grade { grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr) !important; }
+.ds .au-grade { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr) !important; }
 .ds .au-grade .au-bloco { padding: 6px 16px 14px; }
 .ds .au-grade .au-bloco-cabeca { margin-left: 2px; }
+
+/* ---------- v3: fatos, blocos, achados até agora, o que vem depois ---------- */
+.ds .au-fatos { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 0 0 12px; padding: 12px 0; border-top: 1px solid var(--ds-line-subtle); border-bottom: 1px solid var(--ds-line-subtle); }
+.ds .au-fato { display: grid; gap: 2px; padding: 0 20px; border-left: 1px solid var(--ds-line-subtle); }
+.ds .au-fato:first-child { padding-left: 0; border-left: 0; }
+.ds .au-fato b { font-size: 22px; font-weight: 300; letter-spacing: -0.03em; line-height: 1.15; font-variant-numeric: tabular-nums; }
+.ds .au-fato > span { font-size: 11.5px; color: var(--ds-text-tertiary); }
+.ds .au-traco { color: var(--ds-text-tertiary); }
+.ds .au-nota-erro { color: var(--ds-state-error); }
+
+.ds .au-blocos { display: grid; gap: 8px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--ds-line-subtle); }
+.ds .au-blocos-faixa { display: flex; gap: 3px; }
+.ds .au-bloco-pil {
+  flex-basis: 0;
+  min-width: 0;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: rgb(255 255 255 / 0.04);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.08);
+  font: inherit;
+  cursor: pointer;
+  transition: background var(--ds-dur-state), box-shadow var(--ds-dur-state), opacity var(--ds-dur-feedback);
+}
+.ds .au-bloco-pil span { font-size: 10px; color: var(--ds-text-tertiary); }
+.ds .au-bloco-pil--feito { background: #5b5f6b; box-shadow: none; }
+.ds .au-bloco-pil--feito span { color: rgb(255 255 255 / 0.8); }
+.ds .au-bloco-pil--lendo { background: var(--ds-nexo-wash); box-shadow: inset 0 0 0 1.5px var(--ds-nexo); animation: gr-ler 1.4s ease-in-out infinite; }
+.ds .au-bloco-pil--lendo span { color: var(--ds-nexo-soft); }
+.ds .au-bloco-pil--erro { background: var(--ds-state-error-wash); box-shadow: inset 0 0 0 1.5px var(--ds-state-error); }
+.ds .au-bloco-pil--erro span { color: var(--ds-state-error); }
+.ds .au-blocos-faixa:hover .au-bloco-pil:not(.au-bloco-pil--sobre) { opacity: 0.45; }
+.ds .au-blocos-rodape { margin: 0; min-height: 18px; font-size: var(--ds-text-2xs); color: var(--ds-text-tertiary); }
+.ds .au-blocos-rodape b { font-weight: 500; color: var(--ds-text-primary); }
+
+.ds .au-coluna { display: grid; gap: 12px; align-content: start; min-width: 0; }
+.ds .au-achados ul { list-style: none; margin: 0 0 10px; padding: 0; }
+.ds .au-achados li { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 7px 2px; border-top: 1px solid var(--ds-line-subtle); font-size: var(--ds-text-xs); color: var(--ds-text-secondary); }
+.ds .au-achados li:first-child { border-top: 0; }
+.ds .au-achados li b { font-weight: 400; font-size: 15px; color: var(--ds-text-primary); }
+.ds .au-achados--agora span { color: var(--ds-text-primary); }
+.ds .au-achados--agora b { color: var(--ds-nexo) !important; }
+.ds .au-achados--depois b { font-size: var(--ds-text-2xs) !important; color: var(--ds-text-tertiary) !important; }
+.ds .au-achados .au-nota { margin: 0; padding: 0 2px; line-height: 1.5; }
+.ds .au-registro ol { max-height: 196px; }
+
+.ds .au-depois { display: flex; align-items: center; gap: 24px; margin-top: 12px; padding: 12px 16px; border-radius: var(--ds-radius-card); box-shadow: var(--ds-edge); font-size: var(--ds-text-2xs); color: var(--ds-text-secondary); }
+.ds .au-depois-texto { flex: 1; line-height: 1.5; }
+.ds .au-depois-texto svg { margin-left: 4px; vertical-align: -2px; color: var(--ds-nexo); }
+.ds .au-depois label { display: flex; align-items: center; gap: 10px; flex: none; color: var(--ds-text-primary); cursor: pointer; }

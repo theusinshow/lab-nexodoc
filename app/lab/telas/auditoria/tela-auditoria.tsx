@@ -1,10 +1,10 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
-import { AlertTriangle, FileSearch, FileText, RotateCcw, X } from "lucide-react";
+import { AlertTriangle, ArrowRight, FileSearch, FileText, RotateCcw, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
-import { Botao, Esqueleto, Orbe, Selo } from "@/components/ds/basicos";
+import { Botao, Esqueleto, NumeroQueChega, Orbe, Selo } from "@/components/ds/basicos";
 import { LinhaDoTempo, MapaDasPaginas, type PassoDaLinha } from "@/components/ds/graficos";
 import { CURVA } from "@/lib/ds/movimento";
 import { useTempo } from "@/lib/ds/tempo";
@@ -16,34 +16,56 @@ import "./auditoria.css";
 export type SituacaoAud = "enviando" | "em-curso" | "passou" | "retomada" | "cancelando" | "falhou" | "concluida";
 
 /**
- * As etapas do motor com os nomes de hoje (lib/audit-progress.ts). O rótulo
- * curto vai no gráfico; o que cada uma faz e o que apurou vão no registro.
- * "confronto" fica de fora: com um arquivo só o motor não a anuncia.
+ * As passadas do motor com os nomes de hoje (lib/audit-progress.ts). Os
+ * tempos previstos das que não têm orçamento vêm da média das últimas
+ * auditorias — hoje o motor só manda orçamento da leitura global (modo
+ * profundo) e da validação.
  */
 const ETAPAS = [
-  { id: "extracao", rotulo: "Abrindo o memorial", previsto: 15, real: 12, fazendo: "Extraindo o texto de todas as páginas" },
-  { id: "regras", rotulo: "Identidade e coerência", previsto: 20, real: 19, fazendo: "Conferindo obra, município e código" },
-  { id: "global", rotulo: "Lendo o documento", previsto: 110, real: 98, fazendo: "Leitura da IA sobre o documento inteiro" },
-  { id: "blocos", rotulo: "Capítulo a capítulo", previsto: 70, real: 64, fazendo: "Bloco 10 de 12: cap. 10, Cobertura" },
-  { id: "evidencia", rotulo: "Evidências no texto", previsto: 25, real: 22, fazendo: "Conferindo cada ponto contra o trecho" },
-  { id: "validacao", rotulo: "Segundo modelo", previsto: 40, real: 37, fazendo: "Revisando cada achado com um segundo modelo" },
-  { id: "parecer", rotulo: "Fechando o parecer", previsto: 10, real: 9, fazendo: "Ordenando por impacto" },
-] as const;
+  { id: "extracao", rotulo: "Abrindo o memorial", previsto: 15, real: 12 },
+  { id: "regras", rotulo: "Identidade e coerência", previsto: 20, real: 19 },
+  { id: "global", rotulo: "Lendo o documento", previsto: 110, real: 98 },
+  { id: "blocos", rotulo: "Capítulo a capítulo", previsto: 70, real: 64 },
+  { id: "evidencia", rotulo: "Evidências no texto", previsto: 25, real: 22 },
+  { id: "validacao", rotulo: "Segundo modelo", previsto: 40, real: 37 },
+  { id: "parecer", rotulo: "Fechando o parecer", previsto: 10, real: 9 },
+];
+
+/**
+ * Os blocos da leitura capítulo a capítulo, com as páginas de cada um (o
+ * `chunk.startPage/endPage` do motor). Rodam três de cada vez, então terminam
+ * fora de ordem: o 10 pode acabar antes do 9.
+ */
+const BLOCOS = [
+  { n: 1, cap: "Capa e identificação", de: 1, ate: 3 },
+  { n: 2, cap: "Disposições gerais", de: 4, ate: 7 },
+  { n: 3, cap: "Arquitetura", de: 8, ate: 11 },
+  { n: 4, cap: "Fundações", de: 12, ate: 15 },
+  { n: 5, cap: "Estrutura", de: 16, ate: 18 },
+  { n: 6, cap: "Hidrossanitário", de: 19, ate: 21 },
+  { n: 7, cap: "Elétrica", de: 22, ate: 25 },
+  { n: 8, cap: "Climatização", de: 26, ate: 28 },
+  { n: 9, cap: "Quantitativos", de: 29, ate: 31 },
+  { n: 10, cap: "Cobertura", de: 32, ate: 35 },
+  { n: 11, cap: "Esquadrias", de: 36, ate: 39 },
+  { n: 12, cap: "Encerramento", de: 40, ate: 42 },
+];
+const paginasDe = (b: (typeof BLOCOS)[number]) => Array.from({ length: b.ate - b.de + 1 }, (_, i) => b.de + i);
 
 /** Pontos marcados por página (42 páginas) — onde os problemas se juntam. */
-const PONTOS = [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 2, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 2, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+const PONTOS = [1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 2, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 2, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 
 const REGISTRO = [
   { h: "21:08:02", t: "Arquivo recebido: 117_25_md_geral_a.pdf, 3,1 MB" },
-  { h: "21:08:14", t: "42 páginas com texto; nenhuma só com desenho" },
+  { h: "21:08:14", t: "42 páginas, 314.848 caracteres; nenhuma só com desenho" },
   { h: "21:08:21", t: "Capa e carimbo: obra 117-25, Criciúma, revisão A" },
-  { h: "21:08:33", t: "Regras locais: 38 aplicadas, 2 não se aplicam a UBS" },
-  { h: "21:10:24", t: "Leitura global: 8 pontos marcados" },
-  { h: "21:10:40", t: "Bloco 3/12, Fundações: 1 ponto novo (p. 14)" },
-  { h: "21:11:03", t: "Bloco 7/12, Instalações hidrossanitárias" },
-  { h: "21:11:11", t: "Bloco 8/12, Instalações elétricas: 1 ponto novo" },
-  { h: "21:11:20", t: "Bloco 9/12, Quadro de quantitativos (p. 31)" },
-  { h: "21:11:29", t: "Bloco 10/12, Cobertura" },
+  { h: "21:08:33", t: "Regras locais: 38 aplicadas, 2 achados" },
+  { h: "21:10:24", t: "Leitura global: 6 achados" },
+  { h: "21:10:31", t: "Capítulo a capítulo: 12 blocos, 3 de cada vez" },
+  { h: "21:10:58", t: "Bloco 4, Fundações, p. 12–15: 1 achado" },
+  { h: "21:11:20", t: "Bloco 7, Elétrica, p. 22–25: 1 achado" },
+  { h: "21:11:29", t: "Bloco 10, Cobertura, terminou antes do 9" },
+  { h: "21:11:41", t: "Bloco 8, Climatização, p. 26–28" },
 ];
 
 const ease = (c: readonly number[]) => [...c] as [number, number, number, number];
@@ -52,30 +74,34 @@ function mmss(s: number) {
 }
 
 /**
- * AUDITORIA RODANDO, v2 — no idioma dos gráficos da Matos UI. A LINHA DO
- * TEMPO mostra as etapas como pílulas no eixo do tempo (o que falta aparece
- * tracejado onde deve cair, e um marcador diz "agora"); o MAPA DAS PÁGINAS
- * mostra onde os pontos se concentram enquanto a leitura anda.
+ * AUDITORIA RODANDO. De cima para baixo: o que já se sabe (os fatos do
+ * documento), o que está acontecendo (a linha do tempo, com a etapa atual
+ * dizendo o que faz) e onde (o mapa das páginas com os blocos), ao lado dos
+ * achados até agora. Embaixo, o que vem depois: dá para sair, e o resultado
+ * abre aqui.
  */
 export function TelaAuditoria({ situacao }: { situacao: SituacaoAud }) {
   const { dur, k } = useTempo();
-  const concluida0 = situacao === "concluida";
-  const atual = concluida0 ? ETAPAS.length : situacao === "enviando" || situacao === "retomada" ? -1 : 3;
+  const concluida = situacao === "concluida";
+  const falhou = situacao === "falhou";
+  const semSinal = situacao === "enviando" || situacao === "retomada";
+  const atual = concluida ? ETAPAS.length : semSinal ? -1 : 3;
+  const rodando = !concluida && !falhou && situacao !== "retomada";
+
   const [naEtapa, setNaEtapa] = useState(situacao === "passou" ? 101 : 34);
-  const [linhas, setLinhas] = useState(situacao === "enviando" || situacao === "retomada" ? 0 : concluida0 ? REGISTRO.length : 8);
-  const [lidas, setLidas] = useState(concluida0 ? 42 : situacao === "enviando" || situacao === "retomada" ? 0 : 33);
+  const [linhas, setLinhas] = useState(semSinal ? 0 : concluida ? REGISTRO.length : 8);
+  const [feitos, setFeitos] = useState<number[]>(concluida ? BLOCOS.map((b) => b.n) : semSinal ? [] : [1, 2, 3, 4, 5, 6, 7, 8, 10]);
   const [confirmar, setConfirmar] = useState(situacao === "cancelando");
   const [aviso, setAviso] = useState(true);
-  const falhou = situacao === "falhou";
-  const concluida = atual >= ETAPAS.length;
-  const rodando = !concluida && !falhou && situacao !== "retomada";
+  const [blocoSobre, setBlocoSobre] = useState<number | null>(null);
   const registroRef = useRef<HTMLOListElement>(null);
 
   useEffect(() => {
     if (!rodando || confirmar || situacao === "enviando") return;
     const id = setInterval(() => setNaEtapa((n) => n + 1), 1000 * k);
     const id2 = setInterval(() => setLinhas((n) => Math.min(REGISTRO.length, n + 1)), 3000 * k);
-    const id3 = setInterval(() => setLidas((n) => (n < 39 ? n + 1 : n)), 2200 * k);
+    // o bloco 9 termina depois do 10: a leitura é em paralelo
+    const id3 = setInterval(() => setFeitos((f) => (f.includes(9) ? f : [...f, 9])), 7000 * k);
     return () => {
       clearInterval(id);
       clearInterval(id2);
@@ -86,8 +112,15 @@ export function TelaAuditoria({ situacao }: { situacao: SituacaoAud }) {
     registroRef.current?.scrollTo({ top: registroRef.current.scrollHeight, behavior: "smooth" });
   }, [linhas]);
 
-  // Monta as pílulas: feitas com o tempo real, a atual com o decorrido, as que
-  // faltam com o previsto, cada uma começando onde a anterior terminou.
+  const lendo = semSinal || concluida ? [] : BLOCOS.filter((b) => !feitos.includes(b.n)).map((b) => b.n);
+  const paginasLidas = BLOCOS.filter((b) => feitos.includes(b.n)).flatMap(paginasDe);
+  const paginasLendo = rodando ? BLOCOS.filter((b) => lendo.includes(b.n)).flatMap(paginasDe) : [];
+  const achadosBlocos = BLOCOS.filter((b) => feitos.includes(b.n) && [4, 7].includes(b.n)).length;
+  const achadosAteAgora = semSinal ? 0 : 2 + 6 + achadosBlocos;
+  const falaDosBlocos = lendo.length ? `lendo agora ${lendo.length === 1 ? "o" : "os"} ${lendo.join(", ").replace(/, (\d+)$/, " e $1")}` : "fechando a etapa";
+
+  // As pílulas: feitas com o tempo real, a atual com o decorrido, as que faltam
+  // com o previsto, cada uma começando onde a anterior terminou.
   let t = 0;
   const passos: PassoDaLinha[] = ETAPAS.map((e, i) => {
     const inicio = t;
@@ -101,14 +134,33 @@ export function TelaAuditoria({ situacao }: { situacao: SituacaoAud }) {
       duracao = naEtapa;
     }
     t = inicio + (estado === "futuro" ? e.previsto : estado === "atual" ? Math.max(naEtapa, e.previsto) : duracao);
-    return { id: e.id, rotulo: e.rotulo, inicio, duracao, previsto: e.previsto, estado };
+    let nota: PassoDaLinha["nota"];
+    if (estado === "atual")
+      nota = (
+        <>
+          <Orbe tamanho={12} estado="trabalhando" />
+          <span className="au-brilho">
+            {feitos.length} de 12 blocos lidos, {falaDosBlocos}
+          </span>
+          {situacao === "passou" && <Selo tom="decide">passou do previsto</Selo>}
+        </>
+      );
+    if (estado === "erro") nota = <span className="au-nota-erro">O modelo não respondeu no bloco 9, depois de três tentativas.</span>;
+    return { id: e.id, rotulo: e.rotulo, inicio, duracao, previsto: e.previsto, estado, nota };
   });
   const total = Math.max(330, t);
   const agora = rodando && atual >= 0 ? passos[atual].inicio + naEtapa : situacao === "enviando" ? 2 : null;
-  const decorrido = concluida ? passos.reduce((s, p) => s + p.duracao, 0) : falhou ? passos[atual].inicio + naEtapa : agora ?? 0;
+  const decorrido = concluida ? passos.reduce((s, p) => s + p.duracao, 0) : falhou ? passos[3].inicio + naEtapa : (agora ?? 0);
   const restante = Math.max(0, t - decorrido);
   const passou = situacao === "passou";
-  const blocoPaginas = [lidas + 1, lidas + 2].filter((n) => n <= 42);
+  const blocoEmFoco = BLOCOS.find((b) => b.n === blocoSobre);
+
+  const fatos = [
+    { rotulo: "páginas com texto", valor: semSinal ? null : 42 },
+    { rotulo: "caracteres lidos", valor: semSinal ? null : 314848 },
+    { rotulo: "de 12 blocos lidos", valor: semSinal ? null : feitos.length },
+    { rotulo: "achados até agora", valor: semSinal ? null : achadosAteAgora },
+  ];
 
   return (
     <div className="au">
@@ -129,8 +181,8 @@ export function TelaAuditoria({ situacao }: { situacao: SituacaoAud }) {
                 <b className="ds-num">{mmss(decorrido)}</b>
               </span>
               {rodando && (
-                <span className="au-metrica">
-                  <small>restante</small>
+                <span className="au-metrica" title="Pela média das últimas auditorias de tamanho parecido">
+                  <small>falta, estimado</small>
                   <b className={`ds-num${passou ? " au-ambar" : ""}`}>~{mmss(restante)}</b>
                 </span>
               )}
@@ -143,7 +195,7 @@ export function TelaAuditoria({ situacao }: { situacao: SituacaoAud }) {
             </div>
           </div>
           <p className="au-arquivo">
-            <FileText size={14} /> 117_25_md_geral_a.pdf, 42 páginas, revisão A. Iniciada às 21:08 por Victor.
+            <FileText size={14} /> 117_25_md_geral_a.pdf, revisão A. Análise profunda, com segundo modelo. Iniciada às 21:08 por Victor.
           </p>
         </header>
 
@@ -178,7 +230,7 @@ export function TelaAuditoria({ situacao }: { situacao: SituacaoAud }) {
           <motion.div className="au-pronto" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: dur("enter"), ease: ease(CURVA.out) }}>
             <div className="au-pronto-veredito">
               <Selo tom="block" ponto>
-                Não emitir ainda
+                Não emitir
               </Selo>
               <span className="ds-num">2 bloqueios, 3 decisões técnicas, 4 de revisão de texto</span>
             </div>
@@ -188,7 +240,7 @@ export function TelaAuditoria({ situacao }: { situacao: SituacaoAud }) {
               </Botao>
               <Botao variante="primary">
                 <FileSearch />
-                Abrir o parecer
+                Abrir o resultado
               </Botao>
             </div>
           </motion.div>
@@ -197,7 +249,7 @@ export function TelaAuditoria({ situacao }: { situacao: SituacaoAud }) {
           <div className="au-falha" role="alert">
             <div>
               <b>O modelo não respondeu na leitura capítulo a capítulo.</b>
-              <span>Três tentativas, a última às 21:11:40. As três etapas anteriores terminaram.</span>
+              <span>Três tentativas no bloco 9, a última às 21:11:40. As três etapas anteriores terminaram e o que acharam está guardado.</span>
             </div>
             <Botao variante="ghost" tamanho="sm">
               Voltar ao início
@@ -208,6 +260,16 @@ export function TelaAuditoria({ situacao }: { situacao: SituacaoAud }) {
             </Botao>
           </div>
         )}
+
+        {/* ---------- o que já se sabe ---------- */}
+        <section className="au-fatos" aria-label="O que já se sabe">
+          {fatos.map((f) => (
+            <div key={f.rotulo} className="au-fato">
+              <b>{f.valor === null ? <span className="au-traco">—</span> : <NumeroQueChega valor={f.valor} />}</b>
+              <span>{f.rotulo}</span>
+            </div>
+          ))}
+        </section>
 
         {/* ---------- a linha do tempo ---------- */}
         <section className="au-bloco au-bloco--linha">
@@ -238,67 +300,124 @@ export function TelaAuditoria({ situacao }: { situacao: SituacaoAud }) {
           ) : (
             <LinhaDoTempo passos={passos} agora={agora} total={total} />
           )}
-          {rodando && atual >= 0 && (
-            <div className="au-fazendo">
-              <Orbe tamanho={13} estado="trabalhando" />
-              <span className="au-brilho">{(ETAPAS as readonly { fazendo: string }[])[atual]?.fazendo}</span>
-              {passou && <Selo tom="decide">passou do previsto</Selo>}
-            </div>
-          )}
         </section>
 
         <div className="au-grade">
-          {/* ---------- o mapa das páginas ---------- */}
+          {/* ---------- onde: páginas e blocos ---------- */}
           <section className="au-bloco">
             <div className="au-bloco-cabeca">
               <h2>Páginas do memorial</h2>
-              <span className="au-nota ds-num">
-                {lidas} de 42 lidas, {PONTOS.slice(0, lidas).reduce((a, b) => a + b, 0)} pontos
-              </span>
+              <span className="au-nota ds-num">{paginasLidas.length} de 42 lidas capítulo a capítulo</span>
             </div>
-            <MapaDasPaginas paginas={PONTOS} lidas={lidas} atuais={rodando && atual === 3 ? blocoPaginas : []} />
+            <MapaDasPaginas paginas={PONTOS} lidas={0} lidasEm={paginasLidas} atuais={paginasLendo} destaque={blocoEmFoco ? paginasDe(blocoEmFoco) : null} />
+            <div className="au-blocos" onMouseLeave={() => setBlocoSobre(null)}>
+              <div className="au-blocos-faixa">
+                {BLOCOS.map((b) => {
+                  const est = feitos.includes(b.n) ? "feito" : lendo.includes(b.n) ? (falhou && b.n === 9 ? "erro" : "lendo") : "fila";
+                  return (
+                    <button
+                      key={b.n}
+                      type="button"
+                      className={`au-bloco-pil au-bloco-pil--${est}${blocoSobre === b.n ? " au-bloco-pil--sobre" : ""}`}
+                      style={{ flexGrow: b.ate - b.de + 1 }}
+                      onMouseEnter={() => setBlocoSobre(b.n)}
+                      onFocus={() => setBlocoSobre(b.n)}
+                      aria-label={`Bloco ${b.n}, ${b.cap}, páginas ${b.de} a ${b.ate}`}
+                    >
+                      <span className="ds-num">{b.n}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="au-blocos-rodape">
+                {blocoEmFoco ? (
+                  <>
+                    <b>Bloco {blocoEmFoco.n}</b>, {blocoEmFoco.cap}, p. {blocoEmFoco.de}–{blocoEmFoco.ate}:{" "}
+                    {feitos.includes(blocoEmFoco.n) ? "lido" : lendo.includes(blocoEmFoco.n) ? (falhou && blocoEmFoco.n === 9 ? "parou aqui" : "lendo agora") : "na fila"}
+                  </>
+                ) : semSinal ? (
+                  "Os blocos aparecem quando a leitura capítulo a capítulo começar."
+                ) : (
+                  "Um bloco por trecho do documento, três lidos de cada vez. Passe o mouse num bloco para ver as páginas dele."
+                )}
+              </p>
+            </div>
           </section>
 
-          {/* ---------- o registro ---------- */}
-          <section className="au-bloco au-registro">
-            <div className="au-bloco-cabeca">
-              <h2>Registro</h2>
-            </div>
-            {linhas === 0 ? (
-              <p className="au-nota" style={{ padding: "0 12px" }}>
-                {situacao === "retomada" ? "O registro desta sessão se perdeu ao recarregar." : "Enviando o documento para análise…"}
-              </p>
-            ) : (
-              <ol ref={registroRef}>
-                <AnimatePresence initial={false}>
-                  {REGISTRO.slice(0, linhas).map((l) => (
-                    <motion.li key={l.h} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: dur("enter"), ease: ease(CURVA.out) }}>
-                      <time>{l.h}</time>
-                      <span>{l.t}</span>
-                    </motion.li>
-                  ))}
-                </AnimatePresence>
-                {concluida && (
-                  <li className="au-registro-fim">
-                    <time>21:13:14</time>
-                    <span>Parecer fechado: não emitir, 2 bloqueios</span>
-                  </li>
-                )}
-              </ol>
-            )}
-            {!concluida && !falhou && (
-              <div className="au-sair">
-                <span>Pode fechar a aba. A auditoria continua no servidor e fica em Continuar, no Início.</span>
-                <label>
-                  <button type="button" role="switch" aria-checked={aviso} className="au-chave" onClick={() => setAviso((a) => !a)}>
-                    <motion.span animate={{ x: aviso ? 14 : 0 }} transition={{ type: "spring", stiffness: 520 / (k * k), damping: 40 / k }} />
-                  </button>
-                  Avisar por e-mail quando terminar
-                </label>
+          <div className="au-coluna">
+            {/* ---------- o que já se achou ---------- */}
+            <section className="au-bloco au-achados">
+              <div className="au-bloco-cabeca">
+                <h2>Achados até agora</h2>
               </div>
-            )}
-          </section>
+              <ul>
+                <li>
+                  <span>Regras locais</span>
+                  <b className="ds-num">{semSinal ? "—" : 2}</b>
+                </li>
+                <li>
+                  <span>Leitura global</span>
+                  <b className="ds-num">{semSinal ? "—" : 6}</b>
+                </li>
+                <li className={atual === 3 && !falhou ? "au-achados--agora" : undefined}>
+                  <span>Capítulo a capítulo{atual === 3 && !falhou ? ", ainda lendo" : ""}</span>
+                  <b className="ds-num">{semSinal ? "—" : achadosBlocos}</b>
+                </li>
+                <li className="au-achados--depois">
+                  <span>Segundo modelo</span>
+                  <b>{concluida ? "manteve 9 de 11" : "depois"}</b>
+                </li>
+              </ul>
+              <p className="au-nota">Cada etapa conta quando termina. O segundo modelo ainda pode derrubar alguns antes do parecer.</p>
+            </section>
+
+            {/* ---------- o registro ---------- */}
+            <section className="au-bloco au-registro">
+              <div className="au-bloco-cabeca">
+                <h2>Registro</h2>
+              </div>
+              {linhas === 0 ? (
+                <p className="au-nota" style={{ padding: "0 4px 8px" }}>
+                  {situacao === "retomada" ? "O registro desta sessão se perdeu ao recarregar." : "Enviando o documento para análise…"}
+                </p>
+              ) : (
+                <ol ref={registroRef}>
+                  <AnimatePresence initial={false}>
+                    {REGISTRO.slice(0, linhas).map((l) => (
+                      <motion.li key={l.h} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: dur("enter"), ease: ease(CURVA.out) }}>
+                        <time>{l.h}</time>
+                        <span>{l.t}</span>
+                      </motion.li>
+                    ))}
+                  </AnimatePresence>
+                  {concluida && (
+                    <li className="au-registro-fim">
+                      <time>21:13:14</time>
+                      <span>Parecer fechado: não emitir, 2 bloqueios</span>
+                    </li>
+                  )}
+                </ol>
+              )}
+            </section>
+          </div>
         </div>
+
+        {/* ---------- o que vem depois ---------- */}
+        {!concluida && !falhou && (
+          <footer className="au-depois">
+            <span className="au-depois-texto">
+              Pode fechar a aba: a auditoria continua no servidor e fica em Continuar, no Início. Quando terminar, o resultado abre aqui, com o
+              veredito e a fila de achados.
+              <ArrowRight size={13} />
+            </span>
+            <label>
+              <button type="button" role="switch" aria-checked={aviso} className="au-chave" onClick={() => setAviso((a) => !a)}>
+                <motion.span animate={{ x: aviso ? 14 : 0 }} transition={{ type: "spring", stiffness: 520 / (k * k), damping: 40 / k }} />
+              </button>
+              Avisar por e-mail quando terminar
+            </label>
+          </footer>
+        )}
       </div>
     </div>
   );

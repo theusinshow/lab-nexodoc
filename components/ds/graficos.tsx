@@ -29,6 +29,8 @@ export interface PassoDaLinha {
   /** Duração prevista — para o atual e os que faltam. */
   previsto: number;
   estado: "feito" | "atual" | "futuro" | "erro";
+  /** Uma linha sob a etapa (a atual diz o que está fazendo; a que parou, por quê). */
+  nota?: ReactNode;
 }
 
 /**
@@ -74,6 +76,7 @@ export function LinhaDoTempo({ passos, agora, total }: { passos: PassoDaLinha[];
             <span className="gr-passo-tempo">
               {p.estado === "futuro" ? `~${mmss(p.previsto)}` : p.estado === "erro" ? "parou" : mmss(p.duracao)}
             </span>
+            {p.nota && <span className="gr-passo-nota">{p.nota}</span>}
           </div>
         );
       })}
@@ -123,12 +126,18 @@ export function MapaDasPaginas({
   paginas,
   lidas,
   atuais,
+  lidasEm,
+  destaque,
 }: {
   paginas: number[];
   /** Quantas páginas já foram lidas (as primeiras N). */
   lidas: number;
   /** Páginas do bloco em leitura (1-based). */
   atuais: number[];
+  /** Lista explícita das lidas, quando a leitura não anda em ordem (blocos em paralelo). */
+  lidasEm?: number[];
+  /** Páginas em evidência (o bloco sob o mouse, lá fora): as outras recuam. */
+  destaque?: number[] | null;
 }) {
   const { dur, k } = useTempo();
   const [sobre, setSobre] = useState<number | null>(null);
@@ -140,15 +149,16 @@ export function MapaDasPaginas({
       <div className="gr-mapa-grade" style={{ gridTemplateColumns: `repeat(${colunas}, 1fr)` }} onMouseLeave={() => setSobre(null)}>
         {paginas.map((pontos, i) => {
           const n = i + 1;
-          const lida = i < lidas;
+          const lida = lidasEm ? lidasEm.includes(n) : i < lidas;
           const atual = atuais.includes(n);
+          const recua = !!destaque && !destaque.includes(n);
           const tom = lida && pontos > 0 ? 0.18 + (pontos / maximo) * 0.72 : 0;
           const linha = Math.floor(i / colunas);
           const coluna = i % colunas;
           return (
             <motion.span
               key={n}
-              className={`gr-pagina${lida ? " gr-pagina--lida" : ""}${atual ? " gr-pagina--atual" : ""}`}
+              className={`gr-pagina${lida ? " gr-pagina--lida" : ""}${atual ? " gr-pagina--atual" : ""}${recua ? " gr-pagina--recua" : ""}`}
               style={{ ["--tom" as string]: tom }}
               initial={{ opacity: 0, scale: 0.6 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -167,7 +177,7 @@ export function MapaDasPaginas({
               <>
                 Tom da página = pontos marcados nela. <span className="gr-mapa-escala" aria-hidden><i /><i /><i /><i /></span>
               </>
-            ) : sobre <= lidas ? (
+            ) : (lidasEm ? lidasEm.includes(sobre) : sobre <= lidas) ? (
               <>
                 <b>p. {sobre}</b>: {paginas[sobre - 1] === 0 ? "nenhum ponto" : `${paginas[sobre - 1]} ${paginas[sobre - 1] === 1 ? "ponto" : "pontos"}`}
               </>
