@@ -139,7 +139,13 @@ export default {
       await ctx.visivelRolando(motivo),
       `contagem=${await motivo.count()}`,
     );
-    const remontar = page.getByRole("button", { name: /^Remontar e baixar$/ });
+    /*
+     * "Remontar" OU "Remontar e baixar": desde 9ddbec0 o PDF só sai com os
+     * editáveis salvos na pasta do projeto, e sem eles o botão remonta sem
+     * baixar. Esta jornada não salva editáveis, então o rótulo curto é o certo
+     * aqui — o que ela prova é que remontar é OFERECIDO.
+     */
+    const remontar = page.getByRole("button", { name: /^Remontar( e baixar)?$/ });
     ctx.verificar(
       "remontar é oferecido, visível de verdade",
       (await remontar.count()) === 1 && (await ctx.visivelRolando(remontar)),
