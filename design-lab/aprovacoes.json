@@ -9,6 +9,41 @@
     "nota": "",
     "em": "2026-09-30T01:12:59.514Z"
   },
+  "tela.auditoria.cancelando": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 30/09: \"Fechado, vamos para o proximo\" (versão enxuta, relógio em anel).",
+    "em": "2026-09-30T04:51:13.842663Z"
+  },
+  "tela.auditoria.concluida": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 30/09: \"Fechado, vamos para o proximo\" (versão enxuta, relógio em anel).",
+    "em": "2026-09-30T04:51:13.842663Z"
+  },
+  "tela.auditoria.em-curso": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 30/09: \"Fechado, vamos para o proximo\" (versão enxuta, relógio em anel).",
+    "em": "2026-09-30T04:51:13.842663Z"
+  },
+  "tela.auditoria.enviando": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 30/09: \"Fechado, vamos para o proximo\" (versão enxuta, relógio em anel).",
+    "em": "2026-09-30T04:51:13.842663Z"
+  },
+  "tela.auditoria.falhou": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 30/09: \"Fechado, vamos para o proximo\" (versão enxuta, relógio em anel).",
+    "em": "2026-09-30T04:51:13.842663Z"
+  },
+  "tela.auditoria.passou": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 30/09: \"Fechado, vamos para o proximo\" (versão enxuta, relógio em anel).",
+    "em": "2026-09-30T04:51:13.842663Z"
+  },
+  "tela.auditoria.retomada": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 30/09: \"Fechado, vamos para o proximo\" (versão enxuta, relógio em anel).",
+    "em": "2026-09-30T04:51:13.842663Z"
+  },
   "tela.inicio-d2.arquivo-recebido": {
     "status": "aprovado",
     "nota": "Aprovado pelo Matheus no chat em 30/09: \"Curti, pode ser assim mesmo, definido\".",
