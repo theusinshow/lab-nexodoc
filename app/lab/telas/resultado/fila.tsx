@@ -32,7 +32,9 @@ export function Fila({
   achados,
   onMudar,
   inicial,
+  onAbrirPagina,
 }: {
+  onAbrirPagina?: (id: string) => void;
   achados: Achado[];
   onMudar: (id: string, desfecho: Achado["desfecho"] | undefined, responsavel?: string | null) => void;
   inicial: { selecionado: string; filtro?: Filtro; busca?: string; decisao?: boolean; marcados?: string[] };
@@ -355,8 +357,8 @@ export function Fila({
                     <figure>
                       <figcaption>
                         Memorial, p. {atual.pagina}
-                        <button type="button" className="rs-link">
-                          Abrir página
+                        <button type="button" className="rs-link" onClick={() => onAbrirPagina?.(atual.id)}>
+                          Ver no memorial
                         </button>
                       </figcaption>
                       <blockquote>

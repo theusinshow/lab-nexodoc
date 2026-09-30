@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
-import { AlertTriangle, ArrowLeft, Download, FileSpreadsheet, FileText, ScrollText } from "lucide-react";
+import { FileSearch, AlertTriangle, ArrowLeft, Download, FileSpreadsheet, FileText, ScrollText } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { Botao, Esqueleto, Menu, Segmento } from "@/components/ds/basicos";
@@ -14,6 +14,8 @@ import { ACHADOS, type Achado } from "./dados";
 import { Fila, type Filtro } from "./fila";
 import { Resumo, estadoDaEmissao, type EstadoEmissao } from "./resumo";
 import "./resultado.css";
+import { VisorDoMemorial } from "../resultado-c/visor";
+import "../resultado-c/visor.css";
 import { Relatorio } from "../resultado-c/relatorio";
 import "../resultado-c/relatorio.css";
 
@@ -107,6 +109,7 @@ export function TelaResultado({ situacao }: { situacao: SituacaoRes }) {
   const [aba, setAba] = useState<Aba>(p.aba);
   const [filaInicial, setFilaInicial] = useState(p.fila);
   const [carregando, setCarregando] = useState(situacao === "abrindo");
+  const [visor, setVisor] = useState<{ aberto: boolean; achado: string | null }>({ aberto: situacao === ("memorial" as SituacaoRes), achado: situacao === ("memorial" as SituacaoRes) ? "ACH-002" : null });
   const [pdf, setPdf] = useState<"nada" | "abrindo" | "erro">(situacao === ("parecer-gerando" as SituacaoRes) ? "abrindo" : situacao === ("parecer-erro" as SituacaoRes) ? "erro" : "nada");
   useEffect(() => {
     if (pdf !== "abrindo" || situacao === ("parecer-gerando" as SituacaoRes)) return;
@@ -222,8 +225,8 @@ export function TelaResultado({ situacao }: { situacao: SituacaoRes }) {
               ]}
             />
             <div className="rs-exportar">
-              <Botao variante="ghost" tamanho="sm" onClick={() => setPdf("abrindo")}>
-                <FileText /> Parecer em PDF
+              <Botao variante="ghost" tamanho="sm" title="Abre o memorial com os achados grifados" onClick={() => setVisor({ aberto: true, achado: null })}>
+                <FileSearch /> Ver no memorial
               </Botao>
               <Menu
                 rotulo={
@@ -233,6 +236,7 @@ export function TelaResultado({ situacao }: { situacao: SituacaoRes }) {
                 }
                 variante="quiet"
                 itens={[
+                  { rotulo: "Parecer em PDF", dica: "Monta o parecer para a prefeitura e abre numa aba nova", icone: <FileText size={14} />, onClick: () => setPdf("abrindo") },
                   { rotulo: "Relatório da auditoria", dica: "Texto corrido, todos os achados", icone: <ScrollText size={14} /> },
                   { rotulo: "Matriz de achados", dica: "Planilha, um achado por linha", icone: <FileSpreadsheet size={14} /> },
                 ]}
@@ -262,7 +266,7 @@ export function TelaResultado({ situacao }: { situacao: SituacaoRes }) {
               transition={{ duration: dur("enter"), ease: ease(CURVA.out) }}
             >
               {aba === "resumo" && <Resumo achados={achados} parcial={p.parcial} comparado={p.comparado} revisao={revisao} onAbrir={abrir} />}
-              {aba === "achados" && <Fila key={filaInicial.selecionado} achados={achados} onMudar={mudar} inicial={filaInicial} />}
+              {aba === "achados" && <Fila key={filaInicial.selecionado} achados={achados} onMudar={mudar} inicial={filaInicial} onAbrirPagina={(id) => setVisor({ aberto: true, achado: id })} />}
               {aba === "parecer" && <Relatorio achados={achados} parcial={p.parcial} revisao={revisao} onPdf={() => setPdf("abrindo")} />}
               {aba === "documento" && (
                 <div className="rs-depois">
@@ -273,6 +277,16 @@ export function TelaResultado({ situacao }: { situacao: SituacaoRes }) {
           </AnimatePresence>
         )}
       </div>
+      <VisorDoMemorial
+        achados={achados}
+        inicial={visor.achado}
+        aberto={visor.aberto}
+        onFechar={() => setVisor((v) => ({ ...v, aberto: false }))}
+        onIrParaAchado={(id) => {
+          setVisor({ aberto: false, achado: null });
+          abrir(id);
+        }}
+      />
       <AnimatePresence>
         {pdf !== "nada" && (
           <motion.div

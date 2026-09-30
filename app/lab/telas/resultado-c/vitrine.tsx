@@ -11,6 +11,7 @@ const SITUACOES: { id: SituacaoRes; nome: string; dica: string }[] = [
   { id: "comparado", nome: "Comparada", dica: "Segunda auditoria da obra: a linha do que mudou desde a anterior." },
   { id: "abrindo", nome: "Abrindo", dica: "Buscando o parecer no servidor: o esqueleto tem a forma do que vem." },
   { id: "nao-abriu", nome: "Não abriu", dica: "Parecer não encontrado: diz o porquê provável e por onde seguir." },
+  { id: "memorial", nome: "Ver no memorial", dica: "O memorial original num visor por cima da tela, na página do achado: o trecho grifado na cor do nível, o número na margem, os outros achados da página ao lado e as páginas com achado embaixo. J e K pulam entre elas, ← → folheia, Esc fecha." },
   { id: "fila", nome: "Fila", dica: "J e K andam, C marca corrigido, D abre a decisão, F é falso positivo, / busca. Corrigir mostra Desfazer (Z) por 6 segundos." },
   { id: "decisao", nome: "Decisão técnica", dica: "O motivo é escrito ali mesmo, sem janela por cima. Esc cancela." },
   { id: "selecionando", nome: "Selecionando", dica: "Marcou achados: a barra de atribuir sobe de baixo. Esc limpa." },
