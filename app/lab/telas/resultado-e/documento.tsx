@@ -1,15 +1,14 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
-import { ArrowRight, CloudDownload, FileSearch, ScanText } from "lucide-react";
+import { CloudDownload, FileSearch, ScanText } from "lucide-react";
 import { useState } from "react";
 
 import { Botao, Segmento } from "@/components/ds/basicos";
 import { CURVA } from "@/lib/ds/movimento";
 import { useTempo } from "@/lib/ds/tempo";
 
-import { IMPACTOS, PAGINAS_DO_MEMORIAL, type Achado } from "./dados";
-import { SeloDaDisciplina } from "./disciplina";
+import { DESFECHO_NOME, DISCIPLINA, IMPACTOS, PAGINAS_DO_MEMORIAL, type Achado } from "./dados";
 import { larguraDaLinha, linhaDoTrecho } from "./visor";
 
 const ease = (c: readonly number[]) => [...c] as [number, number, number, number];
@@ -19,8 +18,39 @@ const LINHAS = 20;
 
 export type ModoDoDocumento = "normal" | "mudas" | "remoto";
 
+/**
+ * O DELTA DE REVISÃO — o triângulo numerado que a prancha usa para apontar uma
+ * alteração. Aqui ele aponta o achado: na margem da página, na altura do
+ * trecho, e de novo na nota embaixo, com o mesmo número. É o vocabulário que o
+ * engenheiro já lê, no lugar de um cartão.
+ */
+function Delta({ n, tom, aceso }: { n: number; tom: string; aceso?: boolean }) {
+  return (
+    <svg className={`nd-delta nd--${tom}${aceso ? " nd-delta--aceso" : ""}`} viewBox="0 0 20 18" aria-hidden>
+      <path d="M10 1.5 L18.5 16.5 L1.5 16.5 Z" />
+      <text x="10" y="14">
+        {n}
+      </text>
+    </svg>
+  );
+}
+
 /** A miniatura da página: linhas de texto falso e, no lugar de cada achado, a marca na cor do nível. */
-function Miniatura({ pagina, achados, aceso, remoto, onAcender }: { pagina: number; achados: Achado[]; aceso: string | null; remoto: boolean; onAcender: (id: string | null) => void }) {
+function Miniatura({
+  pagina,
+  achados,
+  aceso,
+  remoto,
+  onAcender,
+  deltas,
+}: {
+  pagina: number;
+  achados: Achado[];
+  aceso: string | null;
+  remoto: boolean;
+  onAcender: (id: string | null) => void;
+  deltas?: boolean;
+}) {
   if (remoto) return <div className="nd-folha nd-folha--remota" aria-label={`Página ${pagina}, arquivo fora desta máquina`} />;
   return (
     <div className="nd-folha" aria-label={`Página ${pagina}`}>
@@ -28,13 +58,15 @@ function Miniatura({ pagina, achados, aceso, remoto, onAcender }: { pagina: numb
         const a = achados.find((x, i) => Math.round((linhaDoTrecho(x, i) / 40) * LINHAS) === l);
         if (a)
           return (
-            <i
-              key={l}
-              className={`nd-marca nd--${a.impacto}${aceso === a.id ? " nd-marca--acesa" : ""}${aceso && aceso !== a.id ? " nd--apagada" : ""}`}
-              style={{ width: `${larguraDaLinha(pagina, l)}%` }}
-              onMouseEnter={() => onAcender(a.id)}
-              onMouseLeave={() => onAcender(null)}
-            />
+            <span key={l} className="nd-marca-linha">
+              <i
+                className={`nd-marca nd--${a.impacto}${aceso === a.id ? " nd-marca--acesa" : ""}${aceso && aceso !== a.id ? " nd--apagada" : ""}`}
+                style={{ width: `${larguraDaLinha(pagina, l)}%` }}
+                onMouseEnter={() => onAcender(a.id)}
+                onMouseLeave={() => onAcender(null)}
+              />
+              {deltas && <Delta n={achados.indexOf(a) + 1} tom={a.impacto} aceso={aceso === a.id} />}
+            </span>
           );
         return <i key={l} className="nd-linha" style={{ width: `${larguraDaLinha(pagina, l)}%` }} />;
       })}
@@ -44,8 +76,8 @@ function Miniatura({ pagina, achados, aceso, remoto, onAcender }: { pagina: numb
 
 /**
  * NO DOCUMENTO: o memorial página a página, com os achados no lugar. Cada
- * página com achado é uma coluna — a miniatura em cima, os achados embaixo —,
- * e passar o mouse acende o par (a marca na página e o cartão), sem apagar o
+ * página com achado é uma coluna — a miniatura em cima, as notas embaixo —, e
+ * passar o mouse acende o par (o delta na página e o da nota), sem apagar o
  * resto da tela. Como hoje (modules/nexo/components/AuditCanvas.tsx), só que
  * em grade, sem o canvas de arrastar.
  */
@@ -130,33 +162,30 @@ export function NoDocumento({
                     <i className={`nd-leg nd--${pior(p)}`} />
                   </header>
                   <button type="button" className="nd-folha-botao" onClick={() => onVerNoMemorial(daPagina[0].id)} title="Ver no memorial">
-                    <Miniatura pagina={p} achados={daPagina} aceso={aceso} remoto={remoto} onAcender={setAceso} />
+                    <Miniatura pagina={p} achados={daPagina} aceso={aceso} remoto={remoto} onAcender={setAceso} deltas />
                   </button>
-                  <div className="nd-cartoes">
-                    {daPagina.map((a) => (
-                      <div
+                  <ol className="nd-notas">
+                    {daPagina.map((a, n) => (
+                      <li
                         key={a.id}
-                        className={`nd-cartao nd--${a.impacto}${aceso === a.id ? " nd-cartao--aceso" : ""}${a.desfecho ? " nd-cartao--tratado" : ""}`}
+                        className={`nd-nota${aceso === a.id ? " nd-nota--acesa" : ""}${a.desfecho ? " nd-nota--tratada" : ""}`}
                         onMouseEnter={() => setAceso(a.id)}
                         onMouseLeave={() => setAceso(null)}
                       >
-                        <span className="nd-cartao-topo">
-                          <i className={`rs-ponto rs-ponto--${a.impacto}`} />
-                          <span className="nd-id">{a.id}</span>
-                          <SeloDaDisciplina disc={a.disc} neutro />
-                        </span>
-                        <b>{a.titulo}</b>
-                        <span className="nd-acoes">
-                          <button type="button" onClick={() => onVerNoMemorial(a.id)}>
-                            <FileSearch size={13} /> Memorial
-                          </button>
-                          <button type="button" onClick={() => onAbrir(a.id)}>
-                            Fila <ArrowRight size={13} />
-                          </button>
-                        </span>
-                      </div>
+                        <Delta n={n + 1} tom={a.impacto} aceso={aceso === a.id} />
+                        <button type="button" className="nd-nota-texto" onClick={() => onAbrir(a.id)}>
+                          <b>{a.titulo}</b>
+                          <small>
+                            {a.id} {DISCIPLINA[a.disc].sigla}
+                            {a.desfecho ? `, ${DESFECHO_NOME[a.desfecho.tipo].toLowerCase()}` : ""}
+                          </small>
+                        </button>
+                        <button type="button" className="nd-nota-memorial" aria-label={`Ver ${a.id} no memorial`} title="Ver no memorial" onClick={() => onVerNoMemorial(a.id)}>
+                          <FileSearch size={13} />
+                        </button>
+                      </li>
                     ))}
-                  </div>
+                  </ol>
                 </motion.section>
               );
             })}
