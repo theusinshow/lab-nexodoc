@@ -4,8 +4,8 @@ import { AnimatePresence, motion } from "motion/react";
 import { AlertTriangle, ArrowRight, FileSearch, FileText, RotateCcw, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
-import { Botao, Esqueleto, NumeroQueChega, Orbe, Selo } from "@/components/ds/basicos";
-import { LinhaDoTempo, MapaDasPaginas, type PassoDaLinha } from "@/components/ds/graficos";
+import { Botao, Esqueleto, NumeroQueChega, Orbe, Segmento, Selo } from "@/components/ds/basicos";
+import { FaixaDeVeredito, FluxoPorTipo, LinhaDoTempo, MapaDasPaginas, type LinhaDoFluxo, type PassoDaLinha } from "@/components/ds/graficos";
 import { CURVA } from "@/lib/ds/movimento";
 import { useTempo } from "@/lib/ds/tempo";
 import { MarcaDaPrefeitura } from "@/modules/nexo/components/MarcaDaPrefeitura";
@@ -55,6 +55,28 @@ const paginasDe = (b: (typeof BLOCOS)[number]) => Array.from({ length: b.ate - b
 /** Pontos marcados por página (42 páginas) — onde os problemas se juntam. */
 const PONTOS = [1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 2, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 2, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 
+/**
+ * Os tipos de erro que o sistema já classifica (lib/audit-report.ts,
+ * ERROR_TYPE_LABELS), com a contagem até agora. "Redação / editorial" vira
+ * "Redação e gramática" e ganha cor própria.
+ */
+const TIPOS: Omit<LinhaDoFluxo, "vivo">[] = [
+  { id: "identidade", rotulo: "Identidade / documental", valor: 2, tom: "block" },
+  { id: "quantitativo", rotulo: "Quantitativo", valor: 2, tom: "block" },
+  { id: "norma", rotulo: "Norma", valor: 1, tom: "neutro" },
+  { id: "especificacao", rotulo: "Especificação / material", valor: 1, tom: "neutro" },
+  { id: "escopo", rotulo: "Escopo / contratual", valor: 0, tom: "neutro" },
+  { id: "tecnico", rotulo: "Técnico (geral)", valor: 1, tom: "neutro" },
+  { id: "editorial", rotulo: "Redação e gramática", valor: 3, tom: "texto" },
+];
+
+const FAIXAS = [
+  { rotulo: "Liberado", tom: "ok" as const, ate: 25 },
+  { rotulo: "Ressalvas", tom: "ok" as const, ate: 50 },
+  { rotulo: "Revisar", tom: "decide" as const, ate: 75 },
+  { rotulo: "Não emitir", tom: "block" as const, ate: 100 },
+];
+
 const REGISTRO = [
   { h: "21:08:02", t: "Arquivo recebido: 117_25_md_geral_a.pdf, 3,1 MB" },
   { h: "21:08:14", t: "42 páginas, 314.848 caracteres; nenhuma só com desenho" },
@@ -94,6 +116,7 @@ export function TelaAuditoria({ situacao }: { situacao: SituacaoAud }) {
   const [confirmar, setConfirmar] = useState(situacao === "cancelando");
   const [aviso, setAviso] = useState(true);
   const [blocoSobre, setBlocoSobre] = useState<number | null>(null);
+  const [visao, setVisao] = useState<"tipos" | "previa">("tipos");
   const registroRef = useRef<HTMLOListElement>(null);
 
   useEffect(() => {
@@ -303,6 +326,7 @@ export function TelaAuditoria({ situacao }: { situacao: SituacaoAud }) {
         </section>
 
         <div className="au-grade">
+          <div className="au-coluna">
           {/* ---------- onde: páginas e blocos ---------- */}
           <section className="au-bloco">
             <div className="au-bloco-cabeca">
@@ -343,6 +367,46 @@ export function TelaAuditoria({ situacao }: { situacao: SituacaoAud }) {
               </p>
             </div>
           </section>
+
+          {/* ---------- de que tipo: fluxo por tipo ou prévia do veredito ---------- */}
+          <section className="au-bloco au-tipos">
+            <div className="au-bloco-cabeca">
+              <h2>{visao === "tipos" ? "Tipos de erro" : "Prévia do veredito"}</h2>
+              <Segmento
+                rotulo="Como ver os achados"
+                valor={visao}
+                onTroca={setVisao}
+                opcoes={[
+                  { valor: "tipos", rotulo: "Por tipo" },
+                  { valor: "previa", rotulo: "Prévia" },
+                ]}
+              />
+            </div>
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div key={visao} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: dur("enter"), ease: ease(CURVA.out) }}>
+                {visao === "tipos" ? (
+                  <>
+                    <FluxoPorTipo linhas={TIPOS.map((ti) => ({ ...ti, valor: semSinal ? 0 : ti.valor, vivo: rodando && atual === 3 }))} maximo={4} />
+                    <p className="au-nota au-tipos-nota">
+                      <i className="au-tipos-cor au-tipos-cor--block" /> tem bloqueio
+                      <i className="au-tipos-cor au-tipos-cor--texto" /> redação e gramática
+                      {rodando && atual === 3 && <span>As partículas correm onde a leitura ainda pode achar mais.</span>}
+                    </p>
+                  </>
+                ) : (
+                  <div className="au-previa">
+                    <FaixaDeVeredito posicao={semSinal ? 12.5 : 87.5} faixas={FAIXAS} valor={semSinal ? "nada ainda" : "2 bloqueios"} />
+                    <p className="au-nota">
+                      {concluida
+                        ? "Este já é o veredito do parecer."
+                        : "Pelo que já foi achado. O veredito só fecha no parecer, depois do segundo modelo, que pode derrubar algum bloqueio."}
+                    </p>
+                  </div>
+                )}
+              </motion.div>
+            </AnimatePresence>
+          </section>
+          </div>
 
           <div className="au-coluna">
             {/* ---------- o que já se achou ---------- */}

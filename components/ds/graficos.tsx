@@ -1,7 +1,7 @@
 "use client";
 
-import { AnimatePresence, motion } from "motion/react";
-import { useId, useState, type ReactNode } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { useId, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 
 import { CURVA } from "@/lib/ds/movimento";
 import { useTempo } from "@/lib/ds/tempo";
@@ -198,7 +198,16 @@ export function MapaDasPaginas({
  * um losango que DESLIZA até onde o documento caiu. Serve ao Resultado: o
  * veredito lido como posição, não só como palavra.
  */
-export function FaixaDeVeredito({ posicao, faixas }: { posicao: number; faixas: { rotulo: string; tom: "ok" | "decide" | "block"; ate: number }[] }) {
+export function FaixaDeVeredito({
+  posicao,
+  faixas,
+  valor,
+}: {
+  posicao: number;
+  faixas: { rotulo: string; tom: "ok" | "decide" | "block"; ate: number }[];
+  /** O que o marcador está medindo, escrito sob ele (como o "2.80s" do LCP). */
+  valor?: ReactNode;
+}) {
   const { mola } = useTempo();
   let inicio = 0;
   return (
@@ -215,6 +224,12 @@ export function FaixaDeVeredito({ posicao, faixas }: { posicao: number; faixas: 
           );
         })}
         <motion.i className="gr-losango" initial={{ left: "0%" }} animate={{ left: `${posicao}%` }} transition={mola("gentle")} />
+        {valor !== undefined && (
+          <motion.span className="gr-faixa-marcador" initial={{ left: "0%" }} animate={{ left: `${posicao}%` }} transition={mola("gentle")}>
+            <i />
+            <b>{valor}</b>
+          </motion.span>
+        )}
       </div>
     </div>
   );
@@ -470,5 +485,108 @@ export function BarrasPorMes({ meses, atual, altura = 26 }: { meses: { rotulo: s
         </span>
       ))}
     </span>
+  );
+}
+
+export interface LinhaDoFluxo {
+  id: string;
+  rotulo: string;
+  valor: number;
+  /** block: há bloqueio entre eles; texto: redação e gramática; neutro: o resto. */
+  tom: "neutro" | "block" | "texto";
+  /** Ainda recebendo achados: partículas correm pela linha. */
+  vivo?: boolean;
+}
+
+/**
+ * FLUXO POR TIPO (Signal Flow, da Matos UI). Uma linha por tipo de erro,
+ * saindo do mesmo eixo; o traço anda até a contagem e um ponto marca onde
+ * parou. Enquanto a etapa ainda pode achar mais, partículas correm pela
+ * linha — o "está chegando" sem inventar número.
+ */
+export function FluxoPorTipo({ linhas, maximo }: { linhas: LinhaDoFluxo[]; maximo?: number }) {
+  const { dur, k } = useTempo();
+  const reduzido = useReducedMotion();
+  const caixa = useRef<HTMLDivElement>(null);
+  const [largura, setLargura] = useState(0);
+  const [sobre, setSobre] = useState<string | null>(null);
+  const teto = maximo ?? Math.max(1, ...linhas.map((l) => l.valor));
+
+  useLayoutEffect(() => {
+    const medir = () => setLargura(caixa.current?.clientWidth ?? 0);
+    medir();
+    const ro = new ResizeObserver(medir);
+    if (caixa.current) ro.observe(caixa.current);
+    return () => ro.disconnect();
+  }, []);
+
+  const A = 22; // altura de cada linha
+  const onda = (x: number, fase: number) => A / 2 + 1.6 * Math.sin((x / Math.max(1, largura)) * Math.PI * 2 + fase);
+  const caminho = (ate: number, fase: number) => {
+    const pts: string[] = [];
+    for (let x = 0; x <= ate; x += 6) pts.push(`${x.toFixed(1)},${onda(x, fase).toFixed(2)}`);
+    pts.push(`${ate.toFixed(1)},${onda(ate, fase).toFixed(2)}`);
+    return `M${pts.join(" L")}`;
+  };
+
+  return (
+    <div className="gr-fluxo" onMouseLeave={() => setSobre(null)}>
+      <div className="gr-fluxo-rotulos">
+        {linhas.map((l) => (
+          <span key={l.id} className={sobre && sobre !== l.id ? "gr-fluxo--fora" : undefined} onMouseEnter={() => setSobre(l.id)}>
+            {l.rotulo}
+          </span>
+        ))}
+      </div>
+      <div ref={caixa} className="gr-fluxo-trilhos">
+        {largura > 0 &&
+          linhas.map((l, i) => {
+            const fase = i * 1.3;
+            const fim = Math.max(8, (l.valor / teto) * (largura - 34));
+            const d = caminho(fim, fase);
+            return (
+              <svg
+                key={l.id}
+                className={`gr-fluxo-linha gr-fluxo-linha--${l.tom}${l.valor === 0 ? " gr-fluxo-linha--zero" : ""}${sobre && sobre !== l.id ? " gr-fluxo--fora" : ""}`}
+                width={largura}
+                height={A}
+                onMouseEnter={() => setSobre(l.id)}
+              >
+                <path d={caminho(largura - 4, fase)} className="gr-fluxo-trilho" />
+                {l.valor > 0 && (
+                  <motion.path
+                    d={d}
+                    className="gr-fluxo-traco"
+                    initial={{ pathLength: 0 }}
+                    animate={{ pathLength: 1 }}
+                    transition={{ duration: dur("layout") * 2.4, delay: i * 0.06 * k, ease: ease(CURVA.out) }}
+                  />
+                )}
+                {l.vivo && l.valor > 0 && !reduzido &&
+                  [0, 0.5].map((atraso) => (
+                    <circle key={atraso} r={1.6} className="gr-fluxo-particula">
+                      <animateMotion dur={`${1.8 * k}s`} begin={`${atraso * 1.8 * k}s`} repeatCount="indefinite" path={d} />
+                    </circle>
+                  ))}
+                <circle cx={4} cy={onda(0, fase)} r={4} className="gr-fluxo-origem" />
+                {l.valor > 0 && (
+                  <motion.circle
+                    cx={fim}
+                    cy={onda(fim, fase)}
+                    r={3}
+                    className="gr-fluxo-ponta"
+                    initial={{ opacity: 0, scale: 0 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: dur("enter"), delay: dur("layout") * 2 + i * 0.06 * k }}
+                  />
+                )}
+                <text x={Math.min(fim + 10, largura - 14)} y={A / 2 + 4} className="gr-fluxo-valor">
+                  {l.valor}
+                </text>
+              </svg>
+            );
+          })}
+      </div>
+    </div>
   );
 }

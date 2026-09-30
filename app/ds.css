@@ -94,6 +94,9 @@
   --ds-sev-note: var(--ds-p-slate);
   --ds-sev-note-wash: rgb(142 153 174 / 0.14);
   --ds-sev-note-line: rgb(142 153 174 / 0.28);
+  /* redação e gramática: cor própria, para o erro de texto não se confundir com o técnico */
+  --ds-sev-texto: #86b6f0;
+  --ds-sev-texto-wash: rgb(134 182 240 / 0.12);
 
   /* Estado do sistema. Mesmo tom da gravidade em "atenção", mas papel
      diferente: "salvo só nesta máquina" não é um achado. */
@@ -630,3 +633,31 @@
 
 .ds .gr-passo-nota { grid-column: 2 / 4; display: flex; align-items: center; gap: 8px; margin: -2px 0 4px; font-size: var(--ds-text-2xs); color: var(--ds-text-secondary); }
 .ds .gr-passo:has(.gr-passo-nota) { height: auto; min-height: 30px; row-gap: 6px; padding-top: 6px; }
+
+/* ---------- faixa com marcador (LCP) ---------- */
+.ds .gr-faixa-marcador { position: absolute; top: -4px; display: grid; justify-items: center; transform: translateX(-50%); pointer-events: none; }
+.ds .gr-faixa-marcador i { width: 1.5px; height: 18px; background: var(--ds-p-paper); }
+.ds .gr-faixa-marcador b { margin-top: 30px; font-family: var(--ds-font-mono); font-size: 12px; font-weight: 500; color: var(--ds-text-primary); white-space: nowrap; }
+
+/* ---------- fluxo por tipo (Signal Flow) ---------- */
+.ds .gr-fluxo { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 12px; }
+.ds .gr-fluxo-rotulos { display: grid; grid-auto-rows: 22px; row-gap: 8px; }
+.ds .gr-fluxo-rotulos span { display: flex; align-items: center; justify-content: flex-end; font-size: var(--ds-text-2xs); color: var(--ds-text-secondary); white-space: nowrap; transition: opacity var(--ds-dur-feedback); }
+.ds .gr-fluxo-trilhos { position: relative; display: grid; grid-auto-rows: 22px; row-gap: 8px; min-width: 0; }
+.ds .gr-fluxo-trilhos::before { content: ""; position: absolute; left: 3.5px; top: 4px; bottom: 4px; width: 1px; background: var(--ds-line-default); }
+.ds .gr-fluxo-linha { display: block; overflow: visible; transition: opacity var(--ds-dur-feedback); }
+.ds .gr-fluxo--fora { opacity: 0.3; }
+.ds .gr-fluxo-trilho { fill: none; stroke: rgb(255 255 255 / 0.06); stroke-width: 3; stroke-linecap: round; }
+.ds .gr-fluxo-traco { fill: none; stroke: #7d828d; stroke-width: 3; stroke-linecap: round; }
+.ds .gr-fluxo-origem { fill: var(--ds-surface-card); stroke: #9a9ea8; stroke-width: 1.5; }
+.ds .gr-fluxo-ponta { fill: var(--ds-surface-card); stroke: #c9ccd4; stroke-width: 1.5; }
+.ds .gr-fluxo-particula { fill: #fff; opacity: 0.8; }
+.ds .gr-fluxo-valor { font-family: var(--ds-font-mono); font-size: 11px; fill: var(--ds-text-secondary); }
+.ds .gr-fluxo-linha--block .gr-fluxo-traco { stroke: var(--ds-sev-block); opacity: 0.75; }
+.ds .gr-fluxo-linha--block .gr-fluxo-origem, .ds .gr-fluxo-linha--block .gr-fluxo-ponta { stroke: var(--ds-sev-block); }
+.ds .gr-fluxo-linha--block .gr-fluxo-particula { fill: var(--ds-sev-block); }
+.ds .gr-fluxo-linha--texto .gr-fluxo-traco { stroke: var(--ds-sev-texto); opacity: 0.8; }
+.ds .gr-fluxo-linha--texto .gr-fluxo-origem, .ds .gr-fluxo-linha--texto .gr-fluxo-ponta { stroke: var(--ds-sev-texto); }
+.ds .gr-fluxo-linha--texto .gr-fluxo-particula { fill: var(--ds-sev-texto); }
+.ds .gr-fluxo-linha--zero .gr-fluxo-origem { stroke: #4a4e57; }
+.ds .gr-fluxo-linha--zero .gr-fluxo-valor { fill: var(--ds-text-tertiary); }
