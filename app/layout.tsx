@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import { IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { Suspense } from "react";
+
+import { ProgressoDaNavegacao } from "@/components/layout/progresso-da-navegacao";
 
 // IBM Plex Sans/Mono (DESIGN.md secao 3): familia unica de engenharia,
 // fora do look v0/IA. Pesos conforme a rampa: 400 body, 500 label/title,
@@ -67,6 +70,11 @@ export default function RootLayout({
         >
           Pular para o conteúdo
         </a>
+        {/* `useSearchParams` pede fronteira de Suspense para não tirar a página
+            inteira da pré-renderização estática. */}
+        <Suspense fallback={null}>
+          <ProgressoDaNavegacao />
+        </Suspense>
         <TooltipProvider>
           <div id="main-content">{children}</div>
         </TooltipProvider>
