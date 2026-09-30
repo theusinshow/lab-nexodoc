@@ -98,6 +98,44 @@ const REGISTRO = [
 ];
 
 const ease = (c: readonly number[]) => [...c] as [number, number, number, number];
+
+type EstadoDoPainel = "enviando" | "rodando" | "passou" | "retomada" | "concluida" | "falhou";
+const ROTULO_DO_ESTADO: Record<EstadoDoPainel, string> = {
+  enviando: "Enviando",
+  rodando: "Auditando",
+  passou: "Auditando, além do previsto",
+  retomada: "Rodando no servidor",
+  concluida: "Concluída",
+  falhou: "Parou",
+};
+
+/**
+ * O RELÓGIO EM ANEL: quanto do tempo estimado já passou. Sem estimativa
+ * (enviando, depois de recarregar), o arco gira sem medir nada — "está
+ * trabalhando", não "está em 25%".
+ */
+function Anel({ fracao, estado }: { fracao: number | null; estado: EstadoDoPainel }) {
+  const { dur } = useTempo();
+  return (
+    <svg className={`au-anel au-anel--${estado}`} viewBox="0 0 64 64" aria-hidden>
+      <circle cx="32" cy="32" r="27" className="au-anel-trilho" />
+      {fracao === null ? (
+        <circle cx="32" cy="32" r="27" className="au-anel-giro" pathLength={1} strokeDasharray="0.22 0.78" />
+      ) : (
+        <motion.circle
+          cx="32"
+          cy="32"
+          r="27"
+          className="au-anel-arco"
+          transform="rotate(-90 32 32)"
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: fracao }}
+          transition={{ duration: dur("layout") * 3, ease: ease(CURVA.out) }}
+        />
+      )}
+    </svg>
+  );
+}
 function mmss(s: number) {
   return `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 }
@@ -183,53 +221,115 @@ export function TelaAuditoria({ situacao }: { situacao: SituacaoAud }) {
   const restante = Math.max(0, t - decorrido);
   const passou = situacao === "passou";
   const blocoEmFoco = BLOCOS.find((b) => b.n === blocoSobre);
+  const estadoDoPainel: EstadoDoPainel = concluida ? "concluida" : falhou ? "falhou" : situacao === "enviando" ? "enviando" : situacao === "retomada" ? "retomada" : passou ? "passou" : "rodando";
+  const fracao = semSinal ? null : concluida ? 1 : Math.min(1, decorrido / Math.max(1, decorrido + restante));
+  const fim = 21 * 3600 + 8 * 60 + decorrido + restante;
+  const horaDoFim = `${Math.floor(fim / 3600)}:${String(Math.floor((fim % 3600) / 60)).padStart(2, "0")}`;
   const maisMarcadas = PONTOS.map((n, i) => ({ p: i + 1, n }))
     .filter((x) => x.n > 0 && paginasLidas.includes(x.p))
     .sort((a, b) => b.n - a.n || a.p - b.p)
     .slice(0, 4);
 
-  const fatos = [
-    { rotulo: "páginas com texto", valor: semSinal ? null : 42 },
-    { rotulo: "caracteres lidos", valor: semSinal ? null : 314848 },
-    { rotulo: "de 12 blocos lidos", valor: semSinal ? null : feitos.length },
-    { rotulo: "achados até agora", valor: semSinal ? null : achadosAteAgora },
-  ];
 
   return (
     <div className="au">
       <Topo atual="Painel" trabalhando={rodando} />
 
       <div className="au-corpo">
-        <header className="au-cabeca">
-          <div className="au-obra">
-            <MarcaDaPrefeitura prefeitura="Criciúma" forma="sinal" />
-            <span className="ds-code">117-25</span>
-            <span>UBS da Rua São Francisco de Assis</span>
-          </div>
-          <div className="au-titulo">
-            <h1>{concluida ? "Auditoria concluída" : falhou ? "A auditoria parou" : situacao === "enviando" ? "Enviando o memorial" : "Auditoria em curso"}</h1>
-            <div className="au-titulo-dir">
-              <span className="au-metrica">
-                <small>{concluida ? "levou" : "decorrido"}</small>
-                <b className="ds-num">{mmss(decorrido)}</b>
-              </span>
-              {rodando && (
-                <span className="au-metrica" title="Pela média das últimas auditorias de tamanho parecido">
-                  <small>falta, estimado</small>
-                  <b className={`ds-num${passou ? " au-ambar" : ""}`}>~{mmss(restante)}</b>
+        <header className={`au-painel au-painel--${estadoDoPainel}`}>
+          <div className="au-painel-topo">
+            <div className="au-painel-texto">
+              <div className="au-painel-linha">
+                <span className="au-estado">
+                  <i />
+                  {ROTULO_DO_ESTADO[estadoDoPainel]}
                 </span>
-              )}
-              {rodando && !confirmar && (
-                <Botao variante="ghost" tamanho="sm" onClick={() => setConfirmar(true)}>
-                  <X />
-                  Cancelar
-                </Botao>
-              )}
+                <span className="au-obra">
+                  <MarcaDaPrefeitura prefeitura="Criciúma" forma="sinal" />
+                  <span className="ds-code">117-25</span>
+                  <span>UBS da Rua São Francisco de Assis</span>
+                </span>
+              </div>
+              <h1>Memorial geral, revisão A</h1>
+              <p className="au-arquivo">
+                <FileText size={13} />
+                <span>117_25_md_geral_a.pdf</span>
+                <span className="au-sep" />
+                <span>Análise profunda, com segundo modelo</span>
+                <span className="au-sep" />
+                <span>Iniciada às 21:08 por Victor</span>
+              </p>
+            </div>
+
+            <div className="au-cronometro">
+              <Anel fracao={fracao} estado={estadoDoPainel} />
+              <div className="au-cronometro-texto">
+                <b className="ds-num">{mmss(decorrido)}</b>
+                <small>{concluida ? "levou no total" : falhou ? "até parar" : "decorrido"}</small>
+                <span className={`au-cronometro-falta${passou ? " au-ambar" : ""}`}>
+                  {concluida
+                    ? "terminou às 21:13"
+                    : falhou
+                      ? "parou às 21:11"
+                      : semSinal
+                        ? "estimativa depois da primeira etapa"
+                        : passou
+                          ? `passou do previsto; ~${mmss(restante)} para terminar`
+                          : `~${mmss(restante)} para terminar, lá pelas ${horaDoFim}`}
+                </span>
+              </div>
+            </div>
+
+            {rodando && !confirmar && (
+              <Botao variante="quiet" tamanho="sm" className="au-cancelar" onClick={() => setConfirmar(true)}>
+                <X />
+                Cancelar
+              </Botao>
+            )}
+          </div>
+
+          {/* o que já se sabe: quatro números, cada um com o desenho do que conta */}
+          <div className="au-painel-fatos" aria-label="O que já se sabe">
+            <div className="au-fato">
+              <b>{semSinal ? <span className="au-traco">—</span> : <NumeroQueChega valor={42} />}</b>
+              <span>páginas com texto</span>
+              <i className="au-fato-folhas" aria-hidden>
+                {Array.from({ length: 14 }, (_, i) => (
+                  <em key={i} className={semSinal ? undefined : "au-fato--on"} />
+                ))}
+              </i>
+            </div>
+            <div className="au-fato">
+              <b>{semSinal ? <span className="au-traco">—</span> : <NumeroQueChega valor={314848} />}</b>
+              <span>caracteres lidos</span>
+              <i className="au-fato-linha" aria-hidden>
+                <em style={{ width: semSinal ? 0 : "100%" }} />
+              </i>
+            </div>
+            <div className="au-fato">
+              <b>
+                {semSinal ? <span className="au-traco">—</span> : <NumeroQueChega valor={feitos.length} />}
+                <small> de 12</small>
+              </b>
+              <span>blocos lidos capítulo a capítulo</span>
+              <i className="au-fato-blocos" aria-hidden>
+                {BLOCOS.map((b) => (
+                  <em key={b.n} className={feitos.includes(b.n) ? "au-fato--on" : lendo.includes(b.n) ? "au-fato--lendo" : undefined} />
+                ))}
+              </i>
+            </div>
+            <div className="au-fato">
+              <b>{semSinal ? <span className="au-traco">—</span> : <NumeroQueChega valor={achadosAteAgora} />}</b>
+              <span>achados até agora</span>
+              <i className="au-fato-niveis" aria-hidden>
+                {!semSinal &&
+                  NIVEIS.map((n) => {
+                    const q = n.itens.reduce((a, it) => a + it.valor, 0);
+                    return q ? <em key={n.id} className={`au-fato-nivel--${n.tom}`} style={{ flexGrow: q }} /> : null;
+                  })}
+              </i>
             </div>
           </div>
-          <p className="au-arquivo">
-            <FileText size={14} /> 117_25_md_geral_a.pdf, revisão A. Análise profunda, com segundo modelo. Iniciada às 21:08 por Victor.
-          </p>
         </header>
 
         <AnimatePresence initial={false}>
@@ -293,16 +393,6 @@ export function TelaAuditoria({ situacao }: { situacao: SituacaoAud }) {
             </Botao>
           </div>
         )}
-
-        {/* ---------- o que já se sabe ---------- */}
-        <section className="au-fatos" aria-label="O que já se sabe">
-          {fatos.map((f) => (
-            <div key={f.rotulo} className="au-fato">
-              <b>{f.valor === null ? <span className="au-traco">—</span> : <NumeroQueChega valor={f.valor} />}</b>
-              <span>{f.rotulo}</span>
-            </div>
-          ))}
-        </section>
 
         {/* ---------- a linha do tempo ---------- */}
         <section className="au-bloco au-bloco--linha">
@@ -391,7 +481,7 @@ export function TelaAuditoria({ situacao }: { situacao: SituacaoAud }) {
           <section className="au-bloco au-achados">
             <div className="au-bloco-cabeca">
               <h2>Achados até agora</h2>
-              <span className="au-nota">antes do segundo modelo</span>
+              <span className="au-nota">{concluida ? "antes do segundo modelo, que manteve 9 no parecer" : "antes do segundo modelo"}</span>
             </div>
             {semSinal ? (
               <p className="au-nota">Os achados aparecem quando a primeira etapa terminar.</p>

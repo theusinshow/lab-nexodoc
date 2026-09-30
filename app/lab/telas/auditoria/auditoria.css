@@ -218,3 +218,67 @@
 .ds .au-registro--largo { margin-top: 12px; }
 .ds .au-registro--largo ol { max-height: 150px; }
 .ds .au-registro--largo li { grid-template-columns: 70px minmax(0, 1fr); }
+
+/* ---------- v5: o painel de cima ---------- */
+.ds .au-painel {
+  position: relative;
+  margin: 28px 0 12px;
+  border-radius: var(--ds-radius-panel);
+  background: var(--ds-surface-card);
+  box-shadow: var(--ds-edge-strong);
+  overflow: hidden;
+  --au-tom: var(--ds-nexo);
+}
+.ds .au-painel--passou { --au-tom: var(--ds-sev-decide); }
+.ds .au-painel--concluida { --au-tom: var(--ds-state-ok); }
+.ds .au-painel--falhou { --au-tom: var(--ds-state-error); }
+.ds .au-painel--enviando, .ds .au-painel--retomada { --au-tom: var(--ds-text-secondary); }
+/* o fio de luz no topo, na cor do estado — o mesmo gesto do veredito no Resultado */
+.ds .au-painel::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--au-tom), transparent); opacity: 0.7; }
+.ds .au-painel-topo { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 32px; padding: 22px 24px 20px; }
+.ds .au-painel-texto { display: grid; gap: 8px; min-width: 0; }
+.ds .au-painel-linha { display: flex; align-items: center; gap: 14px; }
+.ds .au-estado { display: inline-flex; align-items: center; gap: 8px; height: 24px; padding: 0 10px 0 9px; border-radius: 999px; background: color-mix(in srgb, var(--au-tom) 12%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--au-tom) 30%, transparent); font-size: 12px; font-weight: 500; color: var(--au-tom); }
+.ds .au-estado i { position: relative; width: 6px; height: 6px; border-radius: 50%; background: var(--au-tom); }
+.ds .au-painel--rodando .au-estado i::after, .ds .au-painel--passou .au-estado i::after, .ds .au-painel--enviando .au-estado i::after, .ds .au-painel--retomada .au-estado i::after {
+  content: ""; position: absolute; inset: -3px; border-radius: 50%; box-shadow: 0 0 0 1px var(--au-tom); animation: au-anel 1.6s var(--ds-ease-out) infinite;
+}
+.ds .au-painel .au-obra { font-size: var(--ds-text-xs); }
+.ds .au-painel h1 { margin: 2px 0 0; font-size: 30px; font-weight: 300; letter-spacing: -0.035em; line-height: 1.1; }
+.ds .au-painel .au-arquivo { flex-wrap: wrap; margin: 0; gap: 8px; }
+.ds .au-sep { width: 3px; height: 3px; border-radius: 50%; background: var(--ds-text-tertiary); opacity: 0.6; }
+
+.ds .au-cronometro { display: flex; align-items: center; gap: 16px; padding-right: 96px; }
+.ds .au-anel { width: 64px; height: 64px; flex: none; }
+.ds .au-anel circle { fill: none; stroke-width: 4; stroke-linecap: round; }
+.ds .au-anel-trilho { stroke: rgb(255 255 255 / 0.07); }
+.ds .au-anel-arco { stroke: var(--au-tom); }
+.ds .au-anel-giro { stroke: var(--au-tom); transform-origin: 32px 32px; animation: au-girar 1.4s linear infinite; }
+@keyframes au-girar { to { transform: rotate(360deg); } }
+.ds .au-cronometro-texto { display: grid; gap: 1px; }
+.ds .au-cronometro-texto b { font-family: var(--ds-font-mono); font-size: 26px; font-weight: 400; letter-spacing: -0.02em; line-height: 1.1; color: var(--ds-text-primary); }
+.ds .au-cronometro-texto small { font-size: 11px; color: var(--ds-text-tertiary); }
+.ds .au-cronometro-falta { margin-top: 4px; font-size: var(--ds-text-2xs); color: var(--ds-text-secondary); white-space: nowrap; }
+.ds .au-cancelar { position: absolute; top: 18px; right: 18px; }
+
+.ds .au-painel-fatos { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid var(--ds-line-subtle); background: rgb(255 255 255 / 0.012); }
+.ds .au-painel .au-fato { display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "n d" "r r"; align-items: end; column-gap: 14px; row-gap: 3px; padding: 14px 24px; border-left: 1px solid var(--ds-line-subtle); }
+.ds .au-painel .au-fato:first-child { border-left: 0; }
+.ds .au-painel .au-fato b { grid-area: n; font-size: 22px; font-weight: 300; letter-spacing: -0.03em; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.ds .au-painel .au-fato b small { font-size: 13px; color: var(--ds-text-tertiary); letter-spacing: 0; }
+.ds .au-painel .au-fato > span { grid-area: r; font-size: 11.5px; color: var(--ds-text-tertiary); }
+.ds .au-painel .au-fato > i { grid-area: d; display: flex; align-items: flex-end; gap: 2px; height: 16px; margin-bottom: 4px; }
+.ds .au-fato > i em { display: block; }
+.ds .au-fato-folhas em { flex: 1; height: 12px; border-radius: 2px; background: rgb(255 255 255 / 0.07); }
+.ds .au-fato-folhas em.au-fato--on { background: rgb(255 255 255 / 0.22); }
+.ds .au-fato-linha { align-items: center !important; }
+.ds .au-fato-linha em { height: 3px; border-radius: 999px; background: linear-gradient(90deg, rgb(255 255 255 / 0.05), rgb(255 255 255 / 0.35)); transition: width var(--ds-dur-layout) var(--ds-ease-out); }
+.ds .au-fato-blocos em { flex: 1; height: 12px; border-radius: 3px; box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.1); }
+.ds .au-fato-blocos em.au-fato--on { background: #5b5f6b; box-shadow: none; }
+.ds .au-fato-blocos em.au-fato--lendo { box-shadow: inset 0 0 0 1.5px var(--ds-nexo); background: var(--ds-nexo-wash); }
+.ds .au-fato-niveis { align-items: center !important; gap: 3px !important; }
+.ds .au-fato-niveis em { flex-basis: 0; height: 6px; border-radius: 999px; }
+.ds .au-fato-nivel--block { background: var(--ds-sev-block); }
+.ds .au-fato-nivel--decide { background: var(--ds-sev-decide); }
+.ds .au-fato-nivel--note { background: #9aa1ad; }
+.ds .au-fato-nivel--texto { background: var(--ds-sev-texto); }
