@@ -14,15 +14,16 @@ const ease = (c: readonly number[]) => [...c] as [number, number, number, number
 const ZOOMS = [0.75, 1, 1.25, 1.5];
 
 /** A linha da página onde o trecho do achado está — fixa por achado, para o desenho não pular. */
-function linhaDoTrecho(a: Achado, i: number) {
+export function linhaDoTrecho(a: Achado, i: number) {
   return 4 + ((a.pagina * 7 + i * 9) % 30);
 }
 
 /** Largura de cada linha de texto falso, determinística: a página parece texto sem ser. */
-function larguraDaLinha(pagina: number, linha: number) {
+export function larguraDaLinha(pagina: number, linha: number) {
   const r = Math.sin(pagina * 12.9898 + linha * 78.233) * 43758.5453;
   const f = r - Math.floor(r);
-  return linha % 7 === 6 ? 35 + f * 30 : 82 + f * 18;
+  // arredondado: servidor e navegador podem divergir na última casa do seno, e isso quebra a hidratação
+  return Math.round((linha % 7 === 6 ? 35 + f * 30 : 82 + f * 18) * 10) / 10;
 }
 
 /**

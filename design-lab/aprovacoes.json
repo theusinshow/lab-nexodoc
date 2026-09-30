@@ -93,5 +93,80 @@
     "status": "aprovado",
     "nota": "Aprovado pelo Matheus no chat em 30/09: \"relatorio aprovado\" (aba Relatório em texto corrido).",
     "em": "2026-09-30T05:27:38.693239Z"
+  },
+  "tela.resultado-e.abrindo": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"pode arquivar as outras e seguir pro No documento\" (versão E, coluna à direita).",
+    "em": "2026-09-30T14:27:32.450151Z"
+  },
+  "tela.resultado-e.comparado": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"pode arquivar as outras e seguir pro No documento\" (versão E, coluna à direita).",
+    "em": "2026-09-30T14:27:32.450151Z"
+  },
+  "tela.resultado-e.decisao": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"pode arquivar as outras e seguir pro No documento\" (versão E, coluna à direita).",
+    "em": "2026-09-30T14:27:32.450151Z"
+  },
+  "tela.resultado-e.encerrado": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"pode arquivar as outras e seguir pro No documento\" (versão E, coluna à direita).",
+    "em": "2026-09-30T14:27:32.450151Z"
+  },
+  "tela.resultado-e.fila": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"pode arquivar as outras e seguir pro No documento\" (versão E, coluna à direita).",
+    "em": "2026-09-30T14:27:32.450151Z"
+  },
+  "tela.resultado-e.filtros": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"pode arquivar as outras e seguir pro No documento\" (versão E, coluna à direita).",
+    "em": "2026-09-30T14:27:32.450151Z"
+  },
+  "tela.resultado-e.liberado": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"pode arquivar as outras e seguir pro No documento\" (versão E, coluna à direita).",
+    "em": "2026-09-30T14:27:32.450151Z"
+  },
+  "tela.resultado-e.memorial": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"pode arquivar as outras e seguir pro No documento\" (versão E, coluna à direita).",
+    "em": "2026-09-30T14:27:32.450151Z"
+  },
+  "tela.resultado-e.nao-abriu": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"pode arquivar as outras e seguir pro No documento\" (versão E, coluna à direita).",
+    "em": "2026-09-30T14:27:32.450151Z"
+  },
+  "tela.resultado-e.nao-emitir": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"pode arquivar as outras e seguir pro No documento\" (versão E, coluna à direita).",
+    "em": "2026-09-30T14:27:32.450151Z"
+  },
+  "tela.resultado-e.parcial": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"pode arquivar as outras e seguir pro No documento\" (versão E, coluna à direita).",
+    "em": "2026-09-30T14:27:32.450151Z"
+  },
+  "tela.resultado-e.por-disciplina": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"pode arquivar as outras e seguir pro No documento\" (versão E, coluna à direita).",
+    "em": "2026-09-30T14:27:32.450151Z"
+  },
+  "tela.resultado-e.revisar": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"pode arquivar as outras e seguir pro No documento\" (versão E, coluna à direita).",
+    "em": "2026-09-30T14:27:32.450151Z"
+  },
+  "tela.resultado-e.selecionando": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"pode arquivar as outras e seguir pro No documento\" (versão E, coluna à direita).",
+    "em": "2026-09-30T14:27:32.450151Z"
+  },
+  "tela.resultado-e.vazio-filtro": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"pode arquivar as outras e seguir pro No documento\" (versão E, coluna à direita).",
+    "em": "2026-09-30T14:27:32.450151Z"
   }
 }

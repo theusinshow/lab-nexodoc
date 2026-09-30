@@ -1,7 +1,7 @@
 "use client";
 
 import { Vitrine } from "../../_lab/vitrine";
-import { TelaResultado, type SituacaoRes } from "../resultado-c/tela-resultado";
+import { TelaResultado, type SituacaoRes } from "../resultado-e/tela-resultado";
 
 const SITUACOES: { id: SituacaoRes; nome: string; dica: string }[] = [
   { id: "parecer", nome: "Relatório", dica: "O parecer em texto corrido, como a aba de hoje: projeto, status e os achados em ordem de impacto, com Copiar o texto. O papel diagramado continua no Parecer em PDF, agora à vista no painel." },

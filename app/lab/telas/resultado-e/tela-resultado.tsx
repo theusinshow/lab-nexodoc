@@ -21,6 +21,8 @@ import "./visor.css";
 import { Relatorio } from "./relatorio";
 import "./relatorio.css";
 import "./trilho.css";
+import { NoDocumento } from "./documento";
+import "./documento.css";
 
 export type SituacaoRes =
   | "nao-emitir"
@@ -40,7 +42,10 @@ export type SituacaoRes =
   | "parecer-erro"
   | "memorial"
   | "filtros"
-  | "por-disciplina";
+  | "por-disciplina"
+  | "documento"
+  | "doc-mudas"
+  | "doc-remoto";
 
 type Aba = "resumo" | "achados" | "parecer" | "documento";
 
@@ -121,6 +126,10 @@ function partida(s: SituacaoRes) {
       return { ...base, aba: "achados" as Aba, fila: { selecionado: "ACH-003", discs: ["arquitetura"] as Disciplina[], painel: true } };
     case "por-disciplina":
       return { ...base, aba: "achados" as Aba, fila: { selecionado: "ACH-002", agrupar: "disciplina" as const } };
+    case "documento":
+    case "doc-mudas":
+    case "doc-remoto":
+      return { ...base, aba: "documento" as Aba };
     case "encerrado":
       return { ...base, aba: "achados" as Aba, fila: { selecionado: "ACH-004" } };
     default:
@@ -264,7 +273,14 @@ export function TelaResultado({ situacao }: { situacao: SituacaoRes }) {
                 )}
                 {aba === "achados" && <Fila key={filaInicial.selecionado} achados={achados} onMudar={mudar} inicial={filaInicial} onAbrirPagina={(id) => setVisor({ aberto: true, achado: id })} />}
                 {aba === "parecer" && <Relatorio achados={achados} parcial={p.parcial} revisao={revisao} />}
-                {aba === "documento" && <div className="rs-depois">O documento com os achados no lugar é a próxima tela do laboratório.</div>}
+                {aba === "documento" && (
+                  <NoDocumento
+                    achados={achados}
+                    modo={situacao === "doc-mudas" ? "mudas" : situacao === "doc-remoto" ? "remoto" : "normal"}
+                    onVerNoMemorial={(id) => setVisor({ aberto: true, achado: id })}
+                    onAbrir={(id) => abrir(id)}
+                  />
+                )}
               </motion.div>
             </AnimatePresence>
           )}
