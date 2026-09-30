@@ -2,8 +2,6 @@
 
 import { AnimatePresence, LayoutGroup, motion } from "motion/react";
 import {
-  Bell,
-  ChevronDown,
   ChevronRight,
   FileUp,
   MessageCircle,
@@ -11,18 +9,19 @@ import {
   Play,
   Plus,
   RotateCcw,
-  Search,
   ShieldCheck,
   SlidersHorizontal,
   X,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { Avatar, Botao, Esqueleto, NumeroQueChega, Orbe, Segmento, Selo, Seletor, Tecla } from "@/components/ds/basicos";
+import { Avatar, Botao, Esqueleto, NumeroQueChega, Orbe, Segmento, Selo, Seletor } from "@/components/ds/basicos";
 import { ATIVIDADE, GERADOS, PROJETOS, USUARIO, type ProjetoDeExemplo } from "@/lib/design-lab/amostras";
 import { CURVA } from "@/lib/ds/movimento";
 import { useTempo } from "@/lib/ds/tempo";
 import { MarcaDaPrefeitura } from "@/modules/nexo/components/MarcaDaPrefeitura";
+
+import { Topo } from "../_comum/topo";
 
 import "./painel.css";
 
@@ -94,39 +93,7 @@ export function TelaPainel({ situacao }: { situacao: SituacaoDoPainel }) {
     >
       <div className="pn-brilho" aria-hidden />
 
-      {/* ---------- barra de cima ---------- */}
-      <header className="pn-topo">
-        <div className="pn-marca">
-          <Orbe tamanho={22} estado={trabalhando ? "trabalhando" : "repouso"} />
-          Nexo
-        </div>
-        <nav className="pn-nav" aria-label="Principal">
-          {["Painel", "Projetos", "Montar volumes", "Achados", "Ajuda", "Administração"].map((n) => (
-            <a key={n} aria-current={n === "Painel" ? "page" : undefined}>
-              {n}
-            </a>
-          ))}
-        </nav>
-        <button type="button" className="pn-busca">
-          <Search size={15} />
-          Buscar obra, código ou ação
-          <Tecla>Ctrl K</Tecla>
-        </button>
-        <Botao variante="quiet" icone aria-label="Avisos" className="pn-sino">
-          <Bell />
-          {!vazio && <i />}
-        </Botao>
-        <button type="button" className="pn-quem">
-          <Avatar iniciais={USUARIO.iniciais} />
-          <span>
-            {USUARIO.nome}
-            <small>
-              {USUARIO.escritorio}, {USUARIO.papel}
-            </small>
-          </span>
-          <ChevronDown size={14} />
-        </button>
-      </header>
+      <Topo atual="Painel" trabalhando={trabalhando} aviso={!vazio} />
 
       {/* ---------- abertura ---------- */}
       <section className="pn-abertura">

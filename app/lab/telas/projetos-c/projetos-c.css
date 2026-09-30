@@ -1,0 +1,129 @@
+/* PROJETOS C — a linha de produção. Só tokens --ds-*. */
+
+.ds .pc { position: relative; min-height: 100%; padding-bottom: 56px; background: var(--ds-surface-page); }
+.ds .pc-corpo { width: min(1296px, calc(100% - 64px)); margin: 24px auto 0; }
+.ds .pc-cabeca { display: flex; align-items: flex-end; gap: 24px; margin-bottom: 22px; }
+.ds .pc-cabeca h1 { margin: 0; font-size: var(--ds-text-3xl); font-weight: 300; letter-spacing: -0.035em; line-height: 1.1; }
+.ds .pc-cabeca p { margin: 8px 0 0; color: var(--ds-text-secondary); }
+.ds .pc-cabeca-acoes { margin-left: auto; display: flex; gap: 8px; }
+
+.ds .pc-ferramentas { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+.ds .pc-busca {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 300px;
+  height: 34px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: var(--ds-surface-card);
+  box-shadow: var(--ds-edge);
+  color: var(--ds-text-tertiary);
+  transition: box-shadow var(--ds-dur-feedback);
+}
+.ds .pc-busca:focus-within { box-shadow: inset 0 0 0 1px var(--ds-nexo-line), 0 0 0 4px rgb(163 166 255 / 0.08); }
+.ds .pc-busca input { flex: 1; min-width: 0; border: 0; outline: none; background: none; color: var(--ds-text-primary); font: inherit; font-size: var(--ds-text-xs); }
+.ds .pc-busca input::placeholder { color: var(--ds-text-tertiary); }
+.ds .pc-conta { margin-left: auto; font-size: var(--ds-text-2xs); color: var(--ds-text-tertiary); }
+
+/* ---------- tabela ---------- */
+.ds .pc-tabela { border-radius: var(--ds-radius-card); background: var(--ds-surface-card); box-shadow: var(--ds-edge); padding: 6px; }
+.ds .pc-linha {
+  display: grid;
+  grid-template-columns: 400px repeat(6, minmax(0, 1fr)) 92px;
+  align-items: center;
+  min-height: 64px;
+  padding: 0 12px;
+  border-radius: var(--ds-radius-row);
+}
+.ds .pc-linha--cabeca { min-height: 74px; align-items: stretch; padding-top: 4px; padding-bottom: 4px; }
+.ds .pc-linha--cabeca .pc-col-obra { align-self: end; padding-bottom: 10px; font-size: var(--ds-text-2xs); color: var(--ds-text-tertiary); }
+.ds .pc-etapa-cabeca {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  align-content: end;
+  gap: 5px;
+  margin: 0 3px;
+  padding: 8px 6px 10px;
+  border: 0;
+  border-radius: var(--ds-radius-control);
+  background: none;
+  color: var(--ds-text-secondary);
+  font: inherit;
+  cursor: pointer;
+  transition: color var(--ds-dur-feedback), background var(--ds-dur-feedback);
+}
+.ds .pc-etapa-cabeca:hover:not(:disabled) { color: var(--ds-text-primary); background: rgb(255 255 255 / 0.03); }
+.ds .pc-etapa-cabeca:disabled { cursor: default; }
+.ds .pc-etapa-cabeca[aria-pressed="true"] { color: var(--ds-text-primary); }
+.ds .pc-etapa-ativa { position: absolute; inset: 0; border-radius: var(--ds-radius-control); background: var(--ds-nexo-wash); box-shadow: inset 0 0 0 1px rgb(163 166 255 / 0.28); }
+.ds .pc-etapa-nome, .ds .pc-etapa-conta, .ds .pc-etapa-barra { position: relative; }
+.ds .pc-etapa-nome { font-size: var(--ds-text-2xs); }
+.ds .pc-etapa-conta { font-size: var(--ds-text-lg); color: var(--ds-text-primary); line-height: 1; }
+.ds .pc-etapa-barra { width: 48px; height: 3px; border-radius: 999px; background: rgb(255 255 255 / 0.06); overflow: hidden; }
+.ds .pc-etapa-barra i { display: block; height: 100%; background: var(--ds-text-tertiary); border-radius: 999px; transform-origin: left; }
+.ds .pc-etapa-cabeca[aria-pressed="true"] .pc-etapa-barra i { background: var(--ds-nexo); }
+
+.ds .pc-obra { border-radius: var(--ds-radius-row); overflow: hidden; transition: background var(--ds-dur-feedback) var(--ds-ease-feedback); }
+.ds .pc-obra + .pc-obra { box-shadow: 0 -1px 0 var(--ds-line-subtle); }
+.ds .pc-obra:hover { background: rgb(255 255 255 / 0.025); }
+.ds .pc-obra--aberta, .ds .pc-obra--aberta:hover { background: var(--ds-surface-raised); box-shadow: var(--ds-edge-strong); }
+.ds .pc-obra > .pc-linha { cursor: pointer; }
+.ds .pc-col-obra { display: grid; gap: 4px; min-width: 0; padding-right: 20px; }
+.ds .pc-obra-nome { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.ds .pc-obra-nome b { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ds .pc-obra-meta { display: flex; align-items: center; gap: 8px; padding-left: 36px; font-size: var(--ds-text-2xs); color: var(--ds-text-tertiary); white-space: nowrap; overflow: hidden; }
+.ds .pc-obra-meta .ds-code { font-size: 11px; padding: 0 5px; }
+.ds .pc-trava { overflow: hidden; text-overflow: ellipsis; }
+.ds .pc-trava--block { color: var(--ds-sev-block); }
+.ds .pc-trava--decide { color: var(--ds-sev-decide); }
+.ds .pc-trava--nexo { color: var(--ds-nexo); }
+.ds .pc-trava--ok { color: var(--ds-state-ok); }
+
+/* a trilha ocupa as seis colunas de etapa; a linha vai do centro da 1ª ao da 6ª */
+.ds .pc-trilha { grid-column: 2 / 8; position: relative; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); align-items: center; align-self: stretch; }
+.ds .pc-trilha-esq { grid-column: 2 / 8; padding: 0 8%; }
+.ds .pc-trilha-fundo,
+.ds .pc-trilha-feita {
+  position: absolute;
+  left: calc(100% / 12);
+  right: calc(100% / 12);
+  top: 50%;
+  height: 2px;
+  margin-top: -1px;
+  border-radius: 2px;
+}
+.ds .pc-trilha-fundo { background: rgb(255 255 255 / 0.07); }
+.ds .pc-trilha-feita { background: rgb(163 166 255 / 0.45); transform-origin: left; }
+.ds .pc-trilha-feita--ok { background: rgb(123 216 165 / 0.45); }
+.ds .pc-no { position: relative; display: grid; place-items: center; height: 100%; }
+.ds .pc-no--coluna { background: rgb(163 166 255 / 0.05); }
+.ds .pc-no-feito { display: grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; background: #2a2c45; color: var(--ds-nexo-soft); }
+.ds .pc-trilha-feita--ok ~ .pc-no .pc-no-feito { background: #1f3a2d; color: var(--ds-state-ok); }
+.ds .pc-no-futuro { width: 8px; height: 8px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px rgb(255 255 255 / 0.14); background: var(--ds-surface-card); }
+.ds .pc-no-atual { position: relative; width: 16px; height: 16px; border-radius: 50%; background: var(--ds-surface-card); box-shadow: inset 0 0 0 2px currentColor; }
+.ds .pc-no-atual::after { content: ""; position: absolute; inset: 4px; border-radius: 50%; background: currentColor; }
+.ds .pc-no-atual--block { color: var(--ds-sev-block); }
+.ds .pc-no-atual--decide { color: var(--ds-sev-decide); }
+.ds .pc-no-atual--nexo { color: var(--ds-nexo); }
+.ds .pc-no-atual--ok { color: var(--ds-state-ok); }
+.ds .pc-no-pulso { position: absolute; inset: -5px; border-radius: 50%; box-shadow: 0 0 0 1.5px var(--ds-nexo-line); animation: pc-pulso 1.8s var(--ds-ease-out) infinite; }
+@keyframes pc-pulso {
+  from { transform: scale(0.8); opacity: 1; }
+  to { transform: scale(1.5); opacity: 0; }
+}
+.ds .pc-col-fim { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+.ds .pc-dias { font-size: var(--ds-text-2xs); color: var(--ds-text-tertiary); }
+
+.ds .pc-obra-corpo { overflow: hidden; }
+.ds .pc-obra-detalhe { display: flex; align-items: center; gap: 16px; padding: 0 12px 14px 48px; }
+.ds .pc-obra-detalhe > div:first-child { display: grid; gap: 2px; }
+.ds .pc-obra-detalhe b { font-weight: 500; font-size: var(--ds-text-xs); }
+.ds .pc-obra-acoes { margin-left: auto; display: flex; gap: 4px; }
+.ds .pc-nota { font-size: var(--ds-text-2xs); color: var(--ds-text-tertiary); max-width: 90ch; }
+.ds p.pc-nota { margin: 14px 4px 0; }
+.ds .pc-linha--esqueleto { min-height: 64px; }
+.ds .pc-vazio { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 56px 24px; text-align: center; }
+.ds .pc-vazio b { font-weight: 500; font-size: var(--ds-text-md); }
+.ds .pc-vazio span { max-width: 56ch; color: var(--ds-text-secondary); font-size: var(--ds-text-xs); }
