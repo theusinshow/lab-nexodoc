@@ -17,7 +17,7 @@ export type EstiloDoCartao = "prancha" | "carimbo" | "arquivo" | "solto" | "nume
 export type Distancia = "longe" | "media" | "perto";
 
 export const ESTILOS: { id: EstiloDoCartao; nome: string; ideia: string }[] = [
-  { id: "prancha", nome: "A. Prancha", ideia: "O cartão é a folha em miniatura: margem, área de desenho vazia e o carimbo no pé, onde moram título, código e número." },
+  { id: "prancha", nome: "A. Prancha (escolhida)", ideia: "O cartão é a folha em miniatura: margem, área de desenho vazia e o carimbo no pé, onde moram título, código e número." },
   { id: "carimbo", nome: "B. Carimbo", ideia: "Só o carimbo, como tabela de engenharia: células com fio, rótulo pequeno e valor. Lê-se igual ao selo da prancha." },
   { id: "arquivo", nome: "C. Arquivo", ideia: "Um arquivo com o canto dobrado: o código grande em mono, o título embaixo. Diz 'documento', não 'cartão'." },
   { id: "solto", nome: "D. Sem caixa", ideia: "Nenhum contorno: número, título e código soltos no canvas. A caixa só aparece ao passar o mouse e ao escolher." },

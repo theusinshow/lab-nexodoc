@@ -95,3 +95,62 @@
 .ds .ctc-faixa > span { font-size: 11.5px; color: var(--ds-text-tertiary); }
 .ds .ctc-fileira { display: flex; flex-wrap: wrap; gap: 14px; padding: 16px; border-radius: 10px; background: rgb(0 0 0 / 0.18); background-image: radial-gradient(rgb(255 255 255 / 0.06) 1px, transparent 1px); background-size: 22px 22px; }
 .ds .ctc-fileira--longe .ct { transform: scale(0.5); transform-origin: top left; margin: 0 -70px -54px 0; }
+
+/* ---------- A. Prancha: selo grande continua legível ---------- */
+/* no trabalho, 2 linhas com reticências; ao passar o mouse ou escolher, o selo cresce
+   sobre a área de desenho e mostra até 5 linhas. O número nunca é cortado: o código cede. */
+.ds .ct--prancha .ct-selo-celulas > span:first-child { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.ds .ct--prancha .ct-selo-celulas > span:not(:first-child) { flex: none; }
+.ds .ct--prancha .ct-desenho { min-height: 6px; }
+.ds .ct--prancha:hover .ct-selo-titulo, .ds .ct--prancha.ct--sel .ct-selo-titulo { -webkit-line-clamp: 5; }
+.ds .ct--prancha.ct--perto .ct-selo-titulo { -webkit-line-clamp: 3; font-size: 10px; }
+.ds .ct--prancha.ct--perto:hover .ct-selo-titulo, .ds .ct--prancha.ct--perto.ct--sel .ct-selo-titulo { -webkit-line-clamp: 5; }
+
+/* ================= os documentos que o Nexo gera, em papel ================= */
+.ds .pp { --pp-papel: #ebe9e3; --pp-tinta: #1c1c1e; --pp-fraca: #6e6c68; display: grid; gap: 8px; width: 124px; }
+.ds .pp p { margin: 0; }
+.ds .pp-pilha { position: relative; width: 112px; height: 158px; }
+.ds .pp-papel { position: relative; z-index: 1; display: flex; flex-direction: column; width: 100%; height: 100%; overflow: hidden; border-radius: 2px; background: var(--pp-papel); color: var(--pp-tinta); box-shadow: 0 1px 0 rgb(0 0 0 / 0.25), 0 10px 24px rgb(0 0 0 / 0.35); transition: opacity 0.35s, box-shadow 0.3s; }
+.ds .pp-atras { position: absolute; inset: 0; border-radius: 2px; background: #cfccc5; transform: translate(calc(var(--pp-i) * 4px), calc(var(--pp-i) * 4px)); box-shadow: 0 6px 14px rgb(0 0 0 / 0.3); }
+.ds .pp-mono { font-family: var(--ds-font-mono); }
+.ds .pp-legenda { display: grid; gap: 1px; width: 124px; font-size: 12px; color: var(--ds-text-secondary); white-space: nowrap; }
+.ds .pp-legenda span { overflow: hidden; text-overflow: ellipsis; }
+.ds .pp-estado { flex: none; font-style: normal; font-size: 11px; color: var(--ds-text-tertiary); }
+.ds .pp-estado--corrigido, .ds .pp-estado--desatualizado, .ds .pp-estado--sobra { color: var(--ds-sev-decide); }
+
+/* a gerar: papel fantasma, tracejado; ainda não existe */
+.ds .pp--a-gerar .pp-papel { opacity: 0.38; box-shadow: none; }
+.ds .pp--a-gerar .pp-atras { opacity: 0.25; box-shadow: none; }
+.ds .pp--a-gerar .pp-pilha::after { content: ""; position: absolute; inset: -4px; z-index: 2; border-radius: 4px; outline: 1px dashed rgb(255 255 255 / 0.3); pointer-events: none; }
+.ds .pp--corrigido .pp-papel, .ds .pp--desatualizado .pp-papel, .ds .pp--sobra .pp-papel { box-shadow: 0 0 0 2px rgb(from var(--ds-sev-decide) r g b / 0.85), 0 10px 24px rgb(0 0 0 / 0.35); }
+.ds .pp--sobra .pp-papel { opacity: 0.7; }
+.ds .pp-longe { margin: auto; font-size: 24px; color: var(--pp-fraca); }
+
+/* capa: a estrutura do modelo de Criciúma */
+.ds .pp-capa { display: flex; flex-direction: column; align-items: center; gap: 7px; height: 100%; padding: 11px 8px 8px; text-align: center; }
+.ds .pp-orgao { font-size: 4.6px; letter-spacing: 0.06em; color: var(--pp-fraca); }
+.ds .pp-obra { display: grid; gap: 1px; margin-top: 10px; }
+.ds .pp-obra p { font-size: 6.6px; font-weight: 600; letter-spacing: 0.02em; line-height: 1.2; }
+.ds .pp-obra .pp-bairro { margin-top: 2px; font-size: 4.6px; font-weight: 400; color: var(--pp-fraca); }
+.ds .pp-fase { font-size: 5px; letter-spacing: 0.08em; }
+.ds .pp-volume { display: grid; gap: 1px; margin-top: 6px; font-size: 5.4px; letter-spacing: 0.04em; }
+.ds .pp-volume .pp-itens { font-size: 4.4px; color: var(--pp-fraca); }
+.ds .pp-pe { display: grid; gap: 1px; margin-top: auto; font-size: 4.4px; letter-spacing: 0.05em; color: var(--pp-fraca); }
+
+/* separatriz: a disciplina, grande, no meio */
+.ds .pp-separatriz, .ds .pp-volume-livro { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; height: 100%; padding: 10px; text-align: center; }
+.ds .pp-disciplina { font-size: 9px; font-weight: 600; letter-spacing: 0.06em; line-height: 1.3; }
+
+/* LD: o cabeçalho e as primeiras linhas da tabela, com o texto de verdade */
+.ds .pp-ld { display: flex; flex-direction: column; gap: 3px; height: 100%; padding: 8px 7px 6px; }
+.ds .pp-ld-titulo { font-size: 5.6px; font-weight: 600; letter-spacing: 0.05em; text-align: center; }
+.ds .pp-ld-obra { font-size: 3.8px; color: var(--pp-fraca); text-align: center; }
+.ds .pp-ld-tabela { display: grid; margin-top: 4px; border-top: 0.5px solid #9a978f; }
+.ds .pp-ld-tabela p { display: grid; grid-template-columns: 18px 1fr 5px; gap: 3px; padding: 1.4px 0; border-bottom: 0.5px solid #c9c6be; font-size: 3.6px; line-height: 1.15; }
+.ds .pp-ld-tabela p span:nth-child(2) { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.ds .pp-ld-tabela .pp-ld-cab { font-weight: 600; color: var(--pp-fraca); }
+.ds .pp-ld-falta { background: rgb(from var(--ds-sev-block) r g b / 0.14); }
+.ds .pp-ld-pagina { margin-top: auto; font-size: 4px; color: var(--pp-fraca); text-align: right; }
+
+/* volume: o livro, com a lombada das páginas atrás */
+.ds .pp--volume .pp-papel { background: #deddd7; }

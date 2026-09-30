@@ -11,6 +11,7 @@ import { type Disciplina } from "../resultado-e/dados";
 import { SeloDaDisciplina } from "../resultado-e/disciplina";
 import { documentosDoTomo, FOLHAS, RESTOS, TOMOS, type Documento, type Folha } from "./dados";
 import { CartaoDaFolha, useEstiloDoCartao } from "./cartoes";
+import { ALTURA_DO_DOC, LARGURA_DO_PAPEL, PapelDoDocumento, type EstadoDoDoc } from "./documentos";
 import { dd } from "./lado";
 
 /*
@@ -23,16 +24,17 @@ import { dd } from "./lado";
 
 export const LARGURA_DA_FOLHA = 140;
 export const ALTURA_DO_NO = 108;
-const LARGURA_DO_DOC = 180;
+const LARGURA_DO_DOC = LARGURA_DO_PAPEL + 12;
 const PASSO_DA_FOLHA = 152;
 const ENTRE_DISCIPLINAS = 28;
-export const Y_DA_FILEIRA = (i: number) => i * 230;
+export const Y_DA_FILEIRA = (i: number) => i * 300;
+/** O papel é mais alto que a folha: sobe para os centros ficarem na mesma linha. */
+const Y_DO_PAPEL = -46;
 export const X_INICIAL = 160;
 
-type EstadoDoDoc = "a-gerar" | "gerado" | "corrigido" | "desatualizado" | "sobra";
 
 export type DadosDaFolha = { f: Folha; lida: boolean; escolhida: boolean; apagada: boolean };
-export type DadosDoDoc = { d: Documento; estado: EstadoDoDoc; volume?: { paginas: number } };
+export type DadosDoDoc = { d: Documento; estado: EstadoDoDoc; tomo: number | null };
 export type DadosDoRotulo = { titulo: string; sub: string; resto?: boolean };
 export type DadosDoGrupo = { disc: Disciplina; n: number };
 
@@ -77,25 +79,12 @@ const NoDaFolha = memo(function NoDaFolha({ data }: NodeProps<Node<DadosDaFolha>
   );
 });
 
-const NOME_DO_ESTADO: Record<EstadoDoDoc, string> = {
-  "a-gerar": "a gerar",
-  gerado: "gerado",
-  corrigido: "corrigida",
-  desatualizado: "desatualizado",
-  sobra: "sem volume",
-};
-
 const NoDoDoc = memo(function NoDoDoc({ data }: NodeProps<Node<DadosDoDoc>>) {
-  const { d, estado, volume } = data;
   const densidade = useDensidade();
   return (
-    <div className={`mp-no mp-no--doc mp-no--${estado}${d.tipo === "volume" ? " mp-no--volume" : ""}`}>
+    <div className="mp-no-casca">
       {alcas}
-      <div className="mp-no-corpo">
-        <p className="mp-no-doc-nome">{d.nome}</p>
-        {densidade !== "longe" && <p className="mp-no-doc-detalhe">{volume ? `${volume.paginas} páginas` : d.detalhe}</p>}
-        <p className={`mp-no-estado mp-no-estado--${estado}`}>{NOME_DO_ESTADO[estado]}</p>
-      </div>
+      <PapelDoDocumento d={data.d} estado={data.estado} tomo={data.tomo} distancia={densidade} />
     </div>
   );
 });
@@ -156,9 +145,9 @@ export function montarCanvas({
       anterior = id;
     };
     for (const d of documentosDoTomo(t)) {
-      nodes.push({ id: d.id, type: "doc", position: { x, y }, width: LARGURA_DO_DOC, height: ALTURA_DO_NO, data: { d, estado: estadoDoDoc(d, t.n) } });
+      nodes.push({ id: d.id, type: "doc", position: { x, y: y + Y_DO_PAPEL }, width: LARGURA_DO_DOC, height: ALTURA_DO_DOC, data: { d, estado: estadoDoDoc(d, t.n), tomo: t.n } });
       liga(d.id);
-      x += LARGURA_DO_DOC + 16;
+      x += LARGURA_DO_DOC + 20;
     }
     for (const disc of t.disciplinas) {
       x += ENTRE_DISCIPLINAS - 16;
@@ -180,7 +169,7 @@ export function montarCanvas({
     }
     x += ENTRE_DISCIPLINAS;
     const vol: Documento = { id: `vol-${t.n}`, tipo: "volume", nome: `Volume, tomo ${dd(t.n)}`, detalhe: "" };
-    nodes.push({ id: vol.id, type: "doc", position: { x, y }, width: LARGURA_DO_DOC, height: ALTURA_DO_NO, data: { d: vol, estado: estadoDoVolume(t.n), volume: { paginas: t.paginas } } });
+    nodes.push({ id: vol.id, type: "doc", position: { x, y: y + Y_DO_PAPEL }, width: LARGURA_DO_DOC, height: ALTURA_DO_DOC, data: { d: vol, estado: estadoDoVolume(t.n), tomo: t.n } });
     liga(vol.id);
   });
 
@@ -188,7 +177,7 @@ export function montarCanvas({
     const y = Y_DA_FILEIRA(TOMOS.length);
     inicioDaFileira.set(0, { x: 0, y });
     nodes.push({ id: "rot-0", type: "rotulo", position: { x: 0, y: y + 18 }, data: { titulo: "Fora da divisão", sub: "de antes dos tomos", resto: true }, selectable: false });
-    RESTOS.forEach((d, i) => nodes.push({ id: d.id, type: "doc", position: { x: X_INICIAL + i * (LARGURA_DO_DOC + 16), y }, width: LARGURA_DO_DOC, height: ALTURA_DO_NO, data: { d, estado: "sobra" } }));
+    RESTOS.forEach((d, i) => nodes.push({ id: d.id, type: "doc", position: { x: X_INICIAL + i * (LARGURA_DO_DOC + 20), y: y + Y_DO_PAPEL }, width: LARGURA_DO_DOC, height: ALTURA_DO_DOC, data: { d, estado: "sobra", tomo: null } }));
   }
 
   return { nodes, edges, posicao, inicioDaFileira };
