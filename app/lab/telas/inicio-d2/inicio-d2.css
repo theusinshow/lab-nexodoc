@@ -164,3 +164,13 @@
 .ds .d2-menor:first-child { padding-left: 0; border-left: 0; }
 .ds .d2-menor .d2-num { padding: 0; border: 0; }
 .ds .d2-menor .d2-num b { font-size: 22px; }
+
+/* compacto: o resumo acompanha, não disputa com as tarefas */
+.ds .d2-resumo { padding: 12px 16px 14px; background: none; }
+.ds .d2-resumo-cabeca { margin-bottom: 12px; }
+.ds .d2-resumo-menores { grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 0; padding-top: 0; border-top: 0; }
+.ds .d2-menor { gap: 12px; padding: 0 16px; }
+.ds .d2-menor { grid-template-columns: auto minmax(0, 1fr); row-gap: 4px; }
+.ds .d2-menor-num { font-size: 20px; font-weight: 300; letter-spacing: -0.03em; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.ds .d2-menor-rotulo { grid-column: 1 / -1; font-size: 11px; color: var(--ds-text-tertiary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ds .d2-menor .gr-colunas { opacity: 0.8; }

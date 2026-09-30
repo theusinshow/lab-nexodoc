@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 
 import { NumeroQueChega, Segmento } from "@/components/ds/basicos";
-import { ColunasEmPilula, MapaDeAtividade, MESES, type Coluna } from "@/components/ds/graficos";
+import { ColunasEmPilula, MESES, type Coluna } from "@/components/ds/graficos";
 
 /**
  * O NEXO NO ESCRITÓRIO — o que ele já fez, para quem abre (e para quem vê a
@@ -12,9 +12,10 @@ import { ColunasEmPilula, MapaDeAtividade, MESES, type Coluna } from "@/componen
  *
  * Só números que o sistema TEM: achados das auditorias e os encerrados como
  * corrigidos, volumes exportados, LDs e capas gerados, folhas lidas dos
- * carimbos, e os dias em que houve uso. Nada de "horas economizadas": seria
+ * carimbos. Nada de "horas economizadas": seria
  * estimativa apresentada como fato, e um número inventado derruba a
- * credibilidade dos verdadeiros.
+ * credibilidade dos verdadeiros. Numa faixa só: acompanha as tarefas, não
+ * disputa o foco com elas.
  *
  * Os totais saem da mesma série diária que desenha os gráficos, então número
  * e gráfico nunca discordam.
@@ -119,6 +120,7 @@ export function ResumoDoEscritorio() {
   });
 
   const menores = [
+    { valor: encontrados, rotulo: `achados encontrados, ${taxa}% resolvidos`, campo: "encontrados" as const },
     { valor: soma(recorte, "volumes"), rotulo: "volumes montados e exportados", campo: "volumes" as const },
     { valor: soma(recorte, "lds"), rotulo: "LDs e capas gerados", campo: "lds" as const },
     { valor: soma(recorte, "folhas"), rotulo: "folhas lidas dos carimbos", campo: "folhas" as const },
@@ -141,55 +143,14 @@ export function ResumoDoEscritorio() {
         />
       </div>
 
-      <div className="d2-resumo-graficos">
-        <div className="d2-resumo-achados">
-          <div className="d2-resumo-numeros">
-            <span className="d2-num">
-              <b>
-                <NumeroQueChega valor={encontrados} />
-              </b>
-              <span>achados encontrados nos memoriais</span>
-            </span>
-            <span className="d2-num">
-              <b>
-                <NumeroQueChega valor={resolvidos} />
-              </b>
-              <span>
-                resolvidos, <span className="ds-num">{taxa}%</span> dos encontrados
-              </span>
-            </span>
-            <span className="d2-resumo-legenda" aria-hidden>
-              <i className="d2-leg d2-leg--parte" /> resolvidos
-              <i className="d2-leg d2-leg--total" /> encontrados
-            </span>
-          </div>
-          <ColunasEmPilula
-            key={periodo}
-            colunas={achados}
-            altura={104}
-            padrao={periodo === "mes" ? "Um dia por coluna. Passe o mouse para ler." : "Uma semana por coluna. Passe o mouse para ler."}
-          />
-        </div>
-
-        <div className="d2-resumo-uso">
-          <h3>Dias de uso</h3>
-          <MapaDeAtividade
-            dias={dias.map((d) => ({ data: d.data, valor: d.auditorias + d.volumes, fora: periodo === "mes" && d.data.getMonth() !== HOJE.getMonth() }))}
-            unidade={["tarefa", "tarefas"]}
-          />
-        </div>
-      </div>
-
       <div className="d2-resumo-menores">
         {menores.map((m) => (
           <div key={m.campo} className="d2-menor">
-            <div className="d2-num">
-              <b>
-                <NumeroQueChega valor={m.valor} />
-              </b>
-              <span>{m.rotulo}</span>
-            </div>
-            <ColunasEmPilula key={periodo} colunas={colunas(m.campo)} altura={30} compacto />
+            <b className="d2-menor-num">
+              <NumeroQueChega valor={m.valor} />
+            </b>
+            <ColunasEmPilula key={periodo} colunas={m.campo === "encontrados" ? achados : colunas(m.campo)} altura={22} compacto />
+            <span className="d2-menor-rotulo">{m.rotulo}</span>
           </div>
         ))}
       </div>
