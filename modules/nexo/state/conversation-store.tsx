@@ -1568,6 +1568,22 @@ export function ConversationStoreProvider({ children }: { children: ReactNode })
       }
       if (!rec) return null;
       /*
+       * RESULTADO SEM IDENTIDADE NÃO DERRUBA A ABERTURA — 29/09/2026.
+       *
+       * Uma cópia do servidor com `results: [{ kind: "auditoria" }]` (sem
+       * `artifactId`, sem `files`) explodia no `split` da migração logo abaixo,
+       * e a exceção subia daqui: a barra não marcava a conversa, o palco ficava
+       * no que estava e ninguém dizia nada. Para quem clicava, a auditoria antiga
+       * "não abria". O que não tem id não é endereçável por nada nesta tela;
+       * cai fora, e o resto da conversa abre.
+       */
+      rec = {
+        ...rec,
+        results: (rec.results ?? [])
+          .filter((r) => typeof r?.artifactId === "string" && typeof r.kind === "string")
+          .map((r) => (Array.isArray(r.files) ? r : { ...r, files: [] })),
+      };
+      /*
        * AUDITORIA POR PROPOSTA. Conversa gravada antes de 14/09/2026 guarda o
        * parecer com id por documento (`auditoria:117-25`), e com esse id a
        * segunda rodada do mesmo memorial se confundia com a primeira. A

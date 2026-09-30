@@ -49,6 +49,12 @@ export function ListaDeProjetos({
   const [aberto, setAberto] = useState<string | null>(null);
   const [limpando, setLimpando] = useState<string | null>(null);
   const [confirmando, setConfirmando] = useState<string | null>(null);
+  /*
+   * OS CARTÕES ESTENDIDOS — os que mostram também as conversas de fora do
+   * corte. Estender não é o mesmo que abrir: fechar o cartão não deve esquecer
+   * que a pessoa pediu as antigas.
+   */
+  const [estendidos, setEstendidos] = useState<ReadonlySet<string>>(() => new Set());
 
   /*
    * A MONTAGEM SAIU DAQUI, e é o ponto da mudança: barra e paleta liam listas
@@ -63,7 +69,9 @@ export function ListaDeProjetos({
    * lugar": voltar para o trabalho reabre o projeto dele, sem clique.
    */
   const doAtivo = useMemo(
-    () => cartoes.find((c) => c.conversas.some((x) => x.id === activeId))?.chave ?? null,
+    () =>
+      cartoes.find((c) => [...c.conversas, ...c.ocultas].some((x) => x.id === activeId))
+        ?.chave ?? null,
     [cartoes, activeId],
   );
 
@@ -129,7 +137,15 @@ export function ListaDeProjetos({
 
       <ul className="m-0 flex list-none flex-col gap-0.5 p-0">
       {filtrados.map((c) => {
-        const ids = c.conversas.map((x) => x.id);
+        /*
+         * TODAS as conversas do projeto, e não só as visíveis. Com só as
+         * visíveis, "Apagar 28 conversas" apagava quatro e deixava 24 órfãs.
+         */
+        const ids = [...c.conversas, ...c.ocultas].map((x) => x.id);
+        // A conversa ativa escondida no corte estende o cartão sozinha: abrir
+        // uma antiga e não vê-la marcada na barra desorienta.
+        const estendido =
+          estendidos.has(c.chave) || c.ocultas.some((x) => x.id === activeId);
         return (
           <div key={c.chave || "sem-codigo"} className="group/p relative">
             <CartaoDeProjeto
@@ -142,6 +158,15 @@ export function ListaDeProjetos({
                 setConfirmando(null);
               }}
               onAbrirConversa={(id) => onSelect?.(id)}
+              estendido={estendido}
+              onVerTudo={(chave) =>
+                setEstendidos((atual) => {
+                  const proximo = new Set(atual);
+                  if (estendido) proximo.delete(chave);
+                  else proximo.add(chave);
+                  return proximo;
+                })
+              }
             />
 
             {/*

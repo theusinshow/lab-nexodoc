@@ -71,6 +71,26 @@ test("corta em quatro e conta o resto, dizendo desde quando", () => {
   assert.equal(r[0].conversas[0].id, "c6", "as mais recentes ficam");
 });
 
+test("as cortadas VÊM no cartão, da mais nova para a mais antiga — sem elas o botão não abre nada", () => {
+  /*
+   * 29/09/2026: "as outras 24 conversas" não levava a lugar nenhum, e uma
+   * auditoria antiga não tinha como ser aberta pela barra. O cartão só sabia
+   * CONTAR as cortadas.
+   */
+  const conversas = [1, 2, 3, 4, 5, 6].map((n) => c(`c${n}`, "084-25-X", n * 100));
+  const r = cartoesDeProjeto(conversas);
+  assert.deepEqual(
+    r[0].ocultas.map((x) => x.id),
+    ["c2", "c1"],
+  );
+  assert.equal(r[0].ocultas.length, r[0].restantes);
+});
+
+test("sem corte, nada oculto", () => {
+  const r = cartoesDeProjeto([c("a", "084-25-X", 100)]);
+  assert.deepEqual(r[0].ocultas, []);
+});
+
 test("o desfecho é o artefato mais adiantado", () => {
   const r = cartoesDeProjeto([
     c("vol", "084-25-X", 400, ["ld", "capa", "volume"]),
@@ -265,6 +285,18 @@ test("casar POR DENTRO devolve o cartão só com as conversas que casaram", () =
   const r = filtrarCartoes(comDuas, "memorial");
   assert.equal(r.length, 1);
   assert.equal(r[0].conversas.length, 1, "só a que casou");
+});
+
+test("a busca alcança a conversa ANTIGA, fora do corte de quatro", () => {
+  const doProjeto = { projectId: "p1", projectCode: "084-25", projectClient: "CRICIUMA" };
+  const conversas = [1, 2, 3, 4, 5].map((n) => ({
+    ...c(`c${n}`, null, n * 100, ["auditoria"], doProjeto),
+    title: n === 1 ? "Muro de contenção" : "MET",
+  }));
+  const r = filtrarCartoes(cartoesDeProjeto(conversas), "muro");
+  assert.equal(r.length, 1);
+  assert.deepEqual(r[0].conversas.map((x) => x.id), ["c1"]);
+  assert.equal(r[0].restantes, 0, "o resultado da busca não oferece 'as outras'");
 });
 
 test("busca vazia devolve tudo, e nunca a mesma referência de lista", () => {

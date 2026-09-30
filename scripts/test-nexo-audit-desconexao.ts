@@ -214,6 +214,14 @@ await test("reconexão com 400 é irrecuperável, e não rodando", async () => {
   assert.equal(r.situacao, "irrecuperavel");
 });
 
+await test("concluída SEM parecer é irrecuperável, e não 'ainda rodando' para sempre", async () => {
+  // 29/09/2026: o ABRIR de uma auditoria antiga prometia "tente em alguns
+  // minutos" sobre linha COMPLETED gravada sem o report.
+  comFetch(async () => json(200, { status: "COMPLETED", report: null, result: "" }));
+  const r = await consultarAuditoria("abc12345");
+  assert.equal(r.situacao, "irrecuperavel");
+});
+
 await test("403 na largada é acesso negado, e não desconexão", async () => {
   comFetch(async () => json(403, { error: "Sua conta foi desativada neste escritório." }));
   await assert.rejects(
