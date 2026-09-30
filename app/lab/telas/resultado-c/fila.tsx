@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
-import { Check, ChevronDown, ChevronUp, FileText, Link2, Mail, Search, Undo2, UserPlus, X } from "lucide-react";
+import { Check, ChevronDown, ChevronUp, FileSearch, FileText, Link2, Mail, Search, Undo2, UserPlus, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Avatar, Botao, Menu, Segmento, Selo, Tecla } from "@/components/ds/basicos";
@@ -119,6 +119,7 @@ export function Fila({
       const k = e.key.toLowerCase();
       if (k === "j") ir(1);
       else if (k === "k") ir(-1);
+      else if (k === "m") onAbrirPagina?.(atual.id);
       else if (k === "/") {
         e.preventDefault();
         buscaRef.current?.focus();
@@ -322,7 +323,9 @@ export function Fila({
                 <span className="rs-sem-dono">Sem responsável</span>
               )}
               <Menu rotulo={atual.responsavel ? "Trocar" : "Atribuir a…"} variante="quiet" alinhar="left" itens={PESSOAS.map((p) => ({ rotulo: p.rotulo, onClick: () => onMudar(atual.id, atual.desfecho, p.valor) }))} />
-              <span className="rs-dono-pagina ds-num">Página {atual.pagina}</span>
+              <Botao variante="ghost" tamanho="sm" className="rs-ver-memorial" title="Abre o memorial nesta página, com o trecho grifado (M)" onClick={() => onAbrirPagina?.(atual.id)}>
+                <FileSearch /> Ver no memorial, p. {atual.pagina} <Tecla>M</Tecla>
+              </Botao>
             </div>
 
             <dl className="rs-partes">
@@ -357,9 +360,6 @@ export function Fila({
                     <figure>
                       <figcaption>
                         Memorial, p. {atual.pagina}
-                        <button type="button" className="rs-link" onClick={() => onAbrirPagina?.(atual.id)}>
-                          Ver no memorial
-                        </button>
                       </figcaption>
                       <blockquote>
                         <Trecho texto={atual.evidencia.trecho} marca={atual.evidencia.marca} />

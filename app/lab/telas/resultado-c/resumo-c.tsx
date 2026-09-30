@@ -36,7 +36,9 @@ export function ResumoC({
   comparado,
   onAbrir,
   onMudar,
+  onVerNoMemorial,
 }: {
+  onVerNoMemorial: (id: string) => void;
   achados: Achado[];
   parcial: boolean;
   comparado: boolean;
@@ -115,6 +117,9 @@ export function ResumoC({
                           onClick={() => onMudar(a.id, { tipo: "corrigido", por: EU, quando: "agora" })}
                         >
                           <Check size={14} />
+                        </button>
+                        <button type="button" className="rc-memorial" aria-label={`Ver ${a.id} no memorial, página ${a.pagina}`} title="Ver no memorial" onClick={() => onVerNoMemorial(a.id)}>
+                          <FileSearch size={14} />
                         </button>
                         <button type="button" className="rc-abrir" aria-label={`Abrir ${a.id}`} onClick={() => onAbrir(a.id)}>
                           <ArrowRight size={14} />

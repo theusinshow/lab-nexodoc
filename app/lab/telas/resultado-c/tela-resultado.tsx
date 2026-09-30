@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
-import { FileSearch, AlertTriangle, ArrowLeft, Download, FileSpreadsheet, FileText, ScrollText } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Download, FileSpreadsheet, FileText, ScrollText } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { Botao, Esqueleto, Menu, Segmento } from "@/components/ds/basicos";
@@ -235,9 +235,6 @@ export function TelaResultado({ situacao }: { situacao: SituacaoRes }) {
               ]}
             />
             <div className="rs-exportar">
-              <Botao variante="ghost" tamanho="sm" title="Abre o memorial com os achados grifados" onClick={() => setVisor({ aberto: true, achado: null })}>
-                <FileSearch /> Ver no memorial
-              </Botao>
               <Menu
                 rotulo={
                   <>
@@ -275,7 +272,7 @@ export function TelaResultado({ situacao }: { situacao: SituacaoRes }) {
               exit={{ opacity: 0, transition: { duration: dur("feedback") } }}
               transition={{ duration: dur("enter"), ease: ease(CURVA.out) }}
             >
-              {aba === "resumo" && <ResumoC achados={achados} parcial={p.parcial} comparado={p.comparado} onAbrir={abrir} onMudar={(id, d) => mudar(id, d)} />}
+              {aba === "resumo" && <ResumoC achados={achados} parcial={p.parcial} comparado={p.comparado} onAbrir={abrir} onMudar={(id, d) => mudar(id, d)} onVerNoMemorial={(id) => setVisor({ aberto: true, achado: id })} />}
               {aba === "achados" && <Fila key={filaInicial.selecionado} achados={achados} onMudar={mudar} inicial={filaInicial} onAbrirPagina={(id) => setVisor({ aberto: true, achado: id })} />}
               {aba === "parecer" && <Relatorio achados={achados} parcial={p.parcial} revisao={revisao} onPdf={() => setPdf("abrindo")} />}
               {aba === "documento" && (

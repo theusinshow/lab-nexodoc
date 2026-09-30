@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
-import { FileSearch, AlertTriangle, ArrowLeft, Download, FileSpreadsheet, FileText, ScrollText } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Download, FileSpreadsheet, FileText, ScrollText } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { Botao, Esqueleto, Menu, Segmento } from "@/components/ds/basicos";
@@ -225,9 +225,6 @@ export function TelaResultado({ situacao }: { situacao: SituacaoRes }) {
               ]}
             />
             <div className="rs-exportar">
-              <Botao variante="ghost" tamanho="sm" title="Abre o memorial com os achados grifados" onClick={() => setVisor({ aberto: true, achado: null })}>
-                <FileSearch /> Ver no memorial
-              </Botao>
               <Menu
                 rotulo={
                   <>
