@@ -282,21 +282,3 @@
 .ds .au-fato-nivel--decide { background: var(--ds-sev-decide); }
 .ds .au-fato-nivel--note { background: #9aa1ad; }
 .ds .au-fato-nivel--texto { background: var(--ds-sev-texto); }
-
-/* ---------- v6: enxuta ---------- */
-.ds .au-achados-total { margin-left: auto; font-size: 22px; font-weight: 300; letter-spacing: -0.03em; color: var(--ds-text-primary); cursor: help; }
-.ds .au-achados .gr-niveis { margin-bottom: 0; }
-.ds .au-paginas .au-blocos { margin-bottom: 0; margin-top: auto; }
-.ds .au-registro-fino { margin-top: 12px; border-radius: var(--ds-radius-card); box-shadow: var(--ds-edge); overflow: hidden; }
-.ds .au-registro-fino-barra { display: flex; align-items: center; gap: 16px; width: 100%; min-height: 44px; padding: 0 14px 0 16px; border: 0; background: none; font: inherit; font-size: var(--ds-text-2xs); color: var(--ds-text-secondary); text-align: left; cursor: pointer; }
-.ds .au-registro-fino-barra:disabled { cursor: default; }
-.ds .au-registro-fino-barra:hover:not(:disabled) { background: rgb(255 255 255 / 0.02); }
-.ds .au-registro-ultimo { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ds .au-registro-ultimo time { margin-right: 10px; font-family: var(--ds-font-mono); font-size: 11px; color: var(--ds-text-tertiary); }
-.ds .au-registro-ver { display: inline-flex; align-items: center; gap: 6px; flex: none; color: var(--ds-text-tertiary); }
-.ds .au-registro-fino-barra:hover .au-registro-ver { color: var(--ds-text-primary); }
-.ds .au-registro-aberto { overflow: hidden; border-top: 1px solid var(--ds-line-subtle); }
-.ds .au-registro-aberto ol { max-height: 220px; padding: 4px 10px 8px; }
-.ds .au-paginas .au-blocos { margin-top: 4px; }
-.ds .au-achados .gr-niveis-linha { padding: 6px 2px; }
-.ds .au-achados .au-bloco-cabeca { margin-bottom: 10px; }

@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
-import { AlertTriangle, ChevronDown, FileSearch, FileText, RotateCcw, X } from "lucide-react";
+import { AlertTriangle, FileSearch, FileText, RotateCcw, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { Botao, Esqueleto, NumeroQueChega, Orbe, Selo } from "@/components/ds/basicos";
@@ -161,7 +161,6 @@ export function TelaAuditoria({ situacao }: { situacao: SituacaoAud }) {
   const [confirmar, setConfirmar] = useState(situacao === "cancelando");
   const [aviso, setAviso] = useState(true);
   const [blocoSobre, setBlocoSobre] = useState<number | null>(null);
-  const [registroAberto, setRegistroAberto] = useState(false);
   const registroRef = useRef<HTMLOListElement>(null);
 
   useEffect(() => {
@@ -222,11 +221,14 @@ export function TelaAuditoria({ situacao }: { situacao: SituacaoAud }) {
   const restante = Math.max(0, t - decorrido);
   const passou = situacao === "passou";
   const blocoEmFoco = BLOCOS.find((b) => b.n === blocoSobre);
-  const ultimaLinha = concluida ? { h: "21:13:14", t: "Parecer fechado: não emitir, 2 bloqueios" } : REGISTRO[linhas - 1];
   const estadoDoPainel: EstadoDoPainel = concluida ? "concluida" : falhou ? "falhou" : situacao === "enviando" ? "enviando" : situacao === "retomada" ? "retomada" : passou ? "passou" : "rodando";
   const fracao = semSinal ? null : concluida ? 1 : Math.min(1, decorrido / Math.max(1, decorrido + restante));
   const fim = 21 * 3600 + 8 * 60 + decorrido + restante;
   const horaDoFim = `${Math.floor(fim / 3600)}:${String(Math.floor((fim % 3600) / 60)).padStart(2, "0")}`;
+  const maisMarcadas = PONTOS.map((n, i) => ({ p: i + 1, n }))
+    .filter((x) => x.n > 0 && paginasLidas.includes(x.p))
+    .sort((a, b) => b.n - a.n || a.p - b.p)
+    .slice(0, 4);
 
 
   return (
@@ -251,7 +253,7 @@ export function TelaAuditoria({ situacao }: { situacao: SituacaoAud }) {
               <h1>Memorial geral, revisão A</h1>
               <p className="au-arquivo">
                 <FileText size={13} />
-                <span>117_25_md_geral_a.pdf, 42 páginas</span>
+                <span>117_25_md_geral_a.pdf</span>
                 <span className="au-sep" />
                 <span>Análise profunda, com segundo modelo</span>
                 <span className="au-sep" />
@@ -286,6 +288,48 @@ export function TelaAuditoria({ situacao }: { situacao: SituacaoAud }) {
             )}
           </div>
 
+          {/* o que já se sabe: quatro números, cada um com o desenho do que conta */}
+          <div className="au-painel-fatos" aria-label="O que já se sabe">
+            <div className="au-fato">
+              <b>{semSinal ? <span className="au-traco">—</span> : <NumeroQueChega valor={42} />}</b>
+              <span>páginas com texto</span>
+              <i className="au-fato-folhas" aria-hidden>
+                {Array.from({ length: 14 }, (_, i) => (
+                  <em key={i} className={semSinal ? undefined : "au-fato--on"} />
+                ))}
+              </i>
+            </div>
+            <div className="au-fato">
+              <b>{semSinal ? <span className="au-traco">—</span> : <NumeroQueChega valor={314848} />}</b>
+              <span>caracteres lidos</span>
+              <i className="au-fato-linha" aria-hidden>
+                <em style={{ width: semSinal ? 0 : "100%" }} />
+              </i>
+            </div>
+            <div className="au-fato">
+              <b>
+                {semSinal ? <span className="au-traco">—</span> : <NumeroQueChega valor={feitos.length} />}
+                <small> de 12</small>
+              </b>
+              <span>blocos lidos capítulo a capítulo</span>
+              <i className="au-fato-blocos" aria-hidden>
+                {BLOCOS.map((b) => (
+                  <em key={b.n} className={feitos.includes(b.n) ? "au-fato--on" : lendo.includes(b.n) ? "au-fato--lendo" : undefined} />
+                ))}
+              </i>
+            </div>
+            <div className="au-fato">
+              <b>{semSinal ? <span className="au-traco">—</span> : <NumeroQueChega valor={achadosAteAgora} />}</b>
+              <span>achados até agora</span>
+              <i className="au-fato-niveis" aria-hidden>
+                {!semSinal &&
+                  NIVEIS.map((n) => {
+                    const q = n.itens.reduce((a, it) => a + it.valor, 0);
+                    return q ? <em key={n.id} className={`au-fato-nivel--${n.tom}`} style={{ flexGrow: q }} /> : null;
+                  })}
+              </i>
+            </div>
+          </div>
         </header>
 
         <AnimatePresence initial={false}>
@@ -388,7 +432,7 @@ export function TelaAuditoria({ situacao }: { situacao: SituacaoAud }) {
               <h2>Páginas do memorial</h2>
               <span className="au-nota ds-num">{paginasLidas.length} de 42 lidas capítulo a capítulo</span>
             </div>
-            <MapaDasPaginas legenda={null} paginas={PONTOS} lidas={0} lidasEm={paginasLidas} atuais={paginasLendo} destaque={blocoEmFoco ? paginasDe(blocoEmFoco) : null} />
+            <MapaDasPaginas paginas={PONTOS} lidas={0} lidasEm={paginasLidas} atuais={paginasLendo} destaque={blocoEmFoco ? paginasDe(blocoEmFoco) : null} />
             <div className="au-blocos" onMouseLeave={() => setBlocoSobre(null)}>
               <div className="au-blocos-faixa">
                 {BLOCOS.map((b) => {
@@ -416,60 +460,74 @@ export function TelaAuditoria({ situacao }: { situacao: SituacaoAud }) {
                   </>
                 ) : semSinal ? (
                   "Os blocos aparecem quando a leitura capítulo a capítulo começar."
-                ) : null}
+                ) : (
+                  "Um bloco por trecho do documento, três lidos de cada vez. Passe o mouse num bloco para ver as páginas dele."
+                )}
               </p>
             </div>
+            {!semSinal && (
+              <div className="au-maiores">
+                Mais marcadas até agora
+                {maisMarcadas.map((m) => (
+                  <button key={m.p} type="button" title={`Página ${m.p}: ${m.n} pontos`}>
+                    p. {m.p} <span style={{ color: "var(--ds-text-tertiary)" }}>{m.n}</span>
+                  </button>
+                ))}
+              </div>
+            )}
           </section>
 
           {/* ---------- o que já se achou: por nível e por etapa ---------- */}
           <section className="au-bloco au-achados">
             <div className="au-bloco-cabeca">
               <h2>Achados até agora</h2>
-              <span className="au-achados-total ds-num" title={concluida ? "Antes do segundo modelo, que manteve 9 no parecer" : "Antes do segundo modelo, que ainda pode derrubar alguns"}>{semSinal ? "—" : achadosAteAgora}</span>
+              <span className="au-nota">{concluida ? "antes do segundo modelo, que manteve 9 no parecer" : "antes do segundo modelo"}</span>
             </div>
             {semSinal ? (
               <p className="au-nota">Os achados aparecem quando a primeira etapa terminar.</p>
             ) : (
-              <NiveisEmFaixa niveis={NIVEIS} semFaixa />
+              <NiveisEmFaixa niveis={NIVEIS} />
             )}
+            <div className="au-etapas-conta" aria-label="Achados por etapa">
+              <span>
+                <small>Regras locais</small>
+                <b className="ds-num">{semSinal ? "—" : 2}</b>
+              </span>
+              <span>
+                <small>Leitura global</small>
+                <b className="ds-num">{semSinal ? "—" : 6}</b>
+              </span>
+              <span className={atual === 3 && !falhou ? "au-etapas-conta--agora" : undefined}>
+                <small>Capítulo a capítulo</small>
+                <b className="ds-num">{semSinal ? "—" : achadosBlocos}</b>
+              </span>
+              <span className="au-etapas-conta--depois">
+                <small>Segundo modelo</small>
+                <b>{concluida ? "manteve 9 de 11" : "depois"}</b>
+              </span>
+            </div>
           </section>
         </div>
 
-        {/* ---------- o registro: uma linha, a última; o resto sob demanda ---------- */}
-        <section className="au-registro-fino">
-          <button type="button" className="au-registro-fino-barra" aria-expanded={registroAberto} onClick={() => setRegistroAberto((a) => !a)} disabled={linhas === 0}>
-            <AnimatePresence mode="wait" initial={false}>
-              <motion.span key={ultimaLinha?.h ?? "nada"} className="au-registro-ultimo" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: dur("state") }}>
-                {ultimaLinha ? (
-                  <>
-                    <time>{ultimaLinha.h}</time> {ultimaLinha.t}
-                  </>
-                ) : situacao === "retomada" ? (
-                  "O registro desta sessão se perdeu ao recarregar."
-                ) : (
-                  "Enviando o documento para análise…"
-                )}
-              </motion.span>
-            </AnimatePresence>
-            {linhas > 0 && (
-              <span className="au-registro-ver">
-                {registroAberto ? "Fechar o registro" : `Registro completo, ${linhas + (concluida ? 1 : 0)} linhas`}
-                <motion.span animate={{ rotate: registroAberto ? 180 : 0 }} transition={{ duration: dur("state") }} style={{ display: "inline-flex" }}>
-                  <ChevronDown size={14} />
-                </motion.span>
-              </span>
-            )}
-          </button>
-          <AnimatePresence initial={false}>
-            {registroAberto && (
-              <motion.div className="au-registro au-registro-aberto" initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: dur("layout"), ease: ease(CURVA.out) }}>
+            {/* ---------- o registro ---------- */}
+            <section className="au-bloco au-registro au-registro--largo">
+              <div className="au-bloco-cabeca">
+                <h2>Registro</h2>
+              </div>
+              {linhas === 0 ? (
+                <p className="au-nota" style={{ padding: "0 4px 8px" }}>
+                  {situacao === "retomada" ? "O registro desta sessão se perdeu ao recarregar." : "Enviando o documento para análise…"}
+                </p>
+              ) : (
                 <ol ref={registroRef}>
-                  {REGISTRO.slice(0, linhas).map((l) => (
-                    <li key={l.h}>
-                      <time>{l.h}</time>
-                      <span>{l.t}</span>
-                    </li>
-                  ))}
+                  <AnimatePresence initial={false}>
+                    {REGISTRO.slice(0, linhas).map((l) => (
+                      <motion.li key={l.h} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: dur("enter"), ease: ease(CURVA.out) }}>
+                        <time>{l.h}</time>
+                        <span>{l.t}</span>
+                      </motion.li>
+                    ))}
+                  </AnimatePresence>
                   {concluida && (
                     <li className="au-registro-fim">
                       <time>21:13:14</time>
@@ -477,10 +535,8 @@ export function TelaAuditoria({ situacao }: { situacao: SituacaoAud }) {
                     </li>
                   )}
                 </ol>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </section>
+              )}
+            </section>
 
         {/* ---------- o que vem depois ---------- */}
         {!concluida && !falhou && (

@@ -128,7 +128,10 @@ export function MapaDasPaginas({
   atuais,
   lidasEm,
   destaque,
+  legenda,
 }: {
+  /** O rodapé em repouso; null deixa só a leitura do mouse. */
+  legenda?: ReactNode;
   paginas: number[];
   /** Quantas páginas já foram lidas (as primeiras N). */
   lidas: number;
@@ -174,9 +177,13 @@ export function MapaDasPaginas({
         <AnimatePresence mode="wait" initial={false}>
           <motion.span key={sobre ?? "legenda"} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: dur("feedback") }}>
             {sobre === null ? (
-              <>
-                Tom da página = pontos marcados nela. <span className="gr-mapa-escala" aria-hidden><i /><i /><i /><i /></span>
-              </>
+              legenda !== undefined ? (
+                legenda
+              ) : (
+                <>
+                  Tom da página = pontos marcados nela. <span className="gr-mapa-escala" aria-hidden><i /><i /><i /><i /></span>
+                </>
+              )
             ) : (lidasEm ? lidasEm.includes(sobre) : sobre <= lidas) ? (
               <>
                 <b>p. {sobre}</b>: {paginas[sobre - 1] === 0 ? "nenhum ponto" : `${paginas[sobre - 1]} ${paginas[sobre - 1] === 1 ? "ponto" : "pontos"}`}
@@ -743,7 +750,7 @@ export function ColunasPorNivel({
  * compõem, a contagem e uma pílula por achado. O mouse numa linha acende o
  * trecho dela na faixa, e vice-versa.
  */
-export function NiveisEmFaixa({ niveis }: { niveis: GrupoDoMapa[] }) {
+export function NiveisEmFaixa({ niveis, semFaixa }: { niveis: GrupoDoMapa[]; semFaixa?: boolean }) {
   const { dur, k } = useTempo();
   const [sobre, setSobre] = useState<string | null>(null);
   const soma = (g: GrupoDoMapa) => g.itens.reduce((a, i) => a + i.valor, 0);
@@ -751,6 +758,7 @@ export function NiveisEmFaixa({ niveis }: { niveis: GrupoDoMapa[] }) {
 
   return (
     <div className="gr-niveis" onMouseLeave={() => setSobre(null)}>
+      {!semFaixa && (
       <div className="gr-niveis-faixa" aria-hidden>
         {niveis
           .filter((g) => soma(g) > 0)
@@ -766,6 +774,7 @@ export function NiveisEmFaixa({ niveis }: { niveis: GrupoDoMapa[] }) {
             />
           ))}
       </div>
+      )}
       <ul className="gr-niveis-linhas">
         {niveis.map((g, gi) => {
           const n = soma(g);
