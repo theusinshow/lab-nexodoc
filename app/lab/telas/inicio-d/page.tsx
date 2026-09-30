@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { VitrineDoInicioD } from "./vitrine";
 
 export const metadata = { title: "Início D — Laboratório" };
@@ -10,7 +12,8 @@ export default function PaginaDoInicioD() {
         <h1>Início: tarefa primeiro</h1>
         <p className="lab-lede">
           O Nexo é aberto para uma tarefa pontual, não para acompanhar o dia. Então a primeira tela leva direto à tarefa, e diz o
-          que você precisa ter em mãos. Substitui o Painel e a Conversa nova, que faziam o mesmo trabalho.
+          que você precisa ter em mãos. Substitui o Painel e a Conversa nova, que faziam o mesmo trabalho.{" "}
+          <Link href="/lab/telas/inicio-e" style={{ color: "var(--ds-nexo)" }}>Comparar com o Início E, a mesa</Link>
         </p>
       </header>
       <VitrineDoInicioD />

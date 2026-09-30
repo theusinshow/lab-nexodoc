@@ -12,7 +12,8 @@ import { useLab } from "./contexto";
  *  desligadas: o lab mostra o caminho inteiro desde o primeiro dia. */
 const FASES: { href: string; rotulo: string; fase: string; pronta: boolean; grupo?: string }[] = [
   { href: "/lab", rotulo: "Começar aqui", fase: "", pronta: true },
-  { href: "/lab/telas/inicio-d", rotulo: "Início (tarefa primeiro)", fase: "", pronta: true, grupo: "Telas para aprovar" },
+  { href: "/lab/telas/inicio-e", rotulo: "Início E (a mesa)", fase: "", pronta: true, grupo: "Telas para aprovar" },
+  { href: "/lab/telas/inicio-d", rotulo: "Início D (tarefa primeiro)", fase: "", pronta: true },
   { href: "/lab/telas/chat", rotulo: "Entrada no chat", fase: "", pronta: false },
   { href: "/lab/telas/auditoria", rotulo: "Auditoria rodando", fase: "", pronta: false },
   { href: "/lab/telas/resultado", rotulo: "Resultado", fase: "", pronta: false },
