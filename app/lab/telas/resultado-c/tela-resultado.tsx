@@ -14,6 +14,8 @@ import { ACHADOS, type Achado } from "./dados";
 import { Fila, type Filtro } from "./fila";
 import { estadoDaEmissao, type EstadoEmissao } from "./resumo";
 import { ResumoC } from "./resumo-c";
+import { Parecer } from "./parecer";
+import "./parecer.css";
 import "./resultado-c.css";
 import "./resultado.css";
 
@@ -29,7 +31,10 @@ export type SituacaoRes =
   | "decisao"
   | "selecionando"
   | "vazio-filtro"
-  | "encerrado";
+  | "encerrado"
+  | "parecer"
+  | "parecer-gerando"
+  | "parecer-erro";
 
 type Aba = "resumo" | "achados" | "parecer" | "documento";
 
@@ -87,6 +92,10 @@ function partida(s: SituacaoRes) {
       return { ...base, aba: "achados" as Aba, fila: { selecionado: "ACH-005", filtro: "pendentes" as Filtro, marcados: ["ACH-005", "ACH-008", "ACH-009"] } };
     case "vazio-filtro":
       return { ...base, aba: "achados" as Aba, fila: { selecionado: "ACH-002", busca: "piso vinílico" } };
+    case "parecer":
+    case "parecer-gerando":
+    case "parecer-erro":
+      return { ...base, aba: "parecer" as Aba };
     case "encerrado":
       return { ...base, aba: "achados" as Aba, fila: { selecionado: "ACH-004" } };
     default:
@@ -254,9 +263,17 @@ export function TelaResultado({ situacao }: { situacao: SituacaoRes }) {
             >
               {aba === "resumo" && <ResumoC achados={achados} parcial={p.parcial} comparado={p.comparado} onAbrir={abrir} onMudar={(id, d) => mudar(id, d)} />}
               {aba === "achados" && <Fila key={filaInicial.selecionado} achados={achados} onMudar={mudar} inicial={filaInicial} />}
-              {(aba === "parecer" || aba === "documento") && (
+              {aba === "parecer" && (
+                <Parecer
+                  achados={achados}
+                  parcial={p.parcial}
+                  revisao={revisao}
+                  pdfInicial={situacao === "parecer-gerando" ? "gerando" : situacao === "parecer-erro" ? "erro" : "pronto"}
+                />
+              )}
+              {aba === "documento" && (
                 <div className="rs-depois">
-                  {aba === "parecer" ? "O parecer" : "O documento com os achados no lugar"} é a próxima tela do laboratório.
+                  O documento com os achados no lugar é a próxima tela do laboratório.
                 </div>
               )}
             </motion.div>

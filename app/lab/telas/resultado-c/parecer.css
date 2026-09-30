@@ -1,0 +1,73 @@
+/* PARECER: o papel claro no escuro, e o que se faz com ele ao lado. */
+.ds .pc { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 12px; align-items: start; }
+
+.ds .pc-mesa { display: flex; justify-content: center; padding: 28px 24px 40px; border-radius: var(--ds-radius-card); background: var(--ds-surface-sunken); box-shadow: var(--ds-edge); max-height: 760px; overflow-y: auto; }
+.ds .pc-papel {
+  --pc-tinta: var(--ds-p-ink);
+  --pc-cinza: #5d6270;
+  --pc-linha: #dfe1e6;
+  width: 100%;
+  max-width: 680px;
+  padding: 44px 52px 36px;
+  border-radius: 6px;
+  background: var(--ds-p-paper);
+  color: var(--pc-tinta);
+  box-shadow: 0 1px 0 rgb(255 255 255 / 0.4) inset, 0 24px 60px rgb(0 0 0 / 0.45), 0 2px 6px rgb(0 0 0 / 0.3);
+  font-size: 13px;
+  line-height: 1.55;
+}
+.ds .pc-papel-cabeca { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 24px; padding-bottom: 18px; border-bottom: 1.5px solid var(--pc-tinta); }
+.ds .pc-papel-cabeca small { font-size: 11px; color: var(--pc-cinza); }
+.ds .pc-papel-cabeca h1 { margin: 4px 0 2px; font-size: 22px; font-weight: 500; letter-spacing: -0.02em; line-height: 1.2; }
+.ds .pc-papel-cabeca p { margin: 0; color: var(--pc-cinza); }
+.ds .pc-papel-cabeca dl { margin: 0; display: grid; gap: 4px; font-size: 11.5px; }
+.ds .pc-papel-cabeca dl div { display: grid; grid-template-columns: 78px auto; gap: 8px; }
+.ds .pc-papel-cabeca dt { color: var(--pc-cinza); }
+.ds .pc-papel-cabeca dd { margin: 0; }
+
+.ds .pc-veredito { margin: 20px 0 8px; padding: 12px 14px; border-left: 3px solid var(--pc-tom); background: color-mix(in srgb, var(--pc-tom) 8%, transparent); }
+.ds .pc-veredito--block { --pc-tom: #c7372a; }
+.ds .pc-veredito--decide { --pc-tom: #b7791f; }
+.ds .pc-veredito--ok { --pc-tom: #2f8a58; }
+.ds .pc-veredito b { font-size: 16px; font-weight: 600; color: var(--pc-tom); }
+.ds .pc-veredito p { margin: 2px 0 6px; }
+.ds .pc-veredito span { font-size: 11.5px; color: var(--pc-cinza); }
+
+.ds .pc-secao { margin-top: 22px; }
+.ds .pc-secao h2 { display: flex; align-items: baseline; gap: 10px; margin: 0 0 4px; padding-bottom: 6px; border-bottom: 1px solid var(--pc-linha); font-size: 14px; font-weight: 600; }
+.ds .pc-secao h2 span { font-size: 11px; font-weight: 400; color: var(--pc-cinza); }
+.ds .pc-secao--block h2 { color: #c7372a; }
+.ds .pc-secao--decide h2 { color: #9a6412; }
+.ds .pc-secao--texto h2 { color: #2c64a8; }
+.ds .pc-item { overflow: hidden; }
+.ds .pc-item-dentro { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 6px; padding: 12px 0; border-bottom: 1px solid var(--pc-linha); }
+.ds .pc-n { font-variant-numeric: tabular-nums; color: var(--pc-cinza); }
+.ds .pc-item h3 { margin: 0; font-size: 13.5px; font-weight: 600; }
+.ds .pc-item p { margin: 3px 0 0; }
+.ds .pc-onde { font-size: 11.5px; color: var(--pc-cinza); }
+.ds .pc-item blockquote { margin: 8px 0; padding: 6px 10px; border-left: 2px solid var(--pc-linha); font-family: var(--ds-font-mono); font-size: 11.5px; color: #3a3f4a; }
+.ds .pc-situacao { font-size: 12px; color: var(--pc-cinza); }
+.ds .pc-situacao--feita b + * , .ds .pc-situacao--feita { color: #2f7a50; }
+.ds .pc-papel-pe { margin-top: 26px; padding-top: 12px; border-top: 1px solid var(--pc-linha); font-size: 11px; color: var(--pc-cinza); }
+
+.ds .pc-lado { display: grid; gap: 12px; position: sticky; top: 16px; }
+.ds .pc-principal { width: 100%; justify-content: center; }
+.ds .pc-outros { display: grid; gap: 2px; margin: 2px -8px 0; }
+.ds .pc-outros button { display: flex; align-items: flex-start; gap: 10px; padding: 8px; border: 0; border-radius: 9px; background: none; font: inherit; font-size: var(--ds-text-xs); color: var(--ds-text-primary); text-align: left; cursor: pointer; }
+.ds .pc-outros button:hover { background: rgb(255 255 255 / 0.04); }
+.ds .pc-outros button > svg { margin-top: 2px; color: var(--ds-text-secondary); flex: none; }
+.ds .pc-outros span { display: grid; gap: 1px; }
+.ds .pc-outros small { font-size: 11.5px; color: var(--ds-text-tertiary); }
+.ds .pc-gerando { display: grid; gap: 8px; font-size: var(--ds-text-2xs); color: var(--ds-text-secondary); }
+.ds .pc-gerando-barra { position: relative; height: 36px; border-radius: 999px; background: rgb(255 255 255 / 0.05); overflow: hidden; }
+.ds .pc-gerando-barra i { position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgb(163 166 255 / 0.35), transparent); transform: translateX(-100%); animation: gr-correr 1.4s var(--ds-ease-out) infinite; }
+.ds .pc-erro { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px 10px; padding: 10px 12px; border-radius: var(--ds-radius-row); background: var(--ds-state-error-wash); box-shadow: inset 0 0 0 1px var(--ds-sev-block-line); font-size: var(--ds-text-2xs); line-height: 1.5; color: var(--ds-text-secondary); }
+.ds .pc-erro > svg { margin-top: 2px; color: var(--ds-state-error); }
+.ds .pc-erro b { font-weight: 500; color: var(--ds-state-error); }
+.ds .pc-erro .ds-btn { grid-column: 2; justify-self: start; }
+.ds .pc-opcao { display: flex; align-items: flex-start; gap: 10px; padding: 4px 0; font-size: var(--ds-text-xs); cursor: pointer; }
+.ds .pc-opcao > span { display: grid; gap: 1px; }
+.ds .pc-opcao small { font-size: 11.5px; color: var(--ds-text-tertiary); }
+.ds .pc-chave { position: relative; width: 32px; height: 18px; flex: none; margin-top: 1px; padding: 0; border: 0; border-radius: 999px; background: var(--ds-surface-overlay); box-shadow: var(--ds-edge-strong); cursor: pointer; transition: background var(--ds-dur-state); }
+.ds .pc-chave[aria-checked="true"] { background: var(--ds-nexo-strong); }
+.ds .pc-chave span { position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: var(--ds-p-paper); }
