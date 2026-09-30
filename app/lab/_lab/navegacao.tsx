@@ -17,6 +17,8 @@ const FASES: { href: string; rotulo: string; fase: string; pronta: boolean; grup
   { href: "/lab/telas/mapa", rotulo: "Mapa do volume", fase: "", pronta: true },
   { href: "/lab/telas/mapa-cartoes", rotulo: "Cartão da folha (5 formas)", fase: "", pronta: true },
   { href: "/lab/telas/projetos", rotulo: "Projetos", fase: "", pronta: true },
+  { href: "/lab/telas/projeto", rotulo: "Projeto (uma obra)", fase: "", pronta: true },
+  { href: "/lab/telas/achados", rotulo: "Achados", fase: "", pronta: true },
   { href: "/lab/telas/auditoria", rotulo: "Auditoria rodando", fase: "", pronta: true },
   { href: "/lab/telas/resultado-e", rotulo: "Resultado da auditoria", fase: "", pronta: true },
   { href: "/lab/telas/parecer", rotulo: "Relatório (aba)", fase: "", pronta: true },
