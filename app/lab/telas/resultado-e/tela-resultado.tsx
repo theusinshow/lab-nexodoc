@@ -212,23 +212,26 @@ export function TelaResultado({ situacao }: { situacao: SituacaoRes }) {
   return (
     <div className="rs rd re">
       <Topo atual="Painel" />
+      {/* o título fica fora da grade: a coluna da direita começa na mesma linha do conteúdo */}
+      <div className="re-titulo">
+        <header className="re-cabeca">
+          <div className="rs-obra">
+            <MarcaDaPrefeitura prefeitura="Criciúma" forma="sinal" />
+            <span className="ds-code">117-25</span>
+            <span>UBS da Rua São Francisco de Assis</span>
+          </div>
+          <h1>Memorial geral, revisão {revisao}</h1>
+          <p className="rs-arquivo">
+            <span>117_25_md_geral_{revisao.toLowerCase()}.pdf, 42 páginas</span>
+            <span className="rs-sep" />
+            <span>Auditada hoje às 21:13 por Victor</span>
+            <span className="rs-sep" />
+            <span>levou 4:21</span>
+          </p>
+        </header>
+      </div>
       <div className={`re-corpo${compacto ? " re-corpo--compacto" : ""}`}>
         <main className="re-principal">
-          <header className="re-cabeca">
-            <div className="rs-obra">
-              <MarcaDaPrefeitura prefeitura="Criciúma" forma="sinal" />
-              <span className="ds-code">117-25</span>
-              <span>UBS da Rua São Francisco de Assis</span>
-            </div>
-            <h1>Memorial geral, revisão {revisao}</h1>
-            <p className="rs-arquivo">
-              <span>117_25_md_geral_{revisao.toLowerCase()}.pdf, 42 páginas</span>
-              <span className="rs-sep" />
-              <span>Auditada hoje às 21:13 por Victor</span>
-              <span className="rs-sep" />
-              <span>levou 4:21</span>
-            </p>
-          </header>
 
           {carregando ? (
             <div className="rs-abrindo" aria-busy>

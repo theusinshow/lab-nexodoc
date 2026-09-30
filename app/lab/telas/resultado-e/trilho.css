@@ -61,3 +61,14 @@
 .ds .re .rs-fila { height: 700px; }
 .ds .re .re-distribuicao { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; align-items: stretch; }
 .ds .re .re-distribuicao .rc-cartao { align-content: start; }
+
+/* ---------- ajuste: título fora da grade, coluna num bloco só ---------- */
+.ds .re-titulo { width: min(1280px, calc(100% - 48px)); margin: 24px auto 0; }
+.ds .re-corpo { padding-top: 0; }
+.ds .re-trilho { gap: 0; border-radius: var(--ds-radius-card); background: var(--ds-surface-card); box-shadow: var(--ds-edge); overflow: hidden; }
+.ds .re-trilho > section, .ds .re-trilho > .re-nav { border-radius: 0; background: none; box-shadow: none; }
+.ds .re-trilho > * + * { border-top: 1px solid var(--ds-line-subtle); }
+.ds .re-trilho .re-estado::before { display: none; }
+.ds .re-trilho { box-shadow: var(--ds-edge), inset 0 1px 0 color-mix(in srgb, var(--re-tom) 60%, transparent); }
+.ds .re-corpo--compacto .re-estado { gap: 8px; padding: 12px 6px 10px; }
+.ds .re-corpo--compacto .re-nav, .ds .re-corpo--compacto .re-acoes { padding: 6px; }
