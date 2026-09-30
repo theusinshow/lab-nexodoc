@@ -12,6 +12,7 @@ import { MarcaDaPrefeitura } from "@/modules/nexo/components/MarcaDaPrefeitura";
 import { Topo } from "../_comum/topo";
 import { RITMO, SUAVE } from "../conversa/turnos";
 import { DISCIPLINA } from "../resultado-e/dados";
+import { CartaoAtual, ESTILOS, type EstiloDoCartao } from "./cartoes";
 import { ALTURA_DO_NO, LARGURA_DA_FOLHA, montarCanvas, Tela } from "./canvas";
 import { FOLHAS, RESTOS, TOMOS, type Folha } from "./dados";
 import { AntesDeGerar, dd, DaFolha, Gerados, precisaConferir, Sobras } from "./lado";
@@ -324,10 +325,23 @@ function Mapa({ situacao }: { situacao: SituacaoMapa }) {
   );
 }
 
+/** No lab, a forma do cartão vem da URL (?cartao=prancha), para comparar no canvas de verdade. */
+function useCartaoDaUrl(): EstiloDoCartao {
+  const [e, setE] = useState<EstiloDoCartao>("prancha");
+  useEffect(() => {
+    const c = new URLSearchParams(window.location.search).get("cartao");
+    if (c && ESTILOS.some((x) => x.id === c)) setE(c as EstiloDoCartao);
+  }, []);
+  return e;
+}
+
 export function TelaMapa({ situacao }: { situacao: SituacaoMapa }) {
+  const estilo = useCartaoDaUrl();
   return (
-    <ReactFlowProvider>
-      <Mapa situacao={situacao} />
-    </ReactFlowProvider>
+    <CartaoAtual.Provider value={estilo}>
+      <ReactFlowProvider>
+        <Mapa situacao={situacao} />
+      </ReactFlowProvider>
+    </CartaoAtual.Provider>
   );
 }

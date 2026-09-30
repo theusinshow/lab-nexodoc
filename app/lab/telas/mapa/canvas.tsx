@@ -2,14 +2,16 @@
 
 import { Background, BackgroundVariant, Handle, MarkerType, MiniMap, Position, ReactFlow, useStore, type Edge, type Node, type NodeProps } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
+import "./cartoes.css";
 import { memo } from "react";
 
 import { densidadeDoZoom, oQueMostrar } from "@/modules/nexo/lib/densidade-do-canvas";
 
-import { DISCIPLINA, type Disciplina } from "../resultado-e/dados";
+import { type Disciplina } from "../resultado-e/dados";
 import { SeloDaDisciplina } from "../resultado-e/disciplina";
 import { documentosDoTomo, FOLHAS, RESTOS, TOMOS, type Documento, type Folha } from "./dados";
-import { conferencia, dd } from "./lado";
+import { CartaoDaFolha, useEstiloDoCartao } from "./cartoes";
+import { dd } from "./lado";
 
 /*
  * O CANVAS DO MAPA. Uma fileira por tomo, na ordem do volume (capa →
@@ -49,30 +51,11 @@ function useDensidade() {
 const NoDaFolha = memo(function NoDaFolha({ data }: NodeProps<Node<DadosDaFolha>>) {
   const { f, lida, escolhida, apagada } = data;
   const densidade = useDensidade();
-  const mostrar = oQueMostrar(densidade);
-  const c = conferencia(f);
-  return (
-    <div className={`mp-no mp-no--folha mp-no--${densidade} dc--${f.disc}${escolhida ? " mp-no--sel" : ""}${apagada ? " mp-no--apagado" : ""}${lida ? "" : " mp-no--lendo"}`} title={lida ? f.titulo : "lendo o selo"}>
-      {alcas}
-      <i className="mp-no-fio" aria-hidden />
-      {lida ? (
-        <div className="mp-no-corpo">
-          <div className="mp-no-linha">
-            <span className={`mp-no-num${f.numero == null ? " mp-tom--critico-texto" : ""}`}>
-              {f.numero == null ? "—" : dd(f.numero)}
-              <small>/{dd(f.total)}</small>
-            </span>
-            {mostrar.sigla && <span className="mp-no-sigla">{DISCIPLINA[f.disc].sigla}</span>}
-            {c && <i className={`mp-no-marca mp-tom--${c.tom}`} title={c.texto} />}
-          </div>
-          {mostrar.titulo && <p className="mp-no-titulo">{f.titulo}</p>}
-          {mostrar.carimbo && (
-            <p className="mp-no-carimbo">
-              {f.id}, rev. {f.revisao}
-            </p>
-          )}
-        </div>
-      ) : (
+  const estilo = useEstiloDoCartao();
+  if (!lida)
+    return (
+      <div className={`mp-no mp-no--folha mp-no--lendo mp-no--${densidade}`} title="lendo o selo">
+        {alcas}
         <div className="mp-no-corpo">
           <div className="mp-no-linha">
             <span className="mp-no-num mp-g-fraco">{dd(f.paginaNoPdf)}</span>
@@ -84,7 +67,12 @@ const NoDaFolha = memo(function NoDaFolha({ data }: NodeProps<Node<DadosDaFolha>
             </>
           )}
         </div>
-      )}
+      </div>
+    );
+  return (
+    <div className="mp-no-casca">
+      {alcas}
+      <CartaoDaFolha f={f} estilo={estilo} distancia={densidade} escolhida={escolhida} apagada={apagada} />
     </div>
   );
 });

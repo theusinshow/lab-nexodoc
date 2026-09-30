@@ -1,0 +1,97 @@
+/*
+ * AS CINCO FORMAS DO CARTÃO DA FOLHA. Mesma caixa (140 × 108), mesmas
+ * marcas; nenhuma com fio de cor. Seleção = contorno claro, igual em todas.
+ */
+.ds .ct { position: relative; box-sizing: border-box; width: 140px; height: 108px; color: var(--ds-text-primary); transition: box-shadow 0.3s, opacity 0.35s, background 0.25s; }
+.ds .ct p { margin: 0; }
+.ds .ct-mono { font-family: var(--ds-font-mono); font-size: 10.5px; font-variant-numeric: tabular-nums; }
+.ds .ct-falta { color: var(--ds-sev-block) !important; }
+.ds .ct--apagado { opacity: 0.18; }
+.ds .ct-marca { position: absolute; top: 9px; right: 9px; width: 6px; height: 6px; border-radius: 50%; }
+.ds .ct-marca.mp-tom--critico { background: var(--ds-sev-block); }
+.ds .ct-marca.mp-tom--aviso { background: var(--ds-sev-decide); }
+.ds .ct-marca.mp-tom--neutro { box-shadow: inset 0 0 0 1.2px var(--ds-text-secondary); }
+.ds .ct-marca.mp-tom--mao { border-radius: 1.5px; background: var(--ds-text-secondary); }
+.ds .ct--longe .ct-marca { top: 10px; right: 10px; width: 14px; height: 14px; }
+.ds .ct-sigla { display: inline-flex; align-items: center; gap: 4px; font-family: var(--ds-font-mono); font-size: 10px; letter-spacing: 0.03em; color: var(--ds-text-tertiary); }
+.ds .ct-sigla i { width: 5px; height: 5px; border-radius: 1.5px; background: var(--dc-cor); }
+.ds .ct-grande { font-family: var(--ds-font-mono); font-size: 40px; font-weight: 300; letter-spacing: -0.04em; color: var(--ds-text-secondary); }
+.ds .ct-titulo { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; font-size: 11.5px; line-height: 1.3; letter-spacing: 0.01em; }
+.ds .ct-pe { display: flex; gap: 8px; margin-top: auto !important; color: var(--ds-text-tertiary); }
+.ds .ct--sel { box-shadow: 0 0 0 1.5px var(--ds-text-primary), 0 12px 30px rgb(0 0 0 / 0.45) !important; }
+
+/* ---------- A. Prancha: a folha em miniatura, com o carimbo no pé ---------- */
+.ds .ct--prancha { display: flex; flex-direction: column; padding: 5px; border-radius: 3px; background: var(--ds-surface-raised); box-shadow: var(--ds-edge); }
+.ds .ct--prancha .ct-desenho { position: relative; flex: 1; display: grid; place-items: center; box-shadow: inset 0 0 0 1px var(--ds-line-subtle); }
+.ds .ct--prancha .ct-marca { top: 5px; right: 5px; }
+.ds .ct--prancha .ct-selo { display: grid; gap: 3px; padding: 5px 6px 5px; margin-top: -1px; box-shadow: inset 0 0 0 1px var(--ds-line-default); background: rgb(255 255 255 / 0.02); }
+.ds .ct--prancha .ct-selo-titulo { overflow: hidden; font-size: 10.5px; line-height: 1.25; white-space: nowrap; text-overflow: ellipsis; letter-spacing: 0.01em; }
+.ds .ct--prancha .ct-selo-celulas { display: flex; justify-content: space-between; gap: 6px; color: var(--ds-text-tertiary); }
+.ds .ct--prancha.ct--media .ct-desenho { flex: 1 1 auto; }
+.ds .ct--prancha.ct--media .ct-selo-titulo { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.ds .ct--prancha.ct--perto .ct-desenho { flex: 1 1 auto; }
+.ds .ct--prancha.ct--perto .ct-selo-titulo { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+
+/* ---------- B. Carimbo: a tabela do selo ---------- */
+.ds .ct--carimbo { border-radius: 2px; background: var(--ds-surface-raised); box-shadow: inset 0 0 0 1px var(--ds-line-strong); overflow: hidden; }
+.ds .ct-tabela { display: grid; grid-template-columns: 1fr 1fr; height: 100%; }
+.ds .ct-cel { position: relative; display: grid; align-content: start; gap: 1px; min-width: 0; padding: 5px 7px; box-shadow: inset -1px -1px 0 var(--ds-line-default); }
+.ds .ct-cel small { font-family: var(--ds-font-mono); font-size: 8.5px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ds-text-tertiary); }
+.ds .ct-cel b { font-weight: 400; font-size: 11px; }
+.ds .ct-cel .ct-marca { top: 7px; right: 7px; }
+.ds .ct-cel--titulo { grid-column: 1 / -1; }
+.ds .ct-cel--titulo b { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 10.5px; line-height: 1.25; letter-spacing: 0.01em; }
+.ds .ct--carimbo.ct--media .ct-cel--titulo { box-shadow: none; }
+.ds .ct-tabela--perto { grid-template-columns: 1fr 1fr 0.7fr; grid-template-rows: auto 1fr auto; }
+.ds .ct-tabela--perto .ct-cel { padding: 4px 6px; }
+.ds .ct-cel--codigo { padding: 3px 6px !important; box-shadow: none !important; }
+.ds .ct-cel--codigo b { color: var(--ds-text-tertiary); }
+.ds .ct-carimbo-longe { display: grid; place-items: center; height: 100%; }
+
+/* ---------- C. Arquivo: canto dobrado, código grande ---------- */
+.ds .ct--arquivo { display: flex; flex-direction: column; gap: 5px; padding: 11px 12px 10px; border-radius: 6px; background: var(--ds-surface-raised); box-shadow: var(--ds-edge); clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 0 100%); }
+.ds .ct-dobra { position: absolute; top: 0; right: 0; width: 16px; height: 16px; background: linear-gradient(225deg, transparent 50%, rgb(255 255 255 / 0.14) 50%); border-bottom-left-radius: 3px; }
+.ds .ct--arquivo .ct-marca { top: auto; bottom: 11px; right: 12px; }
+.ds .ct-codigo { font-family: var(--ds-font-mono); font-size: 14px; letter-spacing: -0.01em; }
+.ds .ct--arquivo .ct-titulo { font-size: 10.5px; color: var(--ds-text-secondary); -webkit-line-clamp: 3; }
+.ds .ct--arquivo.ct--longe { justify-content: center; align-items: center; }
+.ds .ct--arquivo.ct--sel { clip-path: none; }
+
+/* ---------- D. Sem caixa: texto solto, a caixa só no hover e na escolha ---------- */
+.ds .ct--solto { display: flex; flex-direction: column; gap: 6px; padding: 10px 10px 9px; border-radius: 8px; }
+.ds .ct--solto:hover { background: rgb(255 255 255 / 0.03); box-shadow: inset 0 0 0 1px var(--ds-line-subtle); }
+.ds .ct--solto .ct-linha { display: flex; align-items: baseline; gap: 8px; }
+.ds .ct--solto .ct-num { font-family: var(--ds-font-mono); font-size: 18px; font-weight: 300; letter-spacing: -0.02em; color: var(--ds-text-secondary); }
+.ds .ct--solto .ct-marca { position: static; align-self: center; margin-left: auto; }
+.ds .ct--solto .ct-titulo { color: var(--ds-text-primary); }
+.ds .ct--solto.ct--perto .ct-titulo { -webkit-line-clamp: 2; }
+.ds .ct--solto.ct--longe { justify-content: center; align-items: center; }
+.ds .ct--solto.ct--longe .ct-num { font-size: 40px; }
+.ds .ct--solto.ct--longe .ct-marca { position: absolute; }
+.ds .ct--solto.ct--sel { background: rgb(255 255 255 / 0.04); }
+
+/* ---------- E. Número: tipográfico, o número manda ---------- */
+.ds .ct--numero { display: flex; flex-direction: column; gap: 4px; padding: 9px 11px 10px; border-radius: 10px; background: var(--ds-surface-raised); }
+.ds .ct--numero .ct-linha { display: flex; align-items: flex-start; justify-content: space-between; }
+.ds .ct--numero .ct-num { font-size: 30px; font-weight: 300; line-height: 1; letter-spacing: -0.04em; font-variant-numeric: tabular-nums; }
+.ds .ct--numero .ct-num small { margin-left: 2px; font-size: 11px; letter-spacing: 0; color: var(--ds-text-tertiary); }
+.ds .ct--numero .ct-sigla { margin-top: 3px; margin-right: 12px; }
+.ds .ct--numero .ct-titulo { margin-top: auto !important; font-size: 10.5px; color: var(--ds-text-secondary); -webkit-line-clamp: 2; }
+.ds .ct--numero .ct-pe { margin-top: 0 !important; }
+.ds .ct--numero.ct--perto .ct-titulo { margin-top: 4px !important; }
+.ds .ct--numero.ct--perto .ct-pe { margin-top: auto !important; }
+.ds .ct--numero.ct--longe { justify-content: center; align-items: center; }
+.ds .ct--numero.ct--longe .ct-num { font-size: 48px; }
+
+/* ---------- a página de comparação ---------- */
+.ds .ctc { display: grid; gap: 14px; }
+.ds .ctc-estilo { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 28px; padding: 24px 28px; border-radius: 16px; background: var(--ds-surface-card); box-shadow: var(--ds-edge); }
+.ds .ctc-nome { margin: 0 0 6px; font-size: 16px; color: var(--ds-text-primary); }
+.ds .ctc-ideia { margin: 0 0 14px; font-size: 12.5px; line-height: 1.55; color: var(--ds-text-tertiary); }
+.ds .ctc-link { font-size: 12.5px; color: var(--ds-text-secondary); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--ds-line-strong); }
+.ds .ctc-link:hover { color: var(--ds-text-primary); }
+.ds .ctc-faixas { display: grid; gap: 16px; }
+.ds .ctc-faixa { display: grid; gap: 8px; }
+.ds .ctc-faixa > span { font-size: 11.5px; color: var(--ds-text-tertiary); }
+.ds .ctc-fileira { display: flex; flex-wrap: wrap; gap: 14px; padding: 16px; border-radius: 10px; background: rgb(0 0 0 / 0.18); background-image: radial-gradient(rgb(255 255 255 / 0.06) 1px, transparent 1px); background-size: 22px 22px; }
+.ds .ctc-fileira--longe .ct { transform: scale(0.5); transform-origin: top left; margin: 0 -70px -54px 0; }
