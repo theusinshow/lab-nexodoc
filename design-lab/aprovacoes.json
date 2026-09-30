@@ -293,5 +293,35 @@
     "status": "aprovado",
     "nota": "Aprovado pelo Matheus no chat em 01/10: \"mapa dos volumes aprovado\" (canvas com a pele nova; cartão da folha = B. Carimbo; capa/LD/separatrizes como papel).",
     "em": "2026-09-30T20:37:07.327397Z"
+  },
+  "tela.projetos.lista": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, vamos para a próxima tela\".",
+    "em": "2026-09-30T20:51:49.080984Z"
+  },
+  "tela.projetos.obra-escolhida": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, vamos para a próxima tela\".",
+    "em": "2026-09-30T20:51:49.080984Z"
+  },
+  "tela.projetos.busca-vazia": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, vamos para a próxima tela\".",
+    "em": "2026-09-30T20:51:49.080984Z"
+  },
+  "tela.projetos.arquivados": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, vamos para a próxima tela\".",
+    "em": "2026-09-30T20:51:49.080984Z"
+  },
+  "tela.projetos.novo": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, vamos para a próxima tela\".",
+    "em": "2026-09-30T20:51:49.080984Z"
+  },
+  "tela.projetos.vazia": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, vamos para a próxima tela\".",
+    "em": "2026-09-30T20:51:49.080984Z"
   }
 }

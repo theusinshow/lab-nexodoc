@@ -1,0 +1,33 @@
+/*
+ * O PROJETO. Painel, abas, tabela, lado e rodapé vêm do Mapa (mapa.css) e de
+ * Projetos (projetos.css); aqui só as tarefas no topo e as colunas.
+ */
+.ds .pr-titulo { max-width: 44ch; line-height: 1.2; text-wrap: balance; }
+.ds .pr-cabeca-acoes { display: flex; gap: 8px; align-self: flex-end; }
+
+/* as quatro tarefas: um tile cada, estado grande, detalhe e a ação no pé */
+.ds .pr-tarefas { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.ds .pr-tarefa { flex: none; gap: 3px; padding: 16px 20px 16px; border-right: 1px solid var(--ds-line-subtle); }
+.ds .pr-tarefa:last-child { border-right: 0; }
+.ds .pr-tarefa:disabled { cursor: default; }
+.ds .pr-tarefa:disabled:hover { background: none; }
+.ds .pr-tarefa-estado { font-size: 20px; letter-spacing: -0.015em; color: var(--ds-text-primary); }
+.ds .pr-tarefa-acao { display: inline-flex; align-items: center; gap: 5px; margin-top: 8px; font-size: 12.5px; color: var(--ds-text-secondary); transition: color 0.2s, gap 0.25s cubic-bezier(0.22, 1, 0.36, 1); }
+.ds .pr-tarefa:hover .pr-tarefa-acao { color: var(--ds-text-primary); gap: 8px; }
+.ds .pr-tarefa .mp-tile-sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* a tabela */
+.ds .pr-busca { width: 240px; }
+.ds .pr-grade { --mp-colunas: 36px minmax(0, 1.6fr) 150px minmax(0, 1fr) 100px 96px; }
+.ds .pr-arquivo { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.ds .pr-evento { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 13px; }
+.ds .pr-vazio { padding: 48px 20px; }
+.ds .pr-mono-nome { font-family: var(--ds-font-mono); font-size: 14px; overflow-wrap: anywhere; }
+.ds .pr-agora li { align-items: start; }
+
+/* configurações: o perigo fica embaixo, separado, e excluir confirma na própria tela */
+.ds .pr-perigo { display: grid; gap: 2px; margin: 8px -10px 0; padding-top: 14px; border-top: 1px solid var(--ds-line-subtle); }
+.ds .pr-confirma { display: grid; gap: 10px; padding: 10px; border-radius: 10px; box-shadow: inset 0 0 0 1px rgb(from var(--ds-sev-block) r g b / 0.4); }
+.ds .pr-confirma p { margin: 0; font-size: 12.5px; line-height: 1.5; color: var(--ds-text-secondary); }
+.ds .pr-excluir { color: var(--ds-sev-block) !important; }
+.ds .pr .mp-miolo { min-height: 460px; }
