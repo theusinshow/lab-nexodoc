@@ -2291,41 +2291,6 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
         ?.scrollIntoView({ block: "nearest" });
     });
   }
-  /*
-   * J / K PERCORREM A FILA, C / F JULGAM — os gestos que se repetem vinte vezes numa revisão, e
-   * que pedia mirar "Próximo" a cada achado. É a convenção de leitor de fila
-   * (e-mail, revisão de código). Calado enquanto se digita, com modificador
-   * (Ctrl+K é a busca de ações) e com o visor do PDF aberto, que tem o seu
-   * próprio anterior/próximo.
-   */
-  useEffect(() => {
-    if (view !== "findings" || activePdf) return;
-    const aoTeclar = (event: KeyboardEvent) => {
-      if (event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) return;
-      const tecla = event.key.toLowerCase();
-      if (!["j", "k", "c", "f"].includes(tecla)) return;
-      const alvo = event.target as HTMLElement | null;
-      if (alvo?.closest("input, textarea, select, [contenteditable=''], [contenteditable='true'], [role='dialog']")) return;
-      // C e F julgam o achado aberto (Validade). Reversível: o outro botão troca.
-      if (tecla === "c" || tecla === "f") {
-        if (!auditId || !achadoDoDetalhe?.refId || feedbackSavingKey === achadoDoDetalhe.refId) return;
-        event.preventDefault();
-        void saveFindingFeedback(
-          achadoDoDetalhe,
-          indiceDoDetalhe,
-          tecla === "c" ? "CONFIRMED" : "FALSE_POSITIVE",
-        );
-        return;
-      }
-      const posicao = groupedPrincipal.findIndex((f) => chaveDoAchado(f) === chaveDoDetalhe);
-      const destino = groupedPrincipal[posicao + (tecla === "j" ? 1 : -1)];
-      if (!destino) return;
-      event.preventDefault();
-      abrirNoDetalhe(chaveDoAchado(destino));
-    };
-    document.addEventListener("keydown", aoTeclar);
-    return () => document.removeEventListener("keydown", aoTeclar);
-  });
   /**
    * O status da linha da fila, em uma ou duas palavras à direita: como fechou,
    * se foi descartado, ou com quem está. Sem nada a dizer (pendente e sem
@@ -2702,6 +2667,45 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
       setFeedbackSavingKey("");
     }
   }
+
+  /*
+   * J / K PERCORREM A FILA, C / F JULGAM — os gestos que se repetem vinte vezes numa revisão, e
+   * que pedia mirar "Próximo" a cada achado. É a convenção de leitor de fila
+   * (e-mail, revisão de código). Calado enquanto se digita, com modificador
+   * (Ctrl+K é a busca de ações) e com o visor do PDF aberto, que tem o seu
+   * próprio anterior/próximo.
+   *
+   * DEPOIS de `saveFindingFeedback`, e não junto do detalhe: o efeito a chama,
+   * e o React Compiler recusa uso antes da declaração (react-hooks/immutability).
+   */
+  useEffect(() => {
+    if (view !== "findings" || activePdf) return;
+    const aoTeclar = (event: KeyboardEvent) => {
+      if (event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) return;
+      const tecla = event.key.toLowerCase();
+      if (!["j", "k", "c", "f"].includes(tecla)) return;
+      const alvo = event.target as HTMLElement | null;
+      if (alvo?.closest("input, textarea, select, [contenteditable=''], [contenteditable='true'], [role='dialog']")) return;
+      // C e F julgam o achado aberto (Validade). Reversível: o outro botão troca.
+      if (tecla === "c" || tecla === "f") {
+        if (!auditId || !achadoDoDetalhe?.refId || feedbackSavingKey === achadoDoDetalhe.refId) return;
+        event.preventDefault();
+        void saveFindingFeedback(
+          achadoDoDetalhe,
+          indiceDoDetalhe,
+          tecla === "c" ? "CONFIRMED" : "FALSE_POSITIVE",
+        );
+        return;
+      }
+      const posicao = groupedPrincipal.findIndex((f) => chaveDoAchado(f) === chaveDoDetalhe);
+      const destino = groupedPrincipal[posicao + (tecla === "j" ? 1 : -1)];
+      if (!destino) return;
+      event.preventDefault();
+      abrirNoDetalhe(chaveDoAchado(destino));
+    };
+    document.addEventListener("keydown", aoTeclar);
+    return () => document.removeEventListener("keydown", aoTeclar);
+  });
 
   async function saveMissingFinding() {
     if (!auditId || !missingFindingNote.trim()) {
