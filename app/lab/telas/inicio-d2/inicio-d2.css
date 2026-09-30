@@ -173,4 +173,4 @@
 .ds .d2-menor { grid-template-columns: auto minmax(0, 1fr); row-gap: 4px; }
 .ds .d2-menor-num { font-size: 20px; font-weight: 300; letter-spacing: -0.03em; line-height: 1.1; font-variant-numeric: tabular-nums; }
 .ds .d2-menor-rotulo { grid-column: 1 / -1; font-size: 11px; color: var(--ds-text-tertiary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ds .d2-menor .gr-colunas { opacity: 0.8; }
+.ds .d2-menor > :nth-child(2) { opacity: 0.85; align-self: end; }

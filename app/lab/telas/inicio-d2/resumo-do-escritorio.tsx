@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 
 import { NumeroQueChega, Segmento } from "@/components/ds/basicos";
-import { ColunasEmPilula, MESES, type Coluna } from "@/components/ds/graficos";
+import { BarrasPorMes, ColunasEmPilula, Fichas, LinhaAcumulada, MESES, type Coluna } from "@/components/ds/graficos";
 
 /**
  * O NEXO NO ESCRITÓRIO — o que ele já fez, para quem abre (e para quem vê a
@@ -93,7 +93,6 @@ export function ResumoDoEscritorio() {
 
   // uma coluna por dia no mês; por semana desde o início
   const grupos = periodo === "mes" ? doMes.map((d) => [d]) : porSemana(dias);
-  const colunas = (campo: keyof Omit<Dia, "data">): Coluna[] => grupos.map((g) => ({ rotulo: "", valor: soma(g, campo) }));
   const achados: Coluna[] = grupos.map((g, i) => {
     const d0 = g[0].data;
     const e = soma(g, "encontrados");
@@ -119,11 +118,18 @@ export function ResumoDoEscritorio() {
     };
   });
 
+  // cada número com o desenho que combina com o que ele conta
+  const porMes = [5, 6, 7, 8].map((m) => ({ rotulo: MESES[m], valor: soma(dias.filter((d) => d.data.getMonth() === m), "lds") }));
   const menores = [
-    { valor: encontrados, rotulo: `achados encontrados, ${taxa}% resolvidos`, campo: "encontrados" as const },
-    { valor: soma(recorte, "volumes"), rotulo: "volumes montados e exportados", campo: "volumes" as const },
-    { valor: soma(recorte, "lds"), rotulo: "LDs e capas gerados", campo: "lds" as const },
-    { valor: soma(recorte, "folhas"), rotulo: "folhas lidas dos carimbos", campo: "folhas" as const },
+    {
+      campo: "encontrados",
+      valor: encontrados,
+      rotulo: `achados encontrados, ${taxa}% resolvidos`,
+      grafico: <ColunasEmPilula key={periodo} colunas={achados} altura={22} compacto />,
+    },
+    { campo: "volumes", valor: soma(recorte, "volumes"), rotulo: "volumes montados e exportados", grafico: <Fichas key={periodo} total={soma(recorte, "volumes")} /> },
+    { campo: "lds", valor: soma(recorte, "lds"), rotulo: "LDs e capas gerados", grafico: <BarrasPorMes key={periodo} meses={porMes} atual={periodo === "mes" ? 3 : null} /> },
+    { campo: "folhas", valor: soma(recorte, "folhas"), rotulo: "folhas lidas dos carimbos", grafico: <LinhaAcumulada key={periodo} valores={recorte.map((d) => d.folhas)} /> },
   ];
 
   return (
@@ -149,7 +155,7 @@ export function ResumoDoEscritorio() {
             <b className="d2-menor-num">
               <NumeroQueChega valor={m.valor} />
             </b>
-            <ColunasEmPilula key={periodo} colunas={m.campo === "encontrados" ? achados : colunas(m.campo)} altura={22} compacto />
+            {m.grafico}
             <span className="d2-menor-rotulo">{m.rotulo}</span>
           </div>
         ))}

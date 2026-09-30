@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
-import { useState, type ReactNode } from "react";
+import { useId, useState, type ReactNode } from "react";
 
 import { CURVA } from "@/lib/ds/movimento";
 import { useTempo } from "@/lib/ds/tempo";
@@ -365,5 +365,100 @@ export function MapaDeAtividade({ dias, unidade }: { dias: DiaDeUso[]; unidade: 
         </AnimatePresence>
       </div>
     </div>
+  );
+}
+
+/**
+ * FICHAS. Uma pílula por unidade — para coisa que se conta nos dedos
+ * (volumes exportados). Acima do teto, a última ficha diz quantas faltam.
+ */
+export function Fichas({ total, teto = 24 }: { total: number; teto?: number }) {
+  const { dur, k } = useTempo();
+  const mostradas = Math.min(total, teto);
+  const resto = total - mostradas;
+  return (
+    <span className="gr-fichas" aria-hidden>
+      {Array.from({ length: mostradas }, (_, i) => (
+        <motion.i
+          key={i}
+          initial={{ opacity: 0, scale: 0.4 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: dur("enter"), delay: i * 0.025 * k, ease: ease(CURVA.out) }}
+        />
+      ))}
+      {resto > 0 && <em>+{resto}</em>}
+    </span>
+  );
+}
+
+/**
+ * LINHA ACUMULADA. O total correndo no tempo, desenhado como traço que se
+ * escreve da esquerda para a direita; o ponto no fim é hoje. Para volume
+ * que cresce sempre (folhas lidas): a inclinação mostra o ritmo.
+ */
+export function LinhaAcumulada({ valores, altura = 28 }: { valores: number[]; altura?: number }) {
+  const { dur } = useTempo();
+  const gradiente = useId();
+  const L = 100;
+  const acumulado: number[] = [];
+  valores.reduce((a, v) => (acumulado.push(a + v), a + v), 0);
+  const maximo = Math.max(1, acumulado[acumulado.length - 1] ?? 1);
+  const pontos = acumulado.map((v, i) => [(i / Math.max(1, acumulado.length - 1)) * L, altura - 2 - (v / maximo) * (altura - 4)] as const);
+  const linha = pontos.map(([x, y], i) => `${i ? "L" : "M"}${x.toFixed(2)},${y.toFixed(2)}`).join(" ");
+  const area = `${linha} L${L},${altura} L0,${altura} Z`;
+  const fim = pontos[pontos.length - 1] ?? [L, 2];
+  return (
+    <span className="gr-acumulada" aria-hidden>
+      <svg viewBox={`0 0 ${L} ${altura}`} preserveAspectRatio="none" style={{ height: altura }}>
+        <defs>
+          <linearGradient id={gradiente} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor="#fff" stopOpacity="0.1" />
+            <stop offset="1" stopColor="#fff" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <motion.path d={area} fill={`url(#${gradiente})`} className="gr-acumulada-area" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: dur("layout") * 2, delay: dur("layout") }} />
+        <motion.path
+          d={linha}
+          className="gr-acumulada-linha"
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: 1 }}
+          transition={{ duration: dur("layout") * 3, ease: ease(CURVA.out) }}
+        />
+      </svg>
+      <motion.i
+        className="gr-acumulada-ponto"
+        style={{ top: `${(fim[1] / altura) * 100}%` }}
+        initial={{ opacity: 0, scale: 0 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: dur("enter"), delay: dur("layout") * 2.4 }}
+      />
+    </span>
+  );
+}
+
+/**
+ * BARRAS POR MÊS. Poucas categorias com nome embaixo — o mês que está em
+ * foco em iris, os outros em cinza, para comparar este mês com os
+ * anteriores sem ler números.
+ */
+export function BarrasPorMes({ meses, atual, altura = 26 }: { meses: { rotulo: string; valor: number }[]; atual: number | null; altura?: number }) {
+  const { dur, k } = useTempo();
+  const maximo = Math.max(1, ...meses.map((m) => m.valor));
+  return (
+    <span className="gr-meses" aria-hidden>
+      {meses.map((m, i) => (
+        <span key={m.rotulo} className={`gr-mes${i === atual ? " gr-mes--atual" : ""}`}>
+          <span className="gr-mes-trilho" style={{ height: altura }}>
+            <motion.i
+              style={{ height: `${Math.max(8, (m.valor / maximo) * 100)}%` }}
+              initial={{ scaleY: 0 }}
+              animate={{ scaleY: 1 }}
+              transition={{ duration: dur("layout") * 1.6, delay: i * 0.05 * k, ease: ease(CURVA.out) }}
+            />
+          </span>
+          <small>{m.rotulo}</small>
+        </span>
+      ))}
+    </span>
   );
 }

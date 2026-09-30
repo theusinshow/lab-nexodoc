@@ -597,3 +597,25 @@
 .ds .gr-dia { aspect-ratio: 1; border-radius: 3px; background: rgb(255 255 255 / 0.045); transition: opacity var(--ds-dur-state); }
 .ds .gr-dia--uso { background: rgb(255 255 255 / var(--tom)); }
 .ds .gr-dia--hoje { box-shadow: 0 0 0 1.5px var(--ds-nexo); }
+
+/* ---------- fichas ---------- */
+.ds .gr-fichas { display: flex; flex-wrap: wrap; align-content: flex-end; align-items: center; gap: 3px; min-width: 0; }
+.ds .gr-fichas i { width: 6px; height: 14px; border-radius: 999px; background: #c9ccd4; }
+.ds .gr-fichas i:last-of-type { background: var(--ds-nexo); }
+.ds .gr-fichas em { margin-left: 3px; font-style: normal; font-family: var(--ds-font-mono); font-size: 10.5px; color: var(--ds-text-tertiary); }
+
+/* ---------- linha acumulada ---------- */
+.ds .gr-acumulada { position: relative; display: block; min-width: 0; }
+.ds .gr-acumulada svg { display: block; width: 100%; overflow: visible; }
+.ds .gr-acumulada-linha { fill: none; stroke: #c9ccd4; stroke-width: 1.5; stroke-linejoin: round; }
+.ds .gr-acumulada-area { stroke: none; }
+.ds .gr-acumulada-ponto { position: absolute; right: -3px; width: 6px; height: 6px; margin-top: -3px; border-radius: 50%; background: var(--ds-nexo); box-shadow: 0 0 0 3px rgb(163 166 255 / 0.18); }
+
+/* ---------- barras por mês ---------- */
+.ds .gr-meses { display: flex; align-items: flex-end; gap: 8px; }
+.ds .gr-mes { display: grid; justify-items: center; gap: 3px; }
+.ds .gr-mes-trilho { position: relative; width: 8px; border-radius: 999px; background: rgb(255 255 255 / 0.04); overflow: hidden; }
+.ds .gr-mes-trilho i { position: absolute; left: 0; right: 0; bottom: 0; border-radius: 999px; background: #5b5f6b; transform-origin: bottom; }
+.ds .gr-mes--atual .gr-mes-trilho i { background: var(--ds-nexo); }
+.ds .gr-mes small { font-family: var(--ds-font-mono); font-size: 9.5px; line-height: 1; color: var(--ds-text-tertiary); }
+.ds .gr-mes--atual small { color: var(--ds-text-secondary); }
