@@ -11,6 +11,7 @@ import { useTempo } from "@/lib/ds/tempo";
 
 import { DESFECHO_NOME, DISCIPLINAS, IMPACTOS, PAGINAS_DO_MEMORIAL, pontosPorPagina, type Achado, type Disciplina } from "./dados";
 import { SeloDaDisciplina } from "./disciplina";
+import { Etiqueta } from "./etiqueta";
 import { estadoDaEmissao, type EstadoEmissao } from "./resumo";
 
 const FAIXAS = [
@@ -112,6 +113,7 @@ export function ResumoC({
                       transition={mola("smooth")}
                     >
                       <button type="button" className="rc-linha-corpo" onClick={() => onAbrir(a.id)}>
+                        <Etiqueta a={a} />
                         <span className="rc-titulo">{a.titulo}</span>
                         <SeloDaDisciplina disc={a.disc} neutro />
                         {a.responsavel ? <Avatar iniciais={a.responsavel.slice(0, 2).toUpperCase()} pequeno /> : <span className="rc-sem">sem dono</span>}
@@ -156,7 +158,7 @@ export function ResumoC({
                 <motion.ul initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: dur("layout"), ease: ease(CURVA.out) }}>
                   {tratados.map((a) => (
                     <li key={a.id}>
-                      <span className="rc-id">{a.id}</span>
+                      <Etiqueta a={a} />
                       <span className="rc-titulo">{a.titulo}</span>
                       <span className="rc-desfecho">
                         {DESFECHO_NOME[a.desfecho!.tipo]}, {a.desfecho!.por === EU ? "você" : a.desfecho!.por}
