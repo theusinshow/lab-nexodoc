@@ -6,15 +6,13 @@
  * (avaliarEmissao). A sigla na tela é ACH (lib/rotulo-do-achado.ts).
  */
 
-export type Impacto = "block" | "decide" | "note" | "texto";
+export type Impacto = "block" | "decide" | "note";
 export type Desfecho = "corrigido" | "falso-positivo" | "decisao";
 
 export const IMPACTOS: { id: Impacto; nome: string; dica: string }[] = [
   { id: "block", nome: "Bloqueia a emissão", dica: "Corrigir antes de gerar o documento." },
   { id: "decide", nome: "Exige decisão técnica", dica: "Não impede gerar, mas precisa de aceite do responsável antes de executar." },
-  { id: "note", nome: "Revisão de texto", dica: "Numeração, unidades, referências cruzadas." },
-  // gramática separada da revisão de texto, com cor própria (pedido do Matheus, 30/09)
-  { id: "texto", nome: "Gramática", dica: "Ortografia, acentuação, concordância. Não muda decisão técnica." },
+  { id: "note", nome: "Revisão de texto", dica: "Não muda decisão técnica." },
 ];
 
 export const DESFECHO_NOME: Record<Desfecho, string> = {
@@ -132,21 +130,21 @@ export const ACHADOS: Achado[] = [
   },
   {
     id: "ACH-007",
-    impacto: "texto",
+    impacto: "note",
     disciplina: "Geral",
-    titulo: "Concordância: “os quadro de distribuição”",
+    titulo: "Unidade escrita “m2” em vez de m²",
     pagina: 27,
-    origem: "ia",
+    origem: "regra",
     responsavel: "Victor",
-    errado: "O cap. 8 escreve “os quadro de distribuição” duas vezes.",
-    importa: "Só apresentação, mas é o tipo de erro que a prefeitura aponta primeiro.",
-    fazer: "Trocar por “os quadros de distribuição”.",
-    evidencia: { trecho: "…sendo que os quadro de distribuição deverão ficar em local ventilado…", marca: "os quadro" },
+    errado: "Quatro ocorrências de “m2” no cap. 8.",
+    importa: "Só apresentação.",
+    fazer: "Trocar por m².",
+    evidencia: { trecho: "…área de 32 m2 destinada à central de gás…", marca: "32 m2" },
     desfecho: { tipo: "corrigido", por: "Victor", quando: "hoje, 21:42" },
   },
   {
     id: "ACH-008",
-    impacto: "texto",
+    impacto: "note",
     disciplina: "Geral",
     titulo: "Município grafado “Criciuma”, sem acento",
     pagina: 31,

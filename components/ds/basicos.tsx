@@ -32,7 +32,7 @@ export function Botao({
   );
 }
 
-export type Tom = "neutro" | "line" | "nexo" | "block" | "decide" | "note" | "ok";
+export type Tom = "neutro" | "line" | "nexo" | "block" | "decide" | "note" | "texto" | "ok";
 
 export function Selo({ tom = "neutro", ponto, children }: { tom?: Tom; ponto?: boolean; children: ReactNode }) {
   return (

@@ -129,7 +129,10 @@ export function MapaDasPaginas({
   lidasEm,
   destaque,
   legenda,
+  colunas = 14,
 }: {
+  /** Quantas páginas por linha. */
+  colunas?: number;
   /** O rodapé em repouso; null deixa só a leitura do mouse. */
   legenda?: ReactNode;
   paginas: number[];
@@ -145,7 +148,6 @@ export function MapaDasPaginas({
   const { dur, k } = useTempo();
   const [sobre, setSobre] = useState<number | null>(null);
   const maximo = Math.max(1, ...paginas);
-  const colunas = 14;
 
   return (
     <div className="gr-mapa">
@@ -603,6 +605,8 @@ export interface GrupoDoMapa {
   rotulo: string;
   tom: "block" | "decide" | "note" | "texto";
   itens: { id: string; rotulo: string; valor: number; tom?: "texto" }[];
+  /** Os achados do nível, um a um: viram pílulas clicáveis (cheia = tratado). */
+  achados?: { id: string; titulo: string; feito: boolean }[];
 }
 
 /**
@@ -750,7 +754,7 @@ export function ColunasPorNivel({
  * compõem, a contagem e uma pílula por achado. O mouse numa linha acende o
  * trecho dela na faixa, e vice-versa.
  */
-export function NiveisEmFaixa({ niveis, semFaixa }: { niveis: GrupoDoMapa[]; semFaixa?: boolean }) {
+export function NiveisEmFaixa({ niveis, semFaixa, onAbrir }: { niveis: GrupoDoMapa[]; semFaixa?: boolean; onAbrir?: (id: string) => void }) {
   const { dur, k } = useTempo();
   const [sobre, setSobre] = useState<string | null>(null);
   const soma = (g: GrupoDoMapa) => g.itens.reduce((a, i) => a + i.valor, 0);
@@ -790,8 +794,21 @@ export function NiveisEmFaixa({ niveis, semFaixa }: { niveis: GrupoDoMapa[]; sem
                 <b>{g.rotulo}</b>
                 <small>{tipos.length ? tipos.map((t) => `${t.rotulo} ${t.valor}`).join(", ") : "nenhum até agora"}</small>
               </span>
-              <span className="gr-niveis-fichas" aria-hidden>
-                {Array.from({ length: n }, (_, i) => (
+              <span className="gr-niveis-fichas" aria-hidden={!g.achados}>
+                {g.achados?.map((a, i) => (
+                  <motion.button
+                    key={a.id}
+                    type="button"
+                    className={`gr-niveis-ficha${a.feito ? " gr-niveis-ficha--feita" : ""}`}
+                    title={`${a.id}: ${a.titulo}${a.feito ? " (tratado)" : ""}`}
+                    aria-label={`${a.id}: ${a.titulo}${a.feito ? ", tratado" : ", pendente"}`}
+                    onClick={() => onAbrir?.(a.id)}
+                    initial={{ opacity: 0, scaleY: 0.3 }}
+                    animate={{ opacity: 1, scaleY: 1 }}
+                    transition={{ duration: dur("enter"), delay: 0.2 + gi * 0.08 * k + i * 0.04 * k, ease: ease(CURVA.out) }}
+                  />
+                ))}
+                {!g.achados && Array.from({ length: n }, (_, i) => (
                   <motion.i
                     key={i}
                     initial={{ opacity: 0, scaleY: 0.3 }}

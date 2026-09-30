@@ -12,7 +12,7 @@ import { MarcaDaPrefeitura } from "@/modules/nexo/components/MarcaDaPrefeitura";
 import { Topo } from "../_comum/topo";
 import { ACHADOS, type Achado } from "./dados";
 import { Fila, type Filtro } from "./fila";
-import { Resumo, estadoDaEmissao, type EstadoEmissao } from "./resumo";
+import { Resumo } from "./resumo";
 import "./resultado.css";
 
 export type SituacaoRes =
@@ -32,37 +32,6 @@ export type SituacaoRes =
 type Aba = "resumo" | "achados" | "parecer" | "documento";
 
 const ease = (c: readonly number[]) => [...c] as [number, number, number, number];
-
-/** O selo do painel: o veredito numa palavra, na cor dele. */
-const SELO: Record<EstadoEmissao, { rotulo: string; tom: "block" | "decide" | "ok" }> = {
-  incompleto: { rotulo: "Análise parcial", tom: "block" },
-  nao_emitir: { rotulo: "Não emitir", tom: "block" },
-  revisar: { rotulo: "Revisar antes de emitir", tom: "decide" },
-  liberado_com_ressalvas: { rotulo: "Liberado com ressalvas", tom: "ok" },
-  liberado: { rotulo: "Liberado", tom: "ok" },
-};
-
-/** O anel do tratamento — o mesmo gesto do relógio da auditoria. */
-function Anel({ fracao, completo }: { fracao: number | null; completo: boolean }) {
-  const { dur } = useTempo();
-  return (
-    <svg className={`rs-anel${completo ? " rs-anel--completo" : ""}`} viewBox="0 0 64 64" aria-hidden>
-      <circle cx="32" cy="32" r="27" className="rs-anel-trilho" />
-      {fracao !== null && (
-        <motion.circle
-          cx="32"
-          cy="32"
-          r="27"
-          className="rs-anel-arco"
-          transform="rotate(-90 32 32)"
-          initial={{ pathLength: 0 }}
-          animate={{ pathLength: Math.max(0.001, fracao) }}
-          transition={{ duration: dur("layout") * 3, ease: ease(CURVA.out) }}
-        />
-      )}
-    </svg>
-  );
-}
 
 /** O ponto de partida de cada situação: que achados, que aba, o que já vem aberto. */
 function partida(s: SituacaoRes) {
@@ -130,9 +99,6 @@ export function TelaResultado({ situacao }: { situacao: SituacaoRes }) {
   };
 
   const pendentes = achados.filter((a) => !a.desfecho).length;
-  const tratados = achados.length - pendentes;
-  const bloqueiosAbertos = achados.filter((a) => a.impacto === "block" && !a.desfecho).length;
-  const estado = estadoDaEmissao(achados, p.parcial);
   const revisao = situacao === "revisar" || situacao === "liberado" ? "B" : "A";
 
   if (situacao === "nao-abriu") {
@@ -158,64 +124,31 @@ export function TelaResultado({ situacao }: { situacao: SituacaoRes }) {
     <div className="rs">
       <Topo atual="Painel" />
       <div className="rs-corpo">
-        <header className={`rs-painel rs-painel--${SELO[estado].tom}`}>
-          <div className="rs-painel-topo">
-            <div className="rs-painel-texto">
-              <div className="rs-painel-linha">
-                <span className="rs-selo">
-                  <i />
-                  {SELO[estado].rotulo}
-                </span>
-                <span className="rs-obra">
-                  <MarcaDaPrefeitura prefeitura="Criciúma" forma="sinal" />
-                  <span className="ds-code">117-25</span>
-                  <span>UBS da Rua São Francisco de Assis</span>
-                </span>
-              </div>
-              <h1>Memorial geral, revisão {revisao}</h1>
-              <p className="rs-arquivo">
-                <span>117_25_md_geral_{revisao.toLowerCase()}.pdf, 42 páginas</span>
-                <span className="rs-sep" />
-                <span>Auditada hoje às 21:13 por Victor</span>
-                <span className="rs-sep" />
-                <span>levou 4:21</span>
-              </p>
-            </div>
-
-            {/* o tratamento, no mesmo anel do relógio da auditoria: lá era tempo, aqui é trabalho */}
-            <button type="button" className="rs-tratado" onClick={() => setAba("achados")} disabled={carregando}>
-              <Anel fracao={carregando ? null : tratados / Math.max(1, achados.length)} completo={!pendentes} />
-              <span className="rs-tratado-texto">
-                <span className="rs-tratado-numero">
-                  <b className="ds-num">
-                    {tratados}
-                    <small> de {achados.length}</small>
-                  </b>
-                  <small>tratados</small>
-                </span>
-                <span className="rs-tratado-falta">
-                  {!pendentes ? "tudo tratado" : bloqueiosAbertos ? `${bloqueiosAbertos} ${bloqueiosAbertos === 1 ? "bloqueio pendente" : "bloqueios pendentes"}` : `${pendentes} pendentes`}
-                </span>
-              </span>
-            </button>
-
-            <div className="rs-exportar">
-              <Menu
-                rotulo={
-                  <>
-                    <Download /> Exportar
-                  </>
-                }
-                variante="quiet"
-                itens={[
-                  { rotulo: "Parecer em PDF", dica: "O documento que vai para o cliente", icone: <FileText size={14} /> },
-                  { rotulo: "Relatório da auditoria", dica: "Texto corrido, todos os achados", icone: <ScrollText size={14} /> },
-                  { rotulo: "Matriz de achados", dica: "Planilha, um achado por linha", icone: <FileSpreadsheet size={14} /> },
-                ]}
-              />
-            </div>
+        <header className="rs-cabeca">
+          <div className="rs-obra">
+            <MarcaDaPrefeitura prefeitura="Criciúma" forma="sinal" />
+            <span className="ds-code">117-25</span>
+            <span>UBS da Rua São Francisco de Assis</span>
           </div>
-          <div className="rs-painel-abas">
+          <div className="rs-titulo">
+            <h1>Auditoria do memorial geral</h1>
+            <Menu
+              rotulo={
+                <>
+                  <Download /> Exportar
+                </>
+              }
+              itens={[
+                { rotulo: "Parecer em PDF", dica: "O documento que vai para o cliente", icone: <FileText size={14} /> },
+                { rotulo: "Relatório da auditoria", dica: "Texto corrido, todos os achados", icone: <ScrollText size={14} /> },
+                { rotulo: "Matriz de achados", dica: "Planilha, um achado por linha", icone: <FileSpreadsheet size={14} /> },
+              ]}
+            />
+          </div>
+          <p className="rs-arquivo">
+            117_25_md_geral_{revisao.toLowerCase()}.pdf, revisão {revisao}, 42 páginas. Auditada hoje às 21:13 por Victor.
+          </p>
+          <div className="rs-abas">
             <Segmento
               rotulo="Visão do resultado"
               valor={aba}

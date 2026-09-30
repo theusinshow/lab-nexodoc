@@ -4,7 +4,7 @@ import { Vitrine } from "../../_lab/vitrine";
 import { TelaResultado, type SituacaoRes } from "./tela-resultado";
 
 const SITUACOES: { id: SituacaoRes; nome: string; dica: string }[] = [
-  { id: "nao-emitir", nome: "Não emitir", dica: "No painel, o veredito num selo e o tratamento num anel (o mesmo gesto do relógio da auditoria). Embaixo: por que, o que tratar (uma pílula por achado, cheia = tratado, clique abre) e onde. A abre a fila." },
+  { id: "nao-emitir", nome: "Não emitir", dica: "O veredito como posição numa faixa, o tratamento como uma pílula por achado (passe o mouse, clique para abrir). A abre a fila." },
   { id: "revisar", nome: "Revisar antes", dica: "Revisão B, sem bloqueios: sobram decisões técnicas. O losango para na faixa âmbar." },
   { id: "liberado", nome: "Com ressalvas", dica: "Só revisão de texto: liberado, e a tela diz o escopo do que foi lido." },
   { id: "parcial", nome: "Análise parcial", dica: "Três blocos não foram lidos: não vale como liberação, o mapa mostra as páginas não lidas e Auditar de novo aparece." },
@@ -19,5 +19,5 @@ const SITUACOES: { id: SituacaoRes; nome: string; dica: string }[] = [
 ];
 
 export function VitrineDoResultado() {
-  return <Vitrine telaId="resultado" situacoes={SITUACOES} render={(s) => <TelaResultado key={s} situacao={s} />} />;
+  return <Vitrine telaId="resultado-v1" situacoes={SITUACOES} render={(s) => <TelaResultado key={s} situacao={s} />} />;
 }
