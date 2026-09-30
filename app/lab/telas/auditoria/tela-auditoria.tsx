@@ -253,9 +253,9 @@ export function TelaAuditoria({ situacao }: { situacao: SituacaoAud }) {
                 <FileText size={13} />
                 <span>117_25_md_geral_a.pdf, 42 páginas</span>
                 <span className="au-sep" />
-                <span>Análise profunda, com segundo modelo</span>
+                <span title="Leitura do documento inteiro, capítulo a capítulo, e revisão de cada achado por um segundo modelo">Análise profunda</span>
                 <span className="au-sep" />
-                <span>Iniciada às 21:08 por Victor</span>
+                <span>Victor, às 21:08</span>
               </p>
             </div>
 
