@@ -34,7 +34,8 @@ export function Vitrine<S extends string>({
 
   useEffect(() => {
     if (!cheia) return;
-    const esc = (e: KeyboardEvent) => e.key === "Escape" && setCheia(false);
+    // Esc já tratado por algo dentro da tela (barra, menu) não fecha a tela cheia.
+    const esc = (e: KeyboardEvent) => e.key === "Escape" && !e.defaultPrevented && setCheia(false);
     document.addEventListener("keydown", esc);
     return () => document.removeEventListener("keydown", esc);
   }, [cheia]);

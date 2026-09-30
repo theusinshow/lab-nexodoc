@@ -10,7 +10,18 @@ import "../painel/painel.css";
 const DESTINOS = ["Painel", "Projetos", "Montar volumes", "Achados", "Ajuda", "Administração"] as const;
 
 /** A barra de cima das páginas (fora do Nexo). Uma só, para as telas não divergirem. */
-export function Topo({ atual, trabalhando = false, aviso = true }: { atual: (typeof DESTINOS)[number]; trabalhando?: boolean; aviso?: boolean }) {
+/** `busca={false}` onde a própria tela já é a busca (a home com a barra de comando). */
+export function Topo({
+  atual,
+  trabalhando = false,
+  aviso = true,
+  busca = true,
+}: {
+  atual: (typeof DESTINOS)[number];
+  trabalhando?: boolean;
+  aviso?: boolean;
+  busca?: boolean;
+}) {
   return (
     <header className="pn-topo">
       <div className="pn-marca">
@@ -24,11 +35,15 @@ export function Topo({ atual, trabalhando = false, aviso = true }: { atual: (typ
           </a>
         ))}
       </nav>
-      <button type="button" className="pn-busca">
-        <Search size={15} />
-        Buscar obra, código ou ação
-        <Tecla>Ctrl K</Tecla>
-      </button>
+      {busca ? (
+        <button type="button" className="pn-busca">
+          <Search size={15} />
+          Buscar obra, código ou ação
+          <Tecla>Ctrl K</Tecla>
+        </button>
+      ) : (
+        <span style={{ marginLeft: "auto" }} />
+      )}
       <Botao variante="quiet" icone aria-label="Avisos" className="pn-sino">
         <Bell />
         {aviso && <i />}

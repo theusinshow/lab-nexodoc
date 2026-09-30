@@ -28,7 +28,7 @@ export default function ComecarAqui() {
         </ol>
         <div style={{ marginTop: 20 }}>
           <Link
-            href="/lab/telas/inicio-d"
+            href="/lab/telas/inicio-d2"
             style={{ display: "inline-flex", alignItems: "center", height: 36, padding: "0 18px", borderRadius: 999, background: "var(--ds-action-bg)", color: "var(--ds-action-fg)", fontWeight: 500, textDecoration: "none" }}
           >
             Começar pelo Início

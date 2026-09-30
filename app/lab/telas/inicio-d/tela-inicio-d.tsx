@@ -14,9 +14,9 @@ import "./inicio-d.css";
 
 export type SituacaoD = "padrao" | "tarefa-escolhida" | "arrastando" | "arquivo-recebido" | "achados-com-voce" | "primeiro-acesso";
 
-type IdTarefa = "auditar" | "volume" | "ld" | "conferir";
+export type IdTarefa = "auditar" | "volume" | "ld" | "conferir";
 
-interface Tarefa {
+export interface Tarefa {
   id: IdTarefa;
   nome: string;
   precisa: string;
@@ -30,7 +30,7 @@ interface Tarefa {
  * que ela precisa TER EM MÃOS. Como o uso é pontual (abrir, fazer, fechar), a
  * primeira pergunta que a tela responde é "o que eu trago para começar".
  */
-const TAREFAS: Tarefa[] = [
+export const TAREFAS: Tarefa[] = [
   { id: "auditar", nome: "Auditar um memorial", precisa: "O memorial descritivo em PDF.", aceita: "1 PDF", soltar: "Solte o memorial para auditar", Icone: FileSearch },
   { id: "volume", nome: "Montar um volume", precisa: "Capas, LDs, pranchas e anexos já prontos, em PDF.", aceita: "vários PDFs", soltar: "Solte os PDFs para montar", Icone: Layers },
   { id: "ld", nome: "Gerar LD e capa", precisa: "As pranchas em PDF. O Nexo lê os carimbos.", aceita: "pranchas", soltar: "Solte as pranchas para gerar", Icone: ListChecks },
@@ -38,7 +38,7 @@ const TAREFAS: Tarefa[] = [
 ];
 
 /** O que o Nexo diz depois de ler o arquivo, e a única ação — por tarefa. */
-const DEPOIS_DE_LER: Record<IdTarefa, { arquivo: string; tamanho: string; leu: string; plano: string; custo: string; acao: string; obra: { nome: string; codigo: string; cidade: string; detalhe: string } }> = {
+export const DEPOIS_DE_LER: Record<IdTarefa, { arquivo: string; tamanho: string; leu: string; plano: string; custo: string; acao: string; obra: { nome: string; codigo: string; cidade: string; detalhe: string } }> = {
   auditar: {
     arquivo: "117_25_md_geral_a.pdf",
     tamanho: "42 páginas, 3,1 MB",
