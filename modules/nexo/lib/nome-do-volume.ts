@@ -20,6 +20,7 @@ import type { SeloForLd } from "@/server/nexo/build-ld-proposal";
 import { summarizeSelos } from "./agent-context";
 import { codigoDaFolha } from "./disciplina-da-folha";
 import type { Folha } from "./folhas";
+import { parseFilename } from "@/server/nexo/parse-filename";
 
 /** Só o que pode ir para um nome de arquivo, em minúsculas. */
 function limpo(valor: string): string {
@@ -137,4 +138,52 @@ export function nomeDoVolume(
 
   const partes = [codigo, disciplina, tomoParte].filter(Boolean);
   return `${partes.length > 0 ? partes.join("_") : "volume"}.pdf`;
+}
+
+/**
+ * A DISCIPLINA COMO O ESCRITÓRIO A ESCREVE no nome do arquivo: `est_met`, e não
+ * só o código canônico `met`. Vem dos tokens de disciplina do NOME das
+ * pranchas, na ordem em que aparecem; a combinação mais frequente vence. Sem
+ * nenhuma no nome, cai na disciplina dominante do selo.
+ */
+function disciplinaComoEscrita(selos: readonly SeloForLd[]): string {
+  const contagem = new Map<string, number>();
+  for (const s of selos) {
+    const escrita = parseFilename(s.arquivo?.trim() || s.fileName).disciplinas.join("_");
+    if (!escrita) continue;
+    contagem.set(escrita, (contagem.get(escrita) ?? 0) + 1);
+  }
+  let melhor = "";
+  let maior = 0;
+  for (const [escrita, n] of contagem) {
+    if (n > maior) {
+      melhor = escrita;
+      maior = n;
+    }
+  }
+  return limpo(melhor || disciplinaDominante(selos));
+}
+
+/**
+ * OS NOMES DO ZIP DOS EDITÁVEIS, pedidos pelo escritório em 30/09/2026:
+ *
+ *   138_26_editaveis.zip
+ *     138_26_est_met_capas.odt
+ *     138_26_est_met_ld.odt
+ *     138_26_est_met_separatriz.odt
+ */
+export function nomesDosEditaveis(
+  selos: readonly SeloForLd[],
+  identidade: { codigo?: string },
+): { zip: string; capa: string; ld: string; separatriz: string } {
+  const doSelo = summarizeSelos(selos as SeloForLd[]);
+  const codigo = limpo(identidade.codigo?.trim() || doSelo.codigo || "");
+  const base = [codigo, disciplinaComoEscrita(selos)].filter(Boolean).join("_");
+  const com = (sufixo: string) => `${base ? `${base}_` : ""}${sufixo}.odt`;
+  return {
+    zip: `${codigo ? `${codigo}_` : ""}editaveis.zip`,
+    capa: com("capas"),
+    ld: com("ld"),
+    separatriz: com("separatriz"),
+  };
 }

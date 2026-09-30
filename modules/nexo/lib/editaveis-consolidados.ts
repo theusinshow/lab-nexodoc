@@ -91,6 +91,8 @@ export async function gerarEditaveisConsolidados(args: {
   params: ParametrosDaEntrega;
   identidade?: IdentidadeDoProjeto;
   referenceTotal?: number;
+  /** Os nomes de entrega (`nomesDosEditaveis`). Sem eles, o nome do gerador. */
+  nomes?: { capa: string; ld: string; separatriz: string };
 }): Promise<{ editaveis: Editavel[]; falhas: string[] }> {
   const { selos, params, identidade } = args;
   const editaveis: Editavel[] = [];
@@ -111,7 +113,7 @@ export async function gerarEditaveisConsolidados(args: {
         ano: params.ano,
         identidade,
       });
-      editaveis.push({ nome: `capa--${r.odtName}`, url: r.odtUrl });
+      editaveis.push({ nome: args.nomes?.capa ?? `capa--${r.odtName}`, url: r.odtUrl });
     } catch (err) {
       falhas.push(`capa (${err instanceof Error ? err.message : "erro"})`);
     }
@@ -127,7 +129,7 @@ export async function gerarEditaveisConsolidados(args: {
       ...(args.referenceTotal ? { referenceTotal: args.referenceTotal } : {}),
       identidade,
     });
-    editaveis.push({ nome: `ld--${r.odtName}`, url: r.odtUrl });
+    editaveis.push({ nome: args.nomes?.ld ?? `ld--${r.odtName}`, url: r.odtUrl });
   } catch (err) {
     falhas.push(`LD (${err instanceof Error ? err.message : "erro"})`);
   }
@@ -138,7 +140,7 @@ export async function gerarEditaveisConsolidados(args: {
         codigo: identidade?.codigo,
         revisao: identidade?.revisao,
       });
-      editaveis.push({ nome: `separatriz--${r.odt.name}`, url: r.odt.url });
+      editaveis.push({ nome: args.nomes?.separatriz ?? `separatriz--${r.odt.name}`, url: r.odt.url });
     } catch (err) {
       falhas.push(`separatriz (${err instanceof Error ? err.message : "erro"})`);
     }

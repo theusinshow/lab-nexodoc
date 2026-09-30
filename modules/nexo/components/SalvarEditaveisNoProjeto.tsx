@@ -16,7 +16,8 @@ import { Button } from "@/components/ui/button";
 import type { SeloForLd } from "@/server/nexo/build-ld-proposal";
 import { useConversation } from "../state/conversation-store";
 import { useLiberacaoDoVolume } from "../state/use-liberacao-do-volume";
-import { baixarEditaveis, editaveisDosResultados } from "../lib/editaveis";
+import { baixarEditaveis } from "../lib/editaveis";
+import { nomesDosEditaveis } from "../lib/nome-do-volume";
 import { gerarEditaveisConsolidados, parametrosDaEntrega } from "../lib/editaveis-consolidados";
 import { assinaturaDosDocumentos } from "../lib/editaveis-no-projeto";
 import { formatarDataHora } from "@/lib/fuso-de-brasilia";
@@ -28,14 +29,20 @@ export function SalvarEditaveisNoProjeto({ selos }: { selos: SeloForLd[] }) {
   const [ocupado, setOcupado] = useState<string | null>(null);
   const [erro, setErro] = useState<string | null>(null);
 
-  /** Os três consolidados na raiz do ZIP, e os por-tomo nas pastas dele. */
+  /**
+   * SÓ os três consolidados, com os nomes do escritório (30/09/2026):
+   * `138_26_editaveis.zip` com `138_26_est_met_capas/ld/separatriz.odt`. Os
+   * por-tomo ficaram de fora — eram a maioria dos arquivos e ninguém os usava.
+   */
   async function baixarZip() {
     setErro(null);
     try {
       const assinatura = assinaturaDosDocumentos(results);
       setOcupado("Gerando os editáveis…");
-      const { editaveis: consolidados, falhas } = await gerarEditaveisConsolidados({
+      const nomes = nomesDosEditaveis(selos, identidade ?? {});
+      const { editaveis: todos, falhas } = await gerarEditaveisConsolidados({
         selos,
+        nomes,
         params: parametrosDaEntrega(results),
         identidade,
       });
@@ -44,8 +51,7 @@ export function SalvarEditaveisNoProjeto({ selos }: { selos: SeloForLd[] }) {
       if (falhas.length > 0) {
         throw new Error(`Não deu para gerar: ${falhas.join("; ")}. O ZIP não saiu.`);
       }
-      const todos = [...consolidados, ...editaveisDosResultados(results)];
-      await baixarEditaveis(todos, "editaveis-do-volume.zip");
+      await baixarEditaveis(todos, nomes.zip);
       registrarEditaveisSalvos({
         pasta: "",
         quando: Date.now(),
