@@ -300,3 +300,11 @@
 .ds .au-paginas .au-blocos { margin-top: 4px; }
 .ds .au-achados .gr-niveis-linha { padding: 6px 2px; }
 .ds .au-achados .au-bloco-cabeca { margin-bottom: 10px; }
+
+/* o texto do relógio ocupa a altura exata do anel: o tempo encosta no topo dele, o "para terminar" na base */
+.ds .au-cronometro { align-items: stretch; }
+.ds .au-cronometro-texto { display: flex; flex-direction: column; justify-content: space-between; height: 64px; padding: 3px 0 2px; }
+.ds .au-cronometro-tempo { display: flex; align-items: baseline; gap: 10px; }
+.ds .au-cronometro-texto b { line-height: 1; }
+.ds .au-cronometro-tempo small { line-height: 1; }
+.ds .au-cronometro-falta { margin-top: 0; line-height: 1; }

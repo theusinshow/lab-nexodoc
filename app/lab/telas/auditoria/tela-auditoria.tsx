@@ -262,8 +262,10 @@ export function TelaAuditoria({ situacao }: { situacao: SituacaoAud }) {
             <div className="au-cronometro">
               <Anel fracao={fracao} estado={estadoDoPainel} />
               <div className="au-cronometro-texto">
-                <b className="ds-num">{mmss(decorrido)}</b>
-                <small>{concluida ? "levou no total" : falhou ? "até parar" : "decorrido"}</small>
+                <span className="au-cronometro-tempo">
+                  <b className="ds-num">{mmss(decorrido)}</b>
+                  <small>{concluida ? "levou no total" : falhou ? "até parar" : "decorrido"}</small>
+                </span>
                 <span className={`au-cronometro-falta${passou ? " au-ambar" : ""}`}>
                   {concluida
                     ? "terminou às 21:13"
