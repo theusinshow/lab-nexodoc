@@ -5,15 +5,12 @@ import { ArrowDown, ArrowUp, ChevronDown, MessageSquarePlus, Paperclip, Square, 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import { Botao, Tecla } from "@/components/ds/basicos";
-import { CURVA } from "@/lib/ds/movimento";
 import { useTempo } from "@/lib/ds/tempo";
 import { MarcaDaPrefeitura } from "@/modules/nexo/components/MarcaDaPrefeitura";
 
 import { Topo } from "../_comum/topo";
-import { Conferencia, DeVoce, FimDaResposta, Diferenca, DoNexo, Erro, Gerando, Lacuna, Passo, PecaDeArquivo, Plano, Respondendo, Saidas, Vazio, type Arquivo } from "./turnos";
+import { Conferencia, DeVoce, FimDaResposta, RITMO, SUAVE, Diferenca, DoNexo, Erro, Gerando, Lacuna, Passo, PecaDeArquivo, Plano, Respondendo, Saidas, Vazio, type Arquivo } from "./turnos";
 import "./conversa.css";
-
-const ease = (c: readonly number[]) => [...c] as [number, number, number, number];
 
 export type SituacaoConversa =
   | "nova"
@@ -51,7 +48,7 @@ const GERADOS = [
  * lugar); enviar vira Parar girando, e acende quando há o que mandar.
  */
 function Campo({ arquivos: iniciais, respondendo, texto: inicial = "", modo }: { arquivos?: Arquivo[]; respondendo?: boolean; texto?: string; modo?: boolean }) {
-  const { dur, k } = useTempo();
+  const { k } = useTempo();
   const [texto, setTexto] = useState(inicial);
   const [arquivos, setArquivos] = useState(iniciais ?? []);
   const pode = !!texto.trim() || arquivos.length > 0;
@@ -59,17 +56,17 @@ function Campo({ arquivos: iniciais, respondendo, texto: inicial = "", modo }: {
     <form className="cx-campo" onSubmit={(e) => e.preventDefault()}>
       <AnimatePresence initial={false}>
         {arquivos.length > 0 && (
-          <motion.div className="cx-campo-arquivos" initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0, paddingBottom: 0 }} transition={{ duration: dur("state") }}>
+          <motion.div className="cx-campo-arquivos" initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0, paddingBottom: 0 }} transition={{ duration: RITMO.troca * k, ease: SUAVE }}>
             <AnimatePresence mode="popLayout">
               {arquivos.map((a, i) => (
                 <motion.span
                   key={a.nome}
                   layout
                   className="cx-campo-peca"
-                  initial={{ opacity: 0, scale: 0.9, y: 6 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.9, transition: { duration: dur("feedback") } }}
-                  transition={{ duration: dur("enter"), delay: i * 0.12 * k, ease: ease(CURVA.out) }}
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, transition: { duration: RITMO.toque * k } }}
+                  transition={{ duration: RITMO.entra * k, delay: i * 0.1 * k, ease: SUAVE }}
                 >
                   <PecaDeArquivo a={a} />
                   <button type="button" aria-label={`Tirar ${a.nome}`} onClick={() => setArquivos((l) => l.filter((x) => x.nome !== a.nome))}>
@@ -83,7 +80,7 @@ function Campo({ arquivos: iniciais, respondendo, texto: inicial = "", modo }: {
       </AnimatePresence>
       <textarea rows={1} value={texto} onChange={(e) => setTexto(e.target.value)} placeholder={respondendo ? "O Nexo está respondendo" : "Peça em texto: “cria a LD e a capa dessas pranchas”, ou solte os PDFs"} aria-label="Mensagem para o Nexo" />
       <div className="cx-campo-pe">
-        <motion.button type="button" className="cx-campo-botao" aria-label="Anexar PDFs" title="Anexar PDFs" whileTap={{ scale: 0.9, rotate: -12 }}>
+        <motion.button type="button" className="cx-campo-botao" aria-label="Anexar PDFs" title="Anexar PDFs" whileTap={{ scale: 0.94 }}>
           <Paperclip size={16} />
         </motion.button>
         {modo && (
@@ -91,17 +88,19 @@ function Campo({ arquivos: iniciais, respondendo, texto: inicial = "", modo }: {
             Análise profunda <ChevronDown size={13} />
           </button>
         )}
-        <AnimatePresence mode="popLayout" initial={false}>
+        <span className="cx-enviar-caixa">
+        <AnimatePresence initial={false}>
           {respondendo ? (
-            <motion.button key="parar" type="button" className="cx-enviar cx-enviar--parar" aria-label="Parar" initial={{ scale: 0.6, opacity: 0, rotate: -90 }} animate={{ scale: 1, opacity: 1, rotate: 0 }} exit={{ scale: 0.6, opacity: 0, rotate: 90 }} whileTap={{ scale: 0.9 }} transition={{ duration: dur("state"), ease: ease(CURVA.out) }}>
+            <motion.button key="parar" type="button" className="cx-enviar cx-enviar--parar" aria-label="Parar" initial={{ scale: 0.85, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.85, opacity: 0 }} whileTap={{ scale: 0.94 }} transition={{ duration: RITMO.troca * k, ease: SUAVE }}>
               <Square size={11} fill="currentColor" />
             </motion.button>
           ) : (
-            <motion.button key="enviar" type="submit" className="cx-enviar" aria-label="Enviar (Enter)" disabled={!pode} initial={{ scale: 0.6, opacity: 0, rotate: 90 }} animate={{ scale: 1, opacity: 1, rotate: 0 }} exit={{ scale: 0.6, opacity: 0, rotate: -90 }} whileTap={pode ? { scale: 0.88, y: -2 } : undefined} transition={{ duration: dur("state"), ease: ease(CURVA.out) }}>
+            <motion.button key="enviar" type="submit" className="cx-enviar" aria-label="Enviar (Enter)" disabled={!pode} initial={{ scale: 0.85, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.85, opacity: 0 }} whileTap={pode ? { scale: 0.94 } : undefined} transition={{ duration: RITMO.troca * k, ease: SUAVE }}>
               <ArrowUp size={16} />
             </motion.button>
           )}
         </AnimatePresence>
+        </span>
       </div>
     </form>
   );
@@ -114,7 +113,7 @@ function Fio({ situacao }: { situacao: SituacaoConversa }): ReactNode {
       return (
         <>
           <DeVoce arquivos={MEMORIAL} texto="audita esse memorial, é o da UBS" />
-          <DoNexo atraso={0.2}>
+          <DoNexo atraso={0.3}>
             <Passo texto="Li o memorial: 42 páginas com texto, revisão A" />
             <p className="cx-texto">
               É o memorial geral da <b>UBS da Rua São Francisco de Assis</b>, obra <span className="cx-mono">117-25</span>, prefeitura de Criciúma. Casou com o projeto que você já tem.
@@ -130,7 +129,7 @@ function Fio({ situacao }: { situacao: SituacaoConversa }): ReactNode {
       return (
         <>
           <DeVoce arquivos={[{ nome: "118_25_md_geral_a.pdf", paginas: 36 }]} texto="audita" />
-          <DoNexo atraso={0.2}>
+          <DoNexo atraso={0.3}>
             <Passo texto="Li o memorial: 36 páginas, revisão A" />
             <p className="cx-texto">
               A capa diz <span className="cx-mono">118-25</span>, Ginásio Poliesportivo do Bairro Pinheirinho, e esse código não está nos seus projetos. Onde eu guardo?
@@ -143,7 +142,7 @@ function Fio({ situacao }: { situacao: SituacaoConversa }): ReactNode {
       return (
         <>
           <DeVoce arquivos={[...MEMORIAL, { nome: "117_25_detalhes_esquadrias.pdf", paginas: 3 }]} texto="audita e confere com a prancha de esquadrias" />
-          <DoNexo atraso={0.2}>
+          <DoNexo atraso={0.3}>
             <Passo texto="Li o memorial: 42 páginas, revisão A" />
             <Passo texto="O carimbo não pôde ser lido em 117_25_detalhes_esquadrias.pdf" aviso />
             <p className="cx-texto">São 3 páginas sem carimbo onde as pranchas o têm. Se for prancha, eu leio o selo de outro jeito; se não, a obra fica lida só do próprio memorial, sem prancha para confrontar.</p>
@@ -155,7 +154,7 @@ function Fio({ situacao }: { situacao: SituacaoConversa }): ReactNode {
       return (
         <>
           <DeVoce arquivos={MEMORIAL} texto="audita esse memorial, é o da UBS" />
-          <DoNexo atraso={0.2}>
+          <DoNexo atraso={0.3}>
             <Passo texto="Auditei o memorial geral, revisão A, em 4 min 12 s" />
             <p className="cx-texto">
               <b>14 achados.</b> 3 impedem a entrega, 6 pedem uma decisão sua e 5 são de texto. O mais sério é a NBR 5626 citada na edição de 1998, no capítulo 6.
@@ -170,7 +169,7 @@ function Fio({ situacao }: { situacao: SituacaoConversa }): ReactNode {
       return (
         <>
           <DeVoce arquivos={PRANCHAS} texto="gera a LD e a capa do volume" />
-          <DoNexo atraso={0.2}>
+          <DoNexo atraso={0.3}>
             <Passo texto="Li 4 arquivos, 33 folhas em 4 disciplinas" />
             <p className="cx-texto">{falta ? "Os carimbos não dizem a prefeitura, e sem ela a capa não sai. Escolha na frase abaixo." : "Vou gerar estes três. Não usa IA: sai em segundos."}</p>
             <Plano semPrefeitura={falta} />
@@ -184,7 +183,7 @@ function Fio({ situacao }: { situacao: SituacaoConversa }): ReactNode {
       return (
         <>
           <DeVoce arquivos={PRANCHAS} texto="gera a LD e a capa do volume" />
-          <DoNexo atraso={0.2}>
+          <DoNexo atraso={0.3}>
             <Passo texto="Li 4 arquivos, 33 folhas em 4 disciplinas" />
             <Gerando itens={GERADOS} />
             <Saidas itens={[{ texto: "Montar o volume", principal: true }, { texto: "Baixar os editáveis (ZIP)" }]} />
@@ -196,14 +195,14 @@ function Fio({ situacao }: { situacao: SituacaoConversa }): ReactNode {
         <>
           <DoNexo>
             <Passo texto="Gerados: LD, capa e 4 separatrizes" />
-            <div className="cx-pecas">
+            <div className="cx-pecas cx-pecas--coluna">
               {GERADOS.map((g) => (
                 <PecaDeArquivo key={g.id} gerado a={g.feito} />
               ))}
             </div>
           </DoNexo>
-          <DeVoce texto="tira a ARQ-12 da LD, a folha foi cancelada" atraso={0.1} />
-          <DoNexo atraso={0.3}>
+          <DeVoce texto="tira a ARQ-12 da LD, a folha foi cancelada" atraso={0.25} />
+          <DoNexo atraso={0.55}>
             <p className="cx-texto">Fica assim: sai uma folha, continuam 32. A capa e as separatrizes não mudam.</p>
             <Diferenca />
             <Saidas itens={[{ texto: "Aplicar", principal: true }, { texto: "Descartar" }]} />
@@ -214,7 +213,7 @@ function Fio({ situacao }: { situacao: SituacaoConversa }): ReactNode {
       return (
         <>
           <DeVoce texto="monta o volume com tudo" />
-          <DoNexo atraso={0.2}>
+          <DoNexo atraso={0.3}>
             <Passo texto="Juntei memorial, LD, capa, 4 separatrizes e 33 pranchas: 412 páginas" />
             <p className="cx-texto">Passa do que um tomo costuma aguentar na encadernação da prefeitura.</p>
             <p className="cx-frase">
@@ -229,11 +228,11 @@ function Fio({ situacao }: { situacao: SituacaoConversa }): ReactNode {
       return (
         <>
           <DeVoce texto="monta o volume com tudo" />
-          <DoNexo atraso={0.2}>
+          <DoNexo atraso={0.3}>
             <Passo texto="Volume montado: 2 tomos, 412 páginas" />
             <div className="cx-pecas cx-pecas--coluna">
-              <PecaDeArquivo gerado nova a={{ nome: "Volume_117-25_TOMO-01.pdf", paginas: 238 }} atraso={0.35} />
-              <PecaDeArquivo gerado nova a={{ nome: "Volume_117-25_TOMO-02.pdf", paginas: 174 }} atraso={0.5} />
+              <PecaDeArquivo gerado nova a={{ nome: "Volume_117-25_TOMO-01.pdf", paginas: 238 }} atraso={0.45} />
+              <PecaDeArquivo gerado nova a={{ nome: "Volume_117-25_TOMO-02.pdf", paginas: 174 }} atraso={0.6} />
             </div>
             <Passo texto="O volume foi montado, mas a conferência não pôde rodar: a ELE-04 não tem selo legível" aviso />
             <Saidas itens={[{ texto: "Conferir de novo", principal: true }, { texto: "Abrir a ELE-04" }, { texto: "Baixar os editáveis (ZIP)" }]} />
@@ -244,7 +243,7 @@ function Fio({ situacao }: { situacao: SituacaoConversa }): ReactNode {
       return (
         <>
           <DeVoce arquivos={PRANCHAS} texto="confere o selo das pranchas com o memorial" />
-          <DoNexo atraso={0.2}>
+          <DoNexo atraso={0.3}>
             <Passo texto="Li os selos de 33 pranchas" />
             <Conferencia />
             <p className="cx-fonte">A obra foi lida do carimbo das pranchas, uma fonte independente do memorial.</p>
@@ -263,7 +262,7 @@ function Fio({ situacao }: { situacao: SituacaoConversa }): ReactNode {
       return (
         <>
           <DeVoce texto="resume os bloqueios em duas linhas pra mandar pro cliente" />
-          <DoNexo atraso={0.2}>
+          <DoNexo atraso={0.3}>
             <Erro />
           </DoNexo>
         </>
@@ -329,7 +328,7 @@ function useLongeDoFim(ref: React.RefObject<HTMLElement | null>) {
  * [Criciúma]"), não num formulário. O que ele gera aparece como peça, ali.
  */
 export function TelaConversa({ situacao }: { situacao: SituacaoConversa }) {
-  const { dur } = useTempo();
+  const { k } = useTempo();
   const ref = useRef<HTMLDivElement>(null);
   const { longe, descer } = useLongeDoFim(ref);
   const nova = situacao === "nova" || situacao === "anexando";
@@ -376,10 +375,10 @@ export function TelaConversa({ situacao }: { situacao: SituacaoConversa }) {
                     type="button"
                     className="cx-descer"
                     onClick={descer}
-                    initial={{ opacity: 0, y: 8, x: "-50%", scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, x: "-50%", scale: 1 }}
-                    exit={{ opacity: 0, y: 8, x: "-50%", scale: 0.95 }}
-                    transition={{ duration: dur("enter"), ease: ease(CURVA.out) }}
+                    initial={{ opacity: 0, y: 6, x: "-50%" }}
+                    animate={{ opacity: 1, y: 0, x: "-50%" }}
+                    exit={{ opacity: 0, y: 6, x: "-50%" }}
+                    transition={{ duration: RITMO.troca * k, ease: SUAVE }}
                   >
                     <ArrowDown size={13} /> Ir para as últimas mensagens
                   </motion.button>

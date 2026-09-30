@@ -5,24 +5,40 @@ import { ArrowUpRight, Check, ChevronDown, Copy, Download, FileText, RotateCcw }
 import { Children, createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 
 import { Orbe, Tecla } from "@/components/ds/basicos";
-import { CURVA } from "@/lib/ds/movimento";
 import { useTempo } from "@/lib/ds/tempo";
-
-const ease = (c: readonly number[]) => [...c] as [number, number, number, number];
 
 /*
  * O MOVIMENTO DA CONVERSA. Cada gesto responde a uma pergunta só:
- * - a resposta do Nexo entra EM ORDEM de leitura (o que fez, o que leu, a
- *   decisão, as saídas), e não de uma vez;
+ * - a resposta do Nexo entra EM ORDEM de leitura, e não de uma vez;
  * - o visto da linha de estado SE DESENHA; o giro vira visto quando acaba;
  * - a lacuna troca de valor DESLIZANDO: o olho vê o que mudou;
- * - a peça gerada NASCE com um brilho que passa uma vez: saiu agora;
+ * - a peça gerada NASCE com um brilho que passa uma vez;
  * - a linha que sai da lista SE RISCA na frente de quem lê.
- * Tudo em transform e opacity; nada se repete sozinho, exceto o que está em curso.
+ *
+ * O RITMO. Uma curva só (sai rápido, pousa devagar) e poucas durações. Nada
+ * que entra ou sai dura menos de 0,35 s: abaixo disso, com deslocamento, o
+ * olho lê piscada em vez de movimento. Trocas são CROSSFADE (os dois
+ * sobrepostos), nunca "sai um, depois entra o outro", que deixa um vazio.
  */
+export const SUAVE = [0.22, 1, 0.36, 1] as [number, number, number, number];
+export const RITMO = { entra: 0.5, troca: 0.38, toque: 0.2, escada: 0.12 };
 
 /** Avisa a tela que a resposta acabou: o Parar do campo volta a ser Enviar. */
 export const FimDaResposta = createContext<() => void>(() => {});
+
+/** Troca um conteúdo por outro no mesmo lugar: os dois sobrepostos enquanto um some e o outro aparece. */
+export function Troca({ chave, children, y = 0, className }: { chave: string; children: ReactNode; y?: number; className?: string }) {
+  const { k } = useTempo();
+  return (
+    <span className={`cx-troca${className ? ` ${className}` : ""}`}>
+      <AnimatePresence initial={false}>
+        <motion.span key={chave} initial={{ opacity: 0, y }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -y }} transition={{ duration: RITMO.troca * k, ease: SUAVE }}>
+          {children}
+        </motion.span>
+      </AnimatePresence>
+    </span>
+  );
+}
 
 export interface Arquivo {
   nome: string;
@@ -32,24 +48,23 @@ export interface Arquivo {
 
 /** O visto que se desenha. */
 export function Visto({ tamanho = 13, atraso = 0 }: { tamanho?: number; atraso?: number }) {
-  const { dur, k } = useTempo();
+  const { k } = useTempo();
   return (
     <svg width={tamanho} height={tamanho} viewBox="0 0 16 16" className="cx-visto" aria-hidden>
-      <motion.path d="M3.5 8.5 L6.8 11.5 L12.5 4.8" initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: dur("state") * 1.6, delay: atraso * k, ease: ease(CURVA.out) }} />
+      <motion.path d="M3.5 8.5 L6.8 11.5 L12.5 4.8" initial={{ pathLength: 0, opacity: 0 }} animate={{ pathLength: 1, opacity: 1 }} transition={{ duration: 0.55 * k, delay: atraso * k, ease: SUAVE }} />
     </svg>
   );
 }
 
 /** O arquivo como peça. Gerado agora (nova), ele nasce com um brilho que passa uma vez. */
 export function PecaDeArquivo({ a, gerado, nova, atraso = 0 }: { a: Arquivo; gerado?: boolean; nova?: boolean; atraso?: number }) {
-  const { dur, k } = useTempo();
+  const { k } = useTempo();
   return (
     <motion.span
-      layout="position"
       className={`cx-peca${gerado ? " cx-peca--gerada" : ""}${a.lendo ? " cx-peca--lendo" : ""}${nova ? " cx-peca--nova" : ""}`}
-      initial={nova ? { opacity: 0, scale: 0.94, y: 4 } : false}
-      animate={{ opacity: 1, scale: 1, y: 0 }}
-      transition={{ duration: dur("enter"), delay: atraso * k, ease: ease(CURVA.out) }}
+      initial={nova ? { opacity: 0, y: 6 } : false}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: RITMO.entra * k, delay: atraso * k, ease: SUAVE }}
     >
       <FileText size={14} />
       <span className="cx-peca-nome">{a.nome}</span>
@@ -69,17 +84,11 @@ export function PecaDeArquivo({ a, gerado, nova, atraso = 0 }: { a: Arquivo; ger
   );
 }
 
-/** O que você manda: um bloco suave à direita. Sobe do campo, de onde saiu. */
+/** O que você manda: um bloco suave à direita. Sobe um pouco, de onde saiu. */
 export function DeVoce({ texto, arquivos, atraso = 0 }: { texto: string; arquivos?: Arquivo[]; atraso?: number }) {
-  const { dur, k } = useTempo();
+  const { k } = useTempo();
   return (
-    <motion.div
-      className="cx-voce"
-      initial={{ opacity: 0, y: 16, scale: 0.98 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ duration: dur("enter") * 1.2, delay: atraso * k, ease: ease(CURVA.out) }}
-      style={{ transformOrigin: "bottom right" }}
-    >
+    <motion.div className="cx-voce" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: RITMO.entra * k, delay: atraso * k, ease: SUAVE }}>
       {arquivos && (
         <div className="cx-voce-arquivos">
           {arquivos.map((a) => (
@@ -94,44 +103,36 @@ export function DeVoce({ texto, arquivos, atraso = 0 }: { texto: string; arquivo
 
 /**
  * O que o Nexo responde: texto limpo, sem caixa. As partes entram em ordem de
- * leitura. Com `copiar`, a resposta ganha Copiar ao passar o mouse.
+ * leitura, em escada. Com `copiar`, a resposta ganha Copiar ao passar o mouse.
  */
 export function DoNexo({ children, atraso = 0, copiar }: { children: ReactNode; atraso?: number; copiar?: boolean }) {
-  const { dur, k } = useTempo();
+  const { k } = useTempo();
   const [copiado, setCopiado] = useState(false);
   const partes = Children.toArray(children);
   return (
     <div className="cx-nexo">
-      <motion.span className="cx-nexo-marca" aria-hidden initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: dur("enter"), delay: atraso * k, ease: ease(CURVA.out) }}>
+      <motion.span className="cx-nexo-marca" aria-hidden initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: RITMO.entra * k, delay: atraso * k, ease: SUAVE }}>
         <Orbe tamanho={16} />
       </motion.span>
       <div className="cx-nexo-corpo">
         {partes.map((p, i) => (
-          <motion.div
-            key={i}
-            className="cx-parte"
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: dur("enter"), delay: (atraso + 0.1 + i * 0.1) * k, ease: ease(CURVA.out) }}
-          >
+          <motion.div key={i} className="cx-parte" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: RITMO.entra * k, delay: (atraso + 0.08 + i * RITMO.escada) * k, ease: SUAVE }}>
             {p}
           </motion.div>
         ))}
         {copiar && (
-          <motion.div className="cx-nexo-acoes" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: (atraso + 0.1 + partes.length * 0.1) * k }}>
+          <motion.div className="cx-parte cx-nexo-acoes" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: RITMO.entra * k, delay: 0.2 * k }}>
             <button
               type="button"
               onClick={() => {
                 setCopiado(true);
-                setTimeout(() => setCopiado(false), 1600);
+                setTimeout(() => setCopiado(false), 1800);
               }}
             >
-              <AnimatePresence mode="wait" initial={false}>
-                <motion.span key={copiado ? "ok" : "c"} initial={{ opacity: 0, y: 3 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -3 }} transition={{ duration: dur("feedback") }}>
-                  {copiado ? <Check size={13} /> : <Copy size={13} />}
-                  {copiado ? "Copiado" : "Copiar resposta"}
-                </motion.span>
-              </AnimatePresence>
+              <Troca chave={copiado ? "ok" : "c"}>
+                {copiado ? <Check size={13} /> : <Copy size={13} />}
+                {copiado ? "Copiado" : "Copiar resposta"}
+              </Troca>
             </button>
           </motion.div>
         )}
@@ -142,25 +143,14 @@ export function DoNexo({ children, atraso = 0, copiar }: { children: ReactNode; 
 
 /** O que o Nexo fez ou está fazendo, numa linha. Em curso: gira e brilha. Feito: o visto se desenha. */
 export function Passo({ texto, emCurso, aviso }: { texto: string; emCurso?: boolean; aviso?: boolean }) {
-  const { dur } = useTempo();
   return (
     <span className={`cx-passo${emCurso ? " cx-passo--curso" : ""}${aviso ? " cx-passo--aviso" : ""}`}>
-      <AnimatePresence mode="wait" initial={false}>
-        {emCurso ? (
-          <motion.i key="roda" className="cx-passo-roda" aria-hidden exit={{ opacity: 0, scale: 0.4, transition: { duration: dur("feedback") } }} />
-        ) : aviso ? (
-          <i key="aviso" className="cx-passo-aviso" aria-hidden />
-        ) : (
-          <motion.span key="visto" initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ display: "inline-flex" }}>
-            <Visto />
-          </motion.span>
-        )}
-      </AnimatePresence>
-      <AnimatePresence mode="wait" initial={false}>
-        <motion.span key={texto} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: dur("feedback") }}>
-          {texto}
-        </motion.span>
-      </AnimatePresence>
+      <Troca chave={emCurso ? "roda" : aviso ? "aviso" : "visto"} className="cx-passo-icone">
+        {emCurso ? <i className="cx-passo-roda" aria-hidden /> : aviso ? <i className="cx-passo-aviso" aria-hidden /> : <Visto atraso={0.1} />}
+      </Troca>
+      <Troca chave={texto} className="cx-passo-texto">
+        {texto}
+      </Troca>
     </span>
   );
 }
@@ -170,7 +160,7 @@ export function Lacuna({ valor, opcoes, vazio, mono }: { valor: string | null; o
   const [v, setV] = useState(valor);
   const [aberto, setAberto] = useState(false);
   const [trocou, setTrocou] = useState(0);
-  const { dur, k } = useTempo();
+  const { k } = useTempo();
   const ref = useRef<HTMLSpanElement>(null);
   useEffect(() => {
     if (!aberto) return;
@@ -196,39 +186,32 @@ export function Lacuna({ valor, opcoes, vazio, mono }: { valor: string | null; o
         aria-haspopup={opcoes ? "listbox" : undefined}
         aria-expanded={opcoes ? aberto : undefined}
       >
-        <motion.span layout="size" className="cx-lacuna-valor" transition={{ duration: dur("state"), ease: ease(CURVA.out) }}>
-          <AnimatePresence mode="popLayout" initial={false}>
-            <motion.span key={v ?? "vazio"} initial={{ opacity: 0, y: 9 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -9 }} transition={{ duration: dur("state"), ease: ease(CURVA.out) }}>
-              {v ?? vazio}
-            </motion.span>
-          </AnimatePresence>
-        </motion.span>
+        <Troca chave={v ?? "vazio"} y={6} className="cx-lacuna-valor">
+          {v ?? vazio}
+        </Troca>
         {opcoes && (
-          <motion.span animate={{ rotate: aberto ? 180 : 0 }} transition={{ duration: dur("state") }} style={{ display: "inline-flex" }}>
+          <motion.span animate={{ rotate: aberto ? 180 : 0 }} transition={{ duration: RITMO.troca * k, ease: SUAVE }} style={{ display: "inline-flex" }}>
             <ChevronDown size={12} />
           </motion.span>
         )}
-        {trocou > 0 && <motion.i key={trocou} className="cx-lacuna-acende" aria-hidden initial={{ scaleX: 0, opacity: 1 }} animate={{ scaleX: 1, opacity: 0 }} transition={{ duration: 0.5 * k, ease: ease(CURVA.out) }} />}
+        {trocou > 0 && <motion.i key={trocou} className="cx-lacuna-acende" aria-hidden initial={{ scaleX: 0, opacity: 1 }} animate={{ scaleX: 1, opacity: 0 }} transition={{ duration: 0.9 * k, ease: SUAVE }} />}
       </button>
       <AnimatePresence>
         {aberto && opcoes && (
           <motion.span
             className="cx-lacuna-menu"
             role="listbox"
-            initial={{ opacity: 0, y: -4, scale: 0.97 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.98, transition: { duration: dur("feedback") } }}
-            transition={{ duration: dur("enter"), ease: ease(CURVA.out) }}
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -2, transition: { duration: RITMO.toque * k } }}
+            transition={{ duration: RITMO.troca * k, ease: SUAVE }}
           >
-            {opcoes.map((o, i) => (
-              <motion.button
+            {opcoes.map((o) => (
+              <button
                 key={o}
                 type="button"
                 role="option"
                 aria-selected={o === v}
-                initial={{ opacity: 0, x: -4 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: dur("enter"), delay: i * 0.025 * k }}
                 onClick={() => {
                   if (o !== v) setTrocou((n) => n + 1);
                   setV(o);
@@ -237,7 +220,7 @@ export function Lacuna({ valor, opcoes, vazio, mono }: { valor: string | null; o
               >
                 <span className="cx-lacuna-marca">{o === v && <Check size={12} />}</span>
                 {o}
-              </motion.button>
+              </button>
             ))}
           </motion.span>
         )}
@@ -246,9 +229,9 @@ export function Lacuna({ valor, opcoes, vazio, mono }: { valor: string | null; o
   );
 }
 
-/** As saídas: entram em cascata, afundam ao clicar, cada uma com a sua tecla. */
+/** As saídas: entram em escada curta, afundam de leve ao clicar, cada uma com a sua tecla. */
 export function Saidas({ itens }: { itens: { texto: string; principal?: boolean }[] }) {
-  const { dur, k } = useTempo();
+  const { k } = useTempo();
   return (
     <div className="cx-saidas">
       {itens.map((it, i) => (
@@ -256,10 +239,10 @@ export function Saidas({ itens }: { itens: { texto: string; principal?: boolean 
           key={it.texto}
           type="button"
           className={`cx-saida${it.principal ? " cx-saida--principal" : ""}`}
-          initial={{ opacity: 0, x: -8 }}
-          animate={{ opacity: 1, x: 0 }}
-          whileTap={{ scale: 0.975 }}
-          transition={{ duration: dur("enter"), delay: (0.06 + i * 0.06) * k, ease: ease(CURVA.out) }}
+          initial={{ opacity: 0, y: 4 }}
+          animate={{ opacity: 1, y: 0 }}
+          whileTap={{ scale: 0.98, transition: { duration: RITMO.toque * k } }}
+          transition={{ duration: RITMO.entra * k, delay: i * 0.06 * k, ease: SUAVE }}
         >
           <span>{it.texto}</span>
           <Tecla>{it.principal ? "↵" : String(i + 1)}</Tecla>
@@ -287,40 +270,36 @@ export function Plano({ semPrefeitura }: { semPrefeitura?: boolean }) {
           <span>ARQ, EST, HID e ELE</span>
         </li>
       </ol>
-      <p className="cx-frase">
-        Capa da prefeitura de <Lacuna valor={semPrefeitura ? null : "Criciúma"} vazio="escolher" opcoes={["Criciúma", "Siderópolis", "Içara", "Forquilhinha"]} />, título{" "}
-        <Lacuna valor="UBS da Rua São Francisco de Assis" />, código <Lacuna valor="117-25" mono />, em <Lacuna valor="1 tomo" opcoes={["1 tomo", "2 tomos", "3 tomos"]} />.
-      </p>
-      <p className="cx-frase cx-frase--obra">
-        Endereço <Lacuna valor="Rua São Francisco de Assis, 410" />, centro de custo <Lacuna valor="117" mono />, data <Lacuna valor="setembro de 2026" opcoes={["agosto de 2026", "setembro de 2026", "outubro de 2026"]} />.
-      </p>
-      <p className="cx-fonte">A obra foi lida do carimbo das pranchas, uma fonte independente do memorial.</p>
+      <div className="cx-frases">
+        <p className="cx-frase">
+          Capa da prefeitura de <Lacuna valor={semPrefeitura ? null : "Criciúma"} vazio="escolher" opcoes={["Criciúma", "Siderópolis", "Içara", "Forquilhinha"]} />, título{" "}
+          <Lacuna valor="UBS da Rua São Francisco de Assis" />, código <Lacuna valor="117-25" mono />, em <Lacuna valor="1 tomo" opcoes={["1 tomo", "2 tomos", "3 tomos"]} />.
+        </p>
+        <p className="cx-frase">
+          Endereço <Lacuna valor="Rua São Francisco de Assis, 410" />, centro de custo <Lacuna valor="117" mono />, data <Lacuna valor="setembro de 2026" opcoes={["agosto de 2026", "setembro de 2026", "outubro de 2026"]} />.
+        </p>
+        <p className="cx-fonte">A obra foi lida do carimbo das pranchas, uma fonte independente do memorial.</p>
+      </div>
     </div>
   );
 }
 
-/** Gerando, peça por peça: a que está sendo feita gira; quando acaba, vira arquivo. */
+/** Gerando, peça por peça: cada linha troca em crossfade, da fila para o giro, do giro para o arquivo. */
 export function Gerando({ itens }: { itens: { id: string; fazendo: string; feito: Arquivo }[] }) {
   const { k } = useTempo();
   const [prontos, setProntos] = useState(1);
   useEffect(() => {
     if (prontos >= itens.length) return;
-    const t = setTimeout(() => setProntos((n) => n + 1), 1600 * k);
+    const t = setTimeout(() => setProntos((n) => n + 1), 1800 * k);
     return () => clearTimeout(t);
   }, [prontos, itens.length, k]);
   return (
     <div className="cx-pecas cx-pecas--coluna">
-      {itens.map((it, i) =>
-        i < prontos ? (
-          <PecaDeArquivo key={it.id} gerado nova a={it.feito} />
-        ) : i === prontos ? (
-          <Passo key={it.id} texto={`${it.fazendo}…`} emCurso />
-        ) : (
-          <span key={it.id} className="cx-fila">
-            {it.fazendo}, na fila
-          </span>
-        ),
-      )}
+      {itens.map((it, i) => (
+        <Troca key={it.id} chave={i < prontos ? "feito" : i === prontos ? "agora" : "fila"} className="cx-gerando-linha">
+          {i < prontos ? <PecaDeArquivo gerado nova a={it.feito} /> : i === prontos ? <Passo texto={`${it.fazendo}…`} emCurso /> : <span className="cx-fila">{it.fazendo}, na fila</span>}
+        </Troca>
+      ))}
     </div>
   );
 }
@@ -340,7 +319,7 @@ export function Conferencia() {
           <span>{l.texto}</span>
           {l.ok ? (
             <span className="cx-conf-ok">
-              <Visto atraso={0.45 + i * 0.12} /> consistente
+              <Visto atraso={0.6 + i * 0.18} /> consistente
             </span>
           ) : (
             <span className="cx-conf-revisar">revisar</span>
@@ -379,7 +358,7 @@ export function Escrevendo({ texto, onFim }: { texto: string; onFim?: () => void
   const { k } = useTempo();
   const reduzido = useReducedMotion();
   const palavras = texto.split(" ");
-  const [n, setN] = useState(reduzido ? palavras.length : 3);
+  const [n, setN] = useState(reduzido ? palavras.length : 1);
   const fim = useRef(onFim);
   fim.current = onFim;
   useEffect(() => {
@@ -387,7 +366,7 @@ export function Escrevendo({ texto, onFim }: { texto: string; onFim?: () => void
       fim.current?.();
       return;
     }
-    const t = setTimeout(() => setN((x) => x + 1), 65 * k);
+    const t = setTimeout(() => setN((x) => x + 1), 55 * k);
     return () => clearTimeout(t);
   }, [n, palavras.length, k]);
   return (
@@ -402,7 +381,7 @@ export function Escrevendo({ texto, onFim }: { texto: string; onFim?: () => void
   );
 }
 
-/** Pensando: antes da primeira palavra, três pontos que respiram. Some quando a resposta começa. */
+/** Pensando: antes da primeira palavra, três pontos que respiram. */
 export function Pensando() {
   return (
     <span className="cx-pensando" role="status" aria-label="O Nexo está pensando">
@@ -414,8 +393,9 @@ export function Pensando() {
 }
 
 /**
- * Respondendo em tempo de verdade: pensa, consulta (o giro), escreve, e no
- * fim o giro vira visto e aparece Copiar resposta.
+ * Respondendo em tempo de verdade: pensa (os pontos viram a linha de estado
+ * em crossfade), consulta (o giro), escreve, e no fim o giro vira visto e
+ * aparece Copiar resposta.
  */
 export function Respondendo({ texto }: { texto: string }) {
   const { k } = useTempo();
@@ -423,22 +403,23 @@ export function Respondendo({ texto }: { texto: string }) {
   const avisar = useContext(FimDaResposta);
   useEffect(() => {
     if (fase !== "pensando") return;
-    const t = setTimeout(() => setFase("escrevendo"), 1100 * k);
+    const t = setTimeout(() => setFase("escrevendo"), 1400 * k);
     return () => clearTimeout(t);
   }, [fase, k]);
-  if (fase === "pensando")
-    return (
-      <DoNexo atraso={0.1}>
-        <Pensando />
-      </DoNexo>
-    );
   return (
-    <DoNexo copiar={fase === "fim"}>
-      <Passo texto={fase === "fim" ? "Consultei o parecer da revisão A" : "Consultando o parecer da revisão A"} emCurso={fase !== "fim"} />
-      <Escrevendo texto={texto} onFim={() => {
-          setFase("fim");
-          avisar();
-        }} />
+    <DoNexo atraso={0.3} copiar={fase === "fim"}>
+      <Troca chave={fase === "pensando" ? "pensando" : "passo"}>
+        {fase === "pensando" ? <Pensando /> : <Passo texto={fase === "fim" ? "Consultei o parecer da revisão A" : "Consultando o parecer da revisão A"} emCurso={fase !== "fim"} />}
+      </Troca>
+      {fase !== "pensando" && (
+        <Escrevendo
+          texto={texto}
+          onFim={() => {
+            setFase("fim");
+            avisar();
+          }}
+        />
+      )}
     </DoNexo>
   );
 }
@@ -447,7 +428,7 @@ export function Erro() {
   return (
     <p className="cx-erro">
       A resposta não chegou: o modelo não respondeu a tempo. Nada foi gerado nem gasto.
-      <motion.button type="button" className="cx-erro-botao" whileTap={{ scale: 0.96 }}>
+      <motion.button type="button" className="cx-erro-botao" whileTap={{ scale: 0.97 }}>
         <RotateCcw size={13} /> Tentar de novo
       </motion.button>
     </p>
@@ -456,8 +437,8 @@ export function Erro() {
 
 /** A primeira pergunta de uma conversa nova: entra em três tempos, pergunta, campo, atalhos. */
 export function Vazio({ campo }: { campo: ReactNode }) {
-  const { dur, k } = useTempo();
-  const entra = (i: number) => ({ initial: { opacity: 0, y: 10 }, animate: { opacity: 1, y: 0 }, transition: { duration: dur("enter") * 1.4, delay: i * 0.09 * k, ease: ease(CURVA.out) } });
+  const { k } = useTempo();
+  const entra = (i: number) => ({ initial: { opacity: 0, y: 8 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.6 * k, delay: i * 0.1 * k, ease: SUAVE } });
   return (
     <div className="cx-vazio">
       <motion.h2 {...entra(0)}>
@@ -468,7 +449,7 @@ export function Vazio({ campo }: { campo: ReactNode }) {
       </motion.div>
       <motion.div className="cx-atalhos" {...entra(2)}>
         {["Auditar um memorial", "Gerar LD e capa", "Montar o volume", "Conferir o selo", "Perguntar sobre a auditoria"].map((t) => (
-          <motion.button key={t} type="button" whileTap={{ scale: 0.96 }}>
+          <motion.button key={t} type="button" whileTap={{ scale: 0.97 }}>
             {t}
           </motion.button>
         ))}
