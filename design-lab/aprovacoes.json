@@ -44,6 +44,21 @@
     "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, isso ai mesmo\" (rodada 1: trilho + Cockpit).",
     "em": "2026-10-01T05:03:41.145Z"
   },
+  "tela.admin.dados": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus em 01/10: \"aprovado, pode seguir para as pe�as de toda tela\" (Pessoas com adicionar no topo, fila sem escrit�rio e ficha de 3 chaves; Dados).",
+    "em": "2026-10-01T14:01:34.668Z"
+  },
+  "tela.admin.dados-excluir": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus em 01/10: \"aprovado, pode seguir para as pe�as de toda tela\" (Pessoas com adicionar no topo, fila sem escrit�rio e ficha de 3 chaves; Dados).",
+    "em": "2026-10-01T14:01:34.746Z"
+  },
+  "tela.admin.dados-expurgo": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus em 01/10: \"aprovado, pode seguir para as pe�as de toda tela\" (Pessoas com adicionar no topo, fila sem escrit�rio e ficha de 3 chaves; Dados).",
+    "em": "2026-10-01T14:01:34.706Z"
+  },
   "tela.admin.dinheiro": {
     "status": "aprovado",
     "nota": "Aprovado pelo Matheus em 02/10: \"aprovado, vamos para o proximo\" (com os graficos de components/ds/medidas).",
@@ -63,6 +78,41 @@
     "status": "aprovado",
     "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, isso ai mesmo\" (rodada 1: trilho + Cockpit).",
     "em": "2026-10-01T05:03:41.230Z"
+  },
+  "tela.admin.motor": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus em 02/10: \"aprovado\" (Motor, com os 20 fluxos numa tabela so).",
+    "em": "2026-10-01T13:34:10.347Z"
+  },
+  "tela.admin.motor-amostra": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus em 02/10: \"aprovado\" (Motor, com os 20 fluxos numa tabela so).",
+    "em": "2026-10-01T13:34:10.395Z"
+  },
+  "tela.admin.motor-teste-falhou": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus em 02/10: \"aprovado\" (Motor, com os 20 fluxos numa tabela so).",
+    "em": "2026-10-01T13:34:10.442Z"
+  },
+  "tela.admin.pessoas": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus em 01/10: \"aprovado, pode seguir para as pe�as de toda tela\" (Pessoas com adicionar no topo, fila sem escrit�rio e ficha de 3 chaves; Dados).",
+    "em": "2026-10-01T14:01:34.442Z"
+  },
+  "tela.admin.pessoas-convite": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus em 01/10: \"aprovado, pode seguir para as pe�as de toda tela\" (Pessoas com adicionar no topo, fila sem escrit�rio e ficha de 3 chaves; Dados).",
+    "em": "2026-10-01T14:01:34.628Z"
+  },
+  "tela.admin.pessoas-ficha": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus em 01/10: \"aprovado, pode seguir para as pe�as de toda tela\" (Pessoas com adicionar no topo, fila sem escrit�rio e ficha de 3 chaves; Dados).",
+    "em": "2026-10-01T14:01:34.546Z"
+  },
+  "tela.admin.pessoas-lote": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus em 01/10: \"aprovado, pode seguir para as pe�as de toda tela\" (Pessoas com adicionar no topo, fila sem escrit�rio e ficha de 3 chaves; Dados).",
+    "em": "2026-10-01T14:01:34.586Z"
   },
   "tela.admin.sem-token": {
     "status": "aprovado",
