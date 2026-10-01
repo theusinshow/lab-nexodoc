@@ -34,6 +34,36 @@
     "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, proxima tela\".",
     "em": "2026-10-01T01:10:30.684023Z"
   },
+  "tela.ajuda.busca": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"certo, aprovado\".",
+    "em": "2026-10-01T04:57:37.145Z"
+  },
+  "tela.ajuda.busca-vazia": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"certo, aprovado\".",
+    "em": "2026-10-01T04:57:37.193Z"
+  },
+  "tela.ajuda.inicio": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"certo, aprovado\".",
+    "em": "2026-10-01T04:57:36.956Z"
+  },
+  "tela.ajuda.onde-fica": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"certo, aprovado\".",
+    "em": "2026-10-01T04:57:37.051Z"
+  },
+  "tela.ajuda.palavra": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"certo, aprovado\".",
+    "em": "2026-10-01T04:57:37.097Z"
+  },
+  "tela.ajuda.tarefa": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"certo, aprovado\".",
+    "em": "2026-10-01T04:57:37.007Z"
+  },
   "tela.auditoria.cancelando": {
     "status": "aprovado",
     "nota": "Aprovado pelo Matheus no chat em 30/09: \"Fechado, vamos para o proximo\" (versão enxuta, relógio em anel).",

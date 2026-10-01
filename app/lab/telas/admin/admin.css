@@ -1,0 +1,103 @@
+/*
+ * ADMINISTRAÇÃO. O trilho à esquerda (veredito, cinco destinos, token no pé)
+ * e o conteúdo em blocos de painel, na mesma pele do Mapa e de Projetos.
+ */
+.ds .adm-corpo { display: grid; grid-template-columns: 236px minmax(0, 1fr); gap: 24px; margin: 0 32px 32px; align-items: start; }
+.ds .adm-atualizado { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--ds-text-tertiary); }
+
+/* ---------- o trilho ---------- */
+.ds .adm-trilho { position: sticky; top: 16px; display: flex; flex-direction: column; gap: 14px; min-height: 560px; padding: 16px 12px; border-radius: 16px; background: var(--ds-surface-card); box-shadow: var(--ds-edge); }
+.ds .adm-veredito { display: flex; align-items: flex-start; gap: 8px; margin: 0 4px; font-family: var(--ds-font-mono); font-size: 11.5px; line-height: 1.5; color: var(--ds-text-tertiary); }
+.ds .adm-veredito i { width: 7px; height: 7px; margin-top: 5px; flex: none; border-radius: 50%; background: var(--ds-text-tertiary); }
+.ds .adm-veredito--operacional i { background: var(--ds-state-ok); box-shadow: 0 0 0 3px var(--ds-state-ok-wash); }
+.ds .adm-veredito--degradado i { background: var(--ds-state-attention); box-shadow: 0 0 0 3px var(--ds-state-attention-wash); }
+.ds .adm-veredito--parado i { background: var(--ds-state-error); box-shadow: 0 0 0 3px var(--ds-state-error-wash); }
+.ds .adm-veredito span { color: var(--ds-text-tertiary); }
+.ds .adm-veredito b { display: block; font-weight: 500; color: var(--ds-text-primary); }
+.ds .adm-veredito--operacional b { color: var(--ds-state-ok); }
+.ds .adm-veredito--degradado b { color: var(--ds-state-attention); }
+.ds .adm-veredito--parado b { color: var(--ds-state-error); }
+.ds .adm-motivo { margin: -6px 4px 0 19px; font-size: 11.5px; line-height: 1.45; color: var(--ds-state-attention); }
+
+.ds .adm-destinos { display: grid; gap: 2px; padding-top: 12px; border-top: 1px solid var(--ds-line-subtle); }
+.ds .adm-destino { position: relative; display: grid; grid-template-columns: 16px 1fr auto; align-items: center; gap: 10px; width: 100%; padding: 8px 10px; border: 0; border-radius: 10px; background: none; font: inherit; text-align: left; color: var(--ds-text-secondary); cursor: pointer; transition: color 0.2s, background 0.2s; }
+.ds .adm-destino > *:not(.adm-destino-fundo) { position: relative; z-index: 1; }
+.ds .adm-destino:hover:not(:disabled) { color: var(--ds-text-primary); background: rgb(255 255 255 / 0.03); }
+.ds .adm-destino[aria-current="page"] { color: var(--ds-text-primary); }
+.ds .adm-destino:disabled { cursor: default; opacity: 0.45; }
+.ds .adm-destino-fundo { position: absolute !important; inset: 0; z-index: 0 !important; border-radius: 10px; background: rgb(255 255 255 / 0.06); box-shadow: inset 0 0 0 1px var(--ds-line-default); }
+.ds .adm-destino-texto b { display: block; font-size: 13px; font-weight: 500; }
+.ds .adm-destino-texto small { display: block; margin-top: 1px; font-size: 11.5px; color: var(--ds-text-tertiary); }
+.ds .adm-destino .ds-kbd { opacity: 0; transition: opacity 0.2s; }
+.ds .adm-destino:hover .ds-kbd, .ds .adm-destino[aria-current="page"] .ds-kbd { opacity: 1; }
+
+.ds .adm-token { margin-top: auto; padding: 12px 4px 0; border-top: 1px solid var(--ds-line-subtle); }
+.ds .adm-token-rotulo { display: flex; align-items: center; gap: 6px; margin: 0 0 6px; font-size: 11.5px; color: var(--ds-text-tertiary); }
+.ds .adm-token-acoes { display: flex; gap: 6px; margin: 0; font-size: 12px; color: var(--ds-text-tertiary); }
+.ds .adm-token-acoes button { padding: 0; border: 0; background: none; font: inherit; color: var(--ds-text-secondary); cursor: pointer; text-underline-offset: 3px; }
+.ds .adm-token-acoes button:hover { color: var(--ds-text-primary); text-decoration: underline; }
+.ds .adm-token-form { display: grid; gap: 8px; }
+.ds .adm-token-form label { font-size: 12px; color: var(--ds-text-secondary); }
+.ds .adm-token-form input { width: 100%; height: 32px; padding: 0 10px; border: 0; border-radius: 8px; background: rgb(255 255 255 / 0.035); box-shadow: inset 0 0 0 1px var(--ds-line-default); font: inherit; font-family: var(--ds-font-mono); font-size: 12px; color: var(--ds-text-primary); }
+.ds .adm-token-form input::placeholder { color: var(--ds-text-tertiary); }
+.ds .adm-token-form input:focus-visible { outline: none; box-shadow: inset 0 0 0 1px var(--ds-text-secondary); }
+.ds .adm-token-form input[aria-invalid="true"] { box-shadow: inset 0 0 0 1px var(--ds-sev-block-line); }
+.ds .adm-token-form .ds-btn { justify-self: start; }
+.ds .adm-token-erro { margin: 0; font-size: 12px; color: var(--ds-state-error); }
+.ds .adm-token-nota { margin: 0; font-size: 11.5px; color: var(--ds-text-tertiary); }
+
+/* ---------- o conteúdo ---------- */
+.ds .adm-conteudo { display: grid; gap: 16px; min-width: 0; }
+.ds .adm-aviso { display: grid; grid-template-columns: 16px 1fr auto; align-items: start; gap: 10px; padding: 14px 16px; border-radius: 12px; background: var(--ds-surface-card); box-shadow: var(--ds-edge); font-size: 13px; line-height: 1.5; color: var(--ds-text-primary); }
+.ds .adm-aviso p { margin: 0; }
+.ds .adm-aviso > svg { margin-top: 2px; }
+.ds .adm-aviso--info > svg { color: var(--ds-state-info); }
+.ds .adm-aviso--erro > svg { color: var(--ds-state-error); }
+.ds .adm-aviso-sub { margin-top: 4px !important; font-size: 12px; color: var(--ds-text-tertiary); }
+
+.ds .adm-atencao { padding: 12px 16px; border-radius: 12px; background: var(--ds-surface-card); box-shadow: var(--ds-edge); }
+.ds .adm-atencao-ok { display: flex; align-items: center; gap: 9px; margin: 0; font-family: var(--ds-font-mono); font-size: 12px; color: var(--ds-text-secondary); }
+.ds .adm-atencao-ok i { width: 7px; height: 7px; border-radius: 50%; background: var(--ds-state-ok); }
+.ds .adm-atencao ul { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.ds .adm-atencao-item { display: flex; align-items: center; gap: 9px; font-family: var(--ds-font-mono); font-size: 12px; color: var(--ds-text-primary); }
+.ds .adm-atencao-item--aviso svg { color: var(--ds-state-attention); }
+.ds .adm-atencao-item--critico svg { color: var(--ds-state-error); }
+
+/* cinco números numa régua só: um painel, divisórias, nada de cartões soltos */
+.ds .adm-numeros { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); border-radius: 16px; background: var(--ds-surface-card); box-shadow: var(--ds-edge); overflow: hidden; }
+.ds .adm-num { position: relative; display: grid; gap: 4px; align-content: start; padding: 16px 18px 18px; border: 0; background: none; font: inherit; text-align: left; color: var(--ds-text-primary); cursor: pointer; transition: background 0.2s; }
+.ds .adm-num + .adm-num { box-shadow: inset 1px 0 0 var(--ds-line-subtle); }
+.ds .adm-num:hover { background: rgb(255 255 255 / 0.025); }
+.ds .adm-num-rotulo { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--ds-text-tertiary); }
+.ds .adm-num-rotulo i { width: 6px; height: 6px; border-radius: 50%; background: var(--ds-state-error); }
+.ds .adm-num b { font-size: 30px; font-weight: 400; letter-spacing: -0.03em; line-height: 1.15; }
+.ds .adm-num--alerta b { color: var(--ds-state-error); }
+.ds .adm-num-detalhe { font-size: 12px; color: var(--ds-text-tertiary); }
+.ds .adm-num-seta { position: absolute; top: 16px; right: 16px; color: var(--ds-text-tertiary); opacity: 0; transform: translateX(-3px); transition: opacity 0.2s, transform 0.2s cubic-bezier(0.22, 1, 0.36, 1); }
+.ds .adm-num:hover .adm-num-seta { opacity: 1; transform: none; }
+
+.ds .adm-duas { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 16px; }
+.ds .adm-bloco { border-radius: 16px; background: var(--ds-surface-card); box-shadow: var(--ds-edge); overflow: hidden; }
+.ds .adm-bloco > header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 14px 16px 10px; }
+.ds .adm-bloco h2 { margin: 0; font-size: 13px; font-weight: 500; }
+.ds .adm-tabela { display: grid; padding: 0 8px 8px; }
+.ds .adm-linha { display: grid; align-items: center; gap: 12px; min-height: 48px; padding: 6px 8px; border-top: 1px solid var(--ds-line-subtle); font-size: 12.5px; }
+.ds .adm-tabela--aud .adm-linha { grid-template-columns: minmax(0, 1fr) 64px 72px 74px 86px; }
+.ds .adm-tabela--ld .adm-linha { grid-template-columns: minmax(0, 1fr) auto 74px 76px; }
+.ds .adm-tabela--ld .adm-linha > span:nth-child(2) { white-space: nowrap; }
+.ds .adm-tabela--acoes .adm-linha { grid-template-columns: minmax(0, 1fr) 220px 80px; min-height: 40px; }
+.ds .adm-tit { display: grid; gap: 2px; min-width: 0; }
+.ds .adm-tit b { font-weight: 450; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.ds .adm-tit small { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 11.5px; color: var(--ds-text-tertiary); }
+.ds .adm-tit small .mp-mono { margin-right: 4px; color: var(--ds-text-secondary); }
+.ds .adm-fraco { color: var(--ds-text-tertiary); }
+.ds .adm-nada { opacity: 0.6; }
+.ds .adm-status { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ds-text-secondary); }
+.ds .adm-status i { width: 6px; height: 6px; border-radius: 50%; background: var(--ds-text-tertiary); }
+.ds .adm-status--concluída i, .ds .adm-status--gerada i { background: var(--ds-state-ok); }
+.ds .adm-status--falhou { color: var(--ds-state-error); }
+.ds .adm-status--falhou i { background: var(--ds-state-error); }
+.ds .adm-status--rascunho i { background: none; box-shadow: inset 0 0 0 1px var(--ds-text-tertiary); }
+.ds .adm-gira { animation: adm-gira 0.9s linear infinite; color: var(--ds-nexo); }
+@keyframes adm-gira { to { transform: rotate(360deg); } }
+.ds .adm-vazio { margin: 0; padding: 28px 16px 32px; font-size: 12.5px; color: var(--ds-text-tertiary); }
