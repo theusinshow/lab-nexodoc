@@ -143,12 +143,12 @@ export function DoNexo({ children, atraso = 0, copiar }: { children: ReactNode; 
   );
 }
 
-/** O que o Nexo fez ou está fazendo, numa linha. Em curso: gira e brilha. Feito: o visto se desenha. */
+/** O que o Nexo fez ou está fazendo, numa linha. Em curso: o orbe trabalha ao lado. Feito: o visto se desenha. */
 export function Passo({ texto, emCurso, aviso }: { texto: string; emCurso?: boolean; aviso?: boolean }) {
   return (
     <span className={`cx-passo${emCurso ? " cx-passo--curso" : ""}${aviso ? " cx-passo--aviso" : ""}`}>
       <Troca chave={emCurso ? "roda" : aviso ? "aviso" : "visto"} className="cx-passo-icone">
-        {emCurso ? <i className="cx-passo-roda" aria-hidden /> : aviso ? <i className="cx-passo-aviso" aria-hidden /> : <Visto atraso={0.1} />}
+        {emCurso ? <Orbe tamanho={11} estado="trabalhando" /> : aviso ? <i className="cx-passo-aviso" aria-hidden /> : <Visto atraso={0.1} />}
       </Troca>
       <Troca chave={texto} className="cx-passo-texto">
         {texto}

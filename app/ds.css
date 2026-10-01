@@ -440,11 +440,47 @@
 .ds .ds-menu-texto small { font-size: 11.5px; color: var(--ds-text-tertiary); }
 
 /* ---------- esqueleto ---------- */
+/* ---------- esqueleto: a forma do que vem, enquanto o servidor responde ----------
+   - só aparece depois de 120 ms: carga rápida não pisca bloco cinza na tela;
+   - a luz que passa é UMA para a tela inteira (fundo preso à janela), e não
+     uma por bloco correndo fora de compasso: os blocos acendem em fila, como
+     uma linha só varrendo a página, e descansam entre uma passada e outra;
+   - movimento reduzido: o bloco fica parado. */
 .ds .ds-skel {
   border-radius: 6px;
-  background: linear-gradient(100deg, rgb(255 255 255 / 0.035) 30%, rgb(255 255 255 / 0.08) 50%, rgb(255 255 255 / 0.035) 70%);
-  background-size: 220% 100%;
-  animation: ds-varrer 1.6s linear infinite;
+  background-color: rgb(255 255 255 / 0.045);
+  background-image: linear-gradient(100deg, transparent 0 44%, rgb(255 255 255 / 0.055) 50%, transparent 56% 100%);
+  background-size: 300vw 100vh;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  background-position: 100vw 0;
+  animation: ds-skel-entra 0.24s 0.12s both, ds-skel-varre 2.2s 0.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+@keyframes ds-skel-entra { from { opacity: 0; } }
+@keyframes ds-skel-varre {
+  from { background-position: 100vw 0; }
+  70%, to { background-position: -200vw 0; }
+}
+
+/* ---------- girando: ação curta esperando o servidor (Girando em basicos.tsx) ----------
+   Um anel fino com um quarto aceso, na cor do texto em volta: dentro de um
+   botão ele toma o lugar do ícone e o botão não muda de largura. O Nexo
+   trabalhando nunca usa isto (usa o orbe), nem progresso que tem conta. */
+.ds .ds-gira {
+  --t: 14px;
+  display: inline-block;
+  flex: none;
+  width: var(--t);
+  height: var(--t);
+  border-radius: 50%;
+  border: 1.5px solid color-mix(in srgb, currentColor 22%, transparent);
+  border-top-color: currentColor;
+  animation: ds-gira 0.75s linear infinite;
+}
+@keyframes ds-gira { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .ds .ds-skel { animation: ds-skel-entra 0.24s 0.12s both; }
+  .ds .ds-gira { animation-duration: 1.8s; }
 }
 @keyframes ds-varrer {
   from { background-position: 100% 0; }

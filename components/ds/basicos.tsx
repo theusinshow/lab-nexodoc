@@ -194,6 +194,11 @@ export function Avatar({ iniciais, pequeno }: { iniciais: string; pequeno?: bool
   );
 }
 
+/** Ação curta esperando o servidor: o anel fino, na cor do texto em volta. */
+export function Girando({ tamanho = 14, rotulo }: { tamanho?: number; rotulo?: string }) {
+  return <span className="ds-gira" style={{ ["--t" as string]: `${tamanho}px` }} role={rotulo ? "status" : undefined} aria-label={rotulo} aria-hidden={rotulo ? undefined : true} />;
+}
+
 export function Esqueleto({ largura, altura = 12, raio }: { largura: number | string; altura?: number; raio?: number }) {
   return <span className="ds-skel" style={{ display: "block", width: largura, height: altura, borderRadius: raio }} aria-hidden />;
 }

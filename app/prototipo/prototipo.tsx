@@ -2,11 +2,12 @@
 
 import { AnimatePresence, motion } from "motion/react";
 import { ChevronUp, Map as MapaIcone, X } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 
 import { Tecla } from "@/components/ds/basicos";
 import { CURVA } from "@/lib/ds/movimento";
 
+import { EsqueletoDaTela } from "../lab/telas/_comum/esqueletos";
 import { NoPrototipo, type IdTela } from "../lab/telas/_comum/prototipo";
 import { ControleDoTopo } from "../lab/telas/_comum/topo";
 import { TelaAchados } from "../lab/telas/achados/tela-achados";
@@ -72,6 +73,15 @@ const TELAS: Record<IdTela, Tela> = {
 
 const GRUPOS = ["Entrar", "Trabalhar", "Auditar", "Obras", "Sistema", "Páginas especiais"];
 
+/** A rede de mentira: quanto o "servidor" demora para trazer a tela nova. */
+type Rede = "instantanea" | "normal" | "lenta" | "travada";
+const REDES: { id: Rede; nome: string; ms: number }[] = [
+  { id: "instantanea", nome: "Instantânea", ms: 0 },
+  { id: "normal", nome: "Normal, 0,45 s", ms: 450 },
+  { id: "lenta", nome: "Lenta, 1,8 s", ms: 1800 },
+  { id: "travada", nome: "Travada", ms: Infinity },
+];
+
 /* ---------- a rota mora no hash: #/tela/situacao (o Voltar do navegador funciona) ---------- */
 function assinarHash(cb: () => void) {
   window.addEventListener("hashchange", cb);
@@ -98,15 +108,40 @@ export function Prototipo() {
   const [paleta, setPaleta] = useState(false);
   const [atalhos, setAtalhos] = useState(false);
   const [avisos, setAvisos] = useState<Aviso[]>([]);
+  const [rede, setRede] = useState<Rede>("normal");
+  const [carregando, setCarregando] = useState(false);
+  const relogio = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const telaAtual = useRef<IdTela>(tela);
+  const msDaRede = useRef(450);
+  useEffect(() => {
+    telaAtual.current = tela;
+  }, [tela]);
 
-  const ir = useCallback((t: IdTela, s?: string) => {
-    const destino = `#/${t}/${s ?? TELAS[t].situacoes[0].id}`;
-    setPaleta(false);
-    setAtalhos(false);
-    setVolta((v) => v + 1); // mesma rota de novo também remonta: "começa de novo"
-    if (window.location.hash !== destino) window.location.hash = destino;
-    window.scrollTo(0, 0);
-  }, [setPaleta, setAtalhos, setVolta]);
+  /*
+   * Ir para outra tela passa pelo "servidor": a tela nova aparece primeiro como
+   * esqueleto, pelo tempo da rede escolhida. Trocar de situação na mesma tela,
+   * entrar e as páginas especiais não carregam nada.
+   */
+  const ir = useCallback(
+    (t: IdTela, s?: string) => {
+      const destino = `#/${t}/${s ?? TELAS[t].situacoes[0].id}`;
+      setPaleta(false);
+      setAtalhos(false);
+      setVolta((v) => v + 1); // mesma rota de novo também remonta: "começa de novo"
+      if (relogio.current) clearTimeout(relogio.current);
+      const carrega = t !== telaAtual.current && t !== "entrada" && !TELAS[t].proprias && msDaRede.current > 0;
+      setCarregando(carrega);
+      if (carrega && Number.isFinite(msDaRede.current)) relogio.current = setTimeout(() => setCarregando(false), msDaRede.current);
+      if (window.location.hash !== destino) window.location.hash = destino;
+      window.scrollTo(0, 0);
+    },
+    [setPaleta, setAtalhos, setVolta, setCarregando],
+  );
+  const trocarRede = (r: Rede) => {
+    setRede(r);
+    msDaRede.current = REDES.find((x) => x.id === r)!.ms;
+    if (r !== "travada") setCarregando(false);
+  };
 
   const avisar = useCallback((m: ModeloDeAviso) => setAvisos((a) => juntarAviso(a, { ...m, link: m.link ? `${location.origin}/nexo?auditoria=cm1x8a&achado=INC-014` : undefined })), []);
   const fecharAviso = useCallback((id: number) => setAvisos((a) => a.filter((x) => x.id !== id)), []);
@@ -152,14 +187,14 @@ export function Prototipo() {
         <div className="pt">
           <AnimatePresence mode="wait" initial={false}>
             <motion.main
-              key={`${tela}/${situacao}/${volta}`}
+              key={`${tela}/${situacao}/${volta}/${carregando ? "e" : "t"}`}
               className="pt-tela"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.12, ease: [...CURVA.out] as [number, number, number, number] }}
             >
-              {def.render(situacao)}
+              {carregando ? <EsqueletoDaTela tela={tela} /> : def.render(situacao)}
             </motion.main>
           </AnimatePresence>
 
@@ -179,6 +214,8 @@ export function Prototipo() {
             onIr={(t, s) => (ir(t, s), setPainel(false))}
             onSituacao={(s) => ir(tela, s)}
             onAvisar={avisar}
+            rede={rede}
+            onRede={trocarRede}
           />
         </div>
       </ControleDoTopo.Provider>
@@ -199,6 +236,8 @@ function PainelDoPrototipo({
   onIr,
   onSituacao,
   onAvisar,
+  rede,
+  onRede,
 }: {
   aberto: boolean;
   onAbrir: (v: boolean) => void;
@@ -207,6 +246,8 @@ function PainelDoPrototipo({
   onIr: (t: IdTela, s?: string) => void;
   onSituacao: (s: string) => void;
   onAvisar: (m: ModeloDeAviso) => void;
+  rede: Rede;
+  onRede: (r: Rede) => void;
 }) {
   const def = TELAS[tela];
   const sit = def.situacoes.find((s) => s.id === situacao);
@@ -270,6 +311,20 @@ function PainelDoPrototipo({
                   </div>
                 ))}
               </div>
+            </section>
+
+            <section className="pt-sec">
+              <h2>
+                Rede <span>· quanto o servidor demora ao trocar de tela</span>
+              </h2>
+              <div className="pt-chips" role="radiogroup" aria-label="Rede">
+                {REDES.map((r) => (
+                  <button key={r.id} type="button" role="radio" aria-checked={rede === r.id} onClick={() => onRede(r.id)}>
+                    {r.nome}
+                  </button>
+                ))}
+              </div>
+              {rede === "travada" && <p className="pt-dica">A próxima tela fica no esqueleto até você escolher outra rede.</p>}
             </section>
 
             <section className="pt-sec">

@@ -1,10 +1,10 @@
 "use client";
 
 import { motion } from "motion/react";
-import { ArrowRight, BarChart3, CircleAlert, Database, Gauge, Info, KeyRound, LoaderCircle, RefreshCcw, ShieldCheck, UsersRound } from "lucide-react";
+import { ArrowRight, BarChart3, CircleAlert, Database, Gauge, Info, KeyRound, RefreshCcw, ShieldCheck, UsersRound } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 
-import { Botao, Segmento, Tecla } from "@/components/ds/basicos";
+import { Botao, Orbe, Segmento, Tecla } from "@/components/ds/basicos";
 import { useTempo } from "@/lib/ds/tempo";
 
 import { Topo } from "../_comum/topo";
@@ -217,7 +217,7 @@ function Cockpit({ situacao }: { situacao: SituacaoAdmin }) {
                   <span className={`adm-fraco ds-num${a.status === "falhou" ? " adm-nada" : ""}`}>{a.status === "falhou" ? "—" : `${a.achados} achados`}</span>
                   <span className="adm-fraco ds-num">{a.quando}</span>
                   <span className={`adm-status adm-status--${a.status}`}>
-                    {a.status === "rodando" ? <LoaderCircle size={12} className="adm-gira" /> : <i aria-hidden />}
+                    {a.status === "rodando" ? <Orbe tamanho={10} estado="trabalhando" /> : <i aria-hidden />}
                     {a.status}
                   </span>
                 </div>

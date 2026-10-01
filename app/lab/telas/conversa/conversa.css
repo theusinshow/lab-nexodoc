@@ -61,14 +61,9 @@
 .ds .cx-nexo-acoes button > span { display: inline-flex; align-items: center; gap: 6px; }
 .ds .cx-nexo:hover .cx-nexo-acoes button, .ds .cx-nexo-acoes button:focus-visible { opacity: 1; }
 .ds .cx-nexo-acoes button:hover { background: rgb(255 255 255 / 0.05); color: var(--ds-text-primary); }
-.ds .cx-passo--curso .cx-passo-texto > span {
-  background: linear-gradient(90deg, var(--ds-text-tertiary) 0%, var(--ds-text-primary) 45%, var(--ds-text-tertiary) 90%);
-  background-size: 200% 100%;
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  animation: ds-varrer 2.6s linear infinite;
-}
+/* em curso: o texto fica claro e parado; quem diz "trabalhando" é o orbe ao lado
+   (o brilho correndo pelo texto era o "pensando" de app de IA, e saiu) */
+.ds .cx-passo--curso .cx-passo-texto > span { color: var(--ds-text-secondary); }
 .ds .cx-passo-roda { width: 11px; height: 11px; border-radius: 50%; border: 1.5px solid var(--ds-nexo); border-right-color: transparent; animation: cx-girar 0.9s linear infinite; }
 @keyframes cx-girar { to { transform: rotate(360deg); } }
 /* o cursor pulsa em onda, não pisca em degrau */

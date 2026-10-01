@@ -4,12 +4,13 @@ import { AnimatePresence, motion } from "motion/react";
 import { AlertTriangle, ArrowLeft, FileSearch, FileSpreadsheet, FileText, LayoutList, ListChecks, MessageSquareWarning, RotateCcw, ScrollText } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 
-import { Botao, Esqueleto, Tecla } from "@/components/ds/basicos";
+import { Botao, Tecla } from "@/components/ds/basicos";
 import { CURVA } from "@/lib/ds/movimento";
 import { useTempo } from "@/lib/ds/tempo";
 import { MarcaDaPrefeitura } from "@/modules/nexo/components/MarcaDaPrefeitura";
 
 import { Topo } from "../_comum/topo";
+import { MioloDoResultado } from "../_comum/esqueletos";
 import { useIr } from "../_comum/prototipo";
 import { ACHADOS, type Achado, type Disciplina } from "./dados";
 import { Fila, type Filtro, type InicialDaFila } from "./fila";
@@ -247,8 +248,7 @@ export function TelaResultado({ situacao }: { situacao: SituacaoRes }) {
           {carregando ? (
             <div className="rs-abrindo" aria-busy>
               <p>Buscando o parecer no servidor…</p>
-              <Esqueleto largura="100%" altura={320} raio={16} />
-              <Esqueleto largura="100%" altura={180} raio={16} />
+              <MioloDoResultado />
             </div>
           ) : (
             <AnimatePresence mode="wait" initial={false}>

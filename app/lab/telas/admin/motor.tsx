@@ -1,10 +1,10 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
-import { Activity, CircleAlert, Info, LoaderCircle } from "lucide-react";
+import { Activity, CircleAlert, Info } from "lucide-react";
 import { Fragment, useState } from "react";
 
-import { Botao } from "@/components/ds/basicos";
+import { Botao, Girando } from "@/components/ds/basicos";
 import { useTempo } from "@/lib/ds/tempo";
 import { BarraEmbutida, LinhaDeTendencia } from "@/components/ds/medidas";
 import { SerieComMeta } from "@/components/ds/serie-com-meta";
@@ -389,7 +389,7 @@ export function Motor({ variante }: { variante: VarianteMotor }) {
           <p className="din-lede">Executa uma chamada mínima real apenas quando você clicar.</p>
           <div className="mot-teste">
             <Botao variante="ghost" tamanho="sm" onClick={testar} disabled={testando}>
-              {testando ? <LoaderCircle size={13} className="adm-gira" /> : <Activity size={13} />}
+              {testando ? <Girando tamanho={12} /> : <Activity size={13} />}
               {testando ? "Testando" : "Testar provider"}
             </Botao>
             {teste && (

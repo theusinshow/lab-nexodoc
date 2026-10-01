@@ -1,10 +1,10 @@
 "use client";
 
 import { AnimatePresence, motion, useReducedMotionConfig } from "motion/react";
-import { Check, CircleAlert, Info, LoaderCircle, LogOut, Mail, Terminal } from "lucide-react";
+import { Check, CircleAlert, Info, LogOut, Mail, Terminal } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
-import { Botao, Orbe, Tecla } from "@/components/ds/basicos";
+import { Botao, Girando, Orbe, Tecla } from "@/components/ds/basicos";
 
 import { SUAVE } from "../conversa/turnos";
 import { useIr, useNoPrototipo } from "../_comum/prototipo";
@@ -120,7 +120,7 @@ function Contato({ aberto, onAbrir, desfecho }: { aberto: boolean; onAbrir: (a: 
             {resposta && <Aviso tom={RECADO[resposta].tom}>{RECADO[resposta].texto}</Aviso>}
             <div className="en-form-acoes">
               <Botao variante="ghost" tamanho="sm" type="submit" disabled={enviando}>
-                {enviando && <LoaderCircle size={14} className="en-gira" aria-hidden />}
+                {enviando && <Girando tamanho={13} />}
                 {enviando ? "Enviando" : "Enviar recado"}
               </Botao>
               <Botao variante="quiet" tamanho="sm" onClick={() => onAbrir(false)}>
@@ -147,7 +147,7 @@ function Login({ situacao, indo, onIr }: { situacao: SituacaoEntrada; indo: bool
       {situacao === "erro" && <Aviso tom="erro">Não foi possível autenticar com o Google. Tente de novo; se repetir, fale com o responsável.</Aviso>}
 
       <button type="button" className="en-google" disabled={indo} onClick={onIr} aria-describedby="en-nota">
-        {indo ? <LoaderCircle size={16} className="en-gira" aria-hidden /> : <MarcaDoGoogle />}
+        {indo ? <Girando tamanho={15} /> : <MarcaDoGoogle />}
         {indo ? "Indo para o Google" : "Entrar com Google"}
       </button>
       <p id="en-nota" className="en-nota">

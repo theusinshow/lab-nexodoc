@@ -22,12 +22,12 @@ for (const nome of telas) {
   await p.locator(`.pt-telas button:has-text("${nome}")`).first().click();
   await p.waitForTimeout(500);
   await p.locator(".pt-pilula").click();
-  const sits = await p.$$eval(".pt-chips[role=radiogroup] button", (bs) => bs.map((b) => b.textContent.replace(/^\d+/, "").trim()));
+  const sits = await p.$$eval(".pt-chips[aria-label='Situação desta tela'] button", (bs) => bs.map((b) => b.textContent.replace(/^\d+/, "").trim()));
   await p.keyboard.press("Escape");
   for (let i = 0; i < sits.length; i++) {
     erros = [];
     await p.locator(".pt-pilula").click();
-    await p.locator(".pt-chips[role=radiogroup] button").nth(i).click();
+    await p.locator(".pt-chips[aria-label='Situação desta tela'] button").nth(i).click();
     await p.keyboard.press("Escape");
     await p.waitForTimeout(900);
     const med = await p.evaluate(() => {
