@@ -254,21 +254,21 @@
 
 /* O BLOCO: as folhas seguidas da mesma disciplina, numa moldura de fio fino com cabeçalho */
 .ds .mp-bloco { position: relative; box-sizing: border-box; transition: width 0.24s cubic-bezier(0.22, 1, 0.36, 1); }
-.ds .mp-bloco-moldura { position: absolute; left: 0; right: 0; bottom: 0; top: 30px; border-radius: 10px; background: rgb(255 255 255 / 0.015); box-shadow: inset 0 0 0 1px var(--ds-line-default); pointer-events: none; }
+.ds .mp-bloco-moldura { position: absolute; left: 0; right: 0; bottom: 0; top: 30px; border-radius: 10px; background: rgb(255 255 255 / 0.015); box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.2); pointer-events: none; }
 .ds .mp-bloco-cabeca { display: flex; align-items: flex-end; justify-content: space-between; gap: 8px; margin: 0; padding: 0 2px 8px; font-size: 12px; white-space: nowrap; }
 .ds .mp-bloco-cabeca .ds-num { font-size: 11px; color: var(--ds-text-tertiary); }
 
 /* A SETA ESTRUTURADA: fio fino reto e ponta cheia pequena. Sem brilho, sem movimento. */
+/* a junção tem a cor da borda da moldura do bloco: o fio parece sair dela */
 .ds .mp-seta3-linha { fill: none; stroke-width: 1.5; stroke-linecap: round; }
-.ds .mp-seta3-de { stop-color: rgb(255 255 255 / 0.14); }
-.ds .mp-seta3-para { stop-color: rgb(255 255 255 / 0.5); }
-.ds .mp-seta3-origem { fill: rgb(255 255 255 / 0.32); }
-.ds .mp-seta3-ponta { fill: rgb(255 255 255 / 0.62); stroke: rgb(255 255 255 / 0.62); stroke-width: 1; stroke-linejoin: round; }
+.ds .mp-seta3-borda { stop-color: rgb(255 255 255 / 0.2); }
+.ds .mp-seta3-meio { stop-color: rgb(255 255 255 / 0.5); }
+.ds .mp-seta3-juncao { fill: rgb(255 255 255 / 0.2); }
+.ds .mp-seta3-rumo { fill: none; stroke: rgb(255 255 255 / 0.7); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
 /* acesa: encosta no que mudou; o mesmo desenho, em íris */
-.ds .mp-seta3--acesa .mp-seta3-de { stop-color: rgb(163 166 255 / 0.25); }
-.ds .mp-seta3--acesa .mp-seta3-para { stop-color: rgb(163 166 255 / 0.85); }
-.ds .mp-seta3--acesa .mp-seta3-origem { fill: rgb(163 166 255 / 0.55); }
-.ds .mp-seta3--acesa .mp-seta3-ponta { fill: var(--ds-nexo-soft); stroke: var(--ds-nexo-soft); }
+.ds .mp-seta3--acesa .mp-seta3-borda, .ds .mp-seta3--acesa .mp-seta3-juncao { stop-color: rgb(163 166 255 / 0.45); fill: rgb(163 166 255 / 0.45); }
+.ds .mp-seta3--acesa .mp-seta3-meio { stop-color: rgb(163 166 255 / 0.85); }
+.ds .mp-seta3--acesa .mp-seta3-rumo { stroke: var(--ds-nexo-soft); }
 /* fraca: encosta numa folha tirada */
 .ds .mp-seta3--fraca .mp-seta3-linha { stroke-dasharray: 2 4; }
 
