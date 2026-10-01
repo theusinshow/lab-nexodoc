@@ -14,6 +14,7 @@ import { AvisoDaCarga } from "@/components/admin/aviso-da-carga";
 import { classificarFalha, faseDaCarga, type FalhaDaCarga } from "@/lib/estado-da-carga";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { CartaoDeConfirmacao } from "@/components/ui/cartao-de-confirmacao";
 import { Select } from "@/components/ui/select";
 import { EmptyState } from "@/components/ui/empty-state";
 import { rotuloDeLd } from "@/lib/rotulos-de-status";
@@ -61,6 +62,12 @@ export function CorpoDasLds() {
   const [user, setUser] = useState("");
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  /*
+   * A pergunta de "excluir permanentemente" era um `window.confirm`: o diálogo
+   * do navegador nasce com o foco no OK, e um Enter distraído apagava as
+   * LDs e os eventos delas. Agora ela toma o lugar da barra de seleção, com o foco em Cancelar.
+   */
+  const [confirmandoExclusao, setConfirmandoExclusao] = useState(false);
   const [error, setError] = useState("");
   // P02: estado da CARGA; `error` fica para a exclusão.
   const [carregadoEm, setCarregadoEm] = useState<string | null>(null);
@@ -94,7 +101,6 @@ export function CorpoDasLds() {
 
   async function handleDelete() {
     if (selected.size === 0) return;
-    if (!window.confirm(`Excluir permanentemente ${plural(selected.size, "LD selecionada", "LDs selecionadas")}? Esta ação remove todos os eventos vinculados.`)) return;
 
     setDeleting(true);
     setError("");
@@ -119,6 +125,7 @@ export function CorpoDasLds() {
       setError(err instanceof Error ? err.message : "Erro ao excluir LDs.");
     } finally {
       setDeleting(false);
+      setConfirmandoExclusao(false);
     }
   }
 
@@ -232,13 +239,21 @@ export function CorpoDasLds() {
           <Button type="submit" disabled={loading}>Filtrar</Button>
         </form>
 
-        {selected.size > 0 && (
+        {selected.size > 0 && confirmandoExclusao ? (
+          <CartaoDeConfirmacao
+            pergunta={`Excluir permanentemente ${plural(selected.size, "LD selecionada", "LDs selecionadas")}? Esta ação remove todos os eventos vinculados.`}
+            verbo="Excluir permanentemente"
+            ocupado={deleting}
+            onConfirmar={() => void handleDelete()}
+            onCancelar={() => setConfirmandoExclusao(false)}
+          />
+        ) : selected.size > 0 && (
           <div className="flex items-center justify-between border border-destructive/30 bg-destructive/8 px-4 py-3">
             <span className="text-sm text-destructive">{plural(selected.size, "LD selecionada", "LDs selecionadas")}</span>
             <Button
               variant="destructive"
               size="sm"
-              onClick={handleDelete}
+              onClick={() => setConfirmandoExclusao(true)}
               disabled={deleting}
             >
               <Trash2 className="mr-1.5 h-4 w-4" />

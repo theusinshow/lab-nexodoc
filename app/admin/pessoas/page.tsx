@@ -17,6 +17,7 @@ import { CorpoDosControles } from "@/components/admin/conteudo/controles";
 import { TituloDaSecao } from "@/components/admin/admin-page-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { CartaoDeConfirmacao } from "@/components/ui/cartao-de-confirmacao";
 import { Select } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { palavra, plural } from "@/lib/plural";
@@ -80,51 +81,6 @@ function statusVariant(isActive: boolean) {
   return isActive ? ("ok" as const) : ("critical" as const);
 }
 
-/**
- * A confirmação do LOTE — a mesma pergunta, no lugar da barra de ações.
- *
- * Substituir a barra em vez de abrir por cima é o que garante que a pergunta
- * apareça exatamente onde o clique aconteceu, e que não haja como confirmar sem
- * ter lido: os botões de ação somem enquanto ela está na tela.
- *
- * Coral na borda e no confirmar: dar ou tirar acesso é ação destrutiva no
- * sentido do sistema (`--status-critical` é a cor de perigo, seja status ou
- * ação — o §2 diz isso explicitamente).
- */
-function CartaoDeConfirmacao({
-  pergunta,
-  onConfirmar,
-  onCancelar,
-}: {
-  pergunta: string;
-  onConfirmar: () => void;
-  onCancelar: () => void;
-}) {
-  return (
-    <div
-      role="alertdialog"
-      aria-label={pergunta}
-      className="nx-edge-8 flex flex-wrap items-center gap-3 p-3 [--nx-edge:var(--status-critical)]"
-    >
-      <p className="min-w-0 flex-1 text-sm">{pergunta}</p>
-      <button
-        type="button"
-        onClick={onConfirmar}
-        className="nx-edge-7 inline-flex h-10 items-center px-4 font-mono text-[12px] text-[var(--status-critical)] [--nx-edge:var(--status-critical)] [--nx-fill:var(--status-critical-tint)]"
-      >
-        Confirmar
-      </button>
-      <button
-        type="button"
-        onClick={onCancelar}
-        className="nx-edge-7 inline-flex h-10 items-center px-4 font-mono text-[12px] text-muted-foreground transition-colors [--nx-edge:var(--border)] [--nx-fill:var(--card)] hover:text-foreground"
-      >
-        Cancelar
-      </button>
-    </div>
-  );
-}
-
 export default function AdminUsersPage() {
   /*
    * O token vem do trilho, não desta tela — ver [[components/admin/admin-token.tsx]].
@@ -139,6 +95,13 @@ export default function AdminUsersPage() {
   const [newEmail, setNewEmail] = useState("");
   const [newName, setNewName] = useState("");
   const [newRole, setNewRole] = useState<AdminUser["role"]>("USER");
+  /*
+   * O ESCRITÓRIO DE QUEM ESTÁ SENDO ADICIONADO. O `POST /api/admin/users` cria
+   * a CONTA e só: sem vínculo, com a porta em "exige convite", a pessoa que
+   * acabou de ser adicionada levava 403 — adicionada e barrada no mesmo gesto.
+   * Por isso o padrão é MEMBER, e "sem vínculo" fica como escolha explícita.
+   */
+  const [newEscritorio, setNewEscritorio] = useState<"MEMBER" | "ADMIN" | "fora">("MEMBER");
   const [loading, setLoading] = useState(false);
   const [busyId, setBusyId] = useState("");
   const [error, setError] = useState("");
@@ -377,10 +340,43 @@ export default function AdminUsersPage() {
       const payload = (await response.json().catch(() => null)) as { user?: AdminUser; error?: string } | null;
 
       if (!response.ok || !payload?.user) throw new Error(payload?.error ?? "Não foi possível adicionar usuário.");
-      setUsers((current) => [payload.user!, ...current.filter((user) => user.id !== payload.user!.id)]);
+      let criado = payload.user;
+
+      /*
+       * O VÍNCULO VAI NUM SEGUNDO PEDIDO, e não num campo a mais do primeiro:
+       * conta e vínculo são rotas separadas de propósito (ver o cabeçalho de
+       * `app/api/admin/users/escritorio/route.ts`). A conta já existe quando
+       * este pedido sai; se ele falhar, a tela diz exatamente o que ficou
+       * pela metade, e o "liberar" da linha termina o serviço.
+       */
+      if (newEscritorio !== "fora") {
+        const vinculo = await fetch("/api/admin/users/escritorio", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token.trim()}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ email: criado.email, acao: "liberar", role: newEscritorio }),
+        });
+        const corpoDoVinculo = (await vinculo.json().catch(() => null)) as {
+          escritorio?: AdminUser["escritorio"];
+          error?: string;
+        } | null;
+
+        if (vinculo.ok) {
+          criado = { ...criado, escritorio: corpoDoVinculo?.escritorio ?? criado.escritorio };
+        } else {
+          setError(
+            `A conta de ${criado.email} foi criada, mas o vínculo com o escritório não: ${corpoDoVinculo?.error ?? "o servidor recusou"}. Use “liberar” na linha dela.`,
+          );
+        }
+      }
+
+      setUsers((current) => [criado, ...current.filter((user) => user.id !== criado.id)]);
       setNewEmail("");
       setNewName("");
       setNewRole("USER");
+      setNewEscritorio("MEMBER");
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Não foi possível adicionar usuário.");
     } finally {
@@ -429,6 +425,44 @@ export default function AdminUsersPage() {
         <AdminError message={error} />
 
         {/*
+          ADICIONAR ABRE A TELA. Estava depois da porta de entrada e dos números,
+          sem título, com cara de filtro — e "onde eu ponho o e-mail?" foi a
+          pergunta de quem abriu a tela para isso.
+        */}
+        <section className="flex flex-col gap-4">
+          <TituloDaSecao
+            icon={UserPlus}
+            titulo="Adicionar pessoa"
+            descricao="O e-mail da conta Google com que a pessoa vai entrar."
+          />
+          <form onSubmit={createUser} className="grid gap-2 nx-edge-8 p-3 lg:grid-cols-[1.4fr_1fr_150px_200px_auto]">
+            <div className="nx-edge-7 relative [--nx-fill:var(--nexodoc-recessed)]">
+              <UserPlus className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <input value={newEmail} onChange={(event) => setNewEmail(event.target.value)} placeholder="nome@prosul.com.br" aria-label="E-mail da pessoa a adicionar" type="email" className="h-10 w-full bg-transparent pl-9 pr-3 text-sm outline-none" />
+            </div>
+            {/* O chanfro mora no contêiner: num `<input>` o `nx-edge` não desenha a borda, e o Nome aparecia sem caixa. */}
+            <div className="nx-edge-7 [--nx-fill:var(--nexodoc-recessed)]">
+              <input value={newName} onChange={(event) => setNewName(event.target.value)} placeholder="Nome" aria-label="Nome da pessoa a adicionar" className="h-10 w-full bg-transparent px-3 text-sm outline-none" />
+            </div>
+            <Select value={newRole} onChange={(event) => setNewRole(event.target.value as AdminUser["role"])} className="h-10" aria-label="Papel da pessoa no centro de controle">
+              <option value="USER">Usuário</option>
+              <option value="ADMIN">Admin</option>
+            </Select>
+            <Select value={newEscritorio} onChange={(event) => setNewEscritorio(event.target.value as typeof newEscritorio)} className="h-10" aria-label="Vínculo com o escritório PROSUL">
+              <option value="MEMBER">PROSUL, membro</option>
+              <option value="ADMIN">PROSUL, admin do escritório</option>
+              <option value="fora">Sem escritório</option>
+            </Select>
+            <Button type="submit" disabled={loading || !newEmail.trim()}><UserPlus /> Adicionar</Button>
+          </form>
+          <p className="font-mono text-[11px] text-muted-foreground">
+            {newEscritorio === "fora"
+              ? "Sem escritório, a conta existe mas não vê projeto nenhum — e, com a porta em “exige convite”, leva 403 até ser liberada."
+              : "Entra como convidada; o primeiro login com o Google ativa o vínculo."}
+          </p>
+        </section>
+
+        {/*
           O FREIO ABRE A TELA DE PESSOAS porque é a regra que decide QUEM vira
           pessoa aqui. Estava só num comentário do código, onde quem opera nunca
           leria — e é o interruptor com a maior consequência do painel.
@@ -451,18 +485,6 @@ export default function AdminUsersPage() {
           ]}
         />
 
-        <form onSubmit={createUser} className="grid gap-2 nx-edge-8 p-3 lg:grid-cols-[1fr_1fr_160px_auto]">
-          <div className="nx-edge-7 relative [--nx-fill:var(--nexodoc-recessed)]">
-            <UserPlus className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <input value={newEmail} onChange={(event) => setNewEmail(event.target.value)} placeholder="email@empresa.com" aria-label="E-mail da pessoa a adicionar" type="email" className="h-10 w-full bg-transparent pl-9 pr-3 text-sm outline-none" />
-          </div>
-          <input value={newName} onChange={(event) => setNewName(event.target.value)} placeholder="Nome" aria-label="Nome da pessoa a adicionar" className="nx-edge-7 h-10 bg-transparent px-3 text-sm outline-none [--nx-fill:var(--nexodoc-recessed)]" />
-          <Select value={newRole} onChange={(event) => setNewRole(event.target.value as AdminUser["role"])} className="h-10" aria-label="Papel da pessoa a adicionar">
-            <option value="USER">Usuário</option>
-            <option value="ADMIN">Admin</option>
-          </Select>
-          <Button type="submit" disabled={loading || !newEmail.trim()}><UserPlus /> Adicionar</Button>
-        </form>
 
         <form onSubmit={submitFilters} className="grid gap-2 nx-edge-8 p-3 md:grid-cols-[1fr_180px_180px_auto]">
           <div className="nx-edge-7 relative [--nx-fill:var(--nexodoc-recessed)]">

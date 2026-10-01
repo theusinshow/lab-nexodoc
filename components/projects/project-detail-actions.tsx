@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Archive, Loader2, Save, Trash2, Undo2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { CartaoDeConfirmacao } from "@/components/ui/cartao-de-confirmacao";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -32,6 +33,12 @@ export function ProjectDetailActions({ project }: { project: ProjectEditable }) 
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [isPending, startTransition] = useTransition();
+  /*
+   * "Excluir" pedia um `window.confirm` genérico ("Excluir este projeto?"):
+   * sem o código da obra, com o foco nascendo no OK. A pergunta agora aparece
+   * aqui mesmo, com o código, e o foco nasce em Cancelar.
+   */
+  const [confirmandoExclusao, setConfirmandoExclusao] = useState(false);
 
   function updateForm(key: keyof typeof form, value: string) {
     setForm((current) => ({ ...current, [key]: value }));
@@ -83,12 +90,6 @@ export function ProjectDetailActions({ project }: { project: ProjectEditable }) 
   }
 
   function handleDelete() {
-    const confirmed = window.confirm("Excluir este projeto? Os registros ficam preservados como historico soft-delete.");
-
-    if (!confirmed) {
-      return;
-    }
-
     setError("");
     setNotice("");
 
@@ -106,6 +107,7 @@ export function ProjectDetailActions({ project }: { project: ProjectEditable }) 
         router.push("/projetos");
       } catch (deleteError) {
         setError(deleteError instanceof Error ? deleteError.message : "Não foi possível excluir o projeto.");
+        setConfirmandoExclusao(false);
       }
     });
   }
@@ -132,12 +134,22 @@ export function ProjectDetailActions({ project }: { project: ProjectEditable }) 
                 Arquivar
               </Button>
             )}
-            <Button type="button" variant="outline" size="sm" onClick={handleDelete} disabled={isPending}>
+            <Button type="button" variant="outline" size="sm" onClick={() => setConfirmandoExclusao(true)} disabled={isPending || confirmandoExclusao}>
               <Trash2 className="size-4" />
               Excluir
             </Button>
           </div>
         </div>
+
+        {confirmandoExclusao ? (
+          <CartaoDeConfirmacao
+            pergunta={`Excluir a ${project.code}? A obra some das listas; os registros dela ficam guardados no histórico.`}
+            verbo="Excluir"
+            ocupado={isPending}
+            onConfirmar={handleDelete}
+            onCancelar={() => setConfirmandoExclusao(false)}
+          />
+        ) : null}
 
         <form className="grid gap-4 lg:grid-cols-[180px_1fr_1fr] lg:items-end" onSubmit={handleSave}>
           <div className="space-y-2">
