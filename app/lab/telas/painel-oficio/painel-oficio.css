@@ -1,0 +1,180 @@
+/* O PAINEL "OFÍCIO". Só tokens --ds-*, e o destaque em grafite aqui dentro:
+   a proposta é a cor só no orbe e na marcação do revisor. */
+
+.ds .pf {
+  --ds-nexo: #e4e6eb;
+  --ds-nexo-strong: #5d6270;
+  --ds-nexo-soft: #ffffff;
+  --ds-nexo-wash: rgb(228 230 235 / 0.08);
+  --ds-nexo-line: rgb(228 230 235 / 0.3);
+  --ds-focus-ring: #eeeff2;
+  /* a caneta do revisor no papel claro: mais escura que o sinal da tela */
+  --pf-caneta-block: #d4382a;
+  --pf-caneta-decide: #b8741c;
+  position: relative;
+  min-height: 100%;
+  padding-bottom: 64px;
+  background: var(--ds-surface-page);
+}
+.ds .pf-folha { max-width: 1240px; margin: 0 auto; padding: 24px 32px 0; }
+.ds .pf-cinza { color: var(--ds-text-secondary); }
+.ds .pf-dir { text-align: right; justify-self: end; }
+.ds .pf-tinta--block { color: var(--ds-sev-block); }
+.ds .pf-tinta--decide { color: var(--ds-sev-decide); }
+.ds .pf em { font-style: normal; }
+
+/* ---------- o carimbo: o quadro de título da prancha ---------- */
+.ds .pf-carimbo {
+  display: grid;
+  grid-template-columns: auto auto auto auto auto 1fr;
+  gap: 1px;
+  background: var(--ds-line-default);
+  border: 1px solid var(--ds-line-default);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.ds .pf-campo,
+.ds .pf-carimbo-acoes { background: var(--ds-surface-page); padding: 12px 18px 13px; }
+.ds .pf-campo { display: grid; gap: 5px; align-content: start; min-width: 0; }
+.ds .pf-campo > span { font-size: var(--ds-text-2xs); color: var(--ds-text-tertiary); white-space: nowrap; }
+.ds .pf-campo > b { font-size: var(--ds-text-md); font-weight: 500; color: var(--ds-text-primary); white-space: nowrap; }
+.ds .pf-carimbo-acoes { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; }
+.ds .pf-carimbo-acoes small { flex-basis: 100%; text-align: right; font-size: var(--ds-text-2xs); color: var(--ds-text-tertiary); }
+
+/* ---------- régua de células ---------- */
+.ds .pf-regua { display: inline-flex; gap: 2px; align-items: center; flex: none; }
+.ds .pf-regua i { width: 7px; height: 11px; border-radius: 1.5px; background: var(--ds-line-default); }
+.ds .pf-regua i[data-feito] { background: var(--ds-text-secondary); }
+.ds .pf-regua i[data-agora] { background: none; box-shadow: inset 0 0 0 1.5px var(--ds-nexo); }
+.ds .pf-regua--fina { gap: 1px; }
+.ds .pf-regua--fina i { width: 3px; height: 9px; border-radius: 1px; }
+.ds .pf-regua--fina i[data-agora] { background: var(--ds-nexo); box-shadow: none; }
+.ds .pf-regua--etapa { gap: 3px; }
+.ds .pf-regua--etapa i { width: 15px; height: 6px; border-radius: 1.5px; }
+.ds .pf-regua--etapa i[data-feito] { background: var(--ds-text-tertiary); }
+.ds .pf-regua--etapa i[data-agora] { box-shadow: none; background: var(--ds-text-primary); }
+.ds .pf-regua--etapa i[data-tom="block"] { background: var(--ds-sev-block); }
+.ds .pf-regua--etapa i[data-tom="decide"] { background: var(--ds-sev-decide); }
+.ds .pf-regua--etapa i[data-tom="ok"] { background: var(--ds-state-ok); }
+
+/* ---------- mostrador e retomar ---------- */
+.ds .pf-mostrador,
+.ds .pf-retomar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: var(--ds-text-sm);
+  white-space: nowrap;
+}
+.ds .pf-mostrador {
+  margin-top: 12px;
+  padding: 11px 14px 11px 16px;
+  border: 1px solid var(--ds-line-default);
+  border-radius: 6px;
+}
+.ds .pf-mostrador b,
+.ds .pf-retomar b { font-weight: 500; }
+.ds .pf-mostrador > :last-child,
+.ds .pf-retomar > :last-child { margin-left: auto; }
+.ds .pf-retomar { padding: 14px 2px; border-bottom: 1px solid var(--ds-line-subtle); }
+
+/* ---------- seções e tabelas ---------- */
+.ds .pf-secao { margin-top: 34px; }
+.ds .pf-secao-cabeca { display: flex; align-items: center; gap: 12px; min-height: 32px; margin-bottom: 6px; }
+.ds .pf-secao-cabeca h2 { margin: 0; font-size: var(--ds-text-md); font-weight: 600; letter-spacing: -0.005em; }
+.ds .pf-secao-cabeca .ds-num { font-size: var(--ds-text-2xs); }
+
+.ds .pf-tabela { font-size: var(--ds-text-sm); }
+.ds .pf-th,
+.ds .pf-tr { display: grid; align-items: center; column-gap: 16px; padding: 0 12px; }
+.ds .pf-th { height: 34px; font-size: var(--ds-text-2xs); color: var(--ds-text-tertiary); border-bottom: 1px solid var(--ds-line-default); }
+.ds .pf-tr { min-height: 46px; border-bottom: 1px solid var(--ds-line-subtle); }
+.ds .pf-tr > * { min-width: 0; }
+.ds .pf-tabela--trava .pf-th,
+.ds .pf-tabela--trava .pf-tr { grid-template-columns: 4px 72px 86px 92px minmax(0, 1fr) 28px 52px; }
+.ds .pf-tabela--obras .pf-th,
+.ds .pf-tabela--obras .pf-tr { grid-template-columns: 86px minmax(0, 1.5fr) 132px 214px minmax(0, 1.1fr) 76px 40px; }
+
+.ds button.pf-tr {
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid var(--ds-line-subtle);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--ds-dur-state) var(--ds-ease-feedback);
+}
+.ds button.pf-tr:hover { background: var(--ds-surface-sunken); }
+.ds .pf-achado--aberto button.pf-tr { background: var(--ds-surface-card); border-bottom-color: transparent; }
+
+/* a marca do revisor: um traço na margem, como o da caneta na prancha */
+.ds .pf-marca { display: block; width: 3px; height: 20px; border-radius: 2px; }
+.ds .pf-marca--block { background: var(--ds-sev-block); }
+.ds .pf-marca--decide { background: var(--ds-sev-decide); }
+.ds .pf-oque { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ds-text-primary); }
+
+.ds .pf-evidencia { overflow: hidden; background: var(--ds-surface-card); border-bottom: 1px solid var(--ds-line-subtle); }
+.ds .pf-evidencia-dentro { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 24px; padding: 4px 16px 18px 32px; }
+.ds .pf-papel {
+  padding: 12px 18px 15px;
+  border-radius: 3px;
+  background: var(--ds-p-paper);
+  color: var(--ds-text-on-paper);
+  font-size: 14px;
+  line-height: 1.65;
+}
+.ds .pf-papel p { margin: 0; }
+.ds .pf-papel-margem { display: block; margin-bottom: 6px; font-size: 11.5px; color: #5f646d; }
+.ds .pf-caneta { background: none; color: inherit; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px; }
+.ds .pf-caneta--block { text-decoration-color: var(--pf-caneta-block); background: rgb(212 56 42 / 0.1); }
+.ds .pf-caneta--decide { text-decoration-color: var(--pf-caneta-decide); background: rgb(184 116 28 / 0.12); }
+.ds .pf-evidencia-lado { display: grid; gap: 4px; align-content: start; font-size: var(--ds-text-sm); line-height: 1.5; padding-top: 10px; }
+.ds .pf-evidencia-lado > .pf-cinza { font-size: var(--ds-text-2xs); }
+.ds .pf-evidencia-acoes { display: flex; gap: 6px; margin-top: 10px; }
+
+.ds .pf-rodape { margin: 0; padding: 11px 12px; font-size: var(--ds-text-2xs); color: var(--ds-text-tertiary); }
+.ds .pf-nada { margin: 0; padding: 14px 12px; color: var(--ds-text-secondary); border-top: 1px solid var(--ds-line-default); font-size: var(--ds-text-sm); }
+.ds .pf-erro { display: flex; align-items: center; gap: 14px; padding: 14px 12px; border-top: 1px solid var(--ds-line-default); font-size: var(--ds-text-sm); }
+.ds .pf-erro > :last-child { margin-left: auto; }
+
+.ds .pf-obra { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ds .pf-prefeitura { display: flex; align-items: center; gap: 8px; overflow: hidden; white-space: nowrap; color: var(--ds-text-secondary); }
+.ds .pf-etapa { display: flex; align-items: center; gap: 10px; white-space: nowrap; }
+.ds .pf-tabela--obras .pf-tr > :nth-child(5) { display: flex; align-items: center; gap: 7px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.ds .pf-tr--esqueleto { min-height: 46px; }
+
+.ds .pf-ordenar {
+  display: inline-flex;
+  white-space: nowrap;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: var(--ds-text-tertiary);
+  cursor: pointer;
+}
+.ds .pf-ordenar:hover,
+.ds .pf-ordenar--ativa { color: var(--ds-text-secondary); }
+
+/* ---------- soltar PDF: os dois destinos, sem enfeite ---------- */
+.ds .pf-soltar { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; background: rgb(4 5 6 / 0.82); }
+.ds .pf-soltar-caixa { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: min(560px, 90vw); }
+.ds .pf-soltar-alvo { display: grid; gap: 4px; padding: 34px 24px; border: 1.5px dashed var(--ds-line-strong); border-radius: 8px; text-align: center; }
+.ds .pf-soltar-alvo b { font-size: var(--ds-text-lg); font-weight: 500; }
+.ds .pf-soltar-alvo span,
+.ds .pf-soltar-caixa small { color: var(--ds-text-secondary); font-size: var(--ds-text-sm); }
+.ds .pf-soltar-caixa small { grid-column: 1 / -1; text-align: center; }
+
+@media (max-width: 1180px) {
+  .ds .pf-carimbo { grid-template-columns: repeat(5, auto); }
+  .ds .pf-carimbo-acoes { grid-column: 1 / -1; justify-content: flex-start; }
+  .ds .pf-carimbo-acoes small { text-align: left; flex-basis: auto; }
+  .ds .pf-tabela--obras .pf-th,
+  .ds .pf-tabela--obras .pf-tr { grid-template-columns: 86px minmax(0, 1.5fr) 214px minmax(0, 1fr) 76px 40px; }
+  .ds .pf-tabela--obras .pf-tr > :nth-child(3),
+  .ds .pf-tabela--obras .pf-th > :nth-child(3) { display: none; }
+}
