@@ -1,9 +1,9 @@
 "use client";
 
-import { ReactFlowProvider } from "@xyflow/react";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { FileText, MessageSquarePlus, PanelLeftClose, PanelRightClose, Search } from "lucide-react";
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { ReactFlowProvider, type Node, type OnNodeDrag, type OnNodesChange } from "@xyflow/react";
+import { AnimatePresence, motion, useReducedMotionConfig } from "motion/react";
+import { MessageSquarePlus, PanelLeftClose, PanelRightClose, Search } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 import { Botao, Orbe, Tecla } from "@/components/ds/basicos";
 import { useTempo } from "@/lib/ds/tempo";
@@ -12,11 +12,11 @@ import { MarcaDaPrefeitura } from "@/modules/nexo/components/MarcaDaPrefeitura";
 import { Topo } from "../_comum/topo";
 import { Campo } from "../conversa/tela-conversa";
 import { DeVoce, Lacuna, Passo, PecaDeArquivo, RITMO, SUAVE, Saidas, Troca, type Arquivo } from "../conversa/turnos";
-import { montarCanvas, Tela } from "../mapa/canvas";
+import { ALTURA_DO_NO, LARGURA_DA_FOLHA, montarCanvas, ondeCai, ordemPadrao, Tela } from "../mapa/canvas";
 import { CartaoAtual } from "../mapa/cartoes";
 import { FOLHAS } from "../mapa/dados";
 import { useCamera, useNosQueAndam } from "./andar";
-import { FAIXAS, focoDaLeitura, quadroDa, ROTEIROS, type Quadro, type SituacaoNexo } from "./roteiro";
+import { FAIXAS, quadroDa, ROTEIROS, type Quadro, type SituacaoNexo } from "./roteiro";
 import "../conversa/conversa.css";
 import "../mapa/mapa.css";
 import "../mapa/cartoes.css";
@@ -34,32 +34,9 @@ export type { SituacaoNexo } from "./roteiro";
  */
 
 const PAGINAS = [12, 8, 6, 7];
-const TICK_DA_LEITURA = 0.2;
 
-/** O relógio da situação: em que batida estamos, e quantas folhas já foram lidas. */
-function useRelogio(s: SituacaoNexo) {
-  const { k } = useTempo();
-  const reduzir = useReducedMotion();
-  const batidas = ROTEIROS[s].batidas;
-  const [b, setB] = useState(reduzir ? batidas.length : 0);
-  const [lidas, setLidas] = useState(s === "soltou" && !reduzir ? 0 : FOLHAS.length);
-  const q = useMemo(() => quadroDa(s, b), [s, b]);
-
-  useEffect(() => {
-    if (reduzir) return;
-    const ts = batidas.map((bt, i) => setTimeout(() => setB(i + 1), bt.em * 1000 * k));
-    return () => ts.forEach(clearTimeout);
-  }, [batidas, k, reduzir]);
-
-  useEffect(() => {
-    if (!q.lendo || lidas >= FOLHAS.length) return;
-    const t = setTimeout(() => setLidas((n) => n + 1), (lidas === 0 ? 0.7 : TICK_DA_LEITURA) * 1000 * k);
-    return () => clearTimeout(t);
-  }, [q.lendo, lidas, k]);
-
-  const fim = b >= batidas.length && lidas >= FOLHAS.length;
-  return { b, q, lidas, fim };
-}
+/** Lendo os selos: o retrato do meio da leitura (14 de 33), com a folha da vez marcada. */
+const LIDAS_NA_LEITURA = 14;
 
 /* ------------------------------ as conversas ------------------------------ */
 
@@ -131,17 +108,17 @@ function Resposta({ partes }: { partes: [string, ReactNode | false][] }) {
   if (naAbertura.current === null) naAbertura.current = new Set(visiveis.map(([c]) => c));
   return (
     <div className="cx-nexo">
-      <motion.span className="cx-nexo-marca" aria-hidden initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: RITMO.entra * k, delay: 0.3 * k, ease: SUAVE }}>
+      <motion.span className="cx-nexo-marca" aria-hidden initial={false} animate={{ opacity: 1, scale: 1 }} transition={{ duration: RITMO.entra * k, delay: 0.3 * k, ease: SUAVE }}>
         <Orbe tamanho={16} />
       </motion.span>
       <div className="cx-nexo-corpo">
-        {visiveis.map(([chave, p], i) => (
+        {visiveis.map(([chave, p]) => (
           <motion.div
             key={chave}
             className="cx-parte"
-            initial={{ opacity: 0, y: 6 }}
+            initial={naAbertura.current!.has(chave) ? false : { opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: RITMO.entra * k, delay: (naAbertura.current!.has(chave) ? 0.38 + i * RITMO.escada : 0.05) * k, ease: SUAVE }}
+            transition={{ duration: RITMO.entra * k, ease: SUAVE }}
           >
             {p}
           </motion.div>
@@ -197,7 +174,7 @@ function GerandoNoRitmo({ prontos }: { prontos: number }) {
 function Fio({ s, b, lidas }: { s: SituacaoNexo; b: number; lidas: number }): ReactNode {
   const lendoAgora = FAIXAS.findIndex((f) => lidas < f.ate);
   const pranchas: Arquivo[] = FAIXAS.map((f, i) => ({ nome: f.nome, paginas: PAGINAS[i], lendo: s === "soltou" && b >= 1 && i === lendoAgora }));
-  const pedido = <DeVoce arquivos={pranchas} texto="monta o volume da UBS com essas pranchas" atraso={s === "soltou" ? 0 : -1} />;
+  const pedido = <DeVoce arquivos={pranchas} texto="monta o volume da UBS com essas pranchas" atraso={-1} />;
   switch (s) {
     case "soltou": {
       const leu = lidas >= FOLHAS.length;
@@ -309,63 +286,135 @@ function Fio({ s, b, lidas }: { s: SituacaoNexo; b: number; lidas: number }): Re
 
 /* ------------------------------ o palco ------------------------------ */
 
-/** Antes da leitura: os PDFs pousam no palco, empilhados, e o palco diz o que chegou. */
-function Chegando() {
-  const { k } = useTempo();
+type Fileiras = ReturnType<typeof montarCanvas>["fileiras"];
+interface Feito {
+  id: string;
+  texto: ReactNode;
+  antes: Map<number, string[]>;
+}
+
+/** A frase do que o arrasto fez: para onde a folha foi, em palavras de quem monta volume. */
+function fraseDoArrasto(id: string, de: number, para: number, depoisDe: string | undefined, tomos: number): ReactNode {
+  const onde = depoisDe ? (
+    <>
+      depois da <b>{depoisDe}</b>
+    </>
+  ) : (
+    "no começo"
+  );
   return (
-    <motion.div className="nw-chegando" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, scale: 0.985 }} transition={{ duration: RITMO.entra * k, ease: SUAVE }}>
-      <div className="nw-chegando-pilha">
-        {FAIXAS.map((f, i) => (
-          <motion.span
-            key={f.nome}
-            className="nw-chegando-pdf"
-            initial={{ opacity: 0, y: -18, rotate: (i - 1.5) * 2.5 }}
-            animate={{ opacity: 1, y: 0, rotate: (i - 1.5) * 1.2 }}
-            transition={{ duration: 0.6 * k, delay: (0.1 + i * 0.09) * k, ease: SUAVE }}
-            style={{ zIndex: 4 - i }}
-          >
-            <FileText size={13} />
-            <span className="mp-mono">{f.nome}</span>
-            <span className="ds-num">{PAGINAS[i]} p.</span>
-          </motion.span>
-        ))}
-      </div>
-      <p>4 PDFs, 33 páginas</p>
-    </motion.div>
+    <span>
+      <b>{id}</b> {de !== para && tomos > 1 ? <>foi para o tomo {String(para).padStart(2, "0")}, </> : <>agora vem </>}
+      {onde}
+    </span>
   );
 }
 
-function Palco({ s, q, lidas }: { s: SituacaoNexo; q: Quadro; lidas: number }) {
-  const { k } = useTempo();
-  const reduzir = useReducedMotion();
-  const duracao = reduzir ? 0 : 1.1 * k;
+function Palco({ q, lidas }: { q: Quadro; lidas: number }) {
+  const reduzir = !!useReducedMotionConfig();
+  const [ordem, setOrdem] = useState<Map<number, string[]> | null>(null);
+  const [arrasto, setArrasto] = useState<{ id: string; pos: { x: number; y: number } } | null>(null);
+  const [feito, setFeito] = useState<Feito | null>(null);
+
   const alvo = useMemo(
     () =>
-      q.vazio
-        ? { nodes: [], edges: [] }
-        : montarCanvas({
-            lidas,
-            sel: null,
-            filtro: () => true,
-            estadoDoDoc: (d) => q.docs(d.id),
-            estadoDoVolume: (n) => q.vol(n),
-            comSobras: false,
-            tomos: q.tomos,
-            destaque: q.destaque,
-            removidas: q.removidas,
-            sem: q.sem,
-            corteAntesDe: q.corte,
-          }),
-    [q, lidas],
+      montarCanvas({
+        lidas,
+        sel: null,
+        filtro: () => true,
+        estadoDoDoc: (d) => q.docs(d.id),
+        estadoDoVolume: (n) => q.vol(n),
+        comSobras: false,
+        tomos: q.tomos,
+        destaque: feito ? new Set([...(q.destaque ?? []), feito.id]) : q.destaque,
+        removidas: q.removidas,
+        sem: q.sem,
+        corteAntesDe: q.corte,
+        ordemDosTomos: ordem ?? undefined,
+      }),
+    [q, lidas, ordem, feito],
   );
-  const nos = useNosQueAndam(alvo.nodes, duracao);
-  // Lendo, a câmera acompanha a frente da leitura; ao terminar, recua para o volume inteiro.
-  const foco = q.lendo ? (lidas < 4 ? q.foco : focoDaLeitura(lidas)) : q.foco;
-  const pronto = useCamera(alvo.nodes, foco, 0.9, reduzir ? 0 : (q.lendo ? 0.9 : 1.15) * k);
+  // Só o que a mão fez anda: soltar uma folha acomoda tudo em 240 ms. Abrir a tela não anima nada.
+  const { nos, ajustar } = useNosQueAndam(alvo.nodes, reduzir ? 0 : 0.24);
+  const pronto = useCamera(alvo.nodes, q.foco, 0.9, 0, false);
+
+  const posicoes = useMemo(() => new Map(alvo.nodes.filter((n) => n.type === "folha").map((n) => [n.id, n.position])), [alvo]);
+  const cai = arrasto ? ondeCai(alvo.fileiras as Fileiras, posicoes, arrasto.id, { x: arrasto.pos.x + LARGURA_DA_FOLHA / 2, y: arrasto.pos.y + ALTURA_DO_NO / 2 }) : null;
+
+  const vistos = useMemo(() => {
+    if (!arrasto) return nos;
+    const r = nos.map((n) =>
+      n.id === arrasto.id
+        ? { ...n, position: arrasto.pos, className: "mp-erguida", dragging: true }
+        : n.id === cai?.antes
+          ? { ...n, className: "mp-abre-antes" }
+          : n.id === cai?.depois
+            ? { ...n, className: "mp-abre-depois" }
+            : n,
+    );
+    return cai ? [...r, { id: "fresta", type: "fresta", position: cai.fresta, data: {}, draggable: false, selectable: false, zIndex: 999 } as Node] : r;
+  }, [nos, arrasto, cai]);
+
+  const aoMudar: OnNodesChange = (mudancas) => {
+    for (const m of mudancas) if (m.type === "position" && m.position && m.dragging) setArrasto({ id: m.id, pos: m.position });
+  };
+
+  const aoSoltar: OnNodeDrag = (_, no) => {
+    setArrasto(null);
+    const atual = ordem ?? ordemPadrao(q.tomos, q.sem);
+    ajustar(no.id, no.position);
+    if (!cai) return;
+    const de = [...atual.entries()].find(([, ids]) => ids.includes(no.id))?.[0] ?? cai.tomo;
+    const nova = new Map([...atual.entries()].map(([t, ids]) => [t, ids.filter((id) => id !== no.id)]));
+    const destino = [...(nova.get(cai.tomo) ?? [])];
+    destino.splice(cai.indice, 0, no.id);
+    nova.set(cai.tomo, destino);
+    const igual = [...atual.entries()].every(([t, ids]) => ids.join() === (nova.get(t) ?? []).join());
+    if (igual) return;
+    setOrdem(nova);
+    setFeito({ id: no.id, antes: atual, texto: fraseDoArrasto(no.id, de, cai.tomo, cai.antes, q.tomos.length) });
+  };
+
+  const desfazer = () => {
+    if (!feito) return;
+    setOrdem(feito.antes);
+    setFeito(null);
+  };
+
+  // Ctrl+Z desfaz o último arrasto.
+  useEffect(() => {
+    if (!feito) return;
+    const tecla = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") {
+        e.preventDefault();
+        desfazer();
+      }
+    };
+    document.addEventListener("keydown", tecla);
+    return () => document.removeEventListener("keydown", tecla);
+  });
+
   return (
-    <div className={`nw-canvas${pronto ? " nw-canvas--pronto" : ""}${s === "soltou" ? " nw-revela" : ""}${q.pingar ? " nw-pingar" : ""}`}>
-      <Tela nodes={nos} edges={alvo.edges} onFolha={() => {}} onVazio={() => {}} zoomMinimo={0.08} minimapa={false} />
-      <AnimatePresence>{q.vazio && <Chegando key="chegando" />}</AnimatePresence>
+    <div className={`nw-canvas${pronto ? " nw-canvas--pronto" : ""}`}>
+      <Tela nodes={vistos} edges={alvo.edges} onFolha={() => {}} onVazio={() => {}} zoomMinimo={0.08} minimapa={false} arrastavel onNodesChange={aoMudar} onNodeDragStop={aoSoltar} />
+      <AnimatePresence>
+        {feito && (
+          <motion.div
+            key={feito.id + [...(ordem?.values() ?? [])].join()}
+            className="nw-feito"
+            role="status"
+            initial={{ opacity: 0, y: 6, x: "-50%" }}
+            animate={{ opacity: 1, y: 0, x: "-50%" }}
+            exit={{ opacity: 0, x: "-50%" }}
+            transition={{ duration: 0.24, ease: SUAVE }}
+          >
+            {feito.texto}
+            <button type="button" onClick={desfazer}>
+              Desfazer <Tecla>Ctrl Z</Tecla>
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -373,12 +422,14 @@ function Palco({ s, q, lidas }: { s: SituacaoNexo; q: Quadro; lidas: number }) {
 /* ------------------------------ a tela ------------------------------ */
 
 export function TelaNexo({ situacao }: { situacao: SituacaoNexo }) {
-  const { k } = useTempo();
-  const { b, q, lidas, fim } = useRelogio(situacao);
-  const estado = q.lendo && lidas < FOLHAS.length ? `lendo os selos, ${lidas} de ${FOLHAS.length}` : q.lendo ? "33 folhas lidas" : q.estado;
+  // A tela abre no estado da situação, pronta para ler e mexer: nada roda sozinho na frente de quem olha.
+  const q = useMemo(() => quadroDa(situacao, ROTEIROS[situacao].batidas.length), [situacao]);
+  const lidas = situacao === "soltou" ? LIDAS_NA_LEITURA : FOLHAS.length;
+  const lendo = situacao === "soltou";
+  const estado = lendo ? `lendo os selos, ${lidas} de ${FOLHAS.length}` : q.estado;
   return (
     <CartaoAtual.Provider value="carimbo">
-      <div className="mp nw" style={{ ["--k" as string]: k } as CSSProperties}>
+      <div className="mp nw">
         <Topo atual="Painel" />
         <div className="nw-mesa">
           <Conversas />
@@ -389,11 +440,7 @@ export function TelaNexo({ situacao }: { situacao: SituacaoNexo }) {
                 <MarcaDaPrefeitura prefeitura="Criciúma" forma="sinal" />
                 <span className="mp-mono">117-25</span>
                 <span>Mapa do volume</span>
-                <span className="nw-estado">
-                  <Troca chave={q.lendo ? "lendo" : estado} y={4}>
-                    {estado}
-                  </Troca>
-                </span>
+                <span className="nw-estado">{estado}</span>
               </span>
               <span className="nw-vistas" role="tablist" aria-label="Vistas do palco">
                 <button type="button" role="tab" aria-selected>
@@ -413,7 +460,7 @@ export function TelaNexo({ situacao }: { situacao: SituacaoNexo }) {
               </span>
             </header>
             <ReactFlowProvider>
-              <Palco s={situacao} q={q} lidas={lidas} />
+              <Palco q={q} lidas={lidas} />
             </ReactFlowProvider>
           </main>
 
@@ -423,10 +470,10 @@ export function TelaNexo({ situacao }: { situacao: SituacaoNexo }) {
               <span className="mp-g-fraco">117-25</span>
             </header>
             <div className="cx-fio nw-fio">
-              <Fio s={situacao} b={b} lidas={lidas} />
+              <Fio s={situacao} b={ROTEIROS[situacao].batidas.length} lidas={lidas} />
             </div>
             <div className="nw-campo">
-              <Campo respondendo={!fim} />
+              <Campo respondendo={lendo} />
             </div>
           </aside>
         </div>

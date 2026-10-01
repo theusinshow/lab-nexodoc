@@ -15,8 +15,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 const pousa = (t: number) => 1 - Math.pow(1 - t, 4);
 
 /** As posições andam do que está na tela até o alvo. Devolve os nós do quadro atual. */
-export function useNosQueAndam(alvo: Node[], duracao: number): Node[] {
+export function useNosQueAndam(alvo: Node[], duracao: number) {
   const [nos, setNos] = useState<Node[]>(() => alvo);
+  /** Mexe a cada "ajustar": o nó foi solto em outro lugar e precisa andar dali até o alvo. */
+  const [solto, setSolto] = useState(0);
   const naTela = useRef<Node[]>(alvo);
   /** O que nasceu nesta tela, com o atraso da escada: a classe fica até a tela sair. */
   const nasceu = useRef(new Map<string, string>());
@@ -81,9 +83,15 @@ export function useNosQueAndam(alvo: Node[], duracao: number): Node[] {
       cancelAnimationFrame(raf);
       if (tiraSaindo) clearTimeout(tiraSaindo);
     };
-  }, [alvo, duracao]);
+  }, [alvo, duracao, solto]);
 
-  return nos;
+  /** A folha foi solta aqui: ela parte deste ponto (e não do lugar de antes do arrasto). */
+  const ajustar = (id: string, posicao: Node["position"]) => {
+    naTela.current = naTela.current.map((n) => (n.id === id ? { ...n, position: posicao } : n));
+    setSolto((n) => n + 1);
+  };
+
+  return { nos, ajustar };
 }
 
 const TAMANHO_PADRAO = { width: 140, height: 50 };
@@ -112,7 +120,7 @@ function caixaDe(nos: Node[], foco?: string[]) {
  * folha chegar). Na primeira vez, corta direto; depois, viaja. Devolve se já
  * enquadrou, para o palco só aparecer enquadrado.
  */
-export function useCamera(alvo: Node[], foco: string[] | undefined, zoomMaximo: number, duracao: number) {
+export function useCamera(alvo: Node[], foco: string[] | undefined, zoomMaximo: number, duracao: number, seguir = true) {
   const { setViewport } = useReactFlow();
   const largura = useStore((s) => s.width);
   const altura = useStore((s) => s.height);
@@ -123,6 +131,8 @@ export function useCamera(alvo: Node[], foco: string[] | undefined, zoomMaximo: 
 
   useEffect(() => {
     if (!caixa || !largura || !altura) return;
+    // Quem já mexeu na câmera (arrastou o fundo, uma folha) manda nela: ela não volta sozinha.
+    if (jaFoi.current && !seguir) return;
     const vp = getViewportForBounds(caixa, largura, altura, 0.08, zoomMaximo, 0.08);
     setViewport(vp, { duration: jaFoi.current ? duracao * 1000 : 0 });
     if (!jaFoi.current) {

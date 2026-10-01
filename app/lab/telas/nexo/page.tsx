@@ -10,7 +10,7 @@ export default function PaginaDoNexo() {
         <h1>Nexo: montar o volume</h1>
         <p className="lab-lede">
           Como se monta o volume hoje: uma tela só, com as conversas, o mapa do volume no centro e o chat ao lado. Cada pedido no chat
-          reorganiza o mapa, e o que mudou acende.
+          reorganiza o mapa e o que mudou fica marcado; as folhas também se arrumam arrastando.
         </p>
       </header>
       <VitrineDoNexo />

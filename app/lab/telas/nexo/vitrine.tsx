@@ -4,15 +4,15 @@ import { Vitrine } from "../../_lab/vitrine";
 import { TelaNexo, type SituacaoNexo } from "./tela-nexo";
 
 const SITUACOES: { id: SituacaoNexo; nome: string; dica: string }[] = [
-  { id: "soltou", nome: "Soltou os PDFs", dica: "As pranchas entram pelo chat; o Nexo lê os selos e as folhas acendem no mapa, uma a uma, numa fileira só." },
-  { id: "lido", nome: "Leu as folhas", dica: "Tudo lido: o chat resume e propõe a divisão na própria frase (tomos e onde começa o 02), com as saídas embaixo." },
-  { id: "dividido", nome: "Dividiu em 2 tomos", dica: "Pediu no chat; o mapa virou duas fileiras e as folhas que mudaram de lugar (HID e ELE) acendem uma vez." },
-  { id: "tirou", nome: "Tirou uma folha", dica: "\"tira a ARQ-12\": a folha fica apagada e riscada no lugar, com Restaurar no chat, até gerar." },
-  { id: "gerando", nome: "Gerando", dica: "\"pode gerar\": as peças saem no chat e os papéis de capa, LD e separatrizes passam a gerados no mapa, acendendo." },
-  { id: "montado", nome: "Volumes montados", dica: "\"monta os 2 volumes\": os volumes nascem no fim das fileiras e no chat, com Baixar os 2." },
-  { id: "desatualizado", nome: "Volume ficou velho", dica: "Corrigiu a LD pelo chat: a LD e o volume do tomo 01 acendem em âmbar no mapa, e o chat oferece Remontar e baixar." },
+  { id: "soltou", nome: "Lendo os selos", dica: "Os PDFs entraram pelo chat; 14 de 33 folhas já viraram carimbo no mapa, a da vez está marcada e as outras esperam em contorno." },
+  { id: "lido", nome: "Leu as folhas", dica: "Tudo lido: o chat propõe a divisão na própria frase, e o mapa mostra onde cortaria (o traço antes da HID-01)." },
+  { id: "dividido", nome: "Dividiu em 2 tomos", dica: "Duas fileiras; o que mudou de lugar (HID e ELE) fica contornado. Arraste uma folha para outro lugar ou outro tomo." },
+  { id: "tirou", nome: "Tirou uma folha", dica: "A ARQ-12 fica riscada no lugar, com Restaurar no chat, até gerar." },
+  { id: "gerando", nome: "Gerou", dica: "Capa, LD e separatrizes dos 2 tomos gerados: o papel sai do molde tracejado e vira papel." },
+  { id: "montado", nome: "Volumes montados", dica: "Os volumes no fim das fileiras e no chat, com Baixar os 2." },
+  { id: "desatualizado", nome: "Volume ficou velho", dica: "A LD do tomo 01 foi corrigida pelo chat: ela e o volume ficam com contorno âmbar, e o chat oferece Remontar e baixar." },
 ];
 
 export function VitrineDoNexo() {
-  return <Vitrine telaId="nexo" reiniciavel situacoes={SITUACOES} render={(s) => <TelaNexo key={s} situacao={s} />} />;
+  return <Vitrine telaId="nexo" situacoes={SITUACOES} render={(s) => <TelaNexo key={s} situacao={s} />} />;
 }

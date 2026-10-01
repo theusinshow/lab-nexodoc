@@ -1,6 +1,6 @@
 "use client";
 
-import { Background, BackgroundVariant, Handle, MiniMap, Position, ReactFlow, useStore, type Edge, type EdgeProps, type Node, type NodeProps } from "@xyflow/react";
+import { Background, BackgroundVariant, Handle, MiniMap, Position, ReactFlow, useStore, type Edge, type EdgeProps, type Node, type NodeProps, type OnNodeDrag, type OnNodesChange } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import "./cartoes.css";
 import { memo } from "react";
@@ -25,9 +25,14 @@ import { dd } from "./lado";
 export const LARGURA_DA_FOLHA = 140;
 export const ALTURA_DO_NO = 108;
 const LARGURA_DO_DOC = LARGURA_DO_PAPEL + 12;
-/** 24 px entre as folhas: o bastante para a seta se ler como seta, e não como um risco. */
-const PASSO_DA_FOLHA = 164;
-const ENTRE_DISCIPLINAS = 28;
+/** Dentro do bloco as folhas ficam juntas (12 px): não há seta entre elas. */
+const PASSO_DA_FOLHA = 152;
+/** Entre os papéis (capa, separatrizes, LD): espaço para uma seta inteira. */
+const ENTRE_PECAS = 44;
+/** Entre um bloco de folhas e o próximo (ou o papel ao lado). */
+const ENTRE_BLOCOS = 60;
+/** A moldura do bloco passa 10 px por fora das folhas. */
+const FOLGA_DO_BLOCO = 10;
 export const Y_DA_FILEIRA = (i: number) => i * 300;
 /** O papel é mais alto que a folha: sobe para os centros ficarem na mesma linha. */
 const Y_DO_PAPEL = -46;
@@ -38,7 +43,6 @@ export type DadosDaFolha = { f: Folha; lida: boolean; agora?: boolean; escolhida
 export type DadosDoCorte = { texto: string };
 export type DadosDoDoc = { d: Documento; estado: EstadoDoDoc; tomo: number | null; destaque?: boolean };
 export type DadosDoRotulo = { titulo: string; sub: string; resto?: boolean };
-export type DadosDoGrupo = { disc: Disciplina; n: number };
 
 const alcas = (
   <>
@@ -106,47 +110,67 @@ const NoDoRotulo = memo(function NoDoRotulo({ data }: NodeProps<Node<DadosDoRotu
   );
 });
 
-const NoDoGrupo = memo(function NoDoGrupo({ data }: NodeProps<Node<DadosDoGrupo>>) {
+/*
+ * O BLOCO DE FOLHAS. As folhas seguidas da mesma disciplina formam um bloco
+ * só, com moldura e cabeçalho (disciplina e quantas). Dentro do bloco não há
+ * seta: a ordem já é a leitura, da esquerda para a direita. É o que o app faz
+ * hoje (uma seta por folha viraria duzentas linhas cruzando a grade).
+ */
+export type DadosDoBloco = { disc: Disciplina; n: number; largura: number };
+const ALTURA_DO_BLOCO = ALTURA_DO_NO + 54;
+/** O bloco começa 40 px acima da folha (o cabeçalho); a alça fica no centro da FOLHA, não do bloco. */
+const TOPO_DO_BLOCO = -40;
+
+const NoDoBloco = memo(function NoDoBloco({ data }: NodeProps<Node<DadosDoBloco>>) {
   return (
-    <div className="mp-no-grupo">
-      <SeloDaDisciplina disc={data.disc} nome />
-      <span className="ds-num">{data.n}</span>
+    <div className="mp-bloco" style={{ width: data.largura, height: ALTURA_DO_BLOCO }}>
+      <Handle type="target" position={Position.Left} className="mp-alca" isConnectable={false} style={{ top: -TOPO_DO_BLOCO + ALTURA_DO_NO / 2 }} />
+      <Handle type="source" position={Position.Right} className="mp-alca" isConnectable={false} style={{ top: -TOPO_DO_BLOCO + ALTURA_DO_NO / 2 }} />
+      <p className="mp-bloco-cabeca">
+        <SeloDaDisciplina disc={data.disc} nome />
+        <span className="ds-num">{data.n}</span>
+      </p>
     </div>
   );
 });
 
+/** Onde a folha arrastada vai cair: uma fresta íris entre duas folhas. */
+const NoDaFresta = memo(function NoDaFresta() {
+  return <i className="mp-fresta" aria-hidden />;
+});
+
 /*
- * A SETA DA ORDEM DO VOLUME. Uma linha, uma ponta desenhada (não o marcador
- * padrão) e duas camadas de movimento:
- * - a ONDA: um brilho que corre a fileira da capa ao volume, em sequência,
- *   dizendo "é nesta ordem que o volume sai" (só no palco do Nexo);
- * - o FLUXO: nas setas que encostam no que acabou de mudar, um tracejado íris
- *   que corre no sentido da seta enquanto o destaque dura.
- * A seta nova (de uma folha que mudou de vizinha) se DESENHA ao nascer.
+ * A SETA ESTRUTURADA. Liga só peças do volume: capa → separatrizes → LD →
+ * blocos de folhas → volume. Fio fino reto, ponta cheia pequena, como as guias
+ * de uma árvore: estrutura, não enfeite. A que encosta no que mudou fica íris.
+ * Enquanto um bloco anda para outro lugar, a seta dele espera ele pousar.
  */
-export type DadosDaSeta = { i: number; acesa?: boolean; fraca?: boolean };
+export type DadosDaSeta = { acesa?: boolean; fraca?: boolean };
 
 const Seta = memo(function Seta({ sourceX, sourceY, targetX, targetY, data }: EdgeProps<Edge<DadosDaSeta>>) {
-  const x0 = sourceX + 3;
-  const x1 = targetX - 3;
+  const x0 = sourceX + 1;
+  const x1 = targetX - 1;
   const y = (sourceY + targetY) / 2;
-  if (x1 - x0 < 6) return null;
-  const linha = `M${x0},${y} L${x1},${y}`;
-  const ponta = `M${x1 - 4.5},${y - 4} L${x1},${y} L${x1 - 4.5},${y + 4}`;
-  const cls = `mp-seta2${data?.acesa ? " mp-seta2--acesa" : ""}${data?.fraca ? " mp-seta2--fraca" : ""}`;
+  if (x1 - x0 < 14 || x1 - x0 > 140 || Math.abs(sourceY - targetY) > 14) return null;
+  const cls = `mp-seta3${data?.acesa ? " mp-seta3--acesa" : ""}${data?.fraca ? " mp-seta3--fraca" : ""}`;
   return (
-    <g className={cls} style={{ ["--i" as string]: data?.i ?? 0 }}>
-      <path d={linha} pathLength={1} className="mp-seta2-linha" />
-      <path d={linha} pathLength={1} className="mp-seta2-fluxo" />
-      <path d={linha} pathLength={1} className="mp-seta2-onda" />
-      <path d={ponta} className="mp-seta2-ponta" />
+    <g className={cls}>
+      <path d={`M${x0},${y} L${x1 - 5},${y}`} className="mp-seta3-linha" />
+      <path d={`M${x1 - 6},${y - 3.5} L${x1},${y} L${x1 - 6},${y + 3.5} Z`} className="mp-seta3-ponta" />
     </g>
   );
 });
 
 export const TIPOS_DE_SETA = { seta: Seta };
 
-export const TIPOS = { folha: NoDaFolha, doc: NoDoDoc, rotulo: NoDoRotulo, grupo: NoDoGrupo, corte: NoDoCorte };
+export const TIPOS = { folha: NoDaFolha, doc: NoDoDoc, rotulo: NoDoRotulo, bloco: NoDoBloco, corte: NoDoCorte, fresta: NoDaFresta };
+
+/** Os tomos na ordem padrão (a das disciplinas), sem as folhas que saíram. */
+export function ordemPadrao(tomos: Tomo[], sem?: Set<string>) {
+  return new Map(tomos.map((t) => [t.n, FOLHAS.filter((f) => t.disciplinas.includes(f.disc) && !sem?.has(f.id)).map((f) => f.id)]));
+}
+
+const FOLHA_POR_ID = new Map(FOLHAS.map((f) => [f.id, f]));
 
 /** Onde cada coisa fica: as fileiras, e a posição de cada folha para centralizar nela. */
 export function montarCanvas({
@@ -161,7 +185,10 @@ export function montarCanvas({
   removidas,
   sem,
   corteAntesDe,
+  ordemDosTomos,
 }: {
+  /** A ordem das folhas em cada tomo, quando alguém arrastou; sem ela, a das disciplinas. */
+  ordemDosTomos?: Map<number, string[]>;
   /** A divisão proposta e ainda não aceita: o traço entra antes desta folha. */
   corteAntesDe?: string;
   /** Folhas que já saíram do volume: não entram no mapa. */
@@ -182,41 +209,51 @@ export function montarCanvas({
   const edges: Edge[] = [];
   const posicao = new Map<string, { x: number; y: number }>();
   const inicioDaFileira = new Map<number, { x: number; y: number }>();
-  const ordem = new Map(FOLHAS.map((f, i) => [f.id, i]));
-  // i conta a seta DENTRO da fileira: a onda de cada tomo começa junto, na capa.
-  let naFileira = 0;
-  const seta = (a: string, b: string) =>
-    edges.push({
-      id: `${a}>${b}`,
-      source: a,
-      target: b,
-      type: "seta",
-      data: { i: naFileira++, acesa: !!(destaque?.has(a) || destaque?.has(b)), fraca: !!(removidas?.has(a) || removidas?.has(b)) },
-    });
+  /** Para o arrasto: onde cada fileira está e a ordem das folhas nela. */
+  const fileiras: { tomo: number; y: number; folhas: string[] }[] = [];
+  const ordemDeLeitura = new Map(FOLHAS.map((f, i) => [f.id, i]));
+  const ordemDosTomosUsada = ordemDosTomos ?? ordemPadrao(tomos, sem);
+  const seta = (a: string, b: string, acesa: boolean, fraca = false) => edges.push({ id: `${a}>${b}`, source: a, target: b, type: "seta", data: { acesa, fraca } });
 
   tomos.forEach((t, ti) => {
     const y = Y_DA_FILEIRA(ti);
     inicioDaFileira.set(t.n, { x: 0, y });
-    const fs = FOLHAS.filter((f) => t.disciplinas.includes(f.disc) && !sem?.has(f.id));
-    naFileira = 0;
-    nodes.push({ id: `rot-${t.n}`, type: "rotulo", position: { x: 0, y: y + 18 }, data: { titulo: tomos.length === 1 ? "Volume" : `Tomo ${dd(t.n)}`, sub: `${fs.length - (removidas ? fs.filter((f) => removidas.has(f.id)).length : 0)} folhas, ${t.paginas} p.` }, selectable: false });
+    const ids = (ordemDosTomosUsada.get(t.n) ?? []).filter((id) => !sem?.has(id));
+    const fs = ids.map((id) => FOLHA_POR_ID.get(id)!);
+    fileiras.push({ tomo: t.n, y, folhas: ids });
+    const contam = fs.filter((f) => !removidas?.has(f.id)).length;
+    nodes.push({ id: `rot-${t.n}`, type: "rotulo", position: { x: 0, y: y + 18 }, data: { titulo: tomos.length === 1 ? "Volume" : `Tomo ${dd(t.n)}`, sub: `${contam} folhas, ${t.paginas} p.` }, selectable: false, draggable: false });
     let x = X_INICIAL;
-    let anterior: string | null = null;
-    const liga = (id: string) => {
-      if (anterior) seta(anterior, id);
-      anterior = id;
+    let anterior: { id: string; acesa: boolean } | null = null;
+    const liga = (id: string, acesa: boolean) => {
+      if (anterior) seta(anterior.id, id, acesa || anterior.acesa);
+      anterior = { id, acesa };
     };
     for (const d of documentosDoTomo(t)) {
-      nodes.push({ id: d.id, type: "doc", position: { x, y: y + Y_DO_PAPEL }, width: LARGURA_DO_DOC, height: ALTURA_DO_DOC, data: { d, estado: estadoDoDoc(d, t.n), tomo: t.n, destaque: destaque?.has(d.id) } });
-      liga(d.id);
-      x += LARGURA_DO_DOC + 20;
+      nodes.push({ id: d.id, type: "doc", position: { x, y: y + Y_DO_PAPEL }, width: LARGURA_DO_DOC, height: ALTURA_DO_DOC, draggable: false, data: { d, estado: estadoDoDoc(d, t.n), tomo: t.n, destaque: destaque?.has(d.id) } });
+      liga(d.id, !!destaque?.has(d.id));
+      x += LARGURA_DO_DOC + ENTRE_PECAS;
     }
-    for (const disc of t.disciplinas) {
-      x += ENTRE_DISCIPLINAS - 16;
-      const doGrupo = fs.filter((f) => f.disc === disc);
-      nodes.push({ id: `grp-${disc}`, type: "grupo", position: { x, y: y - 28 }, data: { disc, n: doGrupo.length }, selectable: false });
-      for (const f of doGrupo) {
-        if (f.id === corteAntesDe) nodes.push({ id: "corte", type: "corte", position: { x: x - 16, y: y - 70 }, width: 8, height: 230, data: { texto: "tomo 02 começa aqui?" }, selectable: false });
+    // Blocos: cada sequência de folhas seguidas da mesma disciplina.
+    const blocos: Folha[][] = [];
+    for (const f of fs) {
+      const ultimo = blocos[blocos.length - 1];
+      if (ultimo && ultimo[0].disc === f.disc) ultimo.push(f);
+      else blocos.push([f]);
+    }
+    const vezes = new Map<string, number>();
+    x += ENTRE_BLOCOS - ENTRE_PECAS;
+    for (const bloco of blocos) {
+      const disc = bloco[0].disc;
+      const vez = (vezes.get(disc) ?? 0) + 1;
+      vezes.set(disc, vez);
+      const id = `blc-${t.n}-${disc}-${vez}`;
+      const largura = bloco.length * PASSO_DA_FOLHA - (PASSO_DA_FOLHA - LARGURA_DA_FOLHA) + 2 * FOLGA_DO_BLOCO;
+      const aceso = bloco.some((f) => destaque?.has(f.id));
+      nodes.push({ id, type: "bloco", position: { x: x - FOLGA_DO_BLOCO, y: y + TOPO_DO_BLOCO }, width: largura, height: ALTURA_DO_BLOCO, zIndex: -1, selectable: false, draggable: false, data: { disc, n: bloco.filter((f) => !removidas?.has(f.id)).length, largura } });
+      liga(id, aceso);
+      for (const f of bloco) {
+        if (f.id === corteAntesDe) nodes.push({ id: "corte", type: "corte", position: { x: x - ENTRE_BLOCOS / 2 - 4, y: y - 70 }, width: 8, height: 230, data: { texto: "tomo 02 começa aqui?" }, selectable: false, draggable: false });
         posicao.set(f.id, { x, y });
         nodes.push({
           id: f.id,
@@ -224,26 +261,47 @@ export function montarCanvas({
           position: { x, y },
           width: LARGURA_DA_FOLHA,
           height: ALTURA_DO_NO,
-          data: { f, lida: (ordem.get(f.id) ?? 0) < lidas, agora: ordem.get(f.id) === lidas, escolhida: sel === f.id, apagada: !filtro(f), destaque: destaque?.has(f.id), removida: removidas?.has(f.id) },
+          data: { f, lida: (ordemDeLeitura.get(f.id) ?? 0) < lidas, agora: ordemDeLeitura.get(f.id) === lidas, escolhida: sel === f.id, apagada: !filtro(f), destaque: destaque?.has(f.id), removida: removidas?.has(f.id) },
         });
-        liga(f.id);
         x += PASSO_DA_FOLHA;
       }
+      x += ENTRE_BLOCOS - (PASSO_DA_FOLHA - LARGURA_DA_FOLHA);
     }
-    x += ENTRE_DISCIPLINAS;
     const vol: Documento = { id: `vol-${t.n}`, tipo: "volume", nome: `Volume, tomo ${dd(t.n)}`, detalhe: "" };
-    nodes.push({ id: vol.id, type: "doc", position: { x, y: y + Y_DO_PAPEL }, width: LARGURA_DO_DOC, height: ALTURA_DO_DOC, data: { d: vol, estado: estadoDoVolume(t.n), tomo: t.n, destaque: destaque?.has(vol.id) } });
-    liga(vol.id);
+    nodes.push({ id: vol.id, type: "doc", position: { x, y: y + Y_DO_PAPEL }, width: LARGURA_DO_DOC, height: ALTURA_DO_DOC, draggable: false, data: { d: vol, estado: estadoDoVolume(t.n), tomo: t.n, destaque: destaque?.has(vol.id) } });
+    liga(vol.id, !!destaque?.has(vol.id));
   });
 
   if (comSobras) {
     const y = Y_DA_FILEIRA(tomos.length);
     inicioDaFileira.set(0, { x: 0, y });
-    nodes.push({ id: "rot-0", type: "rotulo", position: { x: 0, y: y + 18 }, data: { titulo: "Fora da divisão", sub: "de antes dos tomos", resto: true }, selectable: false });
-    RESTOS.forEach((d, i) => nodes.push({ id: d.id, type: "doc", position: { x: X_INICIAL + i * (LARGURA_DO_DOC + 20), y: y + Y_DO_PAPEL }, width: LARGURA_DO_DOC, height: ALTURA_DO_DOC, data: { d, estado: "sobra", tomo: null } }));
+    nodes.push({ id: "rot-0", type: "rotulo", position: { x: 0, y: y + 18 }, data: { titulo: "Fora da divisão", sub: "de antes dos tomos", resto: true }, selectable: false, draggable: false });
+    RESTOS.forEach((d, i) => nodes.push({ id: d.id, type: "doc", draggable: false, position: { x: X_INICIAL + i * (LARGURA_DO_DOC + ENTRE_PECAS), y: y + Y_DO_PAPEL }, width: LARGURA_DO_DOC, height: ALTURA_DO_DOC, data: { d, estado: "sobra", tomo: null } }));
   }
 
-  return { nodes, edges, posicao, inicioDaFileira };
+  return { nodes, edges, posicao, inicioDaFileira, fileiras };
+}
+
+/**
+ * Onde a folha arrastada cairia: a fileira mais perto do centro dela e, nessa
+ * fileira, entre quais duas folhas. Devolve também onde desenhar a fresta.
+ */
+export function ondeCai(fileiras: { tomo: number; y: number; folhas: string[] }[], posicoes: Map<string, { x: number; y: number }>, arrastada: string, centro: { x: number; y: number }) {
+  let melhor: (typeof fileiras)[number] | null = null;
+  for (const f of fileiras) {
+    const d = Math.abs(centro.y - (f.y + ALTURA_DO_NO / 2));
+    if (d < 160 && (!melhor || d < Math.abs(centro.y - (melhor.y + ALTURA_DO_NO / 2)))) melhor = f;
+  }
+  if (!melhor) return null;
+  const outras = melhor.folhas.filter((id) => id !== arrastada);
+  let indice = outras.findIndex((id) => (posicoes.get(id)?.x ?? 0) + LARGURA_DA_FOLHA / 2 > centro.x);
+  if (indice < 0) indice = outras.length;
+  const antes = outras[indice - 1];
+  const depois = outras[indice];
+  const pa = antes ? posicoes.get(antes) : undefined;
+  const pd = depois ? posicoes.get(depois) : undefined;
+  const x = pa && pd ? (pa.x + LARGURA_DA_FOLHA + pd.x) / 2 : pa ? pa.x + LARGURA_DA_FOLHA + 8 : pd ? pd.x - 8 : X_INICIAL;
+  return { tomo: melhor.tomo, indice, antes, depois, fresta: { x: x - 1.5, y: melhor.y - 8 } };
 }
 
 export function Tela({
@@ -256,7 +314,17 @@ export function Tela({
   enquadrarEm,
   minimapa = true,
   zoomMinimo = 0.3,
+  arrastavel = false,
+  onNodesChange,
+  onNodeDragStop,
+  onMoveStart,
 }: {
+  /** As folhas podem ser arrastadas para outra posição ou outro tomo (como no app). */
+  arrastavel?: boolean;
+  onNodesChange?: OnNodesChange;
+  onNodeDragStop?: OnNodeDrag;
+  /** Quem mexe na câmera (arrasta o fundo, rola) toma o controle dela. */
+  onMoveStart?: (evento: MouseEvent | TouchEvent | null) => void;
   zoomMinimo?: number;
   nodes: Node[];
   edges: Edge[];
@@ -280,7 +348,11 @@ export function Tela({
       fitViewOptions={enquadrar !== undefined ? { padding: 0.08, maxZoom: enquadrar, nodes: enquadrarEm?.map((id) => ({ id })) } : undefined}
       minZoom={zoomMinimo}
       maxZoom={1.5}
-      nodesDraggable={false}
+      nodesDraggable={arrastavel}
+      onNodesChange={onNodesChange}
+      onNodeDragStop={onNodeDragStop}
+      onMoveStart={onMoveStart}
+      nodeDragThreshold={4}
       nodesConnectable={false}
       elementsSelectable={false}
       zoomOnDoubleClick={false}

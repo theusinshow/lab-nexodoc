@@ -51,38 +51,25 @@
 .ds .nw-fio .cx-pecas--coluna .cx-peca-nome, .ds .nw-fio .cx-gerando-linha .cx-peca-nome { flex: 1 1 auto; min-width: 0; }
 .ds .nw-fio .cx-gerando-linha, .ds .nw-fio .cx-gerando-linha > * { min-width: 0; }
 
-/* O PALCO SÓ APARECE ENQUADRADO: nada de um quadro no zoom errado antes da câmera chegar */
-.ds .nw-canvas .react-flow { opacity: 0; transition: opacity 0.35s; }
+/* o palco aparece já enquadrado (sem um quadro no zoom errado antes) */
+.ds .nw-canvas .react-flow { opacity: 0; }
 .ds .nw-canvas--pronto .react-flow { opacity: 1; }
 
-/* o que nasce sobe e aparece; o que sai encolhe e some (no filho: a posição é do React Flow) */
-.ds .nw-canvas .react-flow__node.nw-nasce > * { animation: nw-nasce calc(0.6s * var(--k, 1)) cubic-bezier(0.22, 1, 0.36, 1) both; animation-delay: var(--atraso, 0s); }
-@keyframes nw-nasce { from { opacity: 0; transform: translateY(10px) scale(0.96); } }
-.ds .nw-canvas .react-flow__node.nw-sai > * { animation: nw-sai calc(0.45s * var(--k, 1)) cubic-bezier(0.55, 0, 0.75, 0) both; }
-@keyframes nw-sai { to { opacity: 0; transform: scale(0.86); } }
+/* depois de soltar uma folha: o bloco que nasceu aparece, o que sumiu se apaga (só opacidade) */
+.ds .nw-canvas .react-flow__node.nw-nasce > * { animation: mp-aparece 0.24s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.ds .nw-canvas .react-flow__node.nw-sai > * { animation: nw-sai 0.16s ease-in both; }
+@keyframes nw-sai { to { opacity: 0; } }
 
-/* lida agora: o carimbo aparece no lugar do contorno, saindo do desfoque */
-.ds .nw-revela .mp-no-casca > .ct { animation: nw-revela calc(0.55s * var(--k, 1)) cubic-bezier(0.22, 1, 0.36, 1) both; }
-@keyframes nw-revela { from { opacity: 0; filter: blur(3px); transform: scale(0.97); } }
-
-/* para conferir: a marca pulsa duas vezes, e só */
-.ds .nw-pingar .ct-marca::after { content: ""; position: absolute; inset: 0; border-radius: inherit; animation: nw-ping calc(1.1s * var(--k, 1)) ease-out 2 both; }
-.ds .nw-pingar .ct-marca.mp-tom--aviso::after { --ping: 240 180 80; }
-.ds .nw-pingar .ct-marca.mp-tom--critico::after { --ping: 240 100 100; }
-@keyframes nw-ping { from { box-shadow: 0 0 0 0 rgb(var(--ping, 255 255 255) / 0.8); } to { box-shadow: 0 0 0 16px rgb(var(--ping, 255 255 255) / 0); } }
-
-/* os PDFs chegando: pousam empilhados no meio do palco antes de virar folhas */
-.ds .nw-chegando { position: absolute; inset: 28px; z-index: 5; display: grid; place-content: center; justify-items: center; gap: 18px; border-radius: 14px; outline: 1.5px dashed var(--ds-nexo-line); outline-offset: -1px; background: rgb(163 166 255 / 0.03); }
-.ds .nw-chegando-pilha { display: grid; gap: 6px; }
-.ds .nw-chegando-pdf { display: flex; align-items: center; gap: 9px; height: 34px; padding: 0 12px; border-radius: 8px; background: var(--ds-surface-raised); box-shadow: inset 0 0 0 1px var(--ds-line-default), 0 8px 20px rgb(0 0 0 / 0.35); font-size: 12px; color: var(--ds-text-secondary); }
-.ds .nw-chegando-pdf .mp-mono { font-size: 11.5px; color: var(--ds-text-primary); }
-.ds .nw-chegando-pdf .ds-num { margin-left: auto; padding-left: 14px; color: var(--ds-text-tertiary); }
-.ds .nw-chegando > p { margin: 0; font-size: 13px; color: var(--ds-text-secondary); }
+/* o aviso do que o arrasto fez, com Desfazer: no pé do palco, sem cobrir o mapa */
+.ds .nw-feito { position: absolute; left: 50%; bottom: 16px; z-index: 5; display: flex; align-items: center; gap: 12px; height: 38px; padding: 0 6px 0 14px; border-radius: 10px; background: var(--ds-surface-overlay); box-shadow: var(--ds-shadow-overlay); font-size: 12.5px; color: var(--ds-text-secondary); white-space: nowrap; transform: translateX(-50%); }
+.ds .nw-feito b { font-weight: 400; font-family: var(--ds-font-mono); font-size: 12px; color: var(--ds-text-primary); }
+.ds .nw-feito button { display: inline-flex; align-items: center; gap: 8px; height: 28px; padding: 0 8px 0 10px; border: 0; border-radius: 7px; background: rgb(255 255 255 / 0.06); font: inherit; font-size: 12.5px; color: var(--ds-text-primary); cursor: pointer; transition: background 0.16s; }
+.ds .nw-feito button:hover { background: rgb(255 255 255 / 0.1); }
 
 /* a leitura no chat: barra fina e a conta, no ritmo das folhas */
 .ds .nw-progresso { display: flex; align-items: center; gap: 10px; width: 240px; font-size: 12px; color: var(--ds-text-tertiary); }
 .ds .nw-progresso-barra { position: relative; flex: 1; height: 3px; overflow: hidden; border-radius: 3px; background: rgb(255 255 255 / 0.07); }
-.ds .nw-progresso-barra i { position: absolute; inset: 0; border-radius: inherit; background: var(--ds-nexo); transform-origin: left center; transition: transform calc(0.2s * var(--k, 1)) linear; }
+.ds .nw-progresso-barra i { position: absolute; inset: 0; border-radius: inherit; background: var(--ds-nexo); transform-origin: left center; transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1); }
 .ds .nw-progresso .ds-num { min-width: 76px; text-align: right; }
 
 /* a peça gerada do tomo 01 com o "+1" do tomo 02 ao lado */
@@ -90,16 +77,5 @@
 .ds .nw-peca-e-mais .cx-peca { flex: 1; min-width: 0; }
 .ds .nw-mais { flex: none; font-size: 11.5px; color: var(--ds-text-tertiary); }
 
-@media (prefers-reduced-motion: reduce) {
-  .ds .nw-canvas .react-flow__node.nw-nasce > *, .ds .nw-revela .mp-no-casca > .ct, .ds .nw-pingar .ct-marca::after { animation: none; }
-}
+@media (prefers-reduced-motion: reduce) { .ds .nw-canvas .react-flow__node.nw-nasce > *, .ds .nw-canvas .react-flow__node.nw-sai > * { animation: none; } }
 .ds .nw-fio .cx-gerando-linha, .ds .nw-fio .cx-gerando-linha > span { width: 100%; }
-
-/* A ONDA: no palco do Nexo, um brilho corre cada fileira da capa ao volume, em
-   sequência, e a ponta acende quando ele passa. Diz a ordem em que o volume sai. */
-.ds .nw-canvas .mp-seta2-onda { stroke: var(--ds-nexo-soft); stroke-width: 2.25; stroke-dasharray: 0.45 2; stroke-dashoffset: 0.45; filter: drop-shadow(0 0 3px rgb(163 166 255 / 0.9)); animation: nw-onda calc(7s * var(--k, 1)) linear infinite; animation-delay: calc((1.4s + var(--i) * 0.075s) * var(--k, 1)); }
-@keyframes nw-onda { 0% { stroke-dashoffset: 0.45; } 5% { stroke-dashoffset: -1; } 100% { stroke-dashoffset: -1; } }
-.ds .nw-canvas .mp-seta2:not(.mp-seta2--fraca) .mp-seta2-ponta { animation: mp-aparece calc(0.3s * var(--k, 1)) both, nw-onda-ponta calc(7s * var(--k, 1)) linear infinite; animation-delay: calc((0.3s + var(--i) * 0.015s) * var(--k, 1)), calc((1.4s + var(--i) * 0.075s) * var(--k, 1)); }
-@keyframes nw-onda-ponta { 0%, 3% { stroke: rgb(255 255 255 / 0.4); } 5% { stroke: var(--ds-nexo-soft); } 10%, 100% { stroke: rgb(255 255 255 / 0.4); } }
-.ds .nw-canvas .mp-seta2--acesa .mp-seta2-ponta { animation: mp-aparece calc(0.3s * var(--k, 1)) both; }
-@media (prefers-reduced-motion: reduce) { .ds .nw-canvas .mp-seta2-onda, .ds .nw-canvas .mp-seta2-ponta { animation: none; } }
