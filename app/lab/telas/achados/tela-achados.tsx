@@ -119,7 +119,7 @@ function DoParecer({ p, lado }: { p: Parecer; lado: Lado }) {
         ))}
       </ul>
       <div className="mp-lado-pe">
-        <Botao variante={lado === "com-voce" ? "primary" : "ghost"} className="mp-gerar" onClick={() => ir("resultado", "fila")}>
+        <Botao variante={lado === "com-voce" ? "primary" : "ghost"} className="mp-gerar" onClick={() => ir("nexo-auditoria", "pronta")}>
           Abrir o parecer <Tecla>↵</Tecla>
         </Botao>
       </div>

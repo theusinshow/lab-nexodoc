@@ -46,13 +46,13 @@ const ease = (c: readonly number[]) => [...c] as [number, number, number, number
 
 /** Para onde cada tarefa leva depois do arquivo lido (no protótipo). */
 const SEGUE: Record<IdTarefa, [IdTela, string]> = {
-  auditar: ["auditoria", "enviando"],
+  auditar: ["nexo-auditoria", "rodando"],
   volume: ["nexo", "soltou"],
   ld: ["mapa", "lendo-selos"],
   conferir: ["mapa", "lendo-selos"],
 };
 const RETOMA = (trabalho: string): [IdTela, string] =>
-  trabalho.startsWith("Auditoria") ? ["resultado", "nao-emitir"] : trabalho.startsWith("Volume") ? ["nexo", "montado"] : ["projeto", "com-registros"];
+  trabalho.startsWith("Auditoria") ? ["nexo-auditoria", "pronta"] : trabalho.startsWith("Volume") ? ["nexo", "montado"] : ["projeto", "com-registros"];
 
 /**
  * INÍCIO D, REVISTO. O D acertou o essencial (o que fazer, o que ter em mãos);
@@ -282,7 +282,7 @@ export function TelaInicioD2({ situacao }: { situacao: SituacaoD2 }) {
               <>
                 <ul className="d2-achados">
                   {comVoce.map((a) => (
-                    <li key={a.titulo} tabIndex={0} onClick={() => ir("resultado", "fila")} onKeyDown={(e) => e.key === "Enter" && ir("resultado", "fila")}>
+                    <li key={a.titulo} tabIndex={0} onClick={() => ir("nexo-auditoria", "achado")} onKeyDown={(e) => e.key === "Enter" && ir("nexo-auditoria", "achado")}>
                       <i className={`d2-grav d2-grav--${a.grav}`} aria-hidden />
                       <span className="d2-achado-texto">
                         <b>{a.titulo}</b>

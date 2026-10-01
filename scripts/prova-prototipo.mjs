@@ -34,27 +34,30 @@ await passo("Tarefa Auditar, soltar o arquivo", async () => {
   await clicar(".d2-tarefa");
   await clicar(".d2-soltar");
 });
-await passo("Ação principal leva à Auditoria (enviando)", async () => {
+await passo("Ação principal abre a auditoria na conversa", async () => {
   await clicar(".d2-recebido .ds-btn--primary");
-  await p.waitForFunction(() => location.hash.startsWith("#/auditoria/enviando"), null, { timeout: 4000 });
-});
-await passo("Enviando vira Em curso sozinho", async () => {
-  await p.waitForFunction(() => location.hash === "#/auditoria/em-curso", null, { timeout: 6000 });
+  await p.waitForFunction(() => location.hash.startsWith("#/nexo-auditoria/rodando"), null, { timeout: 4000 });
 });
 await p.screenshot({ path: `${S}/pt-03-auditoria.png` });
-await passo("Painel do protótipo: situação Concluída", async () => {
-  await clicar(".pt-pilula");
-  await clicar('.pt-chips button:has-text("Concluída")');
-  await p.keyboard.press("Escape");
-});
-await passo("Abrir o resultado", async () => {
-  await clicar('button:has-text("Abrir o resultado")');
-  await p.waitForFunction(() => location.hash.startsWith("#/resultado"), null, { timeout: 4000 });
+await passo("A auditoria termina sozinha e o resultado abre no palco", async () => {
+  await p.waitForFunction(() => location.hash === "#/nexo-auditoria/pronta", null, { timeout: 16000 });
 });
 await p.screenshot({ path: `${S}/pt-04-resultado.png` });
-await passo("Voltar do navegador volta à auditoria", async () => {
+await passo("Perguntar no chat abre o achado no palco", async () => {
+  await p.locator(".nw-campo textarea").fill("o que é a ACH-003?");
+  await p.keyboard.press("Enter");
+  await p.waitForFunction(() => /1\.240/.test(document.querySelector(".na-palco")?.textContent ?? ""), null, { timeout: 4000 });
+});
+await passo("Tela cheia leva ao Resultado, que volta à conversa", async () => {
+  await clicar('button[aria-label="Abrir em tela cheia"]');
+  await p.waitForFunction(() => location.hash.startsWith("#/resultado"), null, { timeout: 4000 });
+  await p.waitForTimeout(1200);
+  await clicar('button[title^="Perguntar ao Nexo"]');
+  await p.waitForFunction(() => location.hash.startsWith("#/nexo-auditoria"), null, { timeout: 4000 });
+});
+await passo("Voltar do navegador volta ao resultado", async () => {
   await p.goBack();
-  await p.waitForFunction(() => location.hash.startsWith("#/auditoria"), null, { timeout: 4000 });
+  await p.waitForFunction(() => location.hash.startsWith("#/resultado"), null, { timeout: 4000 });
   await p.goForward();
 });
 await passo("Barra de cima: Projetos", async () => clicar('.pn-nav a:has-text("Projetos")'));
@@ -69,13 +72,16 @@ await passo("Projeto: tarefa Volume leva ao Nexo", async () => {
   await p.waitForFunction(() => location.hash.startsWith("#/nexo"), null, { timeout: 4000 });
 });
 await p.screenshot({ path: `${S}/pt-06-nexo.png` });
-await passo("Nexo: conversa de auditoria abre a Conversa", async () => {
+await passo("Nexo: a conversa da auditoria abre no shell", async () => {
   await clicar('.nw-conversas li:has-text("Auditar o memorial geral")');
-  await p.waitForFunction(() => location.hash.startsWith("#/conversa/auditoria-pronta"), null, { timeout: 4000 });
+  await p.waitForFunction(() => location.hash.startsWith("#/nexo-auditoria/pronta"), null, { timeout: 4000 });
 });
-await passo("Conversa: saída Abrir o resultado", async () => {
-  await clicar('.cx-saida:has-text("Abrir o resultado")');
-  await p.waitForFunction(() => location.hash.startsWith("#/resultado"), null, { timeout: 4000 });
+await passo("Conversa da auditoria: aba Mapa do volume", async () => {
+  await clicar('.nw-vistas button:has-text("Mapa do volume")');
+  await p.waitForFunction(() => location.hash.startsWith("#/nexo/"), null, { timeout: 4000 });
+  await p.waitForTimeout(1200);
+  await clicar('.nw-vistas button:has-text("Auditoria")');
+  await p.waitForFunction(() => location.hash.startsWith("#/nexo-auditoria"), null, { timeout: 4000 });
 });
 await passo("Ctrl K abre a busca", async () => {
   await p.keyboard.press("Control+k");
@@ -96,19 +102,19 @@ await passo("Sino: Abrir Achados", async () => {
   await clicar('[role=menuitem]:has-text("Abrir Achados")');
   await p.waitForFunction(() => location.hash.startsWith("#/achados"), null, { timeout: 4000 });
 });
-await passo("Achados: Abrir o parecer", async () => {
+await passo("Achados: Abrir o parecer abre a conversa", async () => {
   await clicar(".mp-g-linha");
   await clicar('.ds-btn:has-text("Abrir o parecer")');
-  await p.waitForFunction(() => location.hash.startsWith("#/resultado/fila"), null, { timeout: 4000 });
+  await p.waitForFunction(() => location.hash.startsWith("#/nexo-auditoria"), null, { timeout: 4000 });
 });
 await passo("Barra: Administração", async () => clicar('.pn-nav a:has-text("Administração")'));
 await p.screenshot({ path: `${S}/pt-07-admin.png` });
 await passo("Barra: Ajuda", async () => clicar('.pn-nav a:has-text("Ajuda")'));
-await passo("Barra: Montar volumes", async () => clicar('.pn-nav a:has-text("Montar volumes")'));
+await passo("Barra: Nexo", async () => clicar('.pn-nav a:has-text("Nexo")'));
 await passo("Marca do Nexo volta ao Início", async () => clicar("a.pn-marca"));
-await passo("Início: Continuar (auditoria) abre o resultado", async () => {
+await passo("Painel: Continuar (auditoria) abre a conversa", async () => {
   await clicar(".d2-tabela tbody tr");
-  await p.waitForFunction(() => location.hash.startsWith("#/resultado"), null, { timeout: 4000 });
+  await p.waitForFunction(() => location.hash.startsWith("#/nexo-auditoria"), null, { timeout: 4000 });
 });
 await passo("Painel: ir para a página 404", async () => {
   await clicar(".pt-pilula");

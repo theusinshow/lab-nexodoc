@@ -234,13 +234,13 @@ export function Lacuna({ valor, opcoes, vazio, mono }: { valor: string | null; o
 /** As saídas: entram em escada curta, afundam de leve ao clicar, cada uma com a sua tecla. */
 /** As saídas do chat que levam a outra tela (no protótipo). */
 const SAIDA_LEVA: Record<string, [IdTela, string]> = {
-  "Abrir o resultado": ["resultado", "nao-emitir"],
-  "Auditar de novo (nova rodada)": ["auditoria", "enviando"],
+  "Abrir o resultado": ["nexo-auditoria", "pronta"],
+  "Auditar de novo (nova rodada)": ["nexo-auditoria", "rodando"],
   "Montar o volume": ["nexo", "soltou"],
   "Abrir a ELE-04": ["mapa", "folha-aberta"],
 };
 
-export function Saidas({ itens }: { itens: { texto: string; principal?: boolean }[] }) {
+export function Saidas({ itens, onEscolher }: { itens: { texto: string; principal?: boolean }[]; onEscolher?: (texto: string) => void }) {
   const { k } = useTempo();
   const ir = useIr();
   return (
@@ -250,7 +250,7 @@ export function Saidas({ itens }: { itens: { texto: string; principal?: boolean 
           key={it.texto}
           type="button"
           className={`cx-saida${it.principal ? " cx-saida--principal" : ""}`}
-          onClick={() => SAIDA_LEVA[it.texto] && ir(...SAIDA_LEVA[it.texto])}
+          onClick={() => (SAIDA_LEVA[it.texto] ? ir(...SAIDA_LEVA[it.texto]) : onEscolher?.(it.texto))}
           initial={{ opacity: 0, y: 4 }}
           animate={{ opacity: 1, y: 0 }}
           whileTap={{ scale: 0.98, transition: { duration: RITMO.toque * k } }}

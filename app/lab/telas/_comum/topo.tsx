@@ -20,7 +20,7 @@ import "./topo.css";
  */
 export const ControleDoTopo = createContext<{ onBusca?: () => void; onAtalhos?: () => void; aberto?: "menu" | "sino" | null; pularVisivel?: boolean }>({});
 
-const DESTINOS = ["Painel", "Projetos", "Montar volumes", "Achados", "Ajuda", "Administração"] as const;
+const DESTINOS = ["Painel", "Nexo", "Projetos", "Achados", "Ajuda", "Administração"] as const;
 type Destino = (typeof DESTINOS)[number];
 
 /**
@@ -205,7 +205,7 @@ function Sino({ ponto, abertoInicial }: { ponto: boolean; abertoInicial: boolean
               COM_VOCE.map((c) => {
                 const bloqueiam = c.achados.filter((a) => a.impacto === "block").length;
                 return (
-                  <button key={c.id} type="button" role="menuitem" className="pn-sino-item" onClick={() => (p.fechar(false), ir("resultado", "fila"))}>
+                  <button key={c.id} type="button" role="menuitem" className="pn-sino-item" onClick={() => (p.fechar(false), ir("nexo-auditoria", "achado"))}>
                     <span className="pn-sino-linha">
                       <span className="ds-code">{c.codigo}</span>
                       <b>{c.titulo}</b>

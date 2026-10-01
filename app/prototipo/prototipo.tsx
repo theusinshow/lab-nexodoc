@@ -28,6 +28,8 @@ import { SITUACOES as S_INICIO } from "../lab/telas/inicio-d2/vitrine";
 import { TelaMapa } from "../lab/telas/mapa/tela-mapa";
 import { SITUACOES as S_MAPA } from "../lab/telas/mapa/vitrine";
 import { TelaNexo } from "../lab/telas/nexo/tela-nexo";
+import { TelaNexoAuditoria } from "../lab/telas/nexo-auditoria/tela-nexo-auditoria";
+import { SITUACOES as S_NEXO_AUD } from "../lab/telas/nexo-auditoria/vitrine";
 import { SITUACOES as S_NEXO } from "../lab/telas/nexo/vitrine";
 import { SITUACOES as S_PARECER } from "../lab/telas/parecer/vitrine";
 import { AVISOS, type ModeloDeAviso } from "../lab/telas/pecas/dados";
@@ -51,8 +53,9 @@ type Tela = { nome: string; grupo: string; situacoes: Situacao[]; render: (s: st
 const TELAS: Record<IdTela, Tela> = {
   entrada: { nome: "Entrada", grupo: "Entrar", situacoes: S_ENTRADA, render: (s) => <TelaEntrada situacao={s as any} /> },
   inicio: { nome: "Painel", grupo: "Trabalhar", situacoes: S_INICIO, render: (s) => <TelaInicioD2 situacao={s as any} /> },
+  "nexo-auditoria": { nome: "Nexo: a auditoria", grupo: "Trabalhar", situacoes: S_NEXO_AUD, render: (s) => <TelaNexoAuditoria situacao={s as any} /> },
   conversa: { nome: "Conversa com o Nexo", grupo: "Trabalhar", situacoes: S_CONVERSA, render: (s) => <TelaConversa situacao={s as any} /> },
-  nexo: { nome: "Montar o volume", grupo: "Trabalhar", situacoes: S_NEXO, render: (s) => <TelaNexo situacao={s as any} /> },
+  nexo: { nome: "Nexo: montar o volume", grupo: "Trabalhar", situacoes: S_NEXO, render: (s) => <TelaNexo situacao={s as any} /> },
   mapa: { nome: "Mapa do volume", grupo: "Trabalhar", situacoes: S_MAPA, render: (s) => <TelaMapa situacao={s as any} /> },
   auditoria: { nome: "Auditoria rodando", grupo: "Auditar", situacoes: S_AUDITORIA, render: (s) => <TelaAuditoria situacao={s as any} /> },
   resultado: {

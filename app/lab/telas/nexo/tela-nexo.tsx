@@ -42,7 +42,8 @@ const LIDAS_NA_LEITURA = 14;
 
 /* ------------------------------ as conversas ------------------------------ */
 
-function Conversas() {
+/** As conversas, por obra. É a mesma coluna no volume e na auditoria. */
+export function Conversas({ ativa = "volume" }: { ativa?: "volume" | "auditoria" }) {
   const ir = useIr();
   const pastas = [
     {
@@ -51,8 +52,8 @@ function Conversas() {
       cliente: "Criciúma",
       aberta: true,
       conversas: [
-        { titulo: "Montar o volume", tipo: "montagem", quando: "18:02", ativa: true },
-        { titulo: "Auditar o memorial geral", tipo: "auditoria", quando: "21:08" },
+        { titulo: "Auditar o memorial geral", tipo: "auditoria", quando: "21:08", ativa: ativa === "auditoria" },
+        { titulo: "Montar o volume", tipo: "montagem", quando: "18:02", ativa: ativa === "volume" },
         { titulo: "LD, capa e separatrizes", tipo: "montagem", quando: "29/09" },
       ],
     },
@@ -80,7 +81,7 @@ function Conversas() {
             {p.conversas && (
               <ul>
                 {p.conversas.map((c) => (
-                  <li key={c.titulo} className={c.ativa ? "nw-ativa" : undefined} onClick={() => !c.ativa && ir("conversa", c.tipo === "auditoria" ? "auditoria-pronta" : "plano-de-geracao")}>
+                  <li key={c.titulo} className={c.ativa ? "nw-ativa" : undefined} onClick={() => !c.ativa && (c.tipo === "auditoria" ? ir("nexo-auditoria", "pronta") : c.titulo === "Montar o volume" ? ir("nexo", "lido") : ir("conversa", "plano-de-geracao"))}>
                     <span className="nw-conversa-titulo">{c.titulo}</span>
                     <span className="nw-conversa-meta">
                       <span>{c.tipo}</span>
@@ -427,6 +428,16 @@ function Palco({ q, lidas }: { q: Quadro; lidas: number }) {
   );
 }
 
+/** A aba Auditoria do palco leva à conversa da auditoria (no protótipo). */
+function NoPalco() {
+  const ir = useIr();
+  return (
+    <button type="button" role="tab" aria-selected={false} onClick={() => ir("nexo-auditoria", "pronta")}>
+      Auditoria
+    </button>
+  );
+}
+
 /* ------------------------------ a tela ------------------------------ */
 
 export function TelaNexo({ situacao }: { situacao: SituacaoNexo }) {
@@ -438,7 +449,7 @@ export function TelaNexo({ situacao }: { situacao: SituacaoNexo }) {
   return (
     <CartaoAtual.Provider value="carimbo">
       <div className="mp nw">
-        <Topo atual="Montar volumes" />
+        <Topo atual="Nexo" />
         <div className="nw-mesa">
           <Conversas />
 
@@ -454,9 +465,7 @@ export function TelaNexo({ situacao }: { situacao: SituacaoNexo }) {
                 <button type="button" role="tab" aria-selected>
                   Mapa do volume
                 </button>
-                <button type="button" role="tab" aria-selected={false}>
-                  Auditoria
-                </button>
+                <NoPalco />
               </span>
               <span className="nw-espaco">
                 <button type="button" aria-label="Recolher as conversas" title="Recolher as conversas">

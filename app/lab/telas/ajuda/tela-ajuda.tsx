@@ -83,7 +83,7 @@ function OPrincipal({ onAbrir }: { onAbrir: (id: string) => void }) {
 }
 
 /** Onde cada tarefa começa, no protótipo. */
-const COMECA_EM: Record<string, [IdTela, string?]> = { Painel: ["inicio"], Resultado: ["resultado", "nao-emitir"], Nexo: ["nexo"] };
+const COMECA_EM: Record<string, [IdTela, string?]> = { Painel: ["inicio"], Resultado: ["nexo-auditoria", "pronta"], Nexo: ["nexo"] };
 
 function DaTarefa({ t, onPalavra }: { t: Tarefa; onPalavra: (id: string) => void }) {
   const ir = useIr();

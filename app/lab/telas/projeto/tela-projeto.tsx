@@ -30,7 +30,7 @@ const semAcento = (t: string) => t.normalize("NFD").replace(/[\u0300-\u036f]/g, 
 /** As quatro tarefas da obra, cada uma com o estado real e a ação que ela pede. */
 /** Onde cada tarefa da obra leva (no protótipo). */
 const LEVA: Record<string, (vazio: boolean) => [IdTela, string]> = {
-  auditoria: (vazio) => (vazio ? ["auditoria", "enviando"] : ["resultado", "nao-emitir"]),
+  auditoria: (vazio) => (vazio ? ["nexo-auditoria", "rodando"] : ["nexo-auditoria", "pronta"]),
   ld: () => ["mapa", "lido"],
   capas: () => ["conversa", "plano-de-geracao"],
   volume: (vazio) => (vazio ? ["nexo", "soltou"] : ["nexo", "montado"]),
@@ -72,7 +72,7 @@ function Agora() {
             <b>2 achados esperam por você</b>
             <span>Memorial geral, rev. A: os 2 impedem a entrega.</span>
           </span>
-          <button type="button" className="mp-lista-ver" onClick={() => ir("resultado", "fila")}>
+          <button type="button" className="mp-lista-ver" onClick={() => ir("nexo-auditoria", "achado")}>
             Abrir
           </button>
         </li>
@@ -81,7 +81,7 @@ function Agora() {
             <b>O memorial elétrico não foi auditado</b>
             <span>Enviado por Carla em 22/09.</span>
           </span>
-          <button type="button" className="mp-lista-ver" onClick={() => ir("auditoria", "enviando")}>
+          <button type="button" className="mp-lista-ver" onClick={() => ir("nexo-auditoria", "rodando")}>
             Auditar
           </button>
         </li>
@@ -145,7 +145,7 @@ function DoItem({ it, aba }: { it: Item; aba: Aba }) {
       <div className="mp-acoes">
         {!evento && (
           <>
-            <button type="button" className="mp-acao" onClick={() => ir("resultado", "memorial")}>
+            <button type="button" className="mp-acao" onClick={() => ir("nexo-auditoria", "no-documento")}>
               <ArrowUpRight size={14} /> Abrir <Tecla>O</Tecla>
             </button>
             <button type="button" className="mp-acao">
@@ -157,7 +157,7 @@ function DoItem({ it, aba }: { it: Item; aba: Aba }) {
           <MessageSquare size={14} /> Ver na conversa
         </button>
         {aba === "documentos" && it.situacao === "não auditado" && (
-          <button type="button" className="mp-acao" onClick={() => ir("auditoria", "enviando")}>
+          <button type="button" className="mp-acao" onClick={() => ir("nexo-auditoria", "rodando")}>
             <Search size={14} /> Auditar este memorial
           </button>
         )}

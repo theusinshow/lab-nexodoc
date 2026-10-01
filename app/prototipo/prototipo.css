@@ -107,3 +107,8 @@
 .ds .pt-telas button .ds-num { color: var(--ds-text-tertiary); }
 
 .ds .pt-painel-pe { display: flex; justify-content: space-between; gap: 12px; padding-top: 10px; border-top: 1px solid var(--ds-line-subtle); color: var(--ds-text-tertiary); font-size: var(--ds-text-2xs); }
+
+/* O shell do Nexo (conversas | palco | chat) ocupa a tela exata, qualquer que
+   seja a altura da barra de cima: o campo do chat nunca cai abaixo da dobra. */
+.ds .pt-tela > .nw { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+.ds .pt-tela > .nw > .nw-mesa { flex: 1; height: auto; min-height: 0; }

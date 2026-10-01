@@ -197,7 +197,7 @@ export function NoDocumento({
           <span>
             <b>5 páginas só com desenho não foram lidas</b> (38 a 42). A análise é do texto; transcrever lê o que está escrito nos desenhos e audita de novo.
           </span>
-          <Botao variante="ghost" tamanho="sm" onClick={() => ir("auditoria", "enviando")}>
+          <Botao variante="ghost" tamanho="sm" onClick={() => ir("nexo-auditoria", "rodando")}>
             Transcrever e auditar
           </Botao>
         </div>

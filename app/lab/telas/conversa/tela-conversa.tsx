@@ -48,13 +48,33 @@ const GERADOS = [
  * enviar. Os arquivos entram e saem com layout (os vizinhos escorregam para o
  * lugar); enviar vira Parar girando, e acende quando há o que mandar.
  */
-export function Campo({ arquivos: iniciais, respondendo, texto: inicial = "", modo }: { arquivos?: Arquivo[]; respondendo?: boolean; texto?: string; modo?: boolean }) {
+export function Campo({
+  arquivos: iniciais,
+  respondendo,
+  texto: inicial = "",
+  modo,
+  onEnviar,
+  dica,
+}: {
+  arquivos?: Arquivo[];
+  respondendo?: boolean;
+  texto?: string;
+  modo?: boolean;
+  /** Quem quer a mensagem (o chat do Nexo na auditoria): Enter envia e o campo limpa. */
+  onEnviar?: (texto: string) => void;
+  dica?: string;
+}) {
   const { k } = useTempo();
   const [texto, setTexto] = useState(inicial);
   const [arquivos, setArquivos] = useState(iniciais ?? []);
   const pode = !!texto.trim() || arquivos.length > 0;
+  const enviar = () => {
+    if (!onEnviar || respondendo || !texto.trim()) return;
+    onEnviar(texto.trim());
+    setTexto("");
+  };
   return (
-    <form className="cx-campo" onSubmit={(e) => e.preventDefault()}>
+    <form className="cx-campo" onSubmit={(e) => (e.preventDefault(), enviar())}>
       <AnimatePresence initial={false}>
         {arquivos.length > 0 && (
           <motion.div className="cx-campo-arquivos" initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0, paddingBottom: 0 }} transition={{ duration: RITMO.troca * k, ease: SUAVE }}>
@@ -79,7 +99,19 @@ export function Campo({ arquivos: iniciais, respondendo, texto: inicial = "", mo
           </motion.div>
         )}
       </AnimatePresence>
-      <textarea rows={1} value={texto} onChange={(e) => setTexto(e.target.value)} placeholder={respondendo ? "O Nexo está respondendo" : "Peça em texto: “cria a LD e a capa dessas pranchas”, ou solte os PDFs"} aria-label="Mensagem para o Nexo" />
+      <textarea
+        rows={1}
+        value={texto}
+        onChange={(e) => setTexto(e.target.value)}
+        onKeyDown={(e) => {
+          if (onEnviar && e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            enviar();
+          }
+        }}
+        placeholder={respondendo ? "O Nexo está respondendo" : dica ?? "Peça em texto: “cria a LD e a capa dessas pranchas”, ou solte os PDFs"}
+        aria-label="Mensagem para o Nexo"
+      />
       <div className="cx-campo-pe">
         <motion.button type="button" className="cx-campo-botao" aria-label="Anexar PDFs" title="Anexar PDFs" whileTap={{ scale: 0.94 }}>
           <Paperclip size={16} />
@@ -346,7 +378,7 @@ export function TelaConversa({ situacao }: { situacao: SituacaoConversa }) {
 
   return (
     <div className="cx" ref={ref}>
-      <Topo atual={null} />
+      <Topo atual="Nexo" />
       <header className="cx-cabeca">
         <span className="cx-cabeca-obra">
           <MarcaDaPrefeitura prefeitura="Criciúma" forma="sinal" />

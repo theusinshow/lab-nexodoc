@@ -148,7 +148,7 @@ function mmss(s: number) {
  * achados até agora. Embaixo, o que vem depois: dá para sair, e o resultado
  * abre aqui.
  */
-export function TelaAuditoria({ situacao }: { situacao: SituacaoAud }) {
+export function TelaAuditoria({ situacao, embutido = false }: { situacao: SituacaoAud; embutido?: boolean }) {
   const { dur, k } = useTempo();
   const concluida = situacao === "concluida";
   const falhou = situacao === "falhou";
@@ -243,8 +243,8 @@ export function TelaAuditoria({ situacao }: { situacao: SituacaoAud }) {
 
 
   return (
-    <div className="au">
-      <Topo atual={null} trabalhando={rodando} />
+    <div className={`au${embutido ? " au--embutido" : ""}`}>
+      {!embutido && <Topo atual={null} trabalhando={rodando} />}
 
       <div className="au-corpo">
         <header className={`au-painel au-painel--${estadoDoPainel}`}>
@@ -342,7 +342,7 @@ export function TelaAuditoria({ situacao }: { situacao: SituacaoAud }) {
               <Botao variante="ghost" tamanho="sm" onClick={() => ir("resultado", "parecer-gerando")}>
                 Exportar parecer em PDF
               </Botao>
-              <Botao variante="primary" onClick={() => ir("resultado", "nao-emitir")}>
+              <Botao variante="primary" onClick={() => ir("nexo-auditoria", "pronta")}>
                 <FileSearch />
                 Abrir o resultado
               </Botao>

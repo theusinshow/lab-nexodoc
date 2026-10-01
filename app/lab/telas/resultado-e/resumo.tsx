@@ -103,7 +103,7 @@ export function Resumo({
           <FaixaDeVeredito posicao={POSICAO[estado]} faixas={FAIXAS} valor={marcador} />
         </div>
         {estado === "incompleto" && (
-          <Botao variante="primary" tamanho="sm" className="rs-porque-acao" onClick={() => ir("auditoria", "enviando")}>
+          <Botao variante="primary" tamanho="sm" className="rs-porque-acao" onClick={() => ir("nexo-auditoria", "rodando")}>
             <RotateCcw />
             Auditar de novo
           </Botao>

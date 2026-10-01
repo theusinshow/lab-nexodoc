@@ -136,7 +136,7 @@ function DaObra({ o }: { o: Obra }) {
         <div className="mp-acoes">
           {!arquivada && (
             <>
-              <button type="button" className="mp-acao" onClick={() => ir("auditoria", "enviando")}>
+              <button type="button" className="mp-acao" onClick={() => ir("nexo-auditoria", "rodando")}>
                 <FileSearch size={14} /> Auditar documentos
               </button>
               <button type="button" className="mp-acao" onClick={() => ir("nexo", "soltou")}>

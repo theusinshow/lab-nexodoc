@@ -14,6 +14,7 @@ export type IdTela =
   | "inicio"
   | "conversa"
   | "nexo"
+  | "nexo-auditoria"
   | "mapa"
   | "projetos"
   | "projeto"
@@ -44,7 +45,8 @@ export function useNoPrototipo() {
 export const DESTINO_DA_BARRA: Record<string, [IdTela, string?]> = {
   Painel: ["inicio"],
   Projetos: ["projetos"],
-  "Montar volumes": ["nexo"],
+  // o Nexo abre na conversa mais recente: a auditoria do memorial geral da 117-25
+  Nexo: ["nexo-auditoria", "pronta"],
   Achados: ["achados"],
   Ajuda: ["ajuda"],
   Administração: ["admin", "cockpit"],

@@ -170,7 +170,7 @@ function Mapa({ situacao }: { situacao: SituacaoMapa }) {
 
   return (
     <div className="mp">
-      <Topo atual="Montar volumes" />
+      <Topo atual="Nexo" />
       <header className="mp-cabeca">
         <div>
           <p className="mp-trilha">

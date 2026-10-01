@@ -651,7 +651,7 @@ export function TelaVolumes({ situacao }: { situacao: SituacaoVolumes }) {
 
   return (
     <div className="mp pj vl vx">
-      <Topo atual="Montar volumes" />
+      <Topo atual={null} />
       <header className="mp-cabeca">
         <div>
           <p className="mp-trilha">

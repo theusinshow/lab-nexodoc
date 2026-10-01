@@ -24,13 +24,13 @@ const ARQUIVO = "117_25_md_geral_a.pdf";
 
 /** No protótipo, o item escolhido leva a uma tela depois do "começando…". */
 function destinoDoItem(id: string): [IdTela, string] {
-  if (id === "arq-auditar" || id === "arq-comparar") return ["auditoria", "enviando"];
+  if (id === "arq-auditar" || id === "arq-comparar") return ["nexo-auditoria", "rodando"];
   if (id === "arq-guardar") return ["projeto", "com-registros"];
   if (id === "nexo") return ["conversa", "respondendo"];
   if (id === "tar-auditar") return ["inicio", "tarefa-escolhida"];
   if (id === "tar-volume") return ["nexo", "soltou"];
   if (id.startsWith("tar-")) return ["mapa", "lendo-selos"];
-  if (id.startsWith("rec-")) return ["resultado", "nao-emitir"];
+  if (id.startsWith("rec-")) return ["nexo-auditoria", "pronta"];
   return ["projeto", "com-registros"];
 }
 const ease = (c: readonly number[]) => [...c] as [number, number, number, number];

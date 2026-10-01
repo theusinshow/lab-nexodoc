@@ -3,7 +3,7 @@
  * ativo: barra de 300 px, palco no centro, copiloto docado à direita.
  */
 .ds .nw { min-height: 100%; }
-.ds .nw-mesa { display: grid; grid-template-columns: 240px minmax(0, 1fr) 430px; height: 900px; border-top: 1px solid var(--ds-line-subtle); }
+.ds .nw-mesa { display: grid; grid-template-columns: 240px minmax(0, 1fr) 430px; height: calc(100vh - 64px); min-height: 640px; border-top: 1px solid var(--ds-line-subtle); }
 
 /* conversas */
 .ds .nw-conversas { display: flex; flex-direction: column; gap: 10px; min-width: 0; padding: 14px 12px; border-right: 1px solid var(--ds-line-subtle); overflow: auto; }

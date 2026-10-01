@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
-import { AlertTriangle, ArrowLeft, FileSearch, FileSpreadsheet, FileText, LayoutList, ListChecks, MessageSquareWarning, RotateCcw, ScrollText } from "lucide-react";
+import { AlertTriangle, ArrowLeft, FileSearch, FileSpreadsheet, FileText, LayoutList, ListChecks, MessageSquare, MessageSquareWarning, RotateCcw, ScrollText } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 
 import { Botao, Tecla } from "@/components/ds/basicos";
@@ -145,10 +145,12 @@ function partida(s: SituacaoRes) {
  * posição numa faixa) e leva à segunda; a Fila trata um achado por vez, pelo
  * teclado: J e K andam, C corrige, D decide, F descarta.
  */
-export function TelaResultado({ situacao }: { situacao: SituacaoRes }) {
+export function TelaResultado({ situacao, embutido = false, selecionado }: { situacao: SituacaoRes; embutido?: boolean; selecionado?: string }) {
   const { dur, mola } = useTempo();
   const ir = useIr();
-  const p = partida(situacao);
+  const p0 = partida(situacao);
+  // No palco da conversa, quem fala de um achado (o chat) escolhe qual abre.
+  const p = selecionado ? { ...p0, aba: "achados" as Aba, fila: { ...p0.fila, selecionado } } : p0;
   const [achados, setAchados] = useState<Achado[]>(p.achados);
   const [aba, setAba] = useState<Aba>(p.aba);
   const [filaInicial, setFilaInicial] = useState(p.fila);
@@ -219,13 +221,14 @@ export function TelaResultado({ situacao }: { situacao: SituacaoRes }) {
     { id: "documento", rotulo: "No documento", icone: <FileSearch />, tecla: "4" },
   ];
   // Na fila e no documento o conteúdo precisa de largura: a coluna vira só ícones.
-  const compacto = aba === "achados" || aba === "documento";
+  // No palco da conversa a coluna é sempre só ícones: o chat já ocupa a direita.
+  const compacto = embutido || aba === "achados" || aba === "documento";
 
   return (
-    <div className="rs rd re">
-      <Topo atual={null} />
+    <div className={`rs rd re${embutido ? " re--embutido" : ""}`}>
+      {!embutido && <Topo atual={null} />}
       {/* o título fica fora da grade: a coluna da direita começa na mesma linha do conteúdo */}
-      <div className="re-titulo">
+      <div className="re-titulo" hidden={embutido}>
         <header className="re-cabeca">
           <div className="rs-obra">
             <MarcaDaPrefeitura prefeitura="Criciúma" forma="sinal" />
@@ -330,6 +333,16 @@ export function TelaResultado({ situacao }: { situacao: SituacaoRes }) {
 
           <section className="re-acoes" aria-label="Levar adiante">
             {!compacto && <h3>Levar adiante</h3>}
+            {!embutido && (
+              <button type="button" className="re-acao re-acao--principal" title="Perguntar ao Nexo sobre esta auditoria, na conversa dela" onClick={() => ir("nexo-auditoria", "pronta")}>
+                <MessageSquare />
+                {!compacto && (
+                  <span>
+                    Perguntar ao Nexo<small>na conversa desta auditoria</small>
+                  </span>
+                )}
+              </button>
+            )}
             {p.parcial && (
               <button type="button" className="re-acao re-acao--principal" title="Auditar de novo">
                 <RotateCcw />

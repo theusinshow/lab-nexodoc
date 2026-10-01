@@ -22,16 +22,17 @@ import "./esqueletos.css";
  * que passa é uma só para a tela inteira, não uma por bloco.
  */
 
-const ABA: Partial<Record<IdTela, "Painel" | "Projetos" | "Montar volumes" | "Achados" | "Ajuda" | "Administração" | null>> = {
+const ABA: Partial<Record<IdTela, "Painel" | "Nexo" | "Projetos" | "Achados" | "Ajuda" | "Administração" | null>> = {
   inicio: "Painel",
   projetos: "Projetos",
   projeto: "Projetos",
   achados: "Achados",
-  nexo: "Montar volumes",
-  mapa: "Montar volumes",
+  nexo: "Nexo",
+  "nexo-auditoria": "Nexo",
+  mapa: "Nexo",
+  conversa: "Nexo",
   ajuda: "Ajuda",
   admin: "Administração",
-  conversa: null,
   auditoria: null,
   resultado: null,
 };
@@ -388,7 +389,7 @@ export function EsqueletoDaTela({ tela, semTopo = false }: { tela: IdTela; semTo
     : tela === "admin" ? <Admin />
     : tela === "ajuda" ? <Ajuda />
     : tela === "mapa" ? <Mapa />
-    : tela === "nexo" ? <Nexo />
+    : tela === "nexo" || tela === "nexo-auditoria" ? <Nexo />
     : <Conversa />;
   return (
     <div className="sk" aria-busy="true" aria-label="Carregando">
