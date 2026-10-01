@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
-import { ArrowRight, ChevronDown, ChevronLeft, ChevronRight, FileText, GripVertical, Plus, Redo2, Undo2, Upload, X } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronDown, ChevronLeft, ChevronRight, Copy, Eye, FileText, Maximize2, Plus, Redo2, Search, Sparkles, Trash2, Undo2, Upload, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 import { Botao, Tecla } from "@/components/ds/basicos";
@@ -12,309 +12,565 @@ import { Topo } from "../_comum/topo";
 import { RITMO, SUAVE } from "../conversa/turnos";
 import { CartaoDaFolha } from "../mapa/cartoes";
 import { PapelDoDocumento } from "../mapa/documentos";
-import { ARQUIVOS, FILA, PENDENCIAS, TIPOS, VOLUME } from "./dados";
+import { ARQUIVOS, DADOS, FILA, PENDENCIAS, TIPOS, VOLUME, type TipoDoArquivo } from "./dados";
 import "../mapa/mapa.css";
 import "../mapa/cartoes.css";
 import "../projetos/projetos.css";
-import "../projeto/projeto.css";
 import "./volumes.css";
+import "./mesa.css";
 
-export type SituacaoVolumes = "vazio" | "arquivos" | "montagem" | "escolher-paginas" | "conferir" | "exportando" | "falha-gravacao" | "recuperado";
+export type SituacaoVolumes = "vazio" | "montando" | "selecao" | "conferencia" | "previa" | "exportando" | "falha-gravacao" | "recuperado";
 
-type Etapa = 1 | 2 | 3;
 const plural = (n: number, um: string, v: string) => `${n} ${n === 1 ? um : v}`;
-const nomeDoTipo = (t: string) => TIPOS.find((x) => x.id === t)!.um;
 
 /*
- * MONTAR VOLUMES, EM TRÊS ETAPAS. A versão anterior mostrava biblioteca,
- * montagem e conferência ao mesmo tempo, com seis ações disputando o olho, e
- * obrigava a montar à mão antes de qualquer coisa. Agora:
- *   1. Arquivos: importar e dizer o que cada PDF é.
- *   2. Montagem: o Nexo propõe a ordem pelos tipos; você corrige.
- *   3. Conferir e exportar: a prévia, as pendências e Gerar PDF.
- * Cada etapa tem UMA ação principal, no pé do lado direito. A biblioteca de
- * páginas só aparece quando é preciso escolher páginas.
+ * MONTAR VOLUMES — a mesa de hoje, organizada. Mesmas funções e mesmas
+ * frases do modules/volume-builder: o tipo é escolhido ANTES de importar, a
+ * montagem é manual (páginas → destino → "adicionar como"), a pré-montagem com
+ * IA é um atalho opcional, os dados do volume ficam recolhidos num resumo.
+ * Em 1440 px, como no app: Arquivos fixo à esquerda; Montagem ou Conferência
+ * por aba à direita. O que mudou é a organização: cada área tem um título e
+ * uma ação principal, o destino fica sempre visível no pé dos Arquivos, e os
+ * campos de cada grupo só abrem quando se pede.
  */
 
-/* ------------------------------ etapa 1 ------------------------------ */
+/* ------------------------------ Arquivos ------------------------------ */
 
-function Arquivos({ vazio, fila }: { vazio: boolean; fila: boolean }) {
+function Importar({ fila, aberta, onAlternar }: { fila: boolean; aberta: boolean; onAlternar: () => void }) {
+  const { k } = useTempo();
+  const [tipo, setTipo] = useState<TipoDoArquivo>("document");
   return (
-    <div className="vm-principal">
-      <label className={`vl-importar vm-importar${vazio ? " vl-importar--grande" : ""}`}>
-        <Upload size={18} />
-        <span>
-          <b>{vazio ? "Solte aqui os PDFs do volume" : "Importar mais PDFs"}</b>
-          <small>Capa, LD, pranchas e anexos. O Nexo lê o tipo de cada um; dá para trocar depois.</small>
-        </span>
-        <input type="file" accept="application/pdf" multiple hidden />
-      </label>
+    <section className="vx-bloco">
+      <header className="vx-bloco-cabeca">
+        <p>Importar</p>
+        <button type="button" className="vx-link" onClick={onAlternar}>
+          {aberta ? "Ocultar importação" : "Importar mais"}
+        </button>
+      </header>
+      <AnimatePresence initial={false}>
+        {aberta && (
+          <motion.div className="vx-recolhe" initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: RITMO.troca * k, ease: SUAVE }}>
+            <p className="vx-ajuda">O tipo escolhido vale para os próximos PDFs; dá para trocar depois, arquivo por arquivo.</p>
+            <div className="vx-tipos" role="radiogroup" aria-label="Tipo dos próximos PDFs importados">
+              {TIPOS.map((t) => (
+                <button key={t.id} type="button" role="radio" aria-checked={tipo === t.id} onClick={() => setTipo(t.id)}>
+                  {t.nome}
+                  <span className="ds-num">{ARQUIVOS.filter((a) => a.tipo === t.id).length}</span>
+                </button>
+              ))}
+            </div>
+            <label className="vl-importar vx-solta">
+              <Upload size={16} />
+              <span>
+                <b>Solte os PDFs de {TIPOS.find((t) => t.id === tipo)!.nome.toLowerCase()} aqui</b>
+                <small>ou clique para escolher</small>
+              </span>
+              <input type="file" accept="application/pdf" multiple hidden />
+            </label>
+            {fila && (
+              <ul className="vx-fila" aria-label="Fila de importação">
+                {FILA.map((f) => (
+                  <li key={f.nome}>
+                    <span className="mp-mono">{f.nome}</span>
+                    {f.estado === "lendo" ? (
+                      <span className="vm-lendo">{f.mensagem}</span>
+                    ) : (
+                      <span className="mp-conf mp-tom--aviso">
+                        <i />
+                        {f.mensagem}
+                      </span>
+                    )}
+                    {f.estado !== "lendo" && (
+                      <button type="button" aria-label={`Dispensar aviso de ${f.nome}`}>
+                        <X size={12} />
+                      </button>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </section>
+  );
+}
 
-      {!vazio && (
-        <div className="mp-grade vm-grade-arquivos" role="grid">
-          <div className="mp-g-cab" role="row">
-            <span>#</span>
-            <span>Arquivo</span>
-            <span>É</span>
-            <span>Páginas</span>
-            <span>Situação</span>
-          </div>
-          {fila &&
-            FILA.map((f, i) => (
-              <div key={f.nome} role="row" className={`mp-g-linha vm-fila vm-fila--${f.estado}`}>
-                <span className="mp-g-n ds-num">{i + 1}</span>
-                <span className="mp-mono vm-nome">{f.nome}</span>
-                <span className="mp-g-fraco">—</span>
-                <span className="mp-g-fraco">—</span>
-                <span className="vm-situacao">
-                  {f.estado === "lendo" ? (
-                    <span className="vm-lendo">{f.mensagem}</span>
-                  ) : (
-                    <span className="mp-conf mp-tom--aviso">
-                      <i />
-                      {f.mensagem}
-                    </span>
-                  )}
-                  {f.estado !== "lendo" && (
-                    <button type="button" aria-label={`Dispensar ${f.nome}`}>
-                      <X size={12} />
-                    </button>
-                  )}
+function Biblioteca({ selecao, onSelecao, onAmpliar }: { selecao: string[]; onSelecao: (s: string[]) => void; onAmpliar: () => void }) {
+  const { k } = useTempo();
+  const [aberto, setAberto] = useState<string | null>(selecao.length ? "f5" : null);
+  const alternar = (id: string) => onSelecao(selecao.includes(id) ? selecao.filter((x) => x !== id) : [...selecao, id]);
+  return (
+    <section className="vx-bloco vx-biblioteca">
+      <header className="vx-bloco-cabeca">
+        <p>Biblioteca</p>
+        <span className="mp-g-fraco ds-num">{ARQUIVOS.reduce((s, a) => s + a.paginas, 0)} páginas</span>
+      </header>
+      <label className="mp-busca vx-busca">
+        <Search size={14} />
+        <input placeholder="Buscar arquivo, página, código ou texto" aria-label="Buscar páginas por arquivo, número, código ou texto" />
+      </label>
+      <div className="vx-filtros">
+        <button type="button" className="vm-tipo">
+          Disciplina: todas <ChevronDown size={12} />
+        </button>
+        <button type="button" className="vm-tipo">
+          Bloco: todos <ChevronDown size={12} />
+        </button>
+      </div>
+      <ul className="vx-arquivos">
+        {ARQUIVOS.map((a) => {
+          const ab = aberto === a.id;
+          const ids = Array.from({ length: a.paginas }, (_, i) => `${a.id}:${i + 1}`);
+          const todas = ids.every((id) => selecao.includes(id));
+          return (
+            <li key={a.id}>
+              <div className="vx-arquivo">
+                <button type="button" className="vx-arquivo-abre" onClick={() => setAberto(ab ? null : a.id)} aria-expanded={ab}>
+                  <motion.span animate={{ rotate: ab ? 0 : -90 }} transition={{ duration: RITMO.troca * k, ease: SUAVE }} className="vl-seta">
+                    <ChevronDown size={13} />
+                  </motion.span>
+                  <span className="vx-arquivo-nome mp-mono">{a.nome}</span>
+                </button>
+                <button type="button" className="vm-tipo vx-tipo-do-arquivo" title="Trocar o tipo deste arquivo">
+                  {TIPOS.find((t) => t.id === a.tipo)!.um} <ChevronDown size={11} />
+                </button>
+                <span className={`vx-uso ds-num${a.usadas === 0 ? " vx-uso--nada" : ""}`} title={a.usadas ? "páginas já na montagem" : "nenhuma página na montagem"}>
+                  {a.usadas}/{a.paginas}
                 </span>
               </div>
-            ))}
-          {ARQUIVOS.map((a, i) => (
-            <div key={a.id} role="row" className="mp-g-linha">
-              <span className="mp-g-n ds-num">{(fila ? FILA.length : 0) + i + 1}</span>
-              <span className="mp-mono vm-nome">{a.nome}</span>
-              <span>
-                <button type="button" className="vm-tipo">
-                  {nomeDoTipo(a.tipo)} <ChevronDown size={12} />
-                </button>
-              </span>
-              <span className="mp-g-fraco ds-num">{a.paginas}</span>
-              <span className="mp-g-fraco">{a.tipo === "document" ? `${a.folhas?.length} folhas lidas do carimbo` : "importado"}</span>
-            </div>
-          ))}
-        </div>
-      )}
+              <AnimatePresence initial={false}>
+                {ab && (
+                  <motion.div className="vx-paginas" initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: RITMO.troca * k, ease: SUAVE }}>
+                    <button type="button" className="vx-link vx-todas" onClick={() => onSelecao(todas ? selecao.filter((x) => !ids.includes(x)) : [...new Set([...selecao, ...ids])])}>
+                      {todas ? "Desmarcar" : "Selecionar"} {a.paginas} pág.
+                    </button>
+                    <div className="vx-grade">
+                      {ids.map((id, i) => {
+                        const marcada = selecao.includes(id);
+                        const f = a.folhas?.[i];
+                        return (
+                          <div key={id} className={`vl-pagina vx-pagina${marcada ? " vl-pagina--sel" : ""}`}>
+                            <button type="button" className="vx-pagina-marcar" onClick={() => alternar(id)} aria-pressed={marcada} aria-label={`Selecionar página ${i + 1} de ${a.nome}`}>
+                              <span className="vl-pagina-n ds-num">{i + 1}</span>
+                              <span className="vl-pagina-titulo">{f ? f.id : TIPOS.find((t) => t.id === a.tipo)!.um}</span>
+                            </button>
+                            <button type="button" className="vx-ampliar" onClick={onAmpliar} aria-label={`Visualizar página ${i + 1} de ${a.nome}`}>
+                              <Maximize2 size={10} />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}
+
+/** O pé dos Arquivos: o destino escolhido e "adicionar como", sempre à vista. */
+function Destino({ n }: { n: number }) {
+  const { k } = useTempo();
+  return (
+    <section className={`vx-destino${n ? " vx-destino--ativo" : ""}`} aria-label="Destino das páginas">
+      <p className="vx-destino-titulo">Destino</p>
+      <div className="vx-destino-seletores">
+        <button type="button" className="vm-tipo">
+          Volume 01 <ChevronDown size={11} />
+        </button>
+        <button type="button" className="vm-tipo">
+          Grupo 2 (Estrutural) <ChevronDown size={11} />
+        </button>
+        <button type="button" className="vm-tipo">
+          Pranchas: no fim <ChevronDown size={11} />
+        </button>
+      </div>
+      <AnimatePresence initial={false} mode="popLayout">
+        <motion.p key={n ? "com" : "sem"} className="vx-ajuda" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: RITMO.troca * k }}>
+          {n ? `${plural(n, "página selecionada", "páginas selecionadas")} → adicionar como:` : "Selecione páginas na biblioteca (clique, ou Shift+clique para intervalo)."}
+        </motion.p>
+      </AnimatePresence>
+      <div className="vx-como">
+        {TIPOS.map((t) => (
+          <button key={t.id} type="button" disabled={!n} className={n && t.id === "ld" ? "vx-como--sugerido" : undefined} title={n ? `Vai para Volume 01 › Grupo 2 (Estrutural)` : "Indisponível: selecione páginas"}>
+            {t.um === "Prancha" ? "Pranchas" : t.um === "Anexo" ? "Anexos" : t.um}
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/* ------------------------------ Montagem ------------------------------ */
+
+function Lugar({ rotulo, children, vazio, acao }: { rotulo: string; children: ReactNode; vazio?: boolean; acao?: ReactNode }) {
+  return (
+    <div className={`vx-lugar${vazio ? " vx-lugar--vazio" : ""}`}>
+      <span className="vx-lugar-rotulo">{rotulo}</span>
+      <span className="vx-lugar-conteudo">{children}</span>
+      <span className="vx-lugar-acao">{acao}</span>
     </div>
   );
 }
 
-function LadoArquivos({ vazio, onMontar }: { vazio: boolean; onMontar: () => void }) {
+function Icone({ rotulo, children, perigo }: { rotulo: string; children: ReactNode; perigo?: boolean }) {
+  return (
+    <button type="button" className={`vx-icone${perigo ? " vx-icone--perigo" : ""}`} aria-label={rotulo} title={rotulo}>
+      {children}
+    </button>
+  );
+}
+
+function Grupo({ g, i, destino, selecao }: { g: (typeof VOLUME.grupos)[number]; i: number; destino: boolean; selecao: number }) {
+  const { k } = useTempo();
+  const [editando, setEditando] = useState(false);
+  const [pranchas, setPranchas] = useState(false);
+  return (
+    <div className={`vx-grupo${destino ? " vx-grupo--destino" : ""}`}>
+      <header className="vx-grupo-cabeca">
+        <button type="button" className="vl-grupo-destino" aria-pressed={destino} title="Usar como destino das páginas">
+          <i />
+        </button>
+        <span className="vx-grupo-nome">
+          Grupo {i + 1} <b>{g.titulo}</b> <span className="mp-mono mp-g-fraco">{g.codigo}</span>
+        </span>
+        {destino && <span className="vx-destino-marca">destino</span>}
+        <span className="vx-icones">
+          <button type="button" className="vx-link" onClick={() => setEditando((e) => !e)}>
+            {editando ? "Fechar campos" : "Campos"}
+          </button>
+          <Icone rotulo={`Mover Grupo ${i + 1} para cima`}>
+            <ArrowUp size={13} />
+          </Icone>
+          <Icone rotulo={`Mover Grupo ${i + 1} para baixo`}>
+            <ArrowDown size={13} />
+          </Icone>
+          <Icone rotulo={`Duplicar Grupo ${i + 1}`}>
+            <Copy size={13} />
+          </Icone>
+          <Icone rotulo={`Remover Grupo ${i + 1}`} perigo>
+            <Trash2 size={13} />
+          </Icone>
+        </span>
+      </header>
+      <AnimatePresence initial={false}>
+        {editando && (
+          <motion.div className="vx-recolhe" initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: RITMO.troca * k, ease: SUAVE }}>
+            <div className="vx-campos mp-form">
+              <label>
+                <span>Nome do grupo</span>
+                <input defaultValue={g.titulo} />
+              </label>
+              <label>
+                <span>Código</span>
+                <input defaultValue={g.codigo} className="mp-mono" />
+              </label>
+              <label className="vx-campo-largo">
+                <span>Título da separatriz automática</span>
+                <input defaultValue={g.separatriz.automatica ? g.separatriz.titulo : ""} placeholder="PROJETO DE ESTRUTURAS" />
+              </label>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <Lugar
+        rotulo="Separatriz"
+        acao={
+          <button type="button" className="vx-link" disabled={!selecao}>
+            {selecao ? "Usar página selecionada" : "Usar PDF próprio"}
+          </button>
+        }
+      >
+        <span className="vm-auto">automática</span> {g.separatriz.automatica ? g.separatriz.titulo : ""}
+      </Lugar>
+      {g.ld ? (
+        <Lugar rotulo="LD" acao={<button type="button" className="vx-link">Trocar</button>}>
+          <span className="mp-mono vx-peca">
+            {g.ld.arquivo}, {g.ld.paginas}
+          </span>
+        </Lugar>
+      ) : (
+        <Lugar
+          rotulo="LD"
+          vazio
+          acao={
+            selecao ? (
+              <Botao variante="ghost" tamanho="sm">
+                Colocar {plural(selecao, "página", "páginas")} aqui
+              </Botao>
+            ) : (
+              <span className="mp-g-fraco">Selecione páginas</span>
+            )
+          }
+        >
+          <span className="vm-falta">sem LD</span>
+        </Lugar>
+      )}
+      <Lugar
+        rotulo="Pranchas"
+        acao={
+          <button type="button" className="vx-link" onClick={() => setPranchas((p) => !p)}>
+            {pranchas ? "Recolher" : "Ordenar"}
+          </button>
+        }
+      >
+        <span className="vl-pranchas">
+          {g.pranchas.folhas.map((f) => (
+            <span key={f.id} className="vl-prancha mp-mono" title={`${f.id}: ${f.titulo}`}>
+              {f.id.slice(-2)}
+            </span>
+          ))}
+          <span className="mp-g-fraco vl-pranchas-de mp-mono">{g.pranchas.arquivo}</span>
+        </span>
+      </Lugar>
+      <AnimatePresence initial={false}>
+        {pranchas && (
+          <motion.ol className="vx-ordem" initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: RITMO.troca * k, ease: SUAVE }}>
+            {g.pranchas.folhas.slice(0, 4).map((f, j) => (
+              <li key={f.id}>
+                <span className="ds-num mp-g-fraco">P{j + 1}</span>
+                <span className="mp-mono">{f.id}</span>
+                <span className="vx-ordem-titulo">{f.titulo}</span>
+                <Icone rotulo={`Mover prancha ${j + 1} para antes`}>
+                  <ArrowUp size={12} />
+                </Icone>
+                <Icone rotulo={`Mover prancha ${j + 1} para depois`}>
+                  <ArrowDown size={12} />
+                </Icone>
+                <button type="button" className="vm-tipo">
+                  Levar para outro grupo… <ChevronDown size={11} />
+                </button>
+              </li>
+            ))}
+            <li className="mp-g-fraco vx-ordem-mais">e mais {g.pranchas.folhas.length - 4}</li>
+          </motion.ol>
+        )}
+      </AnimatePresence>
+      <Lugar rotulo="Anexos" acao={selecao ? <span className="mp-g-fraco">—</span> : <span className="mp-g-fraco">Selecione páginas</span>}>
+        <span className="mp-g-fraco">nenhum</span>
+      </Lugar>
+    </div>
+  );
+}
+
+function PreMontagem({ aberta }: { aberta: boolean }) {
+  const { k } = useTempo();
+  const [ab, setAb] = useState(aberta);
+  return (
+    <section className="vx-ia">
+      <button type="button" className="vx-ia-cabeca" onClick={() => setAb((a) => !a)} aria-expanded={ab}>
+        <Sparkles size={14} />
+        <span>Pré-montagem com IA</span>
+        <span className="mp-g-fraco">opcional: sugere capa, LD, pranchas e separatrizes a partir das páginas</span>
+        <motion.span animate={{ rotate: ab ? 180 : 0 }} transition={{ duration: RITMO.troca * k }} className="vx-ia-seta">
+          <ChevronDown size={14} />
+        </motion.span>
+      </button>
+      <AnimatePresence initial={false}>
+        {ab && (
+          <motion.div className="vx-recolhe" initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: RITMO.troca * k, ease: SUAVE }}>
+            <div className="vx-ia-corpo">
+              <dl className="vx-ia-metricas">
+                {[
+                  ["Capa", "1"],
+                  ["LD", "1"],
+                  ["Pranchas", "20"],
+                  ["Separatriz", "Auto"],
+                ].map(([r, v]) => (
+                  <div key={r}>
+                    <dt>{r}</dt>
+                    <dd className="ds-num">{v}</dd>
+                  </div>
+                ))}
+              </dl>
+              <p className="vx-ajuda"><span className="vx-confianca">Média</span> confiança, pela leitura local das páginas.</p>
+              <Botao variante="ghost" tamanho="sm">
+                Aplicar esta sugestão
+              </Botao>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </section>
+  );
+}
+
+function Montagem({ vazio, selecao, onPrevia }: { vazio: boolean; selecao: number; onPrevia: () => void }) {
   if (vazio)
     return (
-      <div className="mp-lado-bloco">
-        <p className="mp-lado-titulo">Como funciona</p>
-        <ol className="vm-passos">
-          <li>
-            <b>Arquivos.</b> Solte os PDFs prontos: capa, LD, pranchas, anexos.
-          </li>
-          <li>
-            <b>Montagem.</b> O Nexo propõe a ordem do volume; você corrige o que precisar.
-          </li>
-          <li>
-            <b>Conferir e exportar.</b> Veja a prévia, resolva as pendências e gere o PDF.
-          </li>
-        </ol>
-        <p className="mp-lado-sub">Se as pranchas ainda não têm LD nem capa, é mais rápido gerar pelo Nexo e montar depois.</p>
+      <div className="vx-area">
+        <div className="pj-sem vl-vazio">
+          <p>Nenhum volume ainda.</p>
+          <p className="mp-g-fraco">Use &quot;Adicionar volume&quot;. O volume nasce com um grupo e vira o destino das páginas selecionadas.</p>
+          <div className="pj-vazio-acoes">
+            <Botao variante="primary" tamanho="sm">
+              <Plus size={14} /> Adicionar volume
+            </Botao>
+          </div>
+        </div>
       </div>
     );
   return (
-    <div className="mp-lado-bloco">
-      <div className="mp-lista-cabeca">
-        <p className="mp-lado-titulo">O que o Nexo entendeu</p>
-        <p className="mp-lado-sub">Pelos nomes e pelos carimbos. Se algum tipo estiver errado, troque na tabela.</p>
-      </div>
-      <dl className="mp-campos">
-        {[
-          ["Capa", "1, do tomo 01"],
-          ["LD", "1, com 3 páginas"],
-          ["Pranchas", "20 folhas, de ARQ e EST"],
-          ["Anexos", "o memorial geral"],
-          ["Separatrizes", "nenhuma: o Nexo cria uma por disciplina"],
-        ].map(([r, v]) => (
-          <div key={r} className="mp-campo">
-            <dt>{r}</dt>
-            <dd>{v}</dd>
-          </div>
-        ))}
-      </dl>
-      <div className="mp-lado-pe vm-pe">
-        <Botao variante="primary" className="mp-gerar" onClick={onMontar}>
-          Montar o volume <Tecla>↵</Tecla>
-        </Botao>
-        <button type="button" className="vm-secundaria">
-          Prefiro montar à mão
-        </button>
-      </div>
-    </div>
-  );
-}
-
-/* ------------------------------ etapa 2 ------------------------------ */
-
-function Item({ ordem, tipo, children, origem, paginas, aviso, acao }: { ordem: string; tipo: string; children: ReactNode; origem?: string; paginas: number | null; aviso?: boolean; acao?: ReactNode }) {
-  return (
-    <div className={`vm-item${aviso ? " vm-item--aviso" : ""}`}>
-      <span className="vm-alca" aria-hidden>
-        {!aviso && <GripVertical size={14} />}
-      </span>
-      <span className="vm-ordem ds-num">{ordem}</span>
-      <span className="vm-item-tipo">{tipo}</span>
-      <span className="vm-item-conteudo">
-        {children}
-        {origem && <small className="mp-mono">{origem}</small>}
-      </span>
-      <span className="vm-item-n ds-num">{paginas == null ? "" : plural(paginas, "pág.", "págs.")}</span>
-      <span className="vm-item-acao">{acao}</span>
-    </div>
-  );
-}
-
-function Montagem({ alvo, onEscolher }: { alvo: boolean; onEscolher: () => void }) {
-  let p = 1;
-  const de = (n: number) => {
-    const t = `p. ${p}`;
-    p += n;
-    return t;
-  };
-  return (
-    <div className="vm-principal">
-      <div className="vm-volume-cabeca">
-        <span className="vm-volume-nome">{VOLUME.nome}</span>
-        <button type="button" className="vm-arquivo-final mp-mono" title="Nome do PDF final">
-          {VOLUME.arquivoFinal}
-        </button>
-        <span className="mp-g-fraco vm-volume-n ds-num">26 páginas</span>
-        <button type="button" className="mp-acao vm-mais-volume">
-          <Plus size={14} /> Outro volume
-        </button>
-      </div>
-
-      <div className="vm-lista">
-        <Item ordem={de(1)} tipo="Capa" origem={VOLUME.capa.arquivo} paginas={1}>
-          Capa do tomo 01
-        </Item>
-        {VOLUME.grupos.map((g) => (
-          <section key={g.id} className="vm-secao">
-            <p className="vm-secao-nome">
-              {g.nome} <span className="mp-mono mp-g-fraco">{g.codigo}</span>
-            </p>
-            <Item ordem={de(1)} tipo="Separatriz" paginas={1}>
-              <span className="vm-auto">criada pelo Nexo:</span> {g.separatriz}
-            </Item>
-            {g.ld ? (
-              <Item ordem={de(g.ld.ate - g.ld.de + 1)} tipo="LD" origem={`${g.ld.arquivo}, p. ${g.ld.de}–${g.ld.ate}`} paginas={g.ld.ate - g.ld.de + 1}>
-                Lista de documentos
-              </Item>
-            ) : (
-              <Item
-                ordem="—"
-                tipo="LD"
-                paginas={null}
-                aviso
-                acao={
-                  <Botao variante="ghost" tamanho="sm" onClick={onEscolher} aria-pressed={alvo}>
-                    Escolher a LD
-                  </Botao>
-                }
-              >
-                <span className="vm-falta">Falta a LD do {g.nome}.</span>
-              </Item>
-            )}
-            <Item ordem={de(g.pranchas.folhas.length)} tipo="Pranchas" origem={g.pranchas.arquivo} paginas={g.pranchas.folhas.length}>
-              <span className="vl-pranchas">
-                {g.pranchas.folhas.map((f) => (
-                  <span key={f.id} className="vl-prancha mp-mono" title={`${f.id}: ${f.titulo}`}>
-                    {f.id.slice(-2)}
-                  </span>
-                ))}
-              </span>
-            </Item>
-          </section>
-        ))}
-        <button type="button" className="mp-acao vm-mais">
-          <Plus size={14} /> Adicionar páginas ou disciplina
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function LadoMontagem({ onConferir }: { onConferir: () => void }) {
-  return (
-    <div className="mp-lado-bloco">
-      <div className="mp-lista-cabeca">
-        <p className="mp-lado-titulo">Montado pelo Nexo</p>
-        <p className="mp-lado-sub">Na ordem de sempre: capa, e por disciplina a separatriz, a LD e as pranchas. Arraste pela alça para mudar a ordem.</p>
-      </div>
-      <ul className="mp-lista mp-lista--docs">
-        {PENDENCIAS.map((p) => (
-          <li key={p.id}>
-            <span className="mp-lista-texto">
-              <b className="vl-pendencia">
-                <i className={`vl-grav vl-grav--${p.gravidade}`} />
-                {p.texto}
-              </b>
-              <span>Dá para exportar assim, mas o volume sai sem a LD dessa disciplina.</span>
-            </span>
-          </li>
-        ))}
-      </ul>
-      <div className="mp-lado-pe vm-pe">
-        <Botao variante="primary" className="mp-gerar" onClick={onConferir}>
-          Conferir <ArrowRight size={14} />
-        </Botao>
-      </div>
-    </div>
-  );
-}
-
-/** Escolher páginas: a biblioteca só aparece aqui, já filtrada para o que falta. */
-function EscolherPaginas({ onFechar }: { onFechar: () => void }) {
-  const ld = ARQUIVOS.find((a) => a.tipo === "ld")!;
-  const [sel, setSel] = useState<number[]>([1, 2, 3]);
-  return (
-    <div className="mp-lado-bloco">
-      <div className="vm-escolher-cabeca">
-        <p className="mp-lado-titulo">Escolher a LD do Estrutural</p>
-        <button type="button" className="vl-previa-fechar" onClick={onFechar} aria-label="Fechar (Esc)">
-          <X size={15} />
-        </button>
-      </div>
-      <p className="mp-lado-sub">Só os arquivos marcados como LD. Para usar outro, troque o tipo dele na etapa 1.</p>
-      <div className="vm-escolher-arquivo">
-        <p className="mp-mono">{ld.nome}</p>
-        <div className="vm-paginas">
-          {Array.from({ length: ld.paginas }, (_, i) => i + 1).map((n) => {
-            const marcada = sel.includes(n);
-            return (
-              <button key={n} type="button" className={`vl-pagina${marcada ? " vl-pagina--sel" : ""}`} aria-pressed={marcada} onClick={() => setSel((s) => (marcada ? s.filter((x) => x !== n) : [...s, n]))}>
-                <span className="vl-pagina-n ds-num">{n}</span>
-                <span className="vl-pagina-titulo">LD</span>
-              </button>
-            );
-          })}
+    <div className="vx-area">
+      <p className="vx-ajuda vx-explica">Projeto → Volumes → Grupos (separatriz, LD, pranchas, anexos). A ordem na tela é a ordem do PDF.</p>
+      <PreMontagem aberta={false} />
+      <section className="vx-volume">
+        <header className="vx-volume-cabeca">
+          <span className="vx-volume-n mp-mono ds-num">01</span>
+          <input className="vx-volume-titulo" defaultValue={VOLUME.titulo} aria-label="Título de Volume 01" />
+          <span className="vl-estado">incompleto</span>
+          <span className="mp-mono mp-g-fraco vx-pags">26 pág. no PDF</span>
+          <span className="vx-icones">
+            <button type="button" className="mp-acao vx-previa-btn" onClick={onPrevia}>
+              <Eye size={14} /> Prévia
+            </button>
+            <Icone rotulo="Mover Volume 01 para cima">
+              <ArrowUp size={13} />
+            </Icone>
+            <Icone rotulo="Mover Volume 01 para baixo">
+              <ArrowDown size={13} />
+            </Icone>
+            <Icone rotulo="Duplicar Volume 01">
+              <Copy size={13} />
+            </Icone>
+            <Icone rotulo="Remover Volume 01" perigo>
+              <Trash2 size={13} />
+            </Icone>
+          </span>
+        </header>
+        <label className="vx-nome-final">
+          <span>Nome final do PDF</span>
+          <input className="mp-mono" defaultValue={VOLUME.arquivoFinal} placeholder="ex.: 106_25_vol_5_est.pdf" />
+        </label>
+        <div className="vx-volume-corpo">
+          <Lugar rotulo="Capa" acao={<button type="button" className="vx-link">Trocar</button>}>
+            <span className="mp-mono vx-peca">{VOLUME.capa}</span>
+          </Lugar>
+          {VOLUME.grupos.map((g, i) => (
+            <Grupo key={g.id} g={g} i={i} destino={g.id === "g2"} selecao={selecao} />
+          ))}
+          <button type="button" className="mp-acao vx-mais">
+            <Plus size={14} /> Adicionar grupo
+          </button>
         </div>
-        <p className="mp-g-fraco vm-aviso-ld">Essas 3 páginas já são a LD do Arquitetura. Usar de novo repete a mesma lista nas duas disciplinas.</p>
-      </div>
-      <div className="mp-lado-pe vm-pe">
-        <Botao variante="primary" className="mp-gerar" onClick={onFechar} disabled={!sel.length}>
-          Usar {plural(sel.length, "página", "páginas")} <Tecla>↵</Tecla>
-        </Botao>
-        <button type="button" className="vm-secundaria" onClick={onFechar}>
-          Deixar sem LD
-        </button>
-      </div>
+      </section>
+      <button type="button" className="mp-acao vx-mais">
+        <Plus size={14} /> Adicionar volume
+      </button>
     </div>
   );
 }
 
-/* ------------------------------ etapa 3 ------------------------------ */
+/* ------------------------------ Conferência ------------------------------ */
 
-function Previa() {
+function Conferencia({ estado, onPrevia }: { estado: "nao-conferida" | "valida" | "exportando" | "vazio"; onPrevia: () => void }) {
+  const { k } = useTempo();
+  const [feito, setFeito] = useState(0);
+  useEffect(() => {
+    if (estado !== "exportando" || feito >= 26) return;
+    const t = setTimeout(() => setFeito((n) => n + 1), 140 * k);
+    return () => clearTimeout(t);
+  }, [estado, feito, k]);
+  if (estado === "vazio")
+    return (
+      <div className="vx-area">
+        <p className="mp-lado-sub">Crie um volume para começar.</p>
+      </div>
+    );
+  const valida = estado !== "nao-conferida";
+  return (
+    <div className="vx-area vx-conferencia">
+      <section className="vx-cartao">
+        <header className="vx-cartao-cabeca">
+          <p>Pendências da montagem</p>
+          <span className="mp-g-fraco ds-num">{plural(PENDENCIAS.length, "aviso", "avisos")}, nenhum bloqueio</span>
+        </header>
+        <ul className="mp-lista mp-lista--docs vx-lista">
+          {PENDENCIAS.map((p) => (
+            <li key={p.id}>
+              <span className="mp-lista-texto">
+                <b className="vl-pendencia">
+                  <i className={`vl-grav vl-grav--${p.gravidade}`} />
+                  {p.texto}
+                </b>
+                <span>Aviso: não impede exportar.</span>
+              </span>
+              <button type="button" className="mp-lista-ver">
+                Ir para
+              </button>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section className="vx-cartao">
+        <header className="vx-cartao-cabeca">
+          <p>Conferência da montagem</p>
+          <Botao variante="ghost" tamanho="sm">
+            {valida ? "Conferir de novo" : "Conferir esta versão"}
+          </Botao>
+        </header>
+        <p className={`vl-situacao vx-pad${valida ? " vl-situacao--ok" : ""}`}>{valida ? "Conferida às 17:58. Nenhum problema apontado." : "Esta montagem ainda não foi conferida."}</p>
+      </section>
+
+      <section className="vx-cartao">
+        <header className="vx-cartao-cabeca">
+          <p>Prévia e exportação</p>
+          <span className="mp-g-fraco">PDF único</span>
+        </header>
+        <dl className="mp-campos vx-saida">
+          {[
+            ["Volumes", "1"],
+            ["Páginas no total", "26"],
+            ["Estrutura", "1 capa, 2 grupos, 2 separatrizes automáticas, 1 LD, 20 pranchas"],
+            ["Conferência", valida ? "conferida" : "não conferida"],
+          ].map(([r, v]) => (
+            <div key={r} className="mp-campo">
+              <dt>{r}</dt>
+              <dd>{v}</dd>
+            </div>
+          ))}
+        </dl>
+        <div className="vx-pad vx-saida-acoes">
+          <AnimatePresence initial={false} mode="popLayout">
+            {estado === "exportando" ? (
+              <motion.div key="exp" className="vl-exportando" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: RITMO.troca * k, ease: SUAVE }}>
+                <p>
+                  {feito < 26 ? "Gerando o PDF" : "PDF pronto"}
+                  <span className="ds-num mp-g-fraco"> {Math.min(feito, 26)} de 26 páginas</span>
+                </p>
+                <div className="mp-barra-progresso">
+                  <motion.i animate={{ scaleX: Math.min(feito, 26) / 26 }} transition={{ duration: 0.3 * k, ease: SUAVE }} />
+                </div>
+              </motion.div>
+            ) : (
+              <motion.div key="bot" className="vx-saida-botoes" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <Botao variante="primary">Gerar PDF</Botao>
+                <Botao variante="quiet" onClick={onPrevia}>
+                  <Eye size={14} /> Abrir prévia
+                </Botao>
+                <Botao variante="quiet">
+                  <FileText size={14} /> Baixar relatório (.md)
+                </Botao>
+              </motion.div>
+            )}
+          </AnimatePresence>
+          {!valida && <p className="vx-aviso-export">Esta versão não foi conferida. Exportar continua possível; conferir antes é o recomendado.</p>}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+/* ------------------------------ Prévia ------------------------------ */
+
+function Previa({ onFechar }: { onFechar: () => void }) {
+  const { k } = useTempo();
   const sequencia = useMemo(() => {
     const s: { rotulo: string; no: ReactNode }[] = [{ rotulo: "Capa", no: <PapelDoDocumento d={{ id: "c", tipo: "capa", nome: "Capa", detalhe: "" }} estado="gerado" tomo={1} distancia="media" /> }];
     for (const g of VOLUME.grupos) {
@@ -331,32 +587,27 @@ function Previa() {
   }, [i]);
   useEffect(() => {
     const t = (e: KeyboardEvent) => {
-      if ((e.target as HTMLElement).closest("input, textarea")) return;
       if (e.key === "ArrowRight") (e.preventDefault(), setI((x) => Math.min(sequencia.length - 1, x + 1)));
       else if (e.key === "ArrowLeft") (e.preventDefault(), setI((x) => Math.max(0, x - 1)));
+      else if (e.key === "Escape") (e.preventDefault(), onFechar());
     };
     document.addEventListener("keydown", t, true);
     return () => document.removeEventListener("keydown", t, true);
-  }, [sequencia.length]);
+  }, [sequencia.length, onFechar]);
   return (
-    <div className="vm-principal vm-previa">
-      <div className="vm-previa-cabeca">
+    <motion.div className="vl-previa" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: RITMO.troca * k, ease: SUAVE }}>
+      <div className="vl-previa-cabeca">
         <span>
-          Prévia do {VOLUME.nome} <span className="mp-mono mp-g-fraco">{VOLUME.arquivoFinal}</span>
+          Prévia de Volume 01 <span className="mp-mono mp-g-fraco">{VOLUME.arquivoFinal}</span>
         </span>
-        <span className="vm-previa-nav">
-          <button type="button" onClick={() => setI((x) => Math.max(0, x - 1))} aria-label="Peça anterior (←)">
-            <ChevronLeft size={15} />
-          </button>
-          <span className="ds-num mp-g-fraco">
-            {i + 1} de {sequencia.length}
-          </span>
-          <button type="button" onClick={() => setI((x) => Math.min(sequencia.length - 1, x + 1))} aria-label="Próxima peça (→)">
-            <ChevronRight size={15} />
-          </button>
+        <span className="ds-num mp-g-fraco">
+          {i + 1} de {sequencia.length} peças, 26 páginas
         </span>
+        <button type="button" className="vl-previa-fechar" onClick={onFechar} aria-label="Fechar a prévia (Esc)">
+          <X size={16} />
+        </button>
       </div>
-      <div className="vl-previa-fita vm-fita" ref={fita}>
+      <div className="vl-previa-fita" ref={fita}>
         {sequencia.map((s, j) => (
           <button key={j} type="button" className={`vl-previa-item${i === j ? " vl-previa-item--atual" : ""}`} onClick={() => setI(j)}>
             {s.no}
@@ -364,77 +615,16 @@ function Previa() {
           </button>
         ))}
       </div>
-    </div>
-  );
-}
-
-function LadoConferir({ estado, onVoltar }: { estado: "conferir" | "exportando"; onVoltar: () => void }) {
-  const { k } = useTempo();
-  const [feito, setFeito] = useState(0);
-  useEffect(() => {
-    if (estado !== "exportando" || feito >= 26) return;
-    const t = setTimeout(() => setFeito((n) => n + 1), 140 * k);
-    return () => clearTimeout(t);
-  }, [estado, feito, k]);
-  return (
-    <div className="mp-lado-bloco">
-      <div className="mp-lista-cabeca">
-        <p className="mp-lado-titulo">Antes de exportar</p>
-        <p className="mp-lado-sub vm-ok">Conferido às 17:58: nada impede exportar.</p>
-      </div>
-      <ul className="mp-lista mp-lista--docs">
-        {PENDENCIAS.map((p) => (
-          <li key={p.id}>
-            <span className="mp-lista-texto">
-              <b className="vl-pendencia">
-                <i className={`vl-grav vl-grav--${p.gravidade}`} />
-                {p.texto}
-              </b>
-              <span>Aviso: dá para exportar assim.</span>
-            </span>
-            <button type="button" className="mp-lista-ver" onClick={onVoltar}>
-              Resolver
-            </button>
-          </li>
-        ))}
-      </ul>
-      <dl className="mp-campos">
-        <div className="mp-campo">
-          <dt>Sai como</dt>
-          <dd>
-            1 PDF, 26 páginas<small className="mp-mono">{VOLUME.arquivoFinal}</small>
-          </dd>
-        </div>
-        <div className="mp-campo">
-          <dt>Vai para</dt>
-          <dd>a obra 117-25, com o relatório</dd>
-        </div>
-      </dl>
-      <div className="mp-lado-pe vm-pe">
-        <AnimatePresence initial={false} mode="popLayout">
-          {estado === "exportando" ? (
-            <motion.div key="exp" className="vl-exportando" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: RITMO.troca * k, ease: SUAVE }}>
-              <p>
-                {feito < 26 ? "Juntando as páginas" : "Volume 01 pronto"}
-                <span className="ds-num mp-g-fraco"> {Math.min(feito, 26)} de 26</span>
-              </p>
-              <div className="mp-barra-progresso">
-                <motion.i animate={{ scaleX: Math.min(feito, 26) / 26 }} transition={{ duration: 0.3 * k, ease: SUAVE }} />
-              </div>
-            </motion.div>
-          ) : (
-            <motion.div key="btn" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              <Botao variante="primary" className="mp-gerar">
-                Gerar PDF <Tecla>↵</Tecla>
-              </Botao>
-            </motion.div>
-          )}
-        </AnimatePresence>
-        <button type="button" className="vm-secundaria">
-          <FileText size={13} /> Baixar só o relatório (.md)
+      <div className="vl-previa-pe">
+        <button type="button" className="mp-acao" onClick={() => setI((x) => Math.max(0, x - 1))}>
+          <ChevronLeft size={14} /> Anterior
+        </button>
+        <span className="mp-g-fraco">← → para andar, Esc para fechar</span>
+        <button type="button" className="mp-acao" onClick={() => setI((x) => Math.min(sequencia.length - 1, x + 1))}>
+          Próxima <ChevronRight size={14} />
         </button>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -443,96 +633,117 @@ function LadoConferir({ estado, onVoltar }: { estado: "conferir" | "exportando";
 export function TelaVolumes({ situacao }: { situacao: SituacaoVolumes }) {
   const { k } = useTempo();
   const vazio = situacao === "vazio";
-  const inicial: Etapa = vazio || situacao === "arquivos" ? 1 : situacao === "conferir" || situacao === "exportando" ? 3 : 2;
-  const [etapa, setEtapa] = useState<Etapa>(inicial);
-  const [escolhendo, setEscolhendo] = useState(situacao === "escolher-paginas");
+  const [aba, setAba] = useState<"montagem" | "conferencia">(situacao === "conferencia" || situacao === "exportando" ? "conferencia" : "montagem");
+  const [selecao, setSelecao] = useState<string[]>(situacao === "selecao" ? ["f5:1", "f5:2"] : []);
+  const [importar, setImportar] = useState(vazio || situacao === "montando");
+  const [dados, setDados] = useState(false);
+  const [previa, setPrevia] = useState(situacao === "previa");
+  const conferencia = vazio ? "vazio" : situacao === "exportando" ? "exportando" : situacao === "conferencia" ? "valida" : "nao-conferida";
 
   useEffect(() => {
     const t = (e: KeyboardEvent) => {
-      if ((e.target as HTMLElement).closest("input, textarea")) return;
-      if (e.key === "Escape" && escolhendo) (e.preventDefault(), setEscolhendo(false));
-      else if (["1", "2", "3"].includes(e.key) && !vazio) setEtapa(Number(e.key) as Etapa);
+      if ((e.target as HTMLElement).closest("input, textarea") || previa) return;
+      if (e.key === "Escape" && selecao.length) (e.preventDefault(), setSelecao([]));
     };
     document.addEventListener("keydown", t, true);
     return () => document.removeEventListener("keydown", t, true);
   });
 
-  const ETAPAS: { n: Etapa; nome: string; valor: string; sub: string; aviso?: boolean }[] = [
-    { n: 1, nome: "Arquivos", valor: vazio ? "nenhum" : "5 PDFs", sub: vazio ? "comece por aqui" : "64 páginas, tipos lidos" },
-    { n: 2, nome: "Montagem", valor: vazio ? "—" : "26 páginas", sub: vazio ? "depois dos arquivos" : "1 volume, 2 disciplinas" },
-    { n: 3, nome: "Conferir e exportar", valor: vazio ? "—" : "1 aviso", sub: vazio ? "por último" : "nada impede exportar", aviso: !vazio },
-  ];
-
-  const chaveDoLado = escolhendo ? "escolher" : `etapa-${etapa}`;
-
   return (
-    <div className="mp pj vl vm">
+    <div className="mp pj vl vx">
       <Topo atual="Montar volumes" />
       <header className="mp-cabeca">
         <div>
           <p className="mp-trilha">
-            {vazio ? (
-              <span>Juntar PDFs prontos num volume, conferir e exportar</span>
-            ) : (
-              <>
-                <MarcaDaPrefeitura prefeitura="Criciúma" forma="sinal" />
-                <span className="mp-mono">117-25</span>
-                <span>UBS da Rua São Francisco de Assis</span>
-                <button type="button" className="vm-trocar">
-                  trocar
-                </button>
-              </>
-            )}
+            <span>Juntar PDFs prontos em volumes, conferir e exportar</span>
           </p>
           <h1>Montar volumes</h1>
         </div>
-        <span className={`vl-rascunho${situacao === "falha-gravacao" ? " vl-rascunho--falha" : ""}`}>
-          {situacao === "falha-gravacao" ? (
-            <>
-              <i /> Não está salvo: o armazenamento deste navegador acabou. A montagem continua nesta aba.
-              <button type="button" className="mp-lista-ver">
-                Tentar de novo
-              </button>
-            </>
-          ) : vazio ? null : (
-            "Rascunho salvo neste dispositivo, 17:52"
-          )}
-          {!vazio && (
-            <span className="vl-historico">
-              <button type="button" aria-label="Desfazer (Ctrl+Z)">
-                <Undo2 size={14} />
-              </button>
-              <button type="button" aria-label="Refazer" disabled>
-                <Redo2 size={14} />
-              </button>
-            </span>
-          )}
-        </span>
+        <Botao variante="quiet" tamanho="sm">
+          Gerar a partir das pranchas
+        </Botao>
       </header>
 
       <section className="mp-painel">
-        <div className="mp-tiles vm-etapas" role="tablist" aria-label="Etapas">
-          {ETAPAS.map((e) => {
-            const feita = e.n < etapa;
-            return (
-              <button key={e.n} type="button" role="tab" aria-selected={etapa === e.n} disabled={vazio && e.n > 1} className="mp-tile vm-etapa" onClick={() => (setEtapa(e.n), setEscolhendo(false))}>
-                <span className="mp-tile-rotulo vm-etapa-rotulo">
-                  <span className={`vm-etapa-n${feita ? " vm-etapa-n--feita" : ""}`}>{feita ? "✓" : e.n}</span>
-                  {e.nome}
-                </span>
-                <span className={`pr-tarefa-estado vm-etapa-valor${e.aviso ? " mp-tom--aviso-texto" : ""}`}>{e.valor}</span>
-                <span className="mp-tile-sub">{e.sub}</span>
-                {etapa === e.n && <motion.i layoutId="vm-etapa-marca" className="mp-tile-marca" transition={{ duration: RITMO.troca * k, ease: SUAVE }} />}
-              </button>
-            );
-          })}
+        {/* a barra da mesa: de qual obra, desfazer/refazer, onde está salvo, e os dados do volume */}
+        <div className="vl-barra">
+          <label className="vl-projeto">
+            <span className="mp-g-fraco">Projeto</span>
+            <button type="button" className="mp-divisao-tomos">
+              {vazio ? (
+                "Independente (sem projeto)"
+              ) : (
+                <>
+                  <MarcaDaPrefeitura prefeitura="Criciúma" forma="sinal" />
+                  <span className="mp-mono">117-25</span> UBS da Rua São Francisco de Assis
+                </>
+              )}
+              <ChevronDown size={13} />
+            </button>
+          </label>
+          <span className="vl-historico">
+            <button type="button" aria-label="Desfazer: adicionar 8 páginas como Pranchas" disabled={vazio}>
+              <Undo2 size={14} />
+            </button>
+            <button type="button" aria-label="Refazer (nada a refazer)" disabled>
+              <Redo2 size={14} />
+            </button>
+          </span>
+          <span className={`vl-rascunho${situacao === "falha-gravacao" ? " vl-rascunho--falha" : ""}`}>
+            {situacao === "falha-gravacao" ? (
+              <>
+                <i /> O espaço de armazenamento deste navegador acabou. A montagem continua aberta nesta aba, mas não está salva.
+              </>
+            ) : vazio ? (
+              "Modo independente: o rascunho fica neste dispositivo e exportar não registra nada em projeto."
+            ) : (
+              "Rascunho salvo só neste dispositivo. Ao exportar, os PDFs e o relatório entram no projeto."
+            )}
+          </span>
         </div>
+
+        {!vazio && (
+          <div className="vx-dados">
+            <p>
+              <span className="mp-g-fraco">Dados do volume</span>
+              <span>
+                <span className="mp-mono">{DADOS.projectCode}</span>, {DADOS.projectName}, vol. {DADOS.volume}, tomo {DADOS.tomo}, rev. {DADOS.revision}, {DADOS.date}
+              </span>
+            </p>
+            <button type="button" className="vx-link" onClick={() => setDados((d) => !d)}>
+              {dados ? "Fechar dados" : "Editar dados do volume"}
+            </button>
+          </div>
+        )}
+        <AnimatePresence initial={false}>
+          {dados && (
+            <motion.div className="vx-recolhe vx-dados-form" initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: RITMO.troca * k, ease: SUAVE }}>
+              <div className="mp-form vx-dados-campos">
+                {[
+                  ["Código", DADOS.projectCode, "Ex: 106_25"],
+                  ["Projeto", DADOS.projectName, "Nome do projeto"],
+                  ["Cliente", DADOS.client, "Nome do cliente"],
+                  ["Cidade", DADOS.city, "Cidade"],
+                  ["Volume", DADOS.volume, "Ex: 5"],
+                  ["Tomo", DADOS.tomo, "Ex: 01"],
+                  ["Revisão", DADOS.revision, "Ex: A"],
+                  ["Data", DADOS.date, "Ex: 2026-06"],
+                ].map(([r, v, ph]) => (
+                  <label key={r}>
+                    <span>{r}</span>
+                    <input defaultValue={v} placeholder={ph} />
+                  </label>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <AnimatePresence initial={false}>
           {situacao === "recuperado" && (
             <motion.div className="vl-aviso" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}>
               <p>
-                <b>A montagem voltou.</b> O rascunho deste dispositivo, de hoje às 17:52, foi recuperado depois que a página recarregou.
+                <b>Rascunho recuperado.</b> A montagem de hoje, 17:52, voltou deste dispositivo depois que a página recarregou.
               </p>
               <Botao variante="quiet" tamanho="sm">
                 Começar do zero
@@ -541,53 +752,68 @@ export function TelaVolumes({ situacao }: { situacao: SituacaoVolumes }) {
           )}
         </AnimatePresence>
 
-        <div className="mp-miolo vm-miolo">
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.div key={etapa} className="vm-area" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: RITMO.troca * k, ease: SUAVE }}>
-              {etapa === 1 ? <Arquivos vazio={vazio} fila={situacao === "arquivos"} /> : etapa === 2 ? <Montagem alvo={escolhendo} onEscolher={() => setEscolhendo(true)} /> : <Previa />}
-            </motion.div>
-          </AnimatePresence>
-
-          <aside className="mp-lado">
-            <div className="mp-lado-troca">
-              <AnimatePresence initial={false}>
-                <motion.div key={chaveDoLado} className="mp-lado-camada" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: RITMO.troca * k, ease: SUAVE }}>
-                  {escolhendo ? (
-                    <EscolherPaginas onFechar={() => setEscolhendo(false)} />
-                  ) : etapa === 1 ? (
-                    <LadoArquivos vazio={vazio} onMontar={() => setEtapa(2)} />
-                  ) : etapa === 2 ? (
-                    <LadoMontagem onConferir={() => setEtapa(3)} />
-                  ) : (
-                    <LadoConferir estado={situacao === "exportando" ? "exportando" : "conferir"} onVoltar={() => setEtapa(2)} />
-                  )}
-                </motion.div>
-              </AnimatePresence>
+        <div className="vx-mesa">
+          {/* ARQUIVOS: importar, biblioteca e, no pé, o destino */}
+          <aside className="vx-arquivos-col" aria-label="Arquivos">
+            <div className="vx-col-cabeca">
+              <p className="vl-col-titulo">Arquivos</p>
+              <span className="mp-g-fraco ds-num">{vazio ? "nenhum" : plural(ARQUIVOS.length, "PDF", "PDFs")}</span>
             </div>
+            <div className="vx-arquivos-rolagem">
+              <Importar fila={situacao === "montando"} aberta={importar} onAlternar={() => setImportar((a) => !a)} />
+              {!vazio && <Biblioteca selecao={selecao} onSelecao={setSelecao} onAmpliar={() => {}} />}
+            </div>
+            {!vazio && <Destino n={selecao.length} />}
           </aside>
+
+          {/* MONTAGEM ou CONFERÊNCIA, por aba */}
+          <div className="vx-direita">
+            <div className="mp-ferramentas vx-abas">
+              <div className="mp-abas" role="tablist" aria-label="Áreas da mesa">
+                {(
+                  [
+                    ["montagem", "Montagem"],
+                    ["conferencia", "Conferência"],
+                  ] as const
+                ).map(([id, nome]) => (
+                  <button key={id} type="button" role="tab" aria-selected={aba === id} onClick={() => setAba(id)}>
+                    {nome}
+                    {id === "conferencia" && !vazio && (
+                      <span className="vx-aba-marca">
+                        <i className="vl-grav vl-grav--aviso" /> 1
+                      </span>
+                    )}
+                    {aba === id && <motion.i layoutId="vx-aba" className="mp-aba-marca" transition={{ duration: RITMO.troca * k, ease: SUAVE }} />}
+                  </button>
+                ))}
+              </div>
+              {aba === "montagem" && !vazio && (
+                <Botao variante="ghost" tamanho="sm">
+                  <Plus size={14} /> Adicionar volume
+                </Botao>
+              )}
+            </div>
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div key={aba} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: RITMO.troca * k, ease: SUAVE }}>
+                {aba === "montagem" ? <Montagem vazio={vazio} selecao={selecao.length} onPrevia={() => setPrevia(true)} /> : <Conferencia estado={conferencia} onPrevia={() => setPrevia(true)} />}
+              </motion.div>
+            </AnimatePresence>
+            <AnimatePresence>{previa && <Previa onFechar={() => setPrevia(false)} />}</AnimatePresence>
+          </div>
         </div>
 
         <footer className="mp-rodape">
           <span>
-            <Tecla>1</Tecla>
-            <Tecla>3</Tecla> etapas
+            <Tecla>Shift</Tecla> + clique: intervalo
           </span>
           <span>
-            <Tecla>↵</Tecla> ação da etapa
+            <Tecla>Esc</Tecla> limpar seleção
           </span>
-          {etapa === 3 && (
-            <span>
-              <Tecla>←</Tecla>
-              <Tecla>→</Tecla> prévia
-            </span>
-          )}
           <span>
             <Tecla>Ctrl</Tecla>
             <Tecla>Z</Tecla> desfazer
           </span>
-          <span className="mp-rodape-fim">
-            etapa {etapa} de 3: {ETAPAS[etapa - 1].nome.toLowerCase()}
-          </span>
+          <span className="mp-rodape-fim">{selecao.length ? plural(selecao.length, "página selecionada", "páginas selecionadas") : "arrastar páginas para a montagem também funciona"}</span>
         </footer>
       </section>
     </div>

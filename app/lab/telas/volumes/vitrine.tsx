@@ -4,14 +4,14 @@ import { Vitrine } from "../../_lab/vitrine";
 import { TelaVolumes, type SituacaoVolumes } from "./tela-volumes";
 
 const SITUACOES: { id: SituacaoVolumes; nome: string; dica: string }[] = [
-  { id: "vazio", nome: "Nada importado", dica: "Primeira vez: as três etapas no topo dizem a sequência; só a 1 está aberta, e o lado explica como funciona." },
-  { id: "arquivos", nome: "1. Arquivos", dica: "Os PDFs numa tabela, com o tipo lido (trocável) e a fila do que está entrando. À direita, o que o Nexo entendeu e UMA ação: Montar o volume." },
-  { id: "montagem", nome: "2. Montagem", dica: "O Nexo montou pela ordem de sempre: capa, e por disciplina separatriz, LD e pranchas. Cada linha diz em que página do PDF começa. A LD que falta é uma linha âmbar com Escolher a LD." },
-  { id: "escolher-paginas", nome: "Escolher a LD", dica: "A biblioteca só aparece aqui, no lado, já filtrada para LDs, com o aviso de que essas páginas já são a LD de outra disciplina." },
-  { id: "conferir", nome: "3. Conferir e exportar", dica: "A prévia do volume ocupa o centro (← → andam); o lado diz o que falta, para onde vai e Gerar PDF." },
-  { id: "exportando", nome: "Exportando", dica: "Gerar PDF: a barra anda no lugar do botão." },
-  { id: "falha-gravacao", nome: "Falha de gravação", dica: "O rascunho não salvou: o aviso fica no topo, ao lado de desfazer, com Tentar de novo." },
-  { id: "recuperado", nome: "Recuperado após recarregar", dica: "A montagem voltou do rascunho deste dispositivo: uma linha diz isso e oferece começar do zero." },
+  { id: "vazio", nome: "Nada importado", dica: "Primeira vez, modo independente: escolha o tipo dos próximos PDFs e solte. A montagem diz como o volume nasce." },
+  { id: "montando", nome: "Montando", dica: "Arquivos à esquerda (importar aberto, com a fila), a montagem à direita. Grupo 2 é o destino; a LD que falta aparece em âmbar. Campos e Ordenar abrem só quando pedidos." },
+  { id: "selecao", nome: "Páginas selecionadas", dica: "2 páginas de uma LD selecionadas: o destino no pé dos Arquivos acende e oferece Adicionar como; a LD vazia do Grupo 2 oferece Colocar aqui." },
+  { id: "conferencia", nome: "Conferência", dica: "A aba Conferência: pendências, a conferência da versão e Prévia e exportação, com Gerar PDF." },
+  { id: "previa", nome: "Prévia aberta", dica: "A prévia do volume, peça a peça, sobre a montagem. ← → andam, Esc fecha." },
+  { id: "exportando", nome: "Exportando", dica: "Gerar PDF: a barra anda no lugar dos botões." },
+  { id: "falha-gravacao", nome: "Falha de gravação", dica: "O rascunho não salvou: a barra da mesa diz isso com a frase do app." },
+  { id: "recuperado", nome: "Recuperado após F5", dica: "O rascunho deste dispositivo voltou depois de recarregar: uma linha diz isso." },
 ];
 
 export function VitrineDeVolumes() {
