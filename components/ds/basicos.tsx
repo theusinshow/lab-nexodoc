@@ -155,8 +155,31 @@ export function Seletor<T extends string>({
   );
 }
 
+/**
+ * O ORBE PEQUENO: o quadro capturado do orbe vivo (public/marca, violeta → coral),
+ * e não um desenho à parte. `tamanho` é o diâmetro da esfera; o PNG tem 8% de
+ * margem em volta, que a caixa absorve sem mexer no layout.
+ *
+ * Em repouso é a marca parada. Trabalhando, a tira de 18 quadros roda: o orbe é
+ * a única coisa que vive sozinha na tela, e só enquanto há trabalho.
+ * O arquivo sai pelo tamanho na tela em 2× (um PNG grande reduzido fica mole).
+ */
 export function Orbe({ tamanho, estado = "repouso" }: { tamanho: number; estado?: "repouso" | "trabalhando" }) {
-  return <span className="ds-orbe" data-estado={estado} style={{ ["--s" as string]: `${tamanho}px` }} aria-hidden />;
+  const px = (tamanho / 0.84) * 2;
+  const parado = px <= 64 ? "/marca/orbe-64.png" : px <= 180 ? "/marca/orbe-180.png" : "/marca/orbe-512.png";
+  const tira = px <= 96 ? "/marca/orbe-tira.png" : "/marca/orbe-tira-192.png";
+  return (
+    <span
+      className="ds-orbe"
+      data-estado={estado}
+      style={{
+        ["--s" as string]: `${tamanho}px`,
+        ["--ds-orbe-parado" as string]: `url("${parado}")`,
+        ...(estado === "trabalhando" ? { ["--ds-orbe-tira" as string]: `url("${tira}")` } : {}),
+      }}
+      aria-hidden
+    />
+  );
 }
 
 export function Tecla({ children }: { children: ReactNode }) {

@@ -57,14 +57,24 @@ export interface CoresDoOrbe {
 }
 
 /*
- * A PALETA ÍRIS (01/10/2026): o orbe fica, a cor muda para a do sistema novo
- * (app/ds.css, --ds-p-iris-*). A teal de antes segue exportada só para a
- * comparação no laboratório (/lab/telas/orbe).
+ * A PALETA VIOLETA → CORAL (aprovada em 01/10/2026): o orbe fica, a cor muda.
+ * Um degradê FIXO na alma (é a cor do objeto, não anda sozinho): violeta no
+ * fundo das lâminas, coral claro nas pontas. A íris, que veio antes, e a teal
+ * de antes seguem exportadas só para a comparação no laboratório.
  */
 export const CORES_DO_ORBE: CoresDoOrbe = {
+  corpo: "#140f1a",
+  aro: "#c3a3ff",
+  almaProfunda: "#9a6cf0", // violeta no fundo
+  miolo: "#fff6f4",
+  almaClara: "#ffa293", // coral nas pontas
+  laminaClara: "#ffd6ce",
+};
+
+export const CORES_DO_ORBE_IRIS: CoresDoOrbe = {
   corpo: "#0e0f1c",
   aro: "#a3a6ff", // --ds-p-iris-9
-  almaProfunda: "#8a8ef6", // íris, e não azul elétrico: lavanda funda
+  almaProfunda: "#8a8ef6",
   miolo: "#f4f4ff",
   almaClara: "#b8baff",
   laminaClara: "#d4d5ff", // --ds-p-iris-12

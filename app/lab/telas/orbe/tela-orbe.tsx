@@ -4,13 +4,13 @@ import { Canvas } from "@react-three/fiber";
 import { useEffect, useRef, useState } from "react";
 
 import { Botao, Tecla } from "@/components/ds/basicos";
-import { AgentOrbScene, CORES_DO_ORBE, type CoresDoOrbe } from "@/modules/nexo/components/agent-orb/AgentOrbScene";
+import { AgentOrbScene, CORES_DO_ORBE, CORES_DO_ORBE_IRIS, type CoresDoOrbe } from "@/modules/nexo/components/agent-orb/AgentOrbScene";
 import type { AgentState } from "@/modules/nexo/components/agent-orb/agent-orb.types";
 
 import "./orbe.css";
 
 /*
- * O ORBE, rodada 5 (01/10/2026). Aprovado o corpo e movimento sem a luz; agora:
+ * O ORBE, rodada 5 (01/10/2026). Violeta → coral aprovada e virou o padrão. Aprovado o corpo e movimento sem a luz; agora:
  *  - a alma acompanha o sinal (concluído, aguardando, erro) com uma paleta
  *    própria por sinal, e não misturando tintas;
  *  - um degradê FIXO de cor na alma (não anda sozinho: é a cor do objeto);
@@ -32,10 +32,10 @@ const ESTADOS: { id: AgentState; nome: string }[] = [
 ];
 
 const PALETAS: { id: string; nome: string; o_que: string; cores: CoresDoOrbe }[] = [
-  { id: "iris", nome: "Íris", o_que: "Um tom só, como está.", cores: CORES_DO_ORBE },
+  { id: "coral", nome: "Violeta → coral", o_que: "A aprovada: violeta no fundo, coral claro nas pontas.", cores: CORES_DO_ORBE },
+  { id: "iris", nome: "Íris", o_que: "Um tom só, a de antes.", cores: CORES_DO_ORBE_IRIS },
   { id: "rosa", nome: "Íris → rosa", o_que: "Violeta no fundo, rosa nas pontas das lâminas.", cores: { corpo: "#120f1c", aro: "#b9a4ff", almaProfunda: "#8a7cf8", miolo: "#fff4fb", almaClara: "#ef9ad6", laminaClara: "#f6cdea" } },
   { id: "gelo", nome: "Íris → azul-gelo", o_que: "Violeta no fundo, azul claro nas pontas.", cores: { corpo: "#0d1020", aro: "#a8b6ff", almaProfunda: "#8a8ef6", miolo: "#f4fbff", almaClara: "#8fdcff", laminaClara: "#cdeeff" } },
-  { id: "coral", nome: "Violeta → coral suave", o_que: "Mais quente: violeta no fundo, coral claro nas pontas.", cores: { corpo: "#140f1a", aro: "#c3a3ff", almaProfunda: "#9a6cf0", miolo: "#fff6f4", almaClara: "#ffa293", laminaClara: "#ffd6ce" } },
 ];
 
 function Orbe({ estado, atividade, arquivos, achados, cores, tam, nascer = 0 }: { estado: AgentState; atividade: number; arquivos: number; achados: number; cores: CoresDoOrbe; tam: number; nascer?: number }) {
@@ -53,7 +53,7 @@ export function TelaOrbe() {
   const [atividade, setAtividade] = useState(0.4);
   const [arquivos, setArquivos] = useState(2);
   const [achados, setAchados] = useState(0);
-  const [paleta, setPaleta] = useState(PALETAS[1]);
+  const [paleta, setPaleta] = useState(PALETAS[0]);
   const [nascer, setNascer] = useState(0);
   const leitura = useRef(0);
   const i = ESTADOS.findIndex((e) => e.id === estado);
