@@ -10,6 +10,9 @@ const SITUACOES: { id: SituacaoAdmin; nome: string; dica: string }[] = [
   { id: "dinheiro", nome: "Dinheiro", dica: "Teto e cotação abrem a tela, cada valor dizendo de onde veio (declarado aqui, vem do ambiente); a fatura do período na régua; uso diário, modelos, itens de custo, custo por obra e uso interno. O real vem colado no dólar, com “≈”." },
   { id: "dinheiro-sem-cotacao", nome: "Dinheiro, sem cotação", dica: "Ninguém declarou a cotação: a tela diz isso e tudo fica em dólar. Nenhum real é inventado." },
   { id: "dinheiro-sem-preco", nome: "Dinheiro, chamadas sem preço", dica: "Um modelo fora da tabela de preços: o total vira piso (“≥”), a ressalva diz quantas chamadas e qual modelo, e a tabela por obra avisa que é amostra dos 500 eventos mais recentes." },
+  { id: "motor", nome: "Motor", dica: "A medida em cima (qualidade: números, semana a semana contra a meta, comparação por nível e por modelo), a régua embaixo (vazão e limites, modelos e provedores por fluxo, metas, teste, runtime e chaves)." },
+  { id: "motor-amostra", nome: "Motor, amostra inicial", dica: "Poucas auditorias revisadas e meta não declarada: o aviso de amostra do app, e os pontos da série ficam sem cor (sem meta, o painel não julga)." },
+  { id: "motor-teste-falhou", nome: "Motor, teste do provider falhou", dica: "Testar provider respondeu 429: a resposta crua do provedor (key, status, code, type, raw), como o app mostra." },
   { id: "erro", nome: "Token recusado", dica: "O servidor recusou o token: a frase real do app, Tentar de novo, e o campo reaberto no trilho com o aviso." },
 ];
 
