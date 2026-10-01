@@ -13,7 +13,7 @@
         #root { position: absolute; inset: 0; overflow: hidden; background: #08090b; color: #eeeff2; font-family: "Geist", system-ui, sans-serif; }
         /* sem textura no chão: o escuro, um halo e a vinheta (o pontilhado saiu, a pedido) */
         .halo { position: absolute; left: 50%; top: 50%; width: 1600px; height: 1200px; margin: -600px 0 0 -800px; background: radial-gradient(closest-side, rgb(124 128 245 / 0.12), rgb(124 128 245 / 0.035) 58%, transparent 100%); }
-        #cam { --s: 2.2; --fx: 620; --fy: 470; --rx: 0; --rz: 0; --dx: 0; --dy: 0; position: absolute; inset: 0; }
+        #cam { --s: 0.95; --fx: 620; --fy: 555; --rx: 0; --rz: 0; --dx: 0; --dy: 0; position: absolute; inset: 0; }
         .palco { position: absolute; inset: 0; perspective: 1800px; perspective-origin: 720px 500px;
           -webkit-mask-image: radial-gradient(ellipse 82% 78% at 50% 50%, #000 52%, rgb(0 0 0 / 0.1) 100%);
           mask-image: radial-gradient(ellipse 82% 78% at 50% 50%, #000 52%, rgb(0 0 0 / 0.1) 100%); }
@@ -289,15 +289,15 @@
           gsap.set("#feixe", { opacity: 0, x: -40 });
 
           /* ============================ O TEMPO ============================ */
-          tl.set("#cam", { "--s": 2.2, "--fx": 620, "--fy": 470, "--rx": 0, "--rz": 0 }, 0);
+          tl.set("#cam", { "--s": 0.95, "--fx": 620, "--fy": 555, "--rx": 0, "--rz": 0 }, 0);
           tl.fromTo("#cam", { "--dx": -5 }, { "--dx": 5, duration: D / 4, ease: "sine.inOut", yoyo: true, repeat: 3 }, 0);
           tl.fromTo("#cam", { "--dy": -3 }, { "--dy": 3, duration: D / 6, ease: "sine.inOut", yoyo: true, repeat: 5 }, 0);
           tl.fromTo("#halo", { scale: 1, opacity: 0.85 }, { scale: 1.07, opacity: 1, duration: D / 4, ease: "sine.inOut", yoyo: true, repeat: 3 }, 0);
 
-          /* 0–1.9 s · LÊ: a linha de leitura desce a p. 14 e para no número */
+          /* 0–1.9 s · LÊ: de longe, a câmera entra na p. 14 enquanto a linha de leitura desce e para no número */
           const ateMarca = P14.yMarca - PY + LH;
           tl.fromTo(lido, { height: 30 }, { height: ateMarca, duration: R.marca - 0.25, ease: "power1.inOut", immediateRender: false }, 0.25);
-          tl.to("#cam", { "--fy": P14.yMarca - 10, duration: 1.4, ease: "sine.inOut" }, 0.3);
+          tl.fromTo("#cam", { "--s": 0.95, "--fy": 555 }, { "--s": 2.2, "--fy": P14.yMarca - 10, duration: 1.6, ease: "power2.inOut", immediateRender: false }, 0);
           lavar(P14, WASH.block, R.marca, 0.36);
 
           /* 1.9–3.4 s · CRUZA: o quadro da p. 31 entra no quadro, o fio liga os dois números */
@@ -365,7 +365,7 @@
           tl.set(cruza, { strokeDashoffset: lenCruza, opacity: 1 }, v - 0.2);
           tl.set(vnum, { textContent: "0" }, v - 0.2);
           for (const pg of Object.values(P)) tl.to(pg.e, { opacity: 1, filter: "blur(0px)", duration: 0.7, ease: "power2.out" }, v);
-          tl.fromTo("#cam", { "--s": 0.6, "--fx": 860, "--fy": VY - 70 }, { "--s": 2.2, "--fx": 620, "--fy": 470, duration: 1.6, ease: "power3.inOut", immediateRender: false }, v);
+          tl.fromTo("#cam", { "--s": 0.6, "--fx": 860, "--fy": VY - 70 }, { "--s": 0.95, "--fx": 620, "--fy": 555, duration: 1.6, ease: "power3.inOut", immediateRender: false }, v);
           tl.to("#cam", { "--rx": 0, "--rz": 0, duration: 1.6, ease: "power3.inOut" }, v);
 
           window.__timelines["leitura"] = tl;
