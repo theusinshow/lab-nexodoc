@@ -1,0 +1,810 @@
+/*
+ * SISTEMA DE DESIGN NOVO (ds) — a fonte da verdade executável dos tokens.
+ *
+ * Convive com o antigo durante a migração, e por isso tudo aqui tem o prefixo
+ * `--ds-` e os estilos de base moram sob `.ds`: nenhuma regra deste arquivo
+ * alcança uma tela que ainda não migrou. Quando a última tela migrar, o antigo
+ * sai do `globals.css` e este arquivo passa a ser o único.
+ *
+ * DUAS CAMADAS, e a ordem importa:
+ *  - PRIMITIVOS (`--ds-p-*`): os valores crus. Ninguém fora deste arquivo os usa.
+ *  - SEMÂNTICOS (o resto): o PAPEL de cada cor. Componente usa só estes. Trocar
+ *    um tom é trocar o primitivo; trocar o sentido é trocar o semântico.
+ *
+ * O que foi PRESERVADO do sistema antigo, de propósito, porque já era semântico
+ * e funcionava: as cores de disciplina, a marca de cada prefeitura
+ * (`--prefeitura-*`, que continuam no globals.css e são lidas daqui), a escala
+ * de dados e os tempos de movimento. Ver /lab/fundamentos.
+ */
+
+:root {
+  /* ---------- primitivos: neutros (frios, um fio de azul) ---------- */
+  --ds-p-gray-0: #08090b;
+  --ds-p-gray-1: #0c0d10;
+  --ds-p-gray-2: #121317;
+  --ds-p-gray-3: #181a1f;
+  --ds-p-gray-4: #1f2127;
+  --ds-p-gray-5: #2a2d35;
+  --ds-p-gray-7: #80858f;
+  --ds-p-gray-9: #a4a8b3;
+  --ds-p-gray-12: #eeeff2;
+  --ds-p-paper: #f2f3f5;
+  --ds-p-ink: #0a0b0d;
+
+  /* ---------- primitivos: íris (a cor do Nexo) ---------- */
+  --ds-p-iris-9: #a3a6ff;
+  --ds-p-iris-10: #7c80f5;
+  --ds-p-iris-12: #d4d5ff;
+
+  /* ---------- primitivos: sinais ---------- */
+  --ds-p-coral: #ff7d6e;
+  --ds-p-amber: #f0b45c;
+  --ds-p-slate: #8e99ae;
+  --ds-p-mint: #7bd8a5;
+  --ds-p-sky: #7fb2e8;
+
+  /* ================= SEMÂNTICOS ================= */
+
+  /* Superfícies, do fundo para a frente. Cada degrau é um plano físico: a
+     página, o que afunda (trilho, poço de input), o cartão, o que se ergue
+     (menu, item selecionado), o que flutua (diálogo, popover). */
+  --ds-surface-page: var(--ds-p-gray-0);
+  --ds-surface-sunken: var(--ds-p-gray-1);
+  --ds-surface-card: var(--ds-p-gray-2);
+  --ds-surface-raised: var(--ds-p-gray-3);
+  --ds-surface-overlay: var(--ds-p-gray-4);
+
+  /* Texto. O terciário era #6C717C na proposta v1 e REPROVAVA para texto
+     pequeno (4,07:1 no melhor fundo). #80858F dá 5,4:1 na página e 4,7:1 na
+     superfície erguida — o piso de 4,5:1 vale em todos os planos de uso. */
+  --ds-text-primary: var(--ds-p-gray-12);
+  --ds-text-secondary: var(--ds-p-gray-9);
+  --ds-text-tertiary: var(--ds-p-gray-7);
+  --ds-text-on-paper: var(--ds-p-ink);
+
+  /* Linhas. Borda é luz, não cor: branco em alfa baixo, desenhado como sombra
+     interna (não ocupa pixel de layout e não desalinha ícone com texto). */
+  --ds-line-subtle: rgb(255 255 255 / 0.07);
+  --ds-line-default: rgb(255 255 255 / 0.12);
+  --ds-line-strong: rgb(255 255 255 / 0.18);
+
+  /* O Nexo. ÚNICA cor viva da interface, e só com quatro sentidos: o Nexo está
+     presente, o Nexo está trabalhando, isto está selecionado, isto tem foco.
+     Usar íris para decorar gasta o único sinal que a tela tem. */
+  --ds-nexo: var(--ds-p-iris-9);
+  --ds-nexo-strong: var(--ds-p-iris-10);
+  --ds-nexo-soft: var(--ds-p-iris-12);
+  --ds-nexo-wash: rgb(163 166 255 / 0.1);
+  --ds-nexo-line: rgb(163 166 255 / 0.35);
+  --ds-focus-ring: var(--ds-p-iris-9);
+
+  /* A ação principal é CLARA, não colorida: uma pílula de papel por tela. A
+     cor do Nexo continua livre para dizer que ele está vivo. */
+  --ds-action-bg: var(--ds-p-paper);
+  --ds-action-bg-hover: #ffffff;
+  --ds-action-fg: var(--ds-p-ink);
+
+  /* Gravidade de achado. Os três degraus do parecer, e só eles. */
+  --ds-sev-block: var(--ds-p-coral);
+  --ds-sev-block-wash: rgb(255 125 110 / 0.12);
+  --ds-sev-block-line: rgb(255 125 110 / 0.28);
+  --ds-sev-decide: var(--ds-p-amber);
+  --ds-sev-decide-wash: rgb(240 180 92 / 0.12);
+  --ds-sev-decide-line: rgb(240 180 92 / 0.28);
+  --ds-sev-note: var(--ds-p-slate);
+  --ds-sev-note-wash: rgb(142 153 174 / 0.14);
+  --ds-sev-note-line: rgb(142 153 174 / 0.28);
+  /* redação e gramática: cor própria, para o erro de texto não se confundir com o técnico */
+  --ds-sev-texto: #86b6f0;
+  --ds-sev-texto-wash: rgb(134 182 240 / 0.12);
+
+  /* Estado do sistema. Mesmo tom da gravidade em "atenção", mas papel
+     diferente: "salvo só nesta máquina" não é um achado. */
+  --ds-state-ok: var(--ds-p-mint);
+  --ds-state-ok-wash: rgb(123 216 165 / 0.11);
+  --ds-state-info: var(--ds-p-sky);
+  --ds-state-info-wash: rgb(127 178 232 / 0.12);
+  --ds-state-attention: var(--ds-p-amber);
+  --ds-state-attention-wash: rgb(240 180 92 / 0.12);
+  --ds-state-error: var(--ds-p-coral);
+  --ds-state-error-wash: rgb(255 125 110 / 0.12);
+
+  /* PRESERVADAS do sistema antigo: disciplina (8 famílias) e escala de dados.
+     Apontam para os tokens de lá para não haver duas verdades. */
+  --ds-disc-arq: var(--discipline-arq);
+  --ds-disc-est: var(--discipline-est);
+  --ds-disc-hid: var(--discipline-hid);
+  --ds-disc-ele: var(--discipline-ele);
+  --ds-disc-pci: var(--discipline-pci);
+  --ds-disc-cli: var(--discipline-cli);
+  --ds-disc-ter: var(--discipline-ter);
+  --ds-disc-pai: var(--discipline-pai);
+  /* as quatro que não tinham cor */
+  --ds-disc-cab: #d6a472;
+  --ds-disc-gas: #86c4a8;
+  --ds-disc-ace: #7fa7e6;
+  --ds-disc-ger: #9aa2b1;
+
+  /* ---------- tipo ---------- */
+  /* As famílias moram em .ds: a variável do next/font só existe ali. */
+
+  /* Escala: 12 / 13 / 14 / 15 / 17 / 20 / 24 / 32 / 44. O corpo é 14 porque é
+     uma ferramenta lida por horas, não uma página de venda. O display só existe
+     em saudação e veredito. */
+  --ds-text-2xs: 12.5px;
+  --ds-text-xs: 14px;
+  --ds-text-sm: 14px;
+  --ds-text-md: 15px;
+  --ds-text-lg: 17px;
+  --ds-text-xl: 20px;
+  --ds-text-2xl: 24px;
+  --ds-text-3xl: 32px;
+  --ds-text-display: 44px;
+
+  /* ---------- espaço (base 4) ---------- */
+  --ds-space-1: 4px;
+  --ds-space-2: 8px;
+  --ds-space-3: 12px;
+  --ds-space-4: 16px;
+  --ds-space-5: 20px;
+  --ds-space-6: 24px;
+  --ds-space-8: 32px;
+  --ds-space-10: 40px;
+  --ds-space-12: 48px;
+  --ds-space-16: 64px;
+
+  /* ---------- raio: por PAPEL, não por tamanho ---------- */
+  --ds-radius-tag: 6px;
+  --ds-radius-control: 10px;
+  --ds-radius-row: 12px;
+  --ds-radius-card: 16px;
+  --ds-radius-panel: 18px;
+  --ds-radius-composer: 22px;
+  --ds-radius-pill: 999px;
+
+  /* ---------- elevação ---------- */
+  --ds-edge: inset 0 0 0 1px var(--ds-line-subtle);
+  --ds-edge-strong: inset 0 0 0 1px var(--ds-line-default);
+  --ds-shadow-overlay: inset 0 0 0 1px var(--ds-line-default), 0 24px 60px -12px rgb(0 0 0 / 0.8);
+  --ds-shadow-float: inset 0 0 0 1px var(--ds-line-default), 0 12px 32px -10px rgb(0 0 0 / 0.7);
+
+  /* ---------- movimento (espelho do lib/ds/movimento.ts) ---------- */
+  --ds-dur-press: 80ms;
+  --ds-dur-feedback: 120ms;
+  --ds-dur-state: 180ms;
+  --ds-dur-enter: 240ms;
+  --ds-dur-layout: 320ms;
+  --ds-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ds-ease-feedback: cubic-bezier(0.25, 1, 0.5, 1);
+  --ds-ease-move: cubic-bezier(0.65, 0, 0.35, 1);
+  --ds-ease-exit: cubic-bezier(0.4, 0, 1, 1);
+}
+
+/* ---------- base, só dentro de .ds ---------- */
+.ds {
+  --ds-font-sans: var(--font-ds-sans), ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+  --ds-font-mono: var(--font-ds-mono), ui-monospace, "Cascadia Mono", Consolas, monospace;
+  color-scheme: dark;
+  background: var(--ds-surface-page);
+  color: var(--ds-text-primary);
+  font-family: var(--ds-font-sans);
+  font-size: var(--ds-text-sm);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: "ss01" 0;
+}
+/* FOCO. O globals.css antigo pinta um anel teal em todo a/button/input/
+   textarea com especificidade (0,3,1), e ele vazava para dentro do sistema
+   novo. O `:focus-visible` repetido empata a especificidade e, vindo depois,
+   vence: o anel daqui é íris, afastado 2 px do elemento pelo fundo da página. */
+.ds :focus-visible {
+  outline: none;
+}
+.ds :is(a, button, summary, input, select, textarea, [tabindex]):focus-visible:focus-visible {
+  outline: none;
+  border-color: transparent;
+  box-shadow: 0 0 0 2px var(--ds-surface-page), 0 0 0 4px var(--ds-focus-ring);
+}
+.ds ::selection {
+  background: rgb(163 166 255 / 0.3);
+}
+.ds .ds-num {
+  font-variant-numeric: tabular-nums;
+}
+.ds .ds-code {
+  font-family: var(--ds-font-mono);
+  font-size: 12px;
+  color: var(--ds-text-secondary);
+  padding: 1px 7px;
+  border-radius: var(--ds-radius-tag);
+  background: rgb(255 255 255 / 0.055);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ds *,
+  .ds *::before,
+  .ds *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* =====================================================================
+ * COMPONENTES — as peças do sistema novo. Classes `ds-*`, sempre dentro
+ * de `.ds`. O React fica em components/ds; aqui mora a aparência.
+ * ===================================================================== */
+
+/* ---------- botão ---------- */
+.ds .ds-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  height: 34px;
+  padding: 0 15px;
+  border: 0;
+  border-radius: var(--ds-radius-pill);
+  font: inherit;
+  font-size: var(--ds-text-sm);
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  color: var(--ds-text-primary);
+  background: transparent;
+  transition:
+    background var(--ds-dur-feedback) var(--ds-ease-feedback),
+    color var(--ds-dur-feedback) var(--ds-ease-feedback),
+    box-shadow var(--ds-dur-feedback) var(--ds-ease-feedback),
+    transform var(--ds-dur-press) var(--ds-ease-feedback);
+}
+/* O aperto: o botão afunda 3% sob o dedo. Só no :active — é resposta, não enfeite. */
+.ds .ds-btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+.ds .ds-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.ds .ds-btn svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+.ds .ds-btn--primary {
+  background: var(--ds-action-bg);
+  color: var(--ds-action-fg);
+}
+.ds .ds-btn--primary:hover:not(:disabled) {
+  background: var(--ds-action-bg-hover);
+}
+.ds .ds-btn--ghost {
+  box-shadow: inset 0 0 0 1px var(--ds-line-default);
+}
+.ds .ds-btn--ghost:hover:not(:disabled) {
+  background: rgb(255 255 255 / 0.04);
+  box-shadow: inset 0 0 0 1px var(--ds-line-strong);
+}
+.ds .ds-btn--quiet {
+  color: var(--ds-text-secondary);
+  padding: 0 10px;
+}
+.ds .ds-btn--quiet:hover:not(:disabled) {
+  color: var(--ds-text-primary);
+  background: rgb(255 255 255 / 0.045);
+}
+.ds .ds-btn--sm {
+  height: 28px;
+  padding: 0 11px;
+  font-size: var(--ds-text-xs);
+}
+.ds .ds-btn--sm svg {
+  width: 14px;
+  height: 14px;
+}
+.ds .ds-btn--icon {
+  width: 34px;
+  padding: 0;
+}
+.ds .ds-btn--sm.ds-btn--icon {
+  width: 28px;
+}
+
+/* ---------- selo ---------- */
+.ds .ds-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 22px;
+  padding: 0 9px;
+  border-radius: var(--ds-radius-pill);
+  font-size: 12px;
+  white-space: nowrap;
+  background: rgb(255 255 255 / 0.055);
+  color: var(--ds-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+.ds .ds-pill > i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex: none;
+}
+.ds .ds-pill--line { background: none; box-shadow: inset 0 0 0 1px var(--ds-line-default); }
+.ds .ds-pill--nexo { background: var(--ds-nexo-wash); color: var(--ds-nexo); }
+.ds .ds-pill--block { background: var(--ds-sev-block-wash); color: var(--ds-sev-block); }
+.ds .ds-pill--decide { background: var(--ds-sev-decide-wash); color: var(--ds-sev-decide); }
+.ds .ds-pill--note { background: var(--ds-sev-note-wash); color: #b4bdce; }
+.ds .ds-pill--texto { background: var(--ds-sev-texto-wash); color: var(--ds-sev-texto); }
+.ds .ds-pill--ok { background: var(--ds-state-ok-wash); color: var(--ds-state-ok); }
+
+/* ---------- segmento ---------- */
+.ds .ds-seg {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--ds-radius-pill);
+  background: var(--ds-surface-sunken);
+  box-shadow: var(--ds-edge);
+}
+.ds .ds-seg button {
+  position: relative;
+  height: 26px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--ds-radius-pill);
+  background: none;
+  font: inherit;
+  font-size: var(--ds-text-xs);
+  color: var(--ds-text-tertiary);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color var(--ds-dur-feedback) var(--ds-ease-feedback);
+}
+.ds .ds-seg button:hover { color: var(--ds-text-secondary); }
+.ds .ds-seg button[aria-pressed="true"] { color: var(--ds-text-primary); }
+.ds .ds-seg button > span { position: relative; z-index: 1; display: inline-flex; align-items: center; gap: 6px; }
+.ds .ds-seg-pilula {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--ds-radius-pill);
+  background: var(--ds-surface-overlay);
+  box-shadow: var(--ds-edge-strong);
+}
+
+/* ---------- tecla, avatar ---------- */
+.ds .ds-kbd {
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 5px;
+  font-family: var(--ds-font-mono);
+  font-size: 10.5px;
+  color: var(--ds-text-tertiary);
+  box-shadow: inset 0 0 0 1px var(--ds-line-default);
+  white-space: nowrap;
+}
+.ds .ds-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  flex: none;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #d5d8e6;
+  background: linear-gradient(140deg, #3a3d52, #23252e);
+}
+.ds .ds-avatar--xs { width: 20px; height: 20px; font-size: 8.5px; }
+
+/* ---------- menu ---------- */
+.ds .ds-menu {
+  position: absolute;
+  z-index: 20;
+  min-width: 220px;
+  padding: 6px;
+  border-radius: 14px;
+  background: var(--ds-surface-overlay);
+  box-shadow: var(--ds-shadow-overlay);
+}
+.ds .ds-menu button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  height: 34px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 9px;
+  background: none;
+  font: inherit;
+  font-size: var(--ds-text-xs);
+  color: var(--ds-text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+.ds .ds-menu button:hover,
+.ds .ds-menu button:focus-visible { background: rgb(255 255 255 / 0.06); outline: none; }
+.ds .ds-menu button[aria-checked="true"] svg { color: var(--ds-nexo); }
+.ds .ds-menu--acoes { min-width: 260px; }
+.ds .ds-menu--acoes button { height: auto; min-height: 34px; padding: 7px 10px; align-items: flex-start; }
+.ds .ds-menu--acoes button > span:first-child { margin-top: 1px; color: var(--ds-text-secondary); }
+.ds .ds-menu-texto { display: grid; gap: 1px; }
+.ds .ds-menu-texto small { font-size: 11.5px; color: var(--ds-text-tertiary); }
+
+/* ---------- esqueleto ---------- */
+.ds .ds-skel {
+  border-radius: 6px;
+  background: linear-gradient(100deg, rgb(255 255 255 / 0.035) 30%, rgb(255 255 255 / 0.08) 50%, rgb(255 255 255 / 0.035) 70%);
+  background-size: 220% 100%;
+  animation: ds-varrer 1.6s linear infinite;
+}
+@keyframes ds-varrer {
+  from { background-position: 100% 0; }
+  to { background-position: -100% 0; }
+}
+
+/* ---------- esfera (provisória: a definitiva é assunto à parte) ---------- */
+.ds .ds-orbe {
+  --s: 120px;
+  display: block;
+  position: relative;
+  width: var(--s);
+  height: var(--s);
+  border-radius: 50%;
+  flex: none;
+  background:
+    radial-gradient(circle at 32% 28%, rgb(255 255 255 / 0.85) 0 4%, transparent 22%),
+    conic-gradient(from 0deg, #8c8fff, #6fc3ff, #e8b7ff, #ffc98a, #9ea2ff, #8c8fff);
+  box-shadow: inset 0 0 calc(var(--s) * 0.18) rgb(8 9 11 / 0.55), 0 0 calc(var(--s) * 0.5) rgb(140 143 255 / 0.28);
+  animation: ds-girar 14s linear infinite;
+}
+.ds .ds-orbe::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 70% 78%, rgb(8 9 11 / 0.55), transparent 55%),
+    radial-gradient(circle at 50% 50%, transparent 58%, rgb(255 255 255 / 0.18) 70%, transparent 72%);
+  animation: ds-girar 14s linear infinite reverse;
+}
+.ds .ds-orbe[data-estado="trabalhando"],
+.ds .ds-orbe[data-estado="trabalhando"]::after { animation-duration: 4s; }
+@keyframes ds-girar { to { transform: rotate(360deg); } }
+
+/* =====================================================================
+ * GRÁFICOS (components/ds/graficos.tsx) — monocromáticos, no idioma da
+ * Matos UI: pílula sobre trilho texturizado, marcador fino, uma cor de
+ * destaque por vez.
+ * ===================================================================== */
+
+/* ---------- linha do tempo ---------- */
+.ds .gr-linha { position: relative; display: grid; gap: 6px; }
+.ds .gr-passo,
+.ds .gr-eixo,
+.ds .gr-agora-linha-wrap { display: grid; grid-template-columns: 250px minmax(0, 1fr) 64px; align-items: center; column-gap: 14px; }
+.ds .gr-passo { height: 30px; transition: opacity var(--ds-dur-state) var(--ds-ease-feedback); }
+.ds .gr-passo--fora { opacity: 0.45; }
+.ds .gr-passo-rotulo { font-size: var(--ds-text-xs); color: var(--ds-text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: right; }
+.ds .gr-passo--atual .gr-passo-rotulo, .ds .gr-passo--erro .gr-passo-rotulo { color: var(--ds-text-primary); }
+.ds .gr-passo--futuro .gr-passo-rotulo { color: var(--ds-text-tertiary); }
+.ds .gr-trilho {
+  position: relative;
+  height: 18px;
+  border-radius: 999px;
+  background:
+    repeating-linear-gradient(135deg, rgb(255 255 255 / 0.035) 0 2px, transparent 2px 7px),
+    rgb(255 255 255 / 0.03);
+}
+.ds .gr-pilula {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 18px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: #5b5f6b;
+  overflow: hidden;
+}
+.ds .gr-pilula-valor { font-family: var(--ds-font-mono); font-size: 10.5px; color: rgb(255 255 255 / 0.85); white-space: nowrap; }
+.ds .gr-pilula--lenta { background: #c9ccd4; }
+.ds .gr-pilula--lenta .gr-pilula-valor { color: var(--ds-text-on-paper); }
+.ds .gr-passo--atual .gr-pilula { background: var(--ds-nexo); }
+.ds .gr-passo--atual .gr-pilula .gr-pilula-valor { color: var(--ds-text-on-paper); }
+.ds .gr-passo--atual .gr-pilula::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.45), transparent);
+  transform: translateX(-100%);
+  animation: gr-correr 1.8s var(--ds-ease-out) infinite;
+}
+.ds .gr-pilula--passou { background: var(--ds-sev-decide) !important; }
+.ds .gr-passo--futuro .gr-pilula { background: none; box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.18); border: 0; background-image: repeating-linear-gradient(90deg, rgb(255 255 255 / 0.12) 0 4px, transparent 4px 8px); background-size: 100% 1px; background-repeat: no-repeat; background-position: 0 50%; }
+.ds .gr-passo--erro .gr-pilula { background: var(--ds-state-error); }
+.ds .gr-previsto { position: absolute; top: -2px; bottom: -2px; border-radius: 999px; box-shadow: inset 0 0 0 1px var(--ds-nexo-line); pointer-events: none; }
+@keyframes gr-correr { to { transform: translateX(100%); } }
+.ds .gr-passo-tempo { font-family: var(--ds-font-mono); font-size: 11.5px; color: var(--ds-text-secondary); text-align: right; font-variant-numeric: tabular-nums; }
+.ds .gr-passo--futuro .gr-passo-tempo { color: var(--ds-text-tertiary); }
+.ds .gr-passo--erro .gr-passo-tempo { color: var(--ds-state-error); }
+.ds .gr-eixo { height: 22px; }
+.ds .gr-eixo-marcas { position: relative; height: 100%; border-top: 1px solid var(--ds-line-subtle); }
+.ds .gr-eixo-marcas i { position: absolute; top: 5px; transform: translateX(-50%); font-style: normal; font-family: var(--ds-font-mono); font-size: 10.5px; color: var(--ds-text-tertiary); }
+.ds .gr-eixo-marcas i:first-child { transform: none; }
+.ds .gr-agora { position: absolute; top: 4px; transform: translateX(-50%); padding: 0 6px; border-radius: 999px; background: var(--ds-nexo); color: var(--ds-text-on-paper); font-size: 10.5px; font-weight: 600; line-height: 15px; }
+.ds .gr-agora-linha-wrap { position: absolute; inset: 0 0 22px 0; pointer-events: none; }
+.ds .gr-agora-trilho { position: relative; height: 100%; }
+.ds .gr-agora-trilho i { position: absolute; top: -4px; bottom: 0; width: 0; border-left: 1px dashed var(--ds-nexo-line); }
+
+/* ---------- mapa das páginas ---------- */
+.ds .gr-mapa { display: grid; gap: 12px; }
+.ds .gr-mapa-grade { display: grid; gap: 5px; }
+.ds .gr-pagina {
+  aspect-ratio: 1;
+  border-radius: 5px;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.08);
+  background: transparent;
+  transition: background var(--ds-dur-state);
+}
+.ds .gr-pagina--lida { box-shadow: none; background: rgb(255 255 255 / calc(0.06 + var(--tom))); }
+.ds .gr-pagina--atual { box-shadow: inset 0 0 0 1.5px var(--ds-nexo); background: var(--ds-nexo-wash); animation: gr-ler 1.4s ease-in-out infinite; }
+@keyframes gr-ler { 50% { background: rgb(163 166 255 / 0.28); } }
+/* filter, não opacity: a opacidade é do motion (entrada), e o estilo em linha dele venceria */
+.ds .gr-pagina { transition: background var(--ds-dur-state), filter var(--ds-dur-feedback); }
+.ds .gr-pagina--recua { filter: opacity(0.22); }
+.ds .gr-mapa-rodape { min-height: 18px; font-size: var(--ds-text-2xs); color: var(--ds-text-tertiary); }
+.ds .gr-mapa-rodape b { color: var(--ds-text-primary); font-weight: 500; }
+.ds .gr-mapa-escala { display: inline-flex; gap: 3px; margin-left: 6px; vertical-align: -1px; }
+.ds .gr-mapa-escala i { width: 10px; height: 10px; border-radius: 3px; }
+.ds .gr-mapa-escala i:nth-child(1) { background: rgb(255 255 255 / 0.06); }
+.ds .gr-mapa-escala i:nth-child(2) { background: rgb(255 255 255 / 0.3); }
+.ds .gr-mapa-escala i:nth-child(3) { background: rgb(255 255 255 / 0.55); }
+.ds .gr-mapa-escala i:nth-child(4) { background: rgb(255 255 255 / 0.85); }
+
+/* ---------- faixa de veredito ---------- */
+.ds .gr-faixa { padding: 26px 0 8px; }
+.ds .gr-faixa-trilho { position: relative; height: 10px; }
+.ds .gr-faixa-seg { position: absolute; top: 0; bottom: 0; border-radius: 999px; opacity: 0.35; transition: opacity var(--ds-dur-state); }
+.ds .gr-faixa-seg + .gr-faixa-seg { margin-left: 3px; }
+.ds .gr-faixa-seg--ok { background: var(--ds-state-ok); }
+.ds .gr-faixa-seg--decide { background: var(--ds-sev-decide); }
+.ds .gr-faixa-seg--block { background: var(--ds-sev-block); }
+.ds .gr-faixa-seg--ativa { opacity: 1; }
+.ds .gr-faixa-seg em { position: absolute; top: 16px; left: 0; font-style: normal; font-size: 11.5px; color: var(--ds-text-tertiary); white-space: nowrap; }
+.ds .gr-faixa-seg--ativa em { color: var(--ds-text-primary); }
+.ds .gr-losango { position: absolute; top: -9px; width: 12px; height: 12px; margin-left: -6px; transform: rotate(45deg); border-radius: 2px; background: var(--ds-p-paper); box-shadow: 0 0 0 3px var(--ds-surface-card); }
+
+/* ---------- colunas em pílula ---------- */
+.ds .gr-colunas { display: grid; gap: 8px; min-width: 0; }
+.ds .gr-colunas-area { display: flex; align-items: stretch; gap: 4px; }
+.ds .gr-coluna {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  border-radius: 999px;
+  background:
+    repeating-linear-gradient(135deg, rgb(255 255 255 / 0.035) 0 2px, transparent 2px 7px),
+    rgb(255 255 255 / 0.03);
+  overflow: hidden;
+  transition: opacity var(--ds-dur-feedback);
+}
+.ds .gr-coluna-total, .ds .gr-coluna-parte { position: absolute; left: 0; right: 0; bottom: 0; min-height: 4px; border-radius: 999px; transform-origin: bottom; }
+.ds .gr-coluna-total { background: #5b5f6b; }
+.ds .gr-coluna-parte { background: #c9ccd4; }
+.ds .gr-coluna--hoje { box-shadow: inset 0 0 0 1px var(--ds-nexo-line); }
+.ds .gr-coluna--hoje .gr-coluna-total { background: var(--ds-nexo-strong); }
+.ds .gr-coluna--hoje .gr-coluna-parte { background: var(--ds-nexo); }
+.ds .gr-colunas--foco .gr-coluna:not(.gr-coluna--sobre) { opacity: 0.35; }
+.ds .gr-colunas-eixo { display: flex; gap: 4px; }
+.ds .gr-colunas-eixo span { flex: 1; min-width: 0; white-space: nowrap; font-family: var(--ds-font-mono); font-size: 10.5px; color: var(--ds-text-tertiary); }
+.ds .gr-colunas--compacto .gr-colunas-area { gap: 2px; }
+.ds .gr-colunas--compacto .gr-coluna { background: rgb(255 255 255 / 0.04); }
+
+/* ---------- mapa de atividade ---------- */
+.ds .gr-atividade { display: grid; gap: 6px; }
+.ds .gr-atividade-meses { display: grid; gap: 3px; font-size: 10.5px; color: var(--ds-text-tertiary); }
+.ds .gr-atividade-grade { display: grid; grid-template-rows: repeat(7, auto); gap: 3px; }
+.ds .gr-dia { aspect-ratio: 1; border-radius: 3px; background: rgb(255 255 255 / 0.045); transition: opacity var(--ds-dur-state); }
+.ds .gr-dia--uso { background: rgb(255 255 255 / var(--tom)); }
+.ds .gr-dia--hoje { box-shadow: 0 0 0 1.5px var(--ds-nexo); }
+
+/* ---------- fichas ---------- */
+.ds .gr-fichas { display: flex; flex-wrap: wrap; align-content: flex-end; align-items: center; gap: 3px; min-width: 0; }
+.ds .gr-fichas i { width: 6px; height: 14px; border-radius: 999px; background: #c9ccd4; }
+.ds .gr-fichas i:last-of-type { background: var(--ds-nexo); }
+.ds .gr-fichas em { margin-left: 3px; font-style: normal; font-family: var(--ds-font-mono); font-size: 10.5px; color: var(--ds-text-tertiary); }
+
+/* ---------- linha acumulada ---------- */
+.ds .gr-acumulada { position: relative; display: block; min-width: 0; }
+.ds .gr-acumulada svg { display: block; width: 100%; overflow: visible; }
+.ds .gr-acumulada-linha { fill: none; stroke: #c9ccd4; stroke-width: 1.5; stroke-linejoin: round; }
+.ds .gr-acumulada-area { stroke: none; }
+.ds .gr-acumulada-ponto { position: absolute; right: -3px; width: 6px; height: 6px; margin-top: -3px; border-radius: 50%; background: var(--ds-nexo); box-shadow: 0 0 0 3px rgb(163 166 255 / 0.18); }
+
+/* ---------- barras por mês ---------- */
+.ds .gr-meses { display: flex; align-items: flex-end; gap: 8px; }
+.ds .gr-mes { display: grid; justify-items: center; gap: 3px; }
+.ds .gr-mes-trilho { position: relative; width: 8px; border-radius: 999px; background: rgb(255 255 255 / 0.04); overflow: hidden; }
+.ds .gr-mes-trilho i { position: absolute; left: 0; right: 0; bottom: 0; border-radius: 999px; background: #5b5f6b; transform-origin: bottom; }
+.ds .gr-mes--atual .gr-mes-trilho i { background: var(--ds-nexo); }
+.ds .gr-mes small { font-family: var(--ds-font-mono); font-size: 9.5px; line-height: 1; color: var(--ds-text-tertiary); }
+.ds .gr-mes--atual small { color: var(--ds-text-secondary); }
+
+.ds .gr-passo-nota { grid-column: 2 / 4; display: flex; align-items: center; gap: 8px; margin: -2px 0 4px; font-size: var(--ds-text-2xs); color: var(--ds-text-secondary); }
+.ds .gr-passo:has(.gr-passo-nota) { height: auto; min-height: 30px; row-gap: 6px; padding-top: 6px; }
+
+/* ---------- faixa com marcador (LCP) ---------- */
+.ds .gr-faixa-marcador { position: absolute; top: -4px; display: grid; justify-items: center; transform: translateX(-50%); pointer-events: none; }
+.ds .gr-faixa-marcador i { width: 1.5px; height: 18px; background: var(--ds-p-paper); }
+.ds .gr-faixa-marcador b { margin-top: 30px; font-family: var(--ds-font-mono); font-size: 12px; font-weight: 500; color: var(--ds-text-primary); white-space: nowrap; }
+
+/* ---------- fluxo por tipo (Signal Flow) ---------- */
+.ds .gr-fluxo { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 12px; }
+.ds .gr-fluxo-rotulos { display: grid; grid-auto-rows: 22px; row-gap: 8px; }
+.ds .gr-fluxo-rotulos span { display: flex; align-items: center; justify-content: flex-end; font-size: var(--ds-text-2xs); color: var(--ds-text-secondary); white-space: nowrap; transition: opacity var(--ds-dur-feedback); }
+.ds .gr-fluxo-trilhos { position: relative; display: grid; grid-auto-rows: 22px; row-gap: 8px; min-width: 0; }
+.ds .gr-fluxo-trilhos::before { content: ""; position: absolute; left: 3.5px; top: 4px; bottom: 4px; width: 1px; background: var(--ds-line-default); }
+.ds .gr-fluxo-linha { display: block; overflow: visible; transition: opacity var(--ds-dur-feedback); }
+.ds .gr-fluxo--fora { opacity: 0.3; }
+.ds .gr-fluxo-trilho { fill: none; stroke: rgb(255 255 255 / 0.06); stroke-width: 3; stroke-linecap: round; }
+.ds .gr-fluxo-traco { fill: none; stroke: #7d828d; stroke-width: 3; stroke-linecap: round; }
+.ds .gr-fluxo-origem { fill: var(--ds-surface-card); stroke: #9a9ea8; stroke-width: 1.5; }
+.ds .gr-fluxo-ponta { fill: var(--ds-surface-card); stroke: #c9ccd4; stroke-width: 1.5; }
+.ds .gr-fluxo-particula { fill: #fff; opacity: 0.8; }
+.ds .gr-fluxo-valor { font-family: var(--ds-font-mono); font-size: 11px; fill: var(--ds-text-secondary); }
+.ds .gr-fluxo-linha--block .gr-fluxo-traco { stroke: var(--ds-sev-block); opacity: 0.75; }
+.ds .gr-fluxo-linha--block .gr-fluxo-origem, .ds .gr-fluxo-linha--block .gr-fluxo-ponta { stroke: var(--ds-sev-block); }
+.ds .gr-fluxo-linha--block .gr-fluxo-particula { fill: var(--ds-sev-block); }
+.ds .gr-fluxo-linha--texto .gr-fluxo-traco { stroke: var(--ds-sev-texto); opacity: 0.8; }
+.ds .gr-fluxo-linha--texto .gr-fluxo-origem, .ds .gr-fluxo-linha--texto .gr-fluxo-ponta { stroke: var(--ds-sev-texto); }
+.ds .gr-fluxo-linha--texto .gr-fluxo-particula { fill: var(--ds-sev-texto); }
+.ds .gr-fluxo-linha--zero .gr-fluxo-origem { stroke: #4a4e57; }
+.ds .gr-fluxo-linha--zero .gr-fluxo-valor { fill: var(--ds-text-tertiary); }
+
+/* ---------- mapa em blocos (treemap) ---------- */
+.ds .gr-blocos { display: grid; gap: 10px; }
+.ds .gr-blocos-area { display: flex; gap: 4px; }
+.ds .gr-blocos-grupo { display: flex; flex-direction: column; gap: 4px; flex-basis: 0; min-width: 0; --gr-tom: var(--ds-text-tertiary); }
+.ds .gr-blocos-grupo--block { --gr-tom: var(--ds-sev-block); }
+.ds .gr-blocos-grupo--decide { --gr-tom: var(--ds-sev-decide); }
+.ds .gr-blocos-grupo--note { --gr-tom: var(--ds-sev-note); }
+.ds .gr-blocos-grupo--texto { --gr-tom: var(--ds-sev-texto); }
+.ds .gr-bloco {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  flex-basis: 0;
+  min-height: 0;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 10px;
+  overflow: hidden;
+  font: inherit;
+  text-align: left;
+  cursor: default;
+  /* cinza radial, como na Matos; a cor do nível entra só por um fio no topo */
+  background: radial-gradient(120% 90% at 22% 12%, rgb(255 255 255 / 0.2), rgb(255 255 255 / 0.05) 70%), var(--ds-surface-raised);
+  box-shadow: inset 0 1.5px 0 var(--gr-tom), inset 0 0 0 1px rgb(255 255 255 / 0.05);
+  transition: opacity var(--ds-dur-feedback), filter var(--ds-dur-feedback);
+}
+.ds .gr-bloco--texto { --gr-tom: var(--ds-sev-texto); background: radial-gradient(120% 90% at 22% 12%, rgb(134 182 240 / 0.26), rgb(134 182 240 / 0.05) 70%), var(--ds-surface-raised); }
+.ds .gr-bloco:hover { filter: brightness(1.15); }
+.ds .gr-bloco--fora { opacity: 0.4; }
+.ds .gr-bloco-rotulo { font-size: 11.5px; line-height: 1.3; color: var(--ds-text-primary); overflow: hidden; }
+.ds .gr-bloco-valor { font-size: 20px; font-weight: 300; letter-spacing: -0.02em; line-height: 1; color: var(--ds-text-primary); font-variant-numeric: tabular-nums; }
+.ds .gr-blocos-legenda { display: flex; flex-wrap: wrap; gap: 14px; font-size: 11.5px; color: var(--ds-text-tertiary); }
+.ds .gr-blocos-leg { display: inline-flex; align-items: center; gap: 6px; }
+.ds .gr-blocos-leg i { width: 14px; height: 3px; border-radius: 999px; background: var(--gr-tom); }
+.ds .gr-blocos-leg--block { --gr-tom: var(--ds-sev-block); }
+.ds .gr-blocos-leg--decide { --gr-tom: var(--ds-sev-decide); }
+.ds .gr-blocos-leg--note { --gr-tom: var(--ds-sev-note); }
+.ds .gr-blocos-leg--texto { --gr-tom: var(--ds-sev-texto); }
+
+/* ---------- colunas por nível (allocation) ---------- */
+.ds .gr-nivel { display: grid; gap: 10px; }
+.ds .gr-nivel-caixa { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; padding: 10px; border-radius: 14px; background: var(--ds-surface-sunken); box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.05); }
+.ds .gr-nivel-col { display: grid; gap: 6px; justify-items: stretch; padding: 0; border: 0; background: none; font: inherit; cursor: default; transition: opacity var(--ds-dur-feedback); --gr-tom: #c9ccd4; }
+.ds .gr-nivel--fora { opacity: 0.4; }
+.ds .gr-nivel-col--block { --gr-tom: var(--ds-sev-block); }
+.ds .gr-nivel-col--decide { --gr-tom: var(--ds-sev-decide); }
+.ds .gr-nivel-col--note { --gr-tom: #b4bac6; }
+.ds .gr-nivel-col--texto { --gr-tom: var(--ds-sev-texto); }
+.ds .gr-nivel-trilho {
+  position: relative;
+  display: block;
+  border-radius: 10px;
+  background:
+    repeating-linear-gradient(135deg, rgb(255 255 255 / 0.04) 0 2px, transparent 2px 7px),
+    rgb(255 255 255 / 0.025);
+  overflow: hidden;
+}
+.ds .gr-nivel-trilho i {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  padding-top: 6px;
+  border-radius: 10px;
+  transform-origin: bottom;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--gr-tom) 95%, white), color-mix(in srgb, var(--gr-tom) 70%, black));
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.35);
+}
+.ds .gr-nivel-trilho b { font-style: normal; font-size: 15px; font-weight: 500; color: var(--ds-text-on-paper); font-variant-numeric: tabular-nums; }
+.ds .gr-nivel-trilho em { position: absolute; left: 0; right: 0; bottom: 8px; text-align: center; font-style: normal; font-size: 13px; color: var(--ds-text-tertiary); }
+.ds .gr-nivel-col small { font-size: 11px; line-height: 1.25; text-align: center; color: var(--ds-text-tertiary); }
+.ds .gr-nivel-col:hover small { color: var(--ds-text-primary); }
+
+/* ---------- níveis em faixa ---------- */
+.ds .gr-niveis { display: grid; gap: 12px; --gr-tom: #9aa1ad; }
+.ds .gr-niveis--block { --gr-tom: var(--ds-sev-block); }
+.ds .gr-niveis--decide { --gr-tom: var(--ds-sev-decide); }
+.ds .gr-niveis--note { --gr-tom: #9aa1ad; }
+.ds .gr-niveis--texto { --gr-tom: var(--ds-sev-texto); }
+.ds .gr-niveis--fora { opacity: 0.3; }
+.ds .gr-niveis-faixa { display: flex; gap: 3px; height: 10px; }
+.ds .gr-niveis-seg { flex-basis: 0; border-radius: 999px; background: var(--gr-tom); transform-origin: left; transition: opacity var(--ds-dur-feedback); }
+.ds .gr-niveis-linhas { list-style: none; margin: 0; padding: 0; }
+.ds .gr-niveis-linha {
+  display: grid;
+  grid-template-columns: 3px minmax(0, 1fr) auto 44px;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 2px;
+  border-top: 1px solid var(--ds-line-subtle);
+  transition: opacity var(--ds-dur-feedback);
+}
+.ds .gr-niveis-cor { align-self: stretch; border-radius: 999px; background: var(--gr-tom); }
+.ds .gr-niveis-texto { display: grid; gap: 1px; min-width: 0; }
+.ds .gr-niveis-texto b { font-size: var(--ds-text-xs); font-weight: 400; color: var(--ds-text-primary); }
+.ds .gr-niveis-texto small { font-size: 11px; color: var(--ds-text-tertiary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ds .gr-niveis-fichas { display: flex; gap: 3px; }
+.ds .gr-niveis-fichas i { width: 5px; height: 14px; border-radius: 999px; background: var(--gr-tom); opacity: 0.85; transform-origin: bottom; }
+.ds .gr-niveis-conta { display: grid; justify-items: end; line-height: 1.1; }
+.ds .gr-niveis-conta b { font-size: 16px; font-weight: 400; color: var(--ds-text-primary); }
+.ds .gr-niveis-conta small { font-size: 10.5px; color: var(--ds-text-tertiary); }
+.ds .gr-niveis--vazio .gr-niveis-cor { opacity: 0.35; }
+.ds .gr-niveis--vazio .gr-niveis-conta b { color: var(--ds-text-tertiary); }
+.ds .gr-niveis-ficha { width: 7px; height: 16px; padding: 0; border: 0; border-radius: 999px; background: none; box-shadow: inset 0 0 0 1.5px var(--gr-tom); transform-origin: bottom; cursor: pointer; transition: background var(--ds-dur-state), transform var(--ds-dur-press); }
+.ds .gr-niveis-ficha--feita { background: var(--gr-tom); }
+.ds .gr-niveis-ficha:hover { transform: scaleY(1.2); }
+
+/*
+ * TELA GRANDE. O desenho nasce na medida de um notebook (1440). Num monitor
+ * 2K a 100% ele ficava pequeno e encolhido no meio; a partir de 1800px de
+ * largura tudo cresce por igual — texto, espaços, gráficos —, sem mudar o
+ * desenho. zoom e não transform: o layout acompanha e nada vaza.
+ */
+@media (min-width: 1800px) {
+  .ds { zoom: 1.125; }
+}
+@media (min-width: 2300px) {
+  .ds { zoom: 1.25; }
+}
+.ds .au-painel .au-arquivo, .ds .rs-painel .rs-arquivo { flex-wrap: nowrap; white-space: nowrap; overflow: hidden; }
+
+/* ---------- selo de disciplina: ponto + sigla, na cor da disciplina ---------- */
+.ds .dc { display: inline-flex; align-items: center; gap: 5px; font-family: var(--ds-font-mono); font-size: 10.5px; letter-spacing: 0.02em; color: var(--dc-cor); white-space: nowrap; }
+.ds .dc i { width: 6px; height: 6px; border-radius: 2px; background: var(--dc-cor); }
+.ds .dc--nome { font-family: var(--ds-font-sans); font-size: var(--ds-text-2xs); letter-spacing: 0; }
+.ds .dc--arquitetura { --dc-cor: var(--ds-disc-arq); }
+.ds .dc--estrutural { --dc-cor: var(--ds-disc-est); }
+.ds .dc--hidrossanitario { --dc-cor: var(--ds-disc-hid); }
+.ds .dc--eletrico { --dc-cor: var(--ds-disc-ele); }
+.ds .dc--ppci { --dc-cor: var(--ds-disc-pci); }
+.ds .dc--climatizacao { --dc-cor: var(--ds-disc-cli); }
+.ds .dc--terraplenagem { --dc-cor: var(--ds-disc-ter); }
+.ds .dc--paisagismo { --dc-cor: var(--ds-disc-pai); }
+.ds .dc--cabeamento { --dc-cor: var(--ds-disc-cab); }
+.ds .dc--gases_medicinais { --dc-cor: var(--ds-disc-gas); }
+.ds .dc--acessibilidade { --dc-cor: var(--ds-disc-ace); }
+.ds .dc--geral { --dc-cor: var(--ds-disc-ger); }
