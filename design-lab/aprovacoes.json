@@ -159,6 +159,51 @@
     "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, vamos para a próxima tela\" (etiqueta só no No documento).",
     "em": "2026-09-30T17:22:31.187834Z"
   },
+  "tela.entrada.contato": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus em 01/10: \"ficou absurdamente bom\" (login padrao + filme HyperFrames). Pendente: o filme deve abordar a auditoria de memorial, que e o principal do software (fica para depois).",
+    "em": "2026-10-01T04:49:48.969Z"
+  },
+  "tela.entrada.dev": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus em 01/10: \"ficou absurdamente bom\" (login padrao + filme HyperFrames). Pendente: o filme deve abordar a auditoria de memorial, que e o principal do software (fica para depois).",
+    "em": "2026-10-01T04:49:48.921Z"
+  },
+  "tela.entrada.erro": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus em 01/10: \"ficou absurdamente bom\" (login padrao + filme HyperFrames). Pendente: o filme deve abordar a auditoria de memorial, que e o principal do software (fica para depois).",
+    "em": "2026-10-01T04:49:48.879Z"
+  },
+  "tela.entrada.indo": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus em 01/10: \"ficou absurdamente bom\" (login padrao + filme HyperFrames). Pendente: o filme deve abordar a auditoria de memorial, que e o principal do software (fica para depois).",
+    "em": "2026-10-01T04:49:48.837Z"
+  },
+  "tela.entrada.padrao": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus em 01/10: \"ficou absurdamente bom\" (login padrao + filme HyperFrames). Pendente: o filme deve abordar a auditoria de memorial, que e o principal do software (fica para depois).",
+    "em": "2026-10-01T04:49:48.785Z"
+  },
+  "tela.entrada.recado-enviado": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus em 01/10: \"ficou absurdamente bom\" (login padrao + filme HyperFrames). Pendente: o filme deve abordar a auditoria de memorial, que e o principal do software (fica para depois).",
+    "em": "2026-10-01T04:49:49.011Z"
+  },
+  "tela.entrada.recado-nao-saiu": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus em 01/10: \"ficou absurdamente bom\" (login padrao + filme HyperFrames). Pendente: o filme deve abordar a auditoria de memorial, que e o principal do software (fica para depois).",
+    "em": "2026-10-01T04:49:49.056Z"
+  },
+  "tela.entrada.sem-acesso": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus em 01/10: \"ficou absurdamente bom\" (login padrao + filme HyperFrames). Pendente: o filme deve abordar a auditoria de memorial, que e o principal do software (fica para depois).",
+    "em": "2026-10-01T04:49:49.100Z"
+  },
+  "tela.entrada.sem-responsavel": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus em 01/10: \"ficou absurdamente bom\" (login padrao + filme HyperFrames). Pendente: o filme deve abordar a auditoria de memorial, que e o principal do software (fica para depois).",
+    "em": "2026-10-01T04:49:49.139Z"
+  },
   "tela.inicio-d2.arquivo-recebido": {
     "status": "aprovado",
     "nota": "Aprovado pelo Matheus no chat em 30/09: \"Curti, pode ser assim mesmo, definido\".",
