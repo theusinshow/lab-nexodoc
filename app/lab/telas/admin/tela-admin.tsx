@@ -9,7 +9,9 @@ import { useTempo } from "@/lib/ds/tempo";
 
 import { Topo } from "../_comum/topo";
 import { RITMO, SUAVE } from "../conversa/turnos";
-import { ACOES, ATENCAO_DEGRADADO, AUDITORIAS, DESTINOS, FALHAS, LDS, STATUS, TOTAIS, TUDO_EM_ORDEM, type Destino } from "./dados";
+import { LinhaDeTendencia } from "@/components/ds/medidas";
+
+import { ACOES, ATENCAO_DEGRADADO, AUDITORIAS, DESTINOS, FALHAS, LDS, SERIES, STATUS, TOTAIS, TUDO_EM_ORDEM, type Destino } from "./dados";
 import { Dinheiro, type VarianteDinheiro } from "./dinheiro";
 import { PERIODOS } from "./dados-dinheiro";
 import "../mapa/mapa.css";
@@ -125,7 +127,7 @@ function Aviso({ tom, children, acao }: { tom: "info" | "erro"; children: ReactN
   );
 }
 
-function Numero({ rotulo, valor, detalhe, alerta, para }: { rotulo: string; valor: ReactNode; detalhe: string; alerta?: boolean; para?: string }) {
+function Numero({ rotulo, valor, detalhe, alerta, para, serie }: { rotulo: string; valor: ReactNode; detalhe: string; alerta?: boolean; para?: string; serie?: number[] }) {
   return (
     <button type="button" className={`adm-num${alerta ? " adm-num--alerta" : ""}`} title={para ? `Abrir ${para}` : undefined}>
       <span className="adm-num-rotulo">
@@ -134,6 +136,11 @@ function Numero({ rotulo, valor, detalhe, alerta, para }: { rotulo: string; valo
       </span>
       <b className="ds-num">{valor}</b>
       <span className="adm-num-detalhe">{detalhe}</span>
+      {serie && (
+        <span className="adm-num-linha" title="Últimos 14 dias">
+          <LinhaDeTendencia valores={serie} alerta={alerta} altura={28} />
+        </span>
+      )}
       {para && <ArrowRight size={13} className="adm-num-seta" aria-hidden />}
     </button>
   );
@@ -182,10 +189,10 @@ function Cockpit({ situacao }: { situacao: SituacaoAdmin }) {
 
       <section className="adm-numeros" aria-label="Números">
         <Numero rotulo="Usuários ativos" valor={tem ? t.ativos : "—"} detalhe={tem ? `${t.admins} admins` : vazio} para="Pessoas" />
-        <Numero rotulo="Auditorias" valor={tem ? t.auditorias : "—"} detalhe={tem ? `${t.auditorias7d} nos últimos 7 dias` : vazio} para="Dados" />
-        <Numero rotulo="Falhas" valor={tem ? t.falhas : "—"} detalhe={tem ? "auditorias com erro" : vazio} alerta={tem && t.falhas > 0} para="as auditorias que falharam" />
-        <Numero rotulo="LDs" valor={tem ? t.lds : "—"} detalhe={tem ? `${t.ldsGeradas} geradas · ${t.lds7d} nos últimos 7 dias` : vazio} para="Dados" />
-        <Numero rotulo="Eventos LD" valor={tem ? t.eventosLd : "—"} detalhe={tem ? `${t.eventosLd7d} nos últimos 7 dias` : vazio} para="Dados" />
+        <Numero rotulo="Auditorias" valor={tem ? t.auditorias : "—"} detalhe={tem ? `${t.auditorias7d} nos últimos 7 dias` : vazio} para="Dados" serie={tem ? SERIES.auditorias : undefined} />
+        <Numero rotulo="Falhas" valor={tem ? t.falhas : "—"} detalhe={tem ? "auditorias com erro" : vazio} alerta={tem && t.falhas > 0} para="as auditorias que falharam" serie={tem ? SERIES.falhas : undefined} />
+        <Numero rotulo="LDs" valor={tem ? t.lds : "—"} detalhe={tem ? `${t.ldsGeradas} geradas · ${t.lds7d} nos últimos 7 dias` : vazio} para="Dados" serie={tem ? SERIES.lds : undefined} />
+        <Numero rotulo="Eventos LD" valor={tem ? t.eventosLd : "—"} detalhe={tem ? `${t.eventosLd7d} nos últimos 7 dias` : vazio} para="Dados" serie={tem ? SERIES.eventosLd : undefined} />
       </section>
 
       <div className="adm-duas">

@@ -1,0 +1,64 @@
+/* MEDIDAS (components/ds/medidas.tsx): monocromático; cor só para estado. */
+
+/* escala SEQUENCIAL de cinza para parte-do-todo (no máximo 3 partes; validada: ΔE ≥ 24 entre vizinhos). O maior é o mais claro. */
+.ds .md-tom-0 { background: #e4e6eb; }
+.ds .md-tom-1 { background: #9599a4; }
+.ds .md-tom-2 { background: #4f525b; }
+.ds .md--fora { opacity: 0.35; }
+.ds .md-rodape { min-height: 18px; font-size: 12px; color: var(--ds-text-tertiary); }
+.ds .md-rodape b { font-weight: 500; color: var(--ds-text-primary); }
+
+/* medidor de teto */
+.ds .md-medidor { position: relative; display: grid; justify-items: center; }
+.ds .md-medidor-svg { width: 100%; max-width: 230px; overflow: visible; }
+.ds .md-medidor-trilho { fill: none; stroke: rgb(255 255 255 / 0.035); stroke-width: 14; stroke-linecap: round; }
+.ds .md-medidor-resto { fill: none; stroke-width: 14; stroke-linecap: round; }
+.ds .md-medidor-listra { fill: rgb(255 255 255 / 0.1); }
+.ds .md-medidor-gasto { fill: none; stroke: #c9ccd4; stroke-width: 14; stroke-linecap: round; }
+.ds .md-medidor-ponta { fill: var(--ds-text-primary); stroke: var(--ds-surface-card); stroke-width: 3; filter: drop-shadow(0 0 6px rgb(255 255 255 / 0.35)); }
+.ds .md-medidor--perto .md-medidor-gasto { stroke: var(--ds-state-attention); }
+.ds .md-medidor--perto .md-medidor-ponta { fill: var(--ds-state-attention); filter: drop-shadow(0 0 6px rgb(240 180 92 / 0.55)); }
+.ds .md-medidor--estourou .md-medidor-gasto { stroke: var(--ds-state-error); }
+.ds .md-medidor--estourou .md-medidor-ponta { fill: var(--ds-state-error); filter: drop-shadow(0 0 6px rgb(255 125 110 / 0.55)); }
+.ds .md-medidor-pct { margin-top: -34px; font-size: 26px; font-weight: 400; letter-spacing: -0.03em; line-height: 1; }
+.ds .md-medidor-rotulo { margin-top: 10px; font-size: 11.5px; line-height: 1.4; text-align: center; color: var(--ds-text-tertiary); }
+
+/* onda de gasto */
+.ds .md-onda { display: grid; gap: 8px; min-width: 0; }
+.ds .md-onda-area { display: flex; align-items: stretch; justify-content: space-between; gap: 3px; }
+.ds .md-onda-dia { position: relative; flex: 1; min-width: 0; max-width: 24px; display: flex; align-items: flex-end; border-radius: 5px; outline: none; transition: opacity var(--ds-dur-feedback); }
+.ds .md-onda-dia::before { content: ""; position: absolute; inset: 0; border-radius: 5px; background: repeating-linear-gradient(135deg, rgb(255 255 255 / 0.03) 0 2px, transparent 2px 7px); }
+.ds .md-onda-dia i { position: relative; display: block; width: 100%; border-radius: 4px 4px 1px 1px; background: #5b5f6b; transform-origin: bottom; }
+.ds .md-onda-dia--hoje i { background: #e4e6eb; }
+.ds .md-onda--foco .md-onda-dia:not(.md-onda-dia--sobre) { opacity: 0.35; }
+.ds .md-onda-dia--sobre i { background: #c9ccd4; }
+.ds .md-onda-dia:focus-visible { box-shadow: 0 0 0 1.5px var(--ds-focus-ring); }
+.ds .md-onda-eixo { display: flex; justify-content: space-between; gap: 3px; }
+.ds .md-onda-eixo span { flex: 1; min-width: 0; max-width: 24px; white-space: nowrap; font-family: var(--ds-font-mono); font-size: 10.5px; color: var(--ds-text-tertiary); }
+.ds .md-onda-eixo span:last-child { direction: rtl; }
+
+/* barra dividida */
+.ds .md-dividida { display: grid; gap: 10px; }
+.ds .md-dividida-faixa { display: flex; gap: 2px; height: 10px; }
+.ds .md-dividida-parte { display: block; min-width: 3px; border-radius: 3px; transform-origin: left; transition: opacity var(--ds-dur-feedback); }
+.ds .md-dividida-legenda { display: grid; gap: 5px; margin: 0; padding: 0; list-style: none; }
+.ds .md-dividida-legenda li { display: grid; grid-template-columns: 8px minmax(0, 1fr) auto 40px; align-items: center; gap: 8px; font-size: 12px; color: var(--ds-text-secondary); transition: opacity var(--ds-dur-feedback); }
+.ds .md-dividida-legenda li i { width: 8px; height: 8px; border-radius: 2px; }
+.ds .md-dividida-legenda li span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.ds .md-dividida-legenda li b { font-weight: 450; color: var(--ds-text-primary); }
+.ds .md-dividida-legenda li em { font-style: normal; text-align: right; color: var(--ds-text-tertiary); }
+
+/* linha de tendência */
+.ds .md-tendencia { position: relative; display: block; width: 100%; }
+.ds .md-tendencia svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.ds .md-tendencia-linha { fill: none; stroke: #9ea2ad; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.ds .md-tendencia-topo { stop-color: rgb(158 162 173 / 0.2); }
+.ds .md-tendencia-base { stop-color: rgb(158 162 173 / 0); }
+.ds .md-tendencia-ponto { position: absolute; width: 8px; height: 8px; margin: -4px 0 0 -4px; border-radius: 50%; background: #e4e6eb; box-shadow: 0 0 0 2px var(--ds-surface-card); }
+.ds .md-tendencia--alerta .md-tendencia-linha { stroke: var(--ds-state-error); }
+.ds .md-tendencia--alerta .md-tendencia-ponto { background: var(--ds-state-error); }
+.ds .md-tendencia--alerta .md-tendencia-topo { stop-color: rgb(255 125 110 / 0.16); }
+
+/* barra embutida */
+.ds .md-embutida { position: relative; display: block; height: 8px; border-radius: 999px; background: repeating-linear-gradient(135deg, rgb(255 255 255 / 0.045) 0 2px, transparent 2px 7px), rgb(255 255 255 / 0.03); overflow: hidden; }
+.ds .md-embutida i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 999px; background: #9ea2ad; transform-origin: left; }

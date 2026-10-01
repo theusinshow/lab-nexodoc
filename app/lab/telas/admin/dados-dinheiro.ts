@@ -36,35 +36,48 @@ export const TETOS: Controle[] = [
   },
 ];
 export const ROTULO_DA_ORIGEM = { banco: "declarado aqui", ambiente: "vem do ambiente", padrao: "não declarado" } as const;
-/** O gasto do mês que o veredito já mostra (lib/status-do-sistema → gastoDoMesUsd). */
-export const GASTO_DO_MES_USD = 39.26;
 
 export const PERIODOS = [7, 14, 30] as const;
 
-/** Uso por dia (fatura do provedor): tokens e custo. */
-export const DIAS = [
-  { dia: "25/09", tokens: 1_412_880, usd: 5.12 },
-  { dia: "26/09", tokens: 2_208_114, usd: 7.94 },
-  { dia: "27/09", tokens: 640_220, usd: 2.31 },
-  { dia: "28/09", tokens: 182_004, usd: 0.66 },
-  { dia: "29/09", tokens: 2_904_551, usd: 10.48 },
-  { dia: "30/09", tokens: 3_118_902, usd: 11.27 },
-  { dia: "01/10", tokens: 2_643_017, usd: 9.04 },
-];
+/**
+ * Uso por dia (fatura do provedor), setembro inteiro (01/09 a 30/09, hoje). Determinístico:
+ * dias úteis pesam mais, fim de semana quase nada, e a última semana sobe.
+ * Tudo que a tela mostra no período sai deste recorte, então os números batem.
+ */
+export const DIAS30 = Array.from({ length: 30 }, (_, i) => {
+  const data = new Date(2026, 8, 1 + i);
+  const fds = data.getDay() === 0 || data.getDay() === 6;
+  const onda = 0.75 + 0.25 * Math.sin(i * 1.7) + (i > 22 ? 0.35 : 0);
+  const usd = +(fds ? 0.4 + (i % 3) * 0.25 : 5.2 * onda + (i % 4)).toFixed(2);
+  const tokens = Math.round(usd * 271_000 + (i % 5) * 9_000);
+  const chamadas = Math.round(usd * 27.4);
+  return { dia: `${String(data.getDate()).padStart(2, "0")}/${String(data.getMonth() + 1).padStart(2, "0")}`, usd, tokens, chamadas, cache: Math.round(tokens * 0.24) };
+});
+export const doPeriodo = (n: number) => DIAS30.slice(-n);
+export const totaisDo = (n: number) => {
+  const d = doPeriodo(n);
+  const usd = +d.reduce((a, x) => a + x.usd, 0).toFixed(2);
+  const tokens = d.reduce((a, x) => a + x.tokens, 0);
+  return { usd, tokens, entrada: Math.round(tokens * 0.79), saida: tokens - Math.round(tokens * 0.79), chamadas: d.reduce((a, x) => a + x.chamadas, 0), cache: d.reduce((a, x) => a + x.cache, 0) };
+};
+/** O resto (modelos, obras, fluxos) foi medido em 7 dias; outro período escala junto. */
+export const escalaDo = (n: number) => totaisDo(n).usd / totaisDo(7).usd;
+/** O gasto do mês que o veredito do trilho já mostra (lib/status-do-sistema → gastoDoMesUsd): setembro inteiro. */
+export const GASTO_DO_MES_USD = totaisDo(30).usd;
 
-export const TOTAIS_DO_PERIODO = { usd: 46.82, entrada: 10_402_116, saida: 2_707_572, chamadas: 1284, cache: 3_118_440 };
-
+/** Partes do período (tokens e chamadas), aplicadas sobre totaisDo(n). */
 export const MODELOS = [
-  { modelo: "gpt-5.5", chamadas: 612, tokens: 9_884_210 },
-  { modelo: "gpt-5.5-mini", chamadas: 590, tokens: 2_904_118 },
-  { modelo: "gpt-5.6-luna", chamadas: 82, tokens: 321_360 },
+  { modelo: "gpt-5.5", parteTokens: 0.754, parteChamadas: 0.477 },
+  { modelo: "gpt-5.5-mini", parteTokens: 0.221, parteChamadas: 0.459 },
+  { modelo: "gpt-5.6-luna", parteTokens: 0.025, parteChamadas: 0.064 },
 ];
 
+/** Partes da fatura do período, aplicadas sobre totaisDo(n).usd (somam 1). */
 export const ITENS_DE_CUSTO = [
-  { item: "gpt-5.5, entrada", usd: 26.01 },
-  { item: "gpt-5.5, saída", usd: 14.66 },
-  { item: "gpt-5.5-mini, entrada e saída", usd: 4.12 },
-  { item: "gpt-5.6-luna, entrada e saída", usd: 2.03 },
+  { item: "gpt-5.5, entrada", parte: 0.556 },
+  { item: "gpt-5.5, saída", parte: 0.313 },
+  { item: "gpt-5.5-mini, entrada e saída", parte: 0.088 },
+  { item: "gpt-5.6-luna, entrada e saída", parte: 0.043 },
 ];
 
 export type Obra = { chave: string; obra: string; origem: "pasta" | "conversa" | "sem-vinculo" | "conversa-removida"; chamadas: number; conversas: number; tokens: number; usd: number };
