@@ -9,7 +9,7 @@ export default function PaginaDeAdmin() {
         <p className="lab-trilha">Telas para aprovar</p>
         <h1>Administração</h1>
         <p className="lab-lede">
-          O trilho e o Cockpit (aprovados) e, nesta rodada, o Dinheiro. Motor, Pessoas e Dados vêm nas próximas, um de cada vez.
+          O trilho, o Cockpit, o Dinheiro e o Motor (aprovados) e, nesta rodada, Pessoas e Dados: os cinco destinos completos.
         </p>
       </header>
       <VitrineDeAdmin />

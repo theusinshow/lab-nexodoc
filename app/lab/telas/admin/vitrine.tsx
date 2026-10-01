@@ -13,6 +13,12 @@ const SITUACOES: { id: SituacaoAdmin; nome: string; dica: string }[] = [
   { id: "motor", nome: "Motor", dica: "A medida em cima (qualidade: números, semana a semana contra a meta, comparação por nível e por modelo), a régua embaixo (vazão e limites, modelos e provedores por fluxo, metas, teste, runtime e chaves)." },
   { id: "motor-amostra", nome: "Motor, amostra inicial", dica: "Poucas auditorias revisadas e meta não declarada: o aviso de amostra do app, e os pontos da série ficam sem cor (sem meta, o painel não julga)." },
   { id: "motor-teste-falhou", nome: "Motor, teste do provider falhou", dica: "Testar provider respondeu 429: a resposta crua do provedor (key, status, code, type, raw), como o app mostra." },
+  { id: "pessoas", nome: "Pessoas", dica: "A porta de entrada (quem entra sem convite, com a explicação do app), a régua, adicionar, filtrar e a tabela: papel, status, vínculo com o escritório (liberar/remover no hover) e as ações por pessoa." },
+  { id: "pessoas-lote", nome: "Pessoas, em lote", dica: "Duas pessoas marcadas: a barra do lote (Tornar admins, Desativar, Ativar, Limpar) e a confirmação NA TELA com a frase do app." },
+  { id: "pessoas-convite", nome: "Pessoas, exige convite", dica: "A porta fechada: conta nova sem convite leva 403 até alguém liberá-la aqui. Juliana aparece como CONVIDADO." },
+  { id: "dados", nome: "Dados", dica: "O expurgo primeiro (conversas por obra, quanto cada uma guarda), depois o histórico de auditorias e a operação de LDs, com filtros e exclusão." },
+  { id: "dados-expurgo", nome: "Dados, expurgar uma obra", dica: "A prévia conta o que VAI e o que FICA com o mesmo peso, avisa quantas máquinas recebem a lápide e pede a palavra (sem acento e sem caixa); o botão só acende quando confere." },
+  { id: "dados-excluir", nome: "Dados, excluir auditorias", dica: "No app, o navegador pergunta; aqui a confirmação vem na tela, com a mesma frase do app." },
   { id: "erro", nome: "Token recusado", dica: "O servidor recusou o token: a frase real do app, Tentar de novo, e o campo reaberto no trilho com o aviso." },
 ];
 

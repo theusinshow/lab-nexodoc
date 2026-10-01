@@ -14,6 +14,8 @@ import { LinhaDeTendencia } from "@/components/ds/medidas";
 import { ACOES, ATENCAO_DEGRADADO, AUDITORIAS, DESTINOS, FALHAS, LDS, SERIES, STATUS, TOTAIS, TUDO_EM_ORDEM, type Destino } from "./dados";
 import { Dinheiro, type VarianteDinheiro } from "./dinheiro";
 import { Motor, type VarianteMotor } from "./motor";
+import { Pessoas, type VariantePessoas } from "./pessoas";
+import { Banco, type VarianteBanco } from "./banco";
 import { PERIODOS } from "./dados-dinheiro";
 import "../mapa/mapa.css";
 import "./admin.css";
@@ -25,10 +27,10 @@ import "./admin.css";
  * Esta rodada: o trilho e o Cockpit; os outros quatro destinos vêm depois.
  */
 
-export type SituacaoAdmin = "sem-token" | "cockpit" | "atencao" | "erro" | "dinheiro" | "dinheiro-sem-cotacao" | "dinheiro-sem-preco" | "motor" | "motor-amostra" | "motor-teste-falhou";
+export type SituacaoAdmin = "sem-token" | "cockpit" | "atencao" | "erro" | "dinheiro" | "dinheiro-sem-cotacao" | "dinheiro-sem-preco" | "motor" | "motor-amostra" | "motor-teste-falhou" | "pessoas" | "pessoas-lote" | "pessoas-convite" | "dados" | "dados-expurgo" | "dados-excluir";
 const comDados = (s: SituacaoAdmin) => s !== "sem-token" && s !== "erro";
 const ICONES: Record<Destino, typeof Gauge> = { cockpit: Gauge, dinheiro: BarChart3, motor: ShieldCheck, pessoas: UsersRound, dados: Database };
-const PRONTOS: Destino[] = ["cockpit", "dinheiro", "motor"];
+const PRONTOS: Destino[] = ["cockpit", "dinheiro", "motor", "pessoas", "dados"];
 
 function Trilho({ situacao, atual, onIr }: { situacao: SituacaoAdmin; atual: Destino; onIr: (d: Destino) => void }) {
   const { k } = useTempo();
@@ -279,9 +281,11 @@ function Cockpit({ situacao }: { situacao: SituacaoAdmin }) {
 }
 
 export function TelaAdmin({ situacao }: { situacao: SituacaoAdmin }) {
-  const [destino, setDestino] = useState<Destino>(situacao.startsWith("dinheiro") ? "dinheiro" : situacao.startsWith("motor") ? "motor" : "cockpit");
+  const [destino, setDestino] = useState<Destino>(situacao.startsWith("dinheiro") ? "dinheiro" : situacao.startsWith("motor") ? "motor" : situacao.startsWith("pessoas") ? "pessoas" : situacao.startsWith("dados") ? "dados" : "cockpit");
   const [periodo, setPeriodo] = useState<string>("7");
   const tem = comDados(situacao);
+  const varPessoas: VariantePessoas = situacao === "pessoas-lote" ? "lote" : situacao === "pessoas-convite" ? "convite" : "normal";
+  const varBanco: VarianteBanco = situacao === "dados-expurgo" ? "expurgo" : situacao === "dados-excluir" ? "excluir" : "normal";
   const varMotor: VarianteMotor = situacao === "motor-amostra" ? "amostra" : situacao === "motor-teste-falhou" ? "teste-falhou" : "normal";
   const variante: VarianteDinheiro = situacao === "dinheiro-sem-cotacao" ? "sem-cotacao" : situacao === "dinheiro-sem-preco" ? "sem-preco" : "normal";
 
@@ -318,7 +322,7 @@ export function TelaAdmin({ situacao }: { situacao: SituacaoAdmin }) {
       <div className="adm-corpo">
         <Trilho situacao={situacao} atual={destino} onIr={setDestino} />
         <main className="adm-conteudo">
-          {destino === "motor" ? <Motor variante={varMotor} /> : destino === "dinheiro" ? <Dinheiro variante={variante} periodo={Number(periodo)} /> : <Cockpit situacao={comDados(situacao) && situacao !== "atencao" ? "cockpit" : situacao} />}
+          {destino === "pessoas" ? <Pessoas variante={varPessoas} /> : destino === "dados" ? <Banco variante={varBanco} /> : destino === "motor" ? <Motor variante={varMotor} /> : destino === "dinheiro" ? <Dinheiro variante={variante} periodo={Number(periodo)} /> : <Cockpit situacao={comDados(situacao) && situacao !== "atencao" ? "cockpit" : situacao} />}
         </main>
       </div>
     </div>
