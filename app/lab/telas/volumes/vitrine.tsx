@@ -4,14 +4,14 @@ import { Vitrine } from "../../_lab/vitrine";
 import { TelaVolumes, type SituacaoVolumes } from "./tela-volumes";
 
 const SITUACOES: { id: SituacaoVolumes; nome: string; dica: string }[] = [
-  { id: "vazio", nome: "Nada importado", dica: "Primeira vez: a biblioteca é só o lugar de importar; a montagem diz como o volume nasce; a conferência espera." },
-  { id: "montando", nome: "Montando", dica: "Volume 01 com dois grupos, cada linha com as páginas do PDF que ocupa. A fila mostra o que está entrando (lendo, duplicado, recusado). Estrutural sem LD aparece em âmbar e na conferência." },
-  { id: "selecao", nome: "Páginas escolhidas", dica: "3 páginas do LD escolhidas na biblioteca: o destino acende (Volume 01 › Estrutural, como LD) e a linha vazia de LD fica marcada. Enter adiciona." },
-  { id: "conferencia", nome: "Conferida", dica: "Esta versão foi conferida: o Gerar PDF vira primário. O aviso de LD continua, mas não impede exportar." },
-  { id: "previa", nome: "Prévia aberta", dica: "O volume na ordem, peça a peça, com os mesmos papéis e carimbos do Mapa. ← → andam, Esc fecha." },
-  { id: "exportando", nome: "Exportando", dica: "Gerar PDF juntando as 26 páginas: a barra anda no lugar do botão." },
-  { id: "falha-gravacao", nome: "Falha de gravação", dica: "O rascunho não salvou (armazenamento cheio): a barra diz isso com a frase do app e oferece tentar de novo." },
-  { id: "recuperado", nome: "Recuperado após recarregar", dica: "A página recarregou e a montagem voltou do rascunho deste dispositivo: uma linha diz isso e oferece começar do zero." },
+  { id: "vazio", nome: "Nada importado", dica: "Primeira vez: as três etapas no topo dizem a sequência; só a 1 está aberta, e o lado explica como funciona." },
+  { id: "arquivos", nome: "1. Arquivos", dica: "Os PDFs numa tabela, com o tipo lido (trocável) e a fila do que está entrando. À direita, o que o Nexo entendeu e UMA ação: Montar o volume." },
+  { id: "montagem", nome: "2. Montagem", dica: "O Nexo montou pela ordem de sempre: capa, e por disciplina separatriz, LD e pranchas. Cada linha diz em que página do PDF começa. A LD que falta é uma linha âmbar com Escolher a LD." },
+  { id: "escolher-paginas", nome: "Escolher a LD", dica: "A biblioteca só aparece aqui, no lado, já filtrada para LDs, com o aviso de que essas páginas já são a LD de outra disciplina." },
+  { id: "conferir", nome: "3. Conferir e exportar", dica: "A prévia do volume ocupa o centro (← → andam); o lado diz o que falta, para onde vai e Gerar PDF." },
+  { id: "exportando", nome: "Exportando", dica: "Gerar PDF: a barra anda no lugar do botão." },
+  { id: "falha-gravacao", nome: "Falha de gravação", dica: "O rascunho não salvou: o aviso fica no topo, ao lado de desfazer, com Tentar de novo." },
+  { id: "recuperado", nome: "Recuperado após recarregar", dica: "A montagem voltou do rascunho deste dispositivo: uma linha diz isso e oferece começar do zero." },
 ];
 
 export function VitrineDeVolumes() {

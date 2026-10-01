@@ -133,3 +133,79 @@
 .ds .vl-previa-item--atual { opacity: 1; background: rgb(255 255 255 / 0.04); color: var(--ds-text-primary); }
 .ds .vl-previa-item .pp-legenda { display: none; }
 .ds .vl-previa-pe { display: flex; align-items: center; justify-content: space-between; padding: 6px 12px; border-top: 1px solid var(--ds-line-subtle); font-size: 12px; }
+
+/* ================= em etapas ================= */
+.ds .vm .mp-cabeca .vl-rascunho { align-self: flex-end; margin-left: 0; }
+.ds .vm-trocar { padding: 0; border: 0; background: none; font: inherit; font-size: 12px; color: var(--ds-text-secondary); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--ds-line-strong); cursor: pointer; }
+
+/* as três etapas: tiles com número, o que tem, o que falta */
+.ds .vm-etapas { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.ds .vm-etapa { flex: none; gap: 3px; padding: 16px 20px; }
+.ds .vm-etapa:last-child { border-right: 0; }
+.ds .vm-etapa:disabled { cursor: default; opacity: 0.45; }
+.ds .vm-etapa:disabled:hover { background: none; }
+.ds .vm-etapa-rotulo { display: inline-flex; align-items: center; gap: 8px; }
+.ds .vm-etapa-n { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; box-shadow: inset 0 0 0 1.2px var(--ds-line-strong); font-size: 10.5px; font-variant-numeric: tabular-nums; color: var(--ds-text-secondary); }
+.ds .vm-etapa[aria-selected="true"] .vm-etapa-n { background: var(--ds-text-primary); box-shadow: none; color: var(--ds-surface-card); }
+.ds .vm-etapa-n--feita { color: var(--ds-state-ok); box-shadow: inset 0 0 0 1.2px rgb(from var(--ds-state-ok) r g b / 0.6); }
+.ds .vm-etapa-valor { font-size: 18px !important; }
+
+.ds .vm-miolo { grid-template-columns: minmax(0, 1fr) 360px; min-height: 520px; }
+.ds .vm-area { min-width: 0; }
+.ds .vm-principal { display: grid; align-content: start; gap: 14px; padding: 18px 20px 24px; }
+
+/* etapa 1 */
+.ds .vm-importar { margin: 0; }
+.ds .vm-grade-arquivos { --mp-colunas: 32px minmax(0, 1fr) 120px 70px minmax(0, 1fr); padding: 0; }
+.ds .vm-nome { overflow: hidden; font-size: 12px; white-space: nowrap; text-overflow: ellipsis; }
+.ds .vm-tipo { display: inline-flex; align-items: center; gap: 4px; height: 26px; padding: 0 8px 0 10px; border: 0; border-radius: 7px; background: none; box-shadow: inset 0 0 0 1px var(--ds-line-default); font: inherit; font-size: 12px; color: var(--ds-text-primary); cursor: pointer; transition: box-shadow 0.2s; }
+.ds .vm-tipo:hover { box-shadow: inset 0 0 0 1px var(--ds-line-strong); }
+.ds .vm-situacao { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; }
+.ds .vm-situacao button { display: grid; place-items: center; flex: none; width: 22px; height: 22px; border: 0; border-radius: 6px; background: none; color: var(--ds-text-tertiary); cursor: pointer; }
+.ds .vm-lendo { font-size: 12px; background: linear-gradient(90deg, var(--ds-text-tertiary) 0%, var(--ds-text-primary) 45%, var(--ds-text-tertiary) 90%); background-size: 200% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: ds-varrer 2.6s linear infinite; }
+.ds .vm-fila .vm-nome { color: var(--ds-text-secondary); }
+.ds .vm-passos { display: grid; gap: 10px; margin: 0; padding: 0 0 0 18px; font-size: 12.5px; line-height: 1.5; color: var(--ds-text-secondary); }
+.ds .vm-passos b { font-weight: 500; color: var(--ds-text-primary); }
+.ds .vm-pe { gap: 8px; }
+.ds .vm-secundaria { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 6px; border: 0; background: none; font: inherit; font-size: 12.5px; color: var(--ds-text-tertiary); cursor: pointer; transition: color 0.2s; }
+.ds .vm-secundaria:hover { color: var(--ds-text-primary); }
+
+/* etapa 2: o volume como uma lista em ordem */
+.ds .vm-volume-cabeca { display: flex; align-items: center; gap: 12px; }
+.ds .vm-volume-nome { font-size: 15px; color: var(--ds-text-primary); }
+.ds .vm-arquivo-final { padding: 2px 8px; border: 0; border-radius: 6px; background: none; box-shadow: inset 0 0 0 1px var(--ds-line-subtle); font-size: 11.5px; color: var(--ds-text-secondary); cursor: text; }
+.ds .vm-volume-n { font-size: 12px; }
+.ds .vm-mais-volume { margin-left: auto; }
+.ds .vm-lista { display: grid; border-radius: 12px; box-shadow: inset 0 0 0 1px var(--ds-line-default); overflow: hidden; }
+.ds .vm-secao-nome { margin: 0; padding: 14px 16px 6px 44px; font-size: 13px; color: var(--ds-text-primary); border-top: 1px solid var(--ds-line-subtle); }
+.ds .vm-secao-nome .mp-mono { margin-left: 6px; font-size: 11px; }
+.ds .vm-item { display: grid; grid-template-columns: 20px 52px 80px minmax(0, 1fr) 64px auto; align-items: center; gap: 10px; min-height: 46px; padding: 6px 14px 6px 10px; font-size: 12.5px; transition: background 0.2s; }
+.ds .vm-item + .vm-item { border-top: 1px solid var(--ds-line-subtle); }
+.ds .vm-item:hover { background: rgb(255 255 255 / 0.02); }
+.ds .vm-alca { display: grid; place-items: center; color: var(--ds-text-tertiary); opacity: 0; cursor: grab; transition: opacity 0.2s; }
+.ds .vm-item:hover .vm-alca { opacity: 1; }
+.ds .vm-ordem { font-size: 11.5px; color: var(--ds-text-tertiary); }
+.ds .vm-item-tipo { color: var(--ds-text-tertiary); }
+.ds .vm-item-conteudo { display: grid; gap: 2px; min-width: 0; color: var(--ds-text-primary); }
+.ds .vm-item-conteudo small { overflow: hidden; font-size: 11px; white-space: nowrap; text-overflow: ellipsis; color: var(--ds-text-tertiary); }
+.ds .vm-item-n { font-size: 11.5px; text-align: right; color: var(--ds-text-tertiary); }
+.ds .vm-auto { color: var(--ds-text-tertiary); }
+.ds .vm-item--aviso { background: rgb(from var(--ds-sev-decide) r g b / 0.05); }
+.ds .vm-falta { color: var(--ds-sev-decide); }
+.ds .vm-mais { justify-self: start; margin: 4px 0 6px 6px; }
+
+/* escolher páginas, no lado */
+.ds .vm-escolher-cabeca { display: flex; align-items: center; justify-content: space-between; }
+.ds .vm-escolher-arquivo { display: grid; gap: 8px; }
+.ds .vm-escolher-arquivo > p { margin: 0; font-size: 12px; color: var(--ds-text-primary); }
+.ds .vm-paginas { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.ds .vm-aviso-ld { margin: 0; font-size: 12px; line-height: 1.5; }
+
+/* etapa 3: a prévia no centro */
+.ds .vm-previa { padding-bottom: 0; }
+.ds .vm-previa-cabeca { display: flex; align-items: center; justify-content: space-between; font-size: 13px; }
+.ds .vm-previa-nav { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; }
+.ds .vm-previa-nav button { display: grid; place-items: center; width: 28px; height: 28px; border: 0; border-radius: 7px; background: none; color: var(--ds-text-secondary); cursor: pointer; }
+.ds .vm-previa-nav button:hover { background: rgb(255 255 255 / 0.06); color: var(--ds-text-primary); }
+.ds .vm-fita { margin: 0 -20px; padding: 28px 20px 40px; min-height: 360px; background: rgb(0 0 0 / 0.12); }
+.ds .vm-ok { color: var(--ds-state-ok) !important; }
