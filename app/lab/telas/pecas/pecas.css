@@ -24,16 +24,27 @@
 .ds .pc-atalhos-grupo dd { display: flex; gap: 4px; margin: 0; }
 
 /* o aviso passageiro: não escurece, não rouba o foco */
-.ds .pc-avisos { position: fixed; left: 50%; bottom: 24px; z-index: 70; display: grid; gap: 8px; width: min(520px, calc(100% - 32px)); transform: translateX(-50%); pointer-events: none; }
-.ds .pc-aviso { display: flex; align-items: flex-start; gap: 10px; padding: 12px 10px 12px 14px; border-radius: 12px; background: var(--ds-surface-card); box-shadow: var(--ds-edge-strong), 0 14px 40px rgb(0 0 0 / 0.5); pointer-events: auto; }
-.ds .pc-aviso > svg { flex: none; margin-top: 2px; }
-.ds .pc-aviso--ok > svg { color: var(--ds-state-ok); }
-.ds .pc-aviso--falha > svg { color: var(--ds-state-error); }
-.ds .pc-aviso p { flex: 1; margin: 0; font-size: 13px; line-height: 1.5; }
-.ds .pc-aviso button { flex: none; display: grid; place-items: center; width: 26px; height: 26px; margin: -3px 0; padding: 0; border: 0; border-radius: 7px; background: none; color: var(--ds-text-tertiary); cursor: pointer; }
-.ds .pc-aviso button:hover { color: var(--ds-text-primary); background: rgb(255 255 255 / 0.06); }
-.ds .pc-gatilhos { position: fixed; right: 16px; bottom: 16px; z-index: 60; display: flex; align-items: center; gap: 4px; padding: 4px 4px 4px 10px; border-radius: 10px; background: rgb(0 0 0 / 0.5); box-shadow: inset 0 0 0 1px var(--ds-line-default); font-family: var(--ds-font-mono); font-size: 11px; color: var(--ds-text-tertiary); }
-.ds .pc-gatilhos button { padding: 4px 8px; border: 0; border-radius: 6px; background: rgb(255 255 255 / 0.06); font: inherit; color: var(--ds-text-secondary); cursor: pointer; }
+.ds .pc-avisos { position: fixed; left: 50%; bottom: 24px; z-index: 70; display: grid; justify-items: center; gap: 8px; width: min(560px, calc(100% - 32px)); transform: translateX(-50%); pointer-events: none; }
+.ds .pc-avisos > div { width: 100%; }
+.ds .pc-aviso { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: start; gap: 12px; padding: 12px 10px 12px 12px; border-radius: 14px; background: var(--ds-surface-overlay, var(--ds-surface-card)); box-shadow: var(--ds-edge-strong), 0 16px 44px rgb(0 0 0 / 0.55); pointer-events: auto; }
+.ds .pc-aviso-icone { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 7px; }
+.ds .pc-aviso--ok .pc-aviso-icone { background: color-mix(in srgb, var(--ds-state-ok) 16%, transparent); color: var(--ds-state-ok); }
+.ds .pc-aviso--falha .pc-aviso-icone { background: color-mix(in srgb, var(--ds-state-error) 16%, transparent); color: var(--ds-state-error); }
+.ds .pc-aviso-corpo { display: grid; gap: 3px; min-width: 0; padding-top: 2px; }
+.ds .pc-aviso-titulo { display: flex; align-items: baseline; gap: 8px; margin: 0; font-size: 13.5px; font-weight: 500; line-height: 1.4; }
+.ds .pc-aviso-vezes { padding: 0 6px; border-radius: 5px; background: rgb(255 255 255 / 0.08); font-size: 11px; font-weight: 400; color: var(--ds-text-secondary); }
+.ds .pc-aviso-texto { margin: 0; font-size: 12.5px; line-height: 1.5; color: var(--ds-text-secondary); }
+.ds .pc-aviso-link { width: 100%; margin-top: 4px; height: 28px; padding: 0 8px; border: 0; border-radius: 7px; background: rgb(0 0 0 / 0.25); box-shadow: inset 0 0 0 1px var(--ds-line-default); font-size: 11.5px; color: var(--ds-text-primary); }
+.ds .pc-aviso-link:focus-visible { outline: none; box-shadow: inset 0 0 0 1px var(--ds-text-secondary); }
+.ds .pc-aviso-acao { align-self: center; }
+.ds .pc-aviso-fechar { display: grid; place-items: center; width: 26px; height: 26px; padding: 0; border: 0; border-radius: 7px; background: none; color: var(--ds-text-tertiary); cursor: pointer; }
+.ds .pc-aviso-fechar:hover, .ds .pc-aviso-fechar:focus-visible { outline: none; color: var(--ds-text-primary); background: rgb(255 255 255 / 0.06); }
+.ds .pc-avisos-mais, .ds .pc-avisos-limpar { padding: 4px 10px; border: 0; border-radius: 999px; background: rgb(0 0 0 / 0.55); box-shadow: inset 0 0 0 1px var(--ds-line-default); font: inherit; font-size: 11.5px; color: var(--ds-text-secondary); cursor: pointer; pointer-events: auto; }
+.ds .pc-avisos-limpar { justify-self: end; background: none; box-shadow: none; color: var(--ds-text-tertiary); }
+.ds .pc-avisos-mais:hover, .ds .pc-avisos-limpar:hover { color: var(--ds-text-primary); }
+.ds .pc-gatilhos { position: fixed; right: 16px; bottom: 16px; z-index: 60; display: grid; gap: 4px; padding: 8px; border-radius: 10px; background: var(--ds-surface-sunken, #0d0e11); box-shadow: inset 0 0 0 1px var(--ds-line-default), 0 10px 30px rgb(0 0 0 / 0.5); font-family: var(--ds-font-mono); font-size: 11px; color: var(--ds-text-tertiary); }
+.ds .pc-gatilhos button { padding: 4px 8px; border: 0; border-radius: 6px; background: rgb(255 255 255 / 0.06); font: inherit; color: var(--ds-text-secondary); text-align: left; cursor: pointer; }
+.ds .pc-gatilhos .pc-gatilho--falha { color: color-mix(in srgb, var(--ds-state-error) 75%, white); }
 
 /* confirmação: os três pesos */
 .ds .pc-confirmacoes { display: grid; gap: 14px; max-width: 880px; margin: 0 auto; }

@@ -43,9 +43,16 @@ export const ATALHOS: GrupoDeAtalhos[] = [
   },
 ];
 
-export const AVISO_OK = "3 achados atribuídos a Victor Alves. Aparecem na home de quem recebeu; ninguém recebeu e-mail ainda.";
-export const AVISO_FALHA = "2 de 3 achados atribuídos a Victor Alves. 1 não entrou — confira a situação na fila.";
-export const AVISO_LINK = "Link do achado ACH-014 copiado.";
+/** As frases do `setPop` do parecer e de lib/estado-da-carga.ts, separadas em
+ *  o que aconteceu (título) e o que fazer com isso (texto). */
+export type ModeloDeAviso = { tom: "ok" | "falha"; titulo: string; texto?: string; acao?: string; link?: boolean };
+export const AVISOS: Record<"atribuidos" | "parcial" | "copiado" | "naoCopiou" | "rede", ModeloDeAviso> = {
+  atribuidos: { tom: "ok", titulo: "3 achados atribuídos a Victor Alves.", texto: "Aparecem na home de quem recebeu; ninguém recebeu e-mail ainda." },
+  parcial: { tom: "falha", titulo: "2 de 3 achados atribuídos a Victor Alves.", texto: "1 não entrou — confira a situação na fila.", acao: "Ver na fila" },
+  copiado: { tom: "ok", titulo: "Link do achado ACH-014 copiado." },
+  naoCopiou: { tom: "falha", titulo: "Não deu para copiar.", texto: "O link é:", link: true },
+  rede: { tom: "falha", titulo: "Sem conexão com o servidor.", texto: "Nada foi alterado — tente de novo.", acao: "Tentar de novo" },
+};
 
 export const PORTAO = {
   titulo: "Esta tela pede mais largura",
