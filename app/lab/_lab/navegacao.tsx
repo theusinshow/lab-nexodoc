@@ -49,35 +49,45 @@ const FASES: { href: string; rotulo: string; fase: string; pronta: boolean; grup
 ];
 
 /*
- * A COR VIVA SÓ NO ORBE: uma comparação para o lab inteiro. Mora no `<html>`
- * (data-cor-viva), porque os tokens --ds-* moram no :root; a escolha fica no
+ * A COR DE DESTAQUE: uma comparação para o lab inteiro. Mora no `<html>`
+ * (data-destaque), porque os tokens --ds-* moram no :root; a escolha fica no
  * localStorage para atravessar as telas. Ver lab.css.
  */
-const CHAVE_COR = "lab-cor-viva";
-const avisarCor = () => window.dispatchEvent(new Event(CHAVE_COR));
+const DESTAQUES = [
+  { id: "violeta", nome: "Violeta" },
+  { id: "grafite", nome: "Grafite" },
+  { id: "ciano", nome: "Ciano" },
+  { id: "cad", nome: "CAD" },
+] as const;
+type Destaque = (typeof DESTAQUES)[number]["id"];
+const CHAVE_COR = "lab-destaque";
 function assinarCor(cb: () => void) {
   window.addEventListener(CHAVE_COR, cb);
   return () => window.removeEventListener(CHAVE_COR, cb);
 }
-function trocarCor(soNoOrbe: boolean) {
-  if (soNoOrbe) document.documentElement.dataset.corViva = "orbe";
-  else delete document.documentElement.dataset.corViva;
+function trocarCor(d: Destaque) {
+  if (d === "violeta") delete document.documentElement.dataset.destaque;
+  else document.documentElement.dataset.destaque = d;
   try {
-    localStorage.setItem(CHAVE_COR, soNoOrbe ? "orbe" : "violeta");
+    localStorage.setItem(CHAVE_COR, d);
   } catch {}
-  avisarCor();
+  window.dispatchEvent(new Event(CHAVE_COR));
 }
 
 export function NavegacaoDoLab() {
   const caminho = usePathname();
   const { lento, setLento, reduzido, setReduzido, escala } = useLab();
-  const soNoOrbe = useSyncExternalStore(assinarCor, () => document.documentElement.dataset.corViva === "orbe", () => false);
+  const destaque = useSyncExternalStore(
+    assinarCor,
+    () => (document.documentElement.dataset.destaque ?? "violeta") as Destaque,
+    () => "violeta" as Destaque,
+  );
   useEffect(() => {
     let salvo: string | null = null;
     try {
       salvo = localStorage.getItem(CHAVE_COR);
     } catch {}
-    if (salvo === "orbe") trocarCor(true);
+    if (salvo && DESTAQUES.some((d) => d.id === salvo)) trocarCor(salvo as Destaque);
   }, []);
 
   return (
@@ -124,7 +134,17 @@ export function NavegacaoDoLab() {
       <div className="lab-nav-rodape">
         <Chave rotulo="Câmera lenta (4x)" ligada={lento} onTroca={setLento} />
         <Chave rotulo="Movimento reduzido" ligada={reduzido} onTroca={setReduzido} />
-        <Chave rotulo="Cor só no orbe" ligada={soNoOrbe} onTroca={trocarCor} />
+        <div className="lab-destaque" role="radiogroup" aria-label="Cor de destaque">
+          <span>Destaque</span>
+          <div>
+            {DESTAQUES.map((d) => (
+              <button key={d.id} type="button" role="radio" aria-checked={destaque === d.id} data-cor={d.id} onClick={() => trocarCor(d.id)}>
+                <i aria-hidden />
+                {d.nome}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
     </nav>
   );
