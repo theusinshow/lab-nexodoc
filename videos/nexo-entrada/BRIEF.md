@@ -7,12 +7,12 @@ destination: website
 aspect: 1440x1080
 language: pt-BR
 audience: engenheiros e projetistas do escritório, na porta de entrada do Nexo
-length: 15s
+length: 20s
 ---
 
 ## Intent
 
-Motion graphic de ~15 s em loop praticamente imperceptível, no painel direito da tela de
+Motion graphic de ~20 s em loop praticamente imperceptível, no painel direito da tela de
 login (esquerda: o login padrão). A AUDITORIA DE MEMORIAL É A PROTAGONISTA (pedido do Matheus,
 01/10: "o principal do software é o audit de memorial"); o fechamento mostra as DUAS funções
 principais juntas: auditar o memorial e montar o volume. Premium, cinematográfico, sem SaaS
@@ -27,7 +27,11 @@ a faixa do parecer, a fileira do volume com as setas aprovadas, o orbe, Geist, d
 - 7,5–10,1 s: o parecer (não emitir → revisão B → com ressalvas); o número da p. 14 é corrigido.
 - 10,1–13,35 s: a própria p. 14 vira o memorial da fileira e o volume se monta; o cartão final
   diz as duas funções ("Audita o memorial. Monta o volume.") sobre a fileira e o parecer.
-- 13,35–15 s: mergulho de volta à p. 14, sem leitura: o último quadro é o primeiro.
+- 13,35–17,7 s: O ORBE (pedido do Matheus, 01/10): o orbe do HUD sai do canto, cresce no centro
+  com "Nexo" embaixo e respira, sozinho no escuro. PROVISÓRIO: o orbe completo ainda vai ser montado
+  (o do produto é GL); este é o conic-gradient do HUD ampliado.
+- 17,7–20 s: atrás do orbe, a câmera mergulha de volta na p. 14; o orbe volta ao canto: o último
+  quadro é o primeiro.
 - SEM FUNDO PONTILHADO (Matheus não gostou): escuro, halo e vinheta. Véus no topo e na base
   para o HUD nunca ficar sobre o papel claro.
 - prefers-reduced-motion: pôster parado no quadro das duas funções (13,2 s).

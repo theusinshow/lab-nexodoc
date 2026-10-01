@@ -96,8 +96,8 @@
          * O último quadro é o primeiro: a câmera volta à p. 14, sem leitura.
          * ===================================================================== */
         (() => {
-          const D = 15;
-          const R = { marca: 1.55, cruza: 2.05, ach002: 2.9, recua: 3.4, varre: 4.3, varreDur: 2.6, corrige: 9.25, monta: 10.1, fecha: 13.35 };
+          const D = 20;
+          const R = { marca: 1.55, cruza: 2.05, ach002: 2.9, recua: 3.4, varre: 4.3, varreDur: 2.6, corrige: 9.25, monta: 10.1, fecha: 13.35, volta: 17.7 };
           const tl = gsap.timeline({ paused: true });
           const pecas = document.getElementById("pecas");
           const fios = document.getElementById("fios");
@@ -347,24 +347,26 @@
           liga(FIOS[3], m + 1.75); entra(vol, m + 1.9);
           contar(vnum, 0, 238, m + 2.0, 0.55);
 
-          /* 13.35–15 s · FECHA: a p. 14 volta à mesa e a câmera mergulha nela */
+          /* 13.35–17.7 s · O ORBE: a fileira e a página se apagam; o orbe (na legenda) toma a cena */
           const f = R.fecha;
-          tl.to(fileira, { opacity: 0, filter: "blur(6px)", duration: 0.45, ease: "power2.in", stagger: 0.03 }, f);
+          tl.to([...fileira, P14.e], { opacity: 0, filter: "blur(8px)", duration: 0.5, ease: "power2.in", stagger: 0.03 }, f);
           FIOS.forEach((fi, i) => { tl.to(fi.linha, { strokeDashoffset: fi.len, duration: 0.35, ease: "power2.in" }, f + i * 0.05); tl.to([fi.ponta], { opacity: 0, duration: 0.2 }, f); tl.to(fi.porta, { scale: 0, duration: 0.3 }, f + 0.2); });
-          tl.to(P14.e, { x: 0, y: 0, scale: 1, duration: 1.45, ease: "power3.inOut" }, f + 0.1);
-          tl.to("#cam", { "--s": 2.2, "--fx": 620, "--fy": 470, "--rx": 0, "--rz": 0, duration: 1.5, ease: "power3.inOut" }, f + 0.1);
-          // enquanto a página está pequena, ela volta a ser a de antes da leitura
-          trocar(P14.mc, "46,20 m³", "48,60 m³", f + 0.15, 0.2);
-          tl.to(P14.mc, { backgroundSize: "0% 100%", duration: 0.3 }, f + 0.2);
-          for (const pg of Object.values(P)) trocar(pg.rev, "REV. B", "REV. A", f + 0.15, 0.2);
-          tl.set(lido, { height: 30, opacity: 1 }, f + 0.5);
-          for (const pg of Object.values(P)) if (pg !== P14) {
-            tl.set(pg.mc ?? pg.e, { backgroundSize: "0% 100%" }, f + 0.5);
-            tl.to(pg.e, { opacity: 1, filter: "blur(0px)", duration: 0.5, ease: "power2.out" }, f + 0.95);
-          }
-          tl.set(tags["ACH-002"].pt, { backgroundColor: COR.block }, f + 0.5);
-          tl.set(cruza, { strokeDashoffset: lenCruza, opacity: 1 }, f + 0.5);
-          tl.set(vnum, { textContent: "0" }, f + 0.6);
+          tl.to("#cam", { "--s": 0.6, "--rx": 18, "--rz": -4, duration: 4.0, ease: "sine.inOut" }, f + 0.2);
+
+          /* 17.7–20 s · VOLTA: atrás do orbe, tudo volta a ser o primeiro quadro, e a câmera mergulha na p. 14 */
+          const v = R.volta;
+          tl.set(P14.e, { x: 0, y: 0, scale: 1 }, v - 0.2);
+          trocar(P14.mc, "46,20 m³", "48,60 m³", v - 0.2, 0.05);
+          tl.set(P14.mc, { backgroundSize: "0% 100%" }, v - 0.2);
+          for (const pg of Object.values(P)) trocar(pg.rev, "REV. B", "REV. A", v - 0.2, 0.05);
+          tl.set(lido, { height: 30, opacity: 1 }, v - 0.2);
+          for (const pg of Object.values(P)) if (pg.mc) tl.set(pg.mc, { backgroundSize: "0% 100%" }, v - 0.2);
+          tl.set(tags["ACH-002"].pt, { backgroundColor: COR.block }, v - 0.2);
+          tl.set(cruza, { strokeDashoffset: lenCruza, opacity: 1 }, v - 0.2);
+          tl.set(vnum, { textContent: "0" }, v - 0.2);
+          for (const pg of Object.values(P)) tl.to(pg.e, { opacity: 1, filter: "blur(0px)", duration: 0.7, ease: "power2.out" }, v);
+          tl.fromTo("#cam", { "--s": 0.6, "--fx": 860, "--fy": VY - 70 }, { "--s": 2.2, "--fx": 620, "--fy": 470, duration: 1.6, ease: "power3.inOut", immediateRender: false }, v);
+          tl.to("#cam", { "--rx": 0, "--rz": 0, duration: 1.6, ease: "power3.inOut" }, v);
 
           window.__timelines["leitura"] = tl;
         })();

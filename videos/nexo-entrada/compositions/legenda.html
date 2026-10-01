@@ -15,8 +15,11 @@
         .veu.topo { top: 0; height: 300px; background: linear-gradient(#08090b 0%, rgb(8 9 11 / 0.9) 50%, rgb(8 9 11 / 0) 100%); }
         .veu.base { bottom: 0; height: 430px; background: linear-gradient(rgb(8 9 11 / 0) 0%, rgb(8 9 11 / 0.9) 45%, #08090b 100%); }
         .hud { position: absolute; left: 130px; right: 130px; top: 84px; display: flex; justify-content: space-between; align-items: flex-start; }
-        .marca { display: flex; align-items: center; gap: 14px; }
-        .orbe { position: relative; width: 34px; height: 34px; border-radius: 50%; overflow: hidden; box-shadow: 0 0 22px rgb(140 143 255 / 0.32); }
+        .marca { display: flex; align-items: flex-start; gap: 14px; }
+        .orbe { position: relative; flex: none; width: 34px; height: 34px; margin-top: 3px; border-radius: 50%; overflow: hidden; box-shadow: 0 0 22px rgb(140 143 255 / 0.32); z-index: 5; }
+        /* o orbe no fim: provisório até o orbe completo existir (o do produto é GL) */
+        .aura { position: absolute; left: 720px; top: 470px; width: 1100px; height: 1100px; margin: -550px 0 0 -550px; border-radius: 50%; background: radial-gradient(closest-side, rgb(140 143 255 / 0.34), rgb(111 195 255 / 0.1) 45%, transparent 100%); }
+        .nome { position: absolute; left: 0; right: 0; top: 664px; text-align: center; font-size: 46px; font-weight: 520; letter-spacing: -0.025em; }
         .orbe-a { position: absolute; inset: 0; border-radius: 50%; background: radial-gradient(circle at 32% 28%, rgb(255 255 255 / 0.85) 0 4%, transparent 22%), conic-gradient(from 0deg, #8c8fff, #6fc3ff, #e8b7ff, #ffc98a, #9ea2ff, #8c8fff); }
         .orbe-b { position: absolute; inset: 0; border-radius: 50%; background: radial-gradient(circle at 70% 78%, rgb(8 9 11 / 0.55), transparent 55%), radial-gradient(circle at 50% 50%, transparent 58%, rgb(255 255 255 / 0.18) 70%, transparent 72%); }
         .marca-txt b { display: block; font-family: "Geist Mono", monospace; font-size: 22px; font-weight: 500; letter-spacing: -0.01em; line-height: 1; }
@@ -46,10 +49,12 @@
       <div id="root" data-composition-id="legenda" data-width="1440" data-height="1080">
         <div class="veu topo" data-layout-ignore=""></div>
         <div class="veu base" data-layout-ignore=""></div>
+        <div class="aura" id="aura" data-layout-ignore=""></div>
+        <div class="nome" id="nome"><span class="m"><span class="w" data-layout-allow-overlap="" data-layout-allow-overflow="" data-layout-allow-occlusion="">Nexo</span></span></div>
         <header class="hud">
           <div class="marca">
-            <div class="orbe"><div class="orbe-a" id="orbeA" data-layout-ignore=""></div><div class="orbe-b" id="orbeB" data-layout-ignore=""></div></div>
-            <div class="marca-txt"><b>117-25</b><i>Memorial geral · rev. <span id="mrev">A</span></i></div>
+            <div class="orbe" id="orbe"><div class="orbe-a" id="orbeA" data-layout-ignore=""></div><div class="orbe-b" id="orbeB" data-layout-ignore=""></div></div>
+            <div class="marca-txt" id="marcaTxt"><b>117-25</b><i>Memorial geral · rev. <span id="mrev">A</span></i></div>
           </div>
           <div class="parecer" id="parecer">
             <div class="parecer-tit"><span>parecer da auditoria</span><b id="estado">—</b></div>
@@ -87,8 +92,8 @@
         /* A LEGENDA, no mesmo relógio da leitura (compositions/leitura.html):
            cada achado entra na fila no instante em que nasce no trecho. */
         (() => {
-          const D = 15;
-          const R = { ach002: 2.9, ach003: 4.61, ach004: 6.17, ach007: 6.69, corrige: 9.25, monta: 10.1, fecha: 13.35 };
+          const D = 20;
+          const R = { ach002: 2.9, ach003: 4.61, ach004: 6.17, ach007: 6.69, corrige: 9.25, monta: 10.1, fecha: 13.35, volta: 17.7 };
           const tl = gsap.timeline({ paused: true });
           gsap.set("#parecer", { opacity: 0 });
           gsap.set(".seg i", { scaleX: 0 });
@@ -136,10 +141,29 @@
           tl.to("#parecer", { opacity: 0, y: -8, duration: 0.4, ease: "power2.in" }, R.fecha - 0.15);
 
           // de volta ao primeiro quadro, já invisível
-          tl.set("#r1pt", { backgroundColor: "#ff7d6e" }, 14.6);
-          tl.set("#r1risco", { scaleX: 0 }, 14.6);
-          tl.set(["#r1", "#r2", "#r3", "#r4", "#losango"], { opacity: 0 }, 14.6);
-          tl.set(".seg i", { scaleX: 0 }, 14.6);
+          tl.set("#r1pt", { backgroundColor: "#ff7d6e" }, 19.6);
+          tl.set("#r1risco", { scaleX: 0 }, 19.6);
+          tl.set(["#r1", "#r2", "#r3", "#r4", "#losango"], { opacity: 0 }, 19.6);
+          tl.set(".seg i", { scaleX: 0 }, 19.6);
+
+          /* O ORBE: o do HUD sai do canto, cresce no centro e volta ao lugar (o último quadro é o primeiro) */
+          gsap.set("#aura", { opacity: 0, scale: 0.6 });
+          const ALVO = { x: 720 - 147, y: 470 - 104, s: 9 };
+          tl.to("#marcaTxt", { opacity: 0, x: -10, duration: 0.35, ease: "power2.in" }, 13.35);
+          tl.to("#orbe", { x: ALVO.x, y: ALVO.y, scale: ALVO.s, duration: 1.25, ease: "power3.inOut" }, 13.45);
+          tl.to("#orbe", { boxShadow: "0 0 26px rgb(140 143 255 / 0.55)", duration: 1.25 }, 13.45);
+          tl.to("#aura", { opacity: 1, scale: 1, duration: 1.4, ease: "power2.out" }, 13.9);
+          // fora da janela dele o nome não existe na cena (escondido na máscara, ainda contaria contraste)
+          gsap.set("#nome", { opacity: 0 });
+          tl.set("#nome", { opacity: 1 }, 14.5);
+          tl.set("#nome", { opacity: 0 }, 18.75);
+          entra("#nome", 14.55);
+          // respira devagar enquanto está sozinho na cena (um ciclo inteiro: começa e termina em 9)
+          tl.to("#orbe", { scale: ALVO.s * 1.035, duration: 1.6, ease: "sine.inOut", yoyo: true, repeat: 1 }, 14.9);
+          sai("#nome", 18.2);
+          tl.to("#aura", { opacity: 0, scale: 0.7, duration: 0.9, ease: "power2.in" }, 18.25);
+          tl.to("#orbe", { x: 0, y: 0, scale: 1, boxShadow: "0 0 22px rgb(140 143 255 / 0.32)", duration: 1.2, ease: "power3.inOut" }, 18.35);
+          tl.fromTo("#marcaTxt", { opacity: 0, x: -10 }, { opacity: 1, x: 0, duration: 0.45, ease: "power2.out", immediateRender: false }, 19.1);
 
           /* textos de estado: função do tempo e do losango */
           const ESTADOS = [["liberado", "#7bd8a5"], ["com ressalvas", "#d9c27a"], ["revisar", "#f0b45c"], ["não emitir", "#ff7d6e"]];
@@ -153,7 +177,7 @@
               const i = Math.max(0, Math.min(3, Math.round((Number(gsap.getProperty(losango, "x")) - xDe(0)) / (COL + 8))));
               [estado.textContent, estado.style.color] = ESTADOS[i];
             }
-            const resolvido = t >= R.corrige + 0.45 && t < 14.6;
+            const resolvido = t >= R.corrige + 0.45 && t < 19.6;
             r1niv.textContent = resolvido ? "resolvido" : "bloqueia";
             r1niv.style.color = resolvido ? "#7bd8a5" : "#ff7d6e";
             const rev = t >= R.corrige + 0.2 && t < R.fecha + 0.2 ? "B" : "A";

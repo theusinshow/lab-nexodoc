@@ -9,8 +9,8 @@ export default function PaginaDeEntrada() {
         <p className="lab-trilha">Telas para aprovar</p>
         <h1>Entrada</h1>
         <p className="lab-lede">
-          Login e sem acesso. À esquerda o login de sempre; à direita o filme do Nexo, 15 s em loop feitos em HyperFrames
-          (videos/nexo-entrada): a auditoria do memorial como protagonista, fechando nas duas funções, auditar e montar o volume.
+          Login e sem acesso. À esquerda o login de sempre; à direita o filme do Nexo, 20 s em loop feitos em HyperFrames
+          (videos/nexo-entrada): a auditoria do memorial como protagonista, fechando nas duas funções, auditar e montar o volume, e passando pelo orbe (provisório).
         </p>
       </header>
       <VitrineDeEntrada />
