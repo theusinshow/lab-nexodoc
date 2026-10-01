@@ -1,0 +1,52 @@
+/* O TOPO se mede pela caixa: as mesmas regras valem na tela cheia e na vitrine. */
+.ds .pn-topo-caixa { container-type: inline-size; container-name: topo; position: relative; z-index: 30; }
+.ds .pn-topo { min-width: 0; }
+.ds .pn-marca { flex: none; }
+.ds .pn-nav { flex: none; }
+.ds .pn-nav a { white-space: nowrap; }
+.ds .pn-busca { flex: none; width: auto; min-width: 280px; }
+.ds .pn-busca-texto { overflow: hidden; text-overflow: ellipsis; }
+.ds .pn-sino { flex: none; }
+.ds .pn-conta { position: relative; flex: none; }
+.ds .pn-quem { white-space: nowrap; transition: background var(--ds-dur-feedback); }
+.ds .pn-quem:hover, .ds .pn-quem[aria-expanded="true"] { background: rgb(255 255 255 / 0.05); }
+.ds .pn-quem-seta { display: inline-flex; color: var(--ds-text-tertiary); }
+
+/* o menu da conta */
+.ds .pn-menu { position: absolute; top: calc(100% + 8px); right: 0; z-index: 40; display: grid; width: 280px; padding: 6px; border-radius: 14px; background: var(--ds-surface-overlay, var(--ds-surface-card)); box-shadow: var(--ds-edge-strong), 0 18px 48px rgb(0 0 0 / 0.5); transform-origin: top right; }
+.ds .pn-menu button { display: flex; align-items: center; gap: 10px; width: 100%; height: 34px; padding: 0 10px; border: 0; border-radius: 8px; background: none; font: inherit; font-size: 13px; color: var(--ds-text-secondary); text-align: left; cursor: pointer; transition: background 0.15s, color 0.15s; }
+.ds .pn-menu button:hover, .ds .pn-menu button:focus-visible { outline: none; background: rgb(255 255 255 / 0.06); color: var(--ds-text-primary); }
+.ds .pn-menu button[aria-current="page"] { color: var(--ds-text-primary); }
+.ds .pn-menu button .ds-kbd { margin-left: auto; }
+.ds .pn-menu-quem { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 4px 10px; padding: 10px 10px 12px; }
+.ds .pn-menu-quem > span:nth-child(2) { display: grid; min-width: 0; }
+.ds .pn-menu-quem b { font-weight: 500; font-size: 13.5px; }
+.ds .pn-menu-quem small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11.5px; color: var(--ds-text-tertiary); }
+.ds .pn-menu-alcada { grid-column: 2; display: flex; align-items: center; gap: 6px; font-family: var(--ds-font-mono); font-size: 11px; letter-spacing: 0.04em; color: var(--ds-text-secondary); }
+.ds .pn-menu-alcada em { padding: 1px 6px; border-radius: 5px; background: var(--ds-nexo-wash); font-family: var(--ds-font-sans, inherit); font-style: normal; font-size: 11px; letter-spacing: 0; color: var(--ds-nexo-soft); }
+.ds .pn-menu-destinos { display: none; padding: 6px 0; border-top: 1px solid var(--ds-line-subtle); }
+.ds .pn-menu-grupo { display: grid; padding-top: 6px; border-top: 1px solid var(--ds-line-subtle); }
+.ds .pn-menu-sair:hover { color: var(--ds-state-error) !important; }
+
+/* abaixo de 1280: a navegação vai para o menu da conta (regra do app) */
+@container topo (max-width: 1279px) {
+  .ds .pn-nav { display: none; }
+  .ds .pn-menu-destinos { display: grid; }
+}
+/* abaixo de 900: a busca vira o ícone com o atalho */
+@container topo (max-width: 899px) {
+  .ds .pn-busca { min-width: 0; padding: 0 8px 0 11px; }
+  .ds .pn-busca-texto { display: none; }
+}
+/* abaixo de 600: só o avatar; abaixo de 420, a marca sem a palavra */
+@container topo (max-width: 599px) {
+  .ds .pn-topo { gap: 8px; padding: 0 16px; }
+  .ds .pn-quem-texto, .ds .pn-quem-seta { display: none; }
+  .ds .pn-quem { padding: 4px; }
+  .ds .pn-busca .ds-kbd { display: none; }
+  .ds .pn-busca { padding: 0 10px; }
+}
+@container topo (max-width: 419px) {
+  .ds .pn-marca-nome { display: none; }
+  .ds .pn-menu { width: min(280px, calc(100cqw - 32px)); }
+}
