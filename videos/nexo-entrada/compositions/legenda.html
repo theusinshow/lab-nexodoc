@@ -66,8 +66,8 @@
               <div class="losango" id="losango"></div>
             </div>
             <div class="fila">
-              <div class="ach" id="r1"><i class="pt" id="r1pt" style="background: #ff7d6e"></i><code data-layout-allow-occlusion="">ACH-002</code><span data-layout-allow-occlusion="">p. 14 · 48,60 m³ ≠ 46,20 no quadro</span><span class="niv" id="r1niv" style="color: #ff7d6e">bloqueia</span><i class="risco" id="r1risco" data-layout-allow-occlusion=""></i></div>
-              <div class="ach" id="r2"><i class="pt" style="background: #f0b45c"></i><code data-layout-allow-occlusion="">ACH-003</code><span data-layout-allow-occlusion="">p. 9 · área 1.240 m² ≠ 1.180 m²</span><span class="niv" style="color: #f0b45c">decide</span></div>
+              <div class="ach" id="r1"><i class="pt" id="r1pt" style="background: #f0b45c"></i><code data-layout-allow-occlusion="">ACH-003</code><span data-layout-allow-occlusion="">p. 9 · área 1.240 m² ≠ 1.180 m² no quadro</span><span class="niv" id="r1niv" style="color: #f0b45c">decide</span><i class="risco" id="r1risco" data-layout-allow-occlusion=""></i></div>
+              <div class="ach" id="r2"><i class="pt" id="r2pt" style="background: #ff7d6e"></i><code data-layout-allow-occlusion="">ACH-001</code><span data-layout-allow-occlusion="">p. 1 · capa em rev. A, carimbo em rev. B</span><span class="niv" id="r2niv" style="color: #ff7d6e">bloqueia</span><i class="risco" id="r2risco" data-layout-allow-occlusion=""></i></div>
               <div class="ach" id="r3"><i class="pt" style="background: #f0b45c"></i><code data-layout-allow-occlusion="">ACH-004</code><span data-layout-allow-occlusion="">p. 19 · NBR 5626 de 1998, vigente 2020</span><span class="niv" style="color: #f0b45c">decide</span></div>
               <div class="ach" id="r4"><i class="pt" style="background: #86b6f0"></i><code data-layout-allow-occlusion="">ACH-007</code><span data-layout-allow-occlusion="">p. 27 · “os quadro de distribuição”</span><span class="niv" style="color: #86b6f0">gramática</span></div>
             </div>
@@ -82,8 +82,8 @@
             <div><span class="m"><span class="w" data-layout-allow-overlap="" data-layout-allow-overflow="" data-layout-allow-occlusion="">Audita</span></span> <span class="m"><span class="w leve" data-layout-allow-overlap="" data-layout-allow-overflow="" data-layout-allow-occlusion="">o memorial.</span></span></div>
             <div><span class="m"><span class="w" data-layout-allow-overlap="" data-layout-allow-overflow="" data-layout-allow-occlusion="">Monta</span></span> <span class="m"><span class="w leve" data-layout-allow-overlap="" data-layout-allow-overflow="" data-layout-allow-occlusion="">o volume.</span></span></div>
           </div>
-          <div class="legenda" id="g1" data-layout-allow-overlap="" data-layout-allow-occlusion="">p. <b>14</b> de <b>42</b> · capítulo a capítulo</div>
-          <div class="legenda" id="g2" data-layout-allow-overlap="" data-layout-allow-occlusion=""><b id="g2n">1</b> achados · <b id="g2b">1</b> bloqueiam a emissão</div>
+          <div class="legenda" id="g1" data-layout-allow-overlap="" data-layout-allow-occlusion="">p. <b>9</b> de <b>42</b> · capítulo a capítulo</div>
+          <div class="legenda" id="g2" data-layout-allow-overlap="" data-layout-allow-occlusion=""><b id="g2n">1</b> achados · <b id="g2b">0</b> bloqueiam a emissão</div>
           <div class="legenda" id="g3" data-layout-allow-overlap="" data-layout-allow-occlusion="">revisão <b id="g3r">A</b> · <b id="g3b">2</b> bloqueios</div>
           <div class="legenda" id="g4" data-layout-allow-overlap="" data-layout-allow-occlusion=""><b id="g4n">0</b> páginas em <b>2</b> volumes</div>
         </div>
@@ -93,12 +93,12 @@
            cada achado entra na fila no instante em que nasce no trecho. */
         (() => {
           const D = 20;
-          const R = { ach002: 2.9, ach003: 4.61, ach004: 6.17, ach007: 6.69, corrige: 9.25, monta: 10.1, fecha: 13.35, volta: 17.7 };
+          const R = { ach003: 2.9, ach001: 4.61, ach004: 6.17, ach007: 6.69, corrige: 9.25, monta: 10.1, fecha: 13.35, volta: 17.7 };
           const tl = gsap.timeline({ paused: true });
           gsap.set("#parecer", { opacity: 0 });
           gsap.set(".seg i", { scaleX: 0 });
           gsap.set(["#r1", "#r2", "#r3", "#r4"], { opacity: 0 });
-          gsap.set("#r1risco", { scaleX: 0 });
+          gsap.set(["#r1risco", "#r2risco"], { scaleX: 0 });
           gsap.set(".tipo .w", { yPercent: 115 });
           gsap.set(".legenda", { opacity: 0 });
 
@@ -131,18 +131,22 @@
           tl.fromTo(".seg i", { scaleX: 0 }, { scaleX: 1, duration: 0.5, ease: "power3.out", stagger: 0.07, immediateRender: false }, 2.7);
           tl.fromTo("#losango", { opacity: 0, scale: 0.4 }, { opacity: 1, scale: 1, duration: 0.3, ease: "back.out(2)", immediateRender: false }, 2.85);
           const fila = (id, t) => tl.fromTo(id, { opacity: 0, x: -14 }, { opacity: 1, x: 0, duration: 0.4, ease: "power3.out", immediateRender: false }, t);
-          fila("#r1", R.ach002 + 0.1);
-          tl.fromTo("#losango", { x: xDe(0) }, { x: xDe(3), duration: 0.55, ease: "power3.inOut", immediateRender: false }, R.ach002 + 0.12);
-          fila("#r2", R.ach003 + 0.05); fila("#r3", R.ach004 + 0.05); fila("#r4", R.ach007 + 0.05);
+          // a decisão técnica leva a revisar; o bloqueio da capa leva a não emitir
+          fila("#r1", R.ach003 + 0.1);
+          tl.fromTo("#losango", { x: xDe(0) }, { x: xDe(2), duration: 0.5, ease: "power3.inOut", immediateRender: false }, R.ach003 + 0.12);
+          fila("#r2", R.ach001 + 0.05);
+          tl.fromTo("#losango", { x: xDe(2) }, { x: xDe(3), duration: 0.45, ease: "power3.inOut", immediateRender: false }, R.ach001 + 0.08);
+          fila("#r3", R.ach004 + 0.05); fila("#r4", R.ach007 + 0.05);
           // revisão B: o bloqueio sai, as decisões técnicas ficam
-          tl.to("#r1pt", { backgroundColor: "#7bd8a5", duration: 0.2 }, R.corrige + 0.3);
-          tl.fromTo("#r1risco", { scaleX: 0 }, { scaleX: 1, duration: 0.35, ease: "power2.inOut", immediateRender: false }, R.corrige + 0.3);
+          tl.to(["#r1pt", "#r2pt"], { backgroundColor: "#7bd8a5", duration: 0.2 }, R.corrige + 0.3);
+          tl.fromTo(["#r1risco", "#r2risco"], { scaleX: 0 }, { scaleX: 1, duration: 0.35, ease: "power2.inOut", stagger: 0.12, immediateRender: false }, R.corrige + 0.3);
           tl.fromTo("#losango", { x: xDe(3) }, { x: xDe(1), duration: 0.6, ease: "power3.inOut", immediateRender: false }, R.corrige + 0.4);
           tl.to("#parecer", { opacity: 0, y: -8, duration: 0.4, ease: "power2.in" }, R.fecha - 0.15);
 
           // de volta ao primeiro quadro, já invisível
-          tl.set("#r1pt", { backgroundColor: "#ff7d6e" }, 19.6);
-          tl.set("#r1risco", { scaleX: 0 }, 19.6);
+          tl.set("#r1pt", { backgroundColor: "#f0b45c" }, 19.6);
+          tl.set("#r2pt", { backgroundColor: "#ff7d6e" }, 19.6);
+          tl.set(["#r1risco", "#r2risco"], { scaleX: 0 }, 19.6);
           tl.set(["#r1", "#r2", "#r3", "#r4", "#losango"], { opacity: 0 }, 19.6);
           tl.set(".seg i", { scaleX: 0 }, 19.6);
 
@@ -168,7 +172,7 @@
           /* textos de estado: função do tempo e do losango */
           const ESTADOS = [["liberado", "#7bd8a5"], ["com ressalvas", "#d9c27a"], ["revisar", "#f0b45c"], ["não emitir", "#ff7d6e"]];
           const losango = document.getElementById("losango"), estado = document.getElementById("estado");
-          const r1niv = document.getElementById("r1niv");
+          const r1niv = document.getElementById("r1niv"), r2niv = document.getElementById("r2niv");
           const escrever = () => {
             const t = tl.time();
             if (Number(gsap.getProperty(losango, "opacity")) < 0.05) { estado.textContent = "—"; estado.style.color = "#a4a8b3"; }
@@ -178,12 +182,14 @@
               [estado.textContent, estado.style.color] = ESTADOS[i];
             }
             const resolvido = t >= R.corrige + 0.45 && t < 19.6;
-            r1niv.textContent = resolvido ? "resolvido" : "bloqueia";
-            r1niv.style.color = resolvido ? "#7bd8a5" : "#ff7d6e";
+            r1niv.textContent = resolvido ? "resolvido" : "decide";
+            r1niv.style.color = resolvido ? "#7bd8a5" : "#f0b45c";
+            r2niv.textContent = resolvido ? "resolvido" : "bloqueia";
+            r2niv.style.color = resolvido ? "#7bd8a5" : "#ff7d6e";
             const rev = t >= R.corrige + 0.2 && t < R.fecha + 0.2 ? "B" : "A";
-            const achados = t < R.ach003 + 0.05 ? 1 : t < R.ach004 + 0.05 ? 2 : t < R.ach007 + 0.05 ? 3 : Math.round(sobe(t, 6.85, 0.5, 4, 9));
+            const achados = t < R.ach001 + 0.05 ? 1 : t < R.ach004 + 0.05 ? 2 : t < R.ach007 + 0.05 ? 3 : Math.round(sobe(t, 6.85, 0.5, 4, 9));
             document.getElementById("g2n").textContent = String(achados);
-            document.getElementById("g2b").textContent = t < 7.0 ? "1" : "2";
+            document.getElementById("g2b").textContent = t < R.ach001 + 0.05 ? "0" : t < 7.0 ? "1" : "2";
             document.getElementById("g3b").textContent = String(Math.round(sobe(t, R.corrige + 0.3, 0.35, 2, 0)));
             document.getElementById("g4n").textContent = String(Math.round(sobe(t, 11.9, 0.7, 0, 412)));
             document.getElementById("mrev").textContent = rev;

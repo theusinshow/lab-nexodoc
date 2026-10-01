@@ -48,7 +48,7 @@
         .fio-linha { fill: none; stroke: rgb(255 255 255 / 0.62); stroke-width: 2; stroke-linecap: round; }
         .fio-porta { fill: rgb(255 255 255 / 0.62); }
         .fio-ponta { fill: none; stroke: rgb(255 255 255 / 0.62); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-        .cruza { fill: none; stroke: #ff7d6e; stroke-width: 1.6; stroke-linecap: round; filter: drop-shadow(0 0 4px rgb(255 125 110 / 0.7)); }
+        .cruza { fill: none; stroke: #f0b45c; stroke-width: 1.6; stroke-linecap: round; filter: drop-shadow(0 0 4px rgb(240 180 92 / 0.7)); }
 
         /* a fileira do volume, a segunda função */
         .peca { position: absolute; }
@@ -97,7 +97,7 @@
          * ===================================================================== */
         (() => {
           const D = 20;
-          const R = { marca: 1.55, cruza: 2.05, ach002: 2.9, recua: 3.4, varre: 4.3, varreDur: 2.6, corrige: 9.25, monta: 10.1, fecha: 13.35, volta: 17.7 };
+          const R = { marca: 1.55, cruza: 2.05, ach003: 2.9, recua: 3.4, varre: 4.3, varreDur: 2.6, corrige: 9.25, monta: 10.1, fecha: 13.35, volta: 17.7 };
           const tl = gsap.timeline({ paused: true });
           const pecas = document.getElementById("pecas");
           const fios = document.getElementById("fios");
@@ -111,30 +111,31 @@
 
           /* ---------- as páginas: "#" título, "[[x]]" marca, "|" linha de quadro ---------- */
           const PAGINAS = [
-            { n: 9, x: 0, nivel: "decide", id: "ACH-003", linhas: [
+            { n: 1, x: 0, nivel: "block", id: "ACH-001", linhas: [
+              "#MEMORIAL DESCRITIVO GERAL", "", "Projeto executivo da Unidade Básica de Saúde da Rua São Francisco",
+              "de Assis, bairro São Luiz, município de Criciúma — SC.", "",
+              "#Controle de emissão", "Este documento substitui as versões anteriores e deve ser lido com",
+              "as pranchas da mesma revisão.",
+              "[[REVISÃO: A]] — EMISSÃO INICIAL — 12/09/2026", "", "#Contratante",
+              "Prefeitura Municipal de Criciúma, Secretaria de Saúde.", "", "#Projetista",
+              "PROSUL — Projetos, Supervisão e Planejamento.", "", "#Sumário",
+              "1. Objeto · 2. Caracterização da obra · 3. Arquitetura", "4. Fundações · 5. Estrutura · 7. Hidrossanitário · 8. Elétrico" ] },
+            { n: 9, x: 440, nivel: "decide", id: "ACH-003", linhas: [
               "#2. CARACTERIZAÇÃO DA OBRA", "", "#2.1 Localização",
               "O terreno situa-se na Rua São Francisco de Assis, bairro São Luiz,", "município de Criciúma, com testada de 42,00 m e área de 3.150 m².", "",
               "#2.2 Programa", "A Unidade Básica de Saúde atende ao programa de porte II, com",
               "consultórios, sala de vacinas, farmácia e área administrativa.", "",
               "#2.3 Áreas", "A edificação possui área coberta total de",
               "[[1.240 m²]], distribuída em pavimento único, com acesso principal", "pela Rua São Francisco de Assis e acesso de serviço lateral.", "",
-              "#2.4 Implantação", "O afastamento frontal atende ao plano diretor, com recuo de 5,00 m", "e taxa de ocupação de 39%, abaixo do limite de 60% da zona." ] },
-            { n: 14, x: 440, nivel: "block", id: "ACH-002", linhas: [
-              "#5. ESTRUTURA", "", "#5.1 Fundações",
-              "As fundações serão do tipo blocos sobre estacas escavadas, conforme", "o projeto estrutural EST-02, com cota de assentamento definida a", "partir da sondagem SPT realizada no terreno.", "",
-              "#5.2 Concreto", "Os elementos de fundação e as vigas baldrame serão executados em",
-              "concreto usinado, com controle tecnológico por lote, totalizando",
-              "[[48,60 m³]] de concreto estrutural fck ≥ 25 MPa para blocos e vigas", "baldrame, lançado e adensado conforme a NBR 14931.", "",
-              "#5.3 Armaduras", "Aço CA-50 e CA-60, cortado e dobrado conforme os detalhamentos,", "com cobrimento nominal de 3,0 cm nos elementos em contato com o solo.", "",
-              "#5.4 Estrutura metálica da cobertura", "Treliças em perfis formados a frio, aço ASTM A36, ligações", "parafusadas, pintura de fundo e acabamento em esmalte sintético.", "",
-              "#5.5 Lajes", "Lajes pré-moldadas treliçadas, capa de 4 cm, escoradas até a cura." ] },
-            { n: 31, x: 880, linhas: [
-              "#QUADRO DE QUANTITATIVOS — ESTRUTURA", "", "|item|descrição|un.|quant.",
-              "|3.1|Escavação manual de valas|m³|38,40", "|3.2|Concreto fck 25 MPa (blocos e baldrames)|m³|[[46,20]]",
-              "|3.3|Aço CA-50|kg|2.860,00", "|3.4|Aço CA-60|kg|412,00", "|3.5|Fôrmas de madeira|m²|312,50",
-              "|3.6|Lastro de concreto magro|m³|6,80", "|3.7|Impermeabilização de baldrames|m²|96,00", "",
-              "#QUADRO DE QUANTITATIVOS — COBERTURA", "", "|item|descrição|un.|quant.",
-              "|4.1|Treliças metálicas|kg|4.180,00", "|4.2|Telha termoacústica 30 mm|m²|1.312,00", "|4.3|Calhas e rufos|m|186,40", "|4.4|Forro mineral|m²|1.044,00" ] },
+              "#2.4 Implantação", "O afastamento frontal atende ao plano diretor, com recuo de 5,00 m", "e taxa de ocupação de 39%, abaixo do limite de 60% da zona.", "",
+              "#2.5 Acessibilidade", "Rotas acessíveis da calçada à recepção, conforme a NBR 9050,", "com sanitários adaptados em cada bloco de atendimento." ] },
+            { n: 10, x: 880, linhas: [
+              "#QUADRO DE ÁREAS", "", "|item|descrição|un.|área",
+              "|1|Área do terreno|m²|3.150,00", "|2|Área coberta total|m²|[[1.180,00]]",
+              "|3|Área permeável|m²|1.020,00", "|4|Taxa de ocupação|%|37,5", "|5|Coeficiente de aproveitamento|—|0,37", "",
+              "#ÁREAS POR SETOR", "", "|item|setor|un.|área",
+              "|6|Recepção e espera|m²|168,40", "|7|Consultórios (8)|m²|224,00", "|8|Vacinas e farmácia|m²|96,60",
+              "|9|Administração|m²|142,30", "|10|Apoio e serviços|m²|318,70", "|11|Circulações|m²|230,00" ] },
             { n: 19, x: 1320, nivel: "decide", id: "ACH-004", linhas: [
               "#7. INSTALAÇÕES HIDROSSANITÁRIAS", "", "#7.1 Água fria",
               "O abastecimento será feito pela rede pública, com reservação", "superior de 10.000 L em dois reservatórios de polietileno.", "",
@@ -169,13 +170,14 @@
             const i = pg.linhas.findIndex((t) => t.includes("[["));
             P[pg.n] = { ...pg, e, mc: e.querySelector(".mc"), iMarca: i, yMarca: yLinha(i), rev: e.querySelector(".rev") };
           }
-          const P14 = P[14], P31 = P[31];
+          // a protagonista é a p. 9 (Arquitetura), cruzada com o quadro de áreas da p. 10
+          const PROT = P[9], COMP = P[10];
           const lido = document.createElement("div");
           lido.className = "lido";
-          P14.e.appendChild(lido);
+          PROT.e.appendChild(lido);
 
           /* ---------- os achados: etiqueta presa ao trecho por uma haste ---------- */
-          const TEXTO = { "ACH-002": "48,60 m³ ≠ 46,20 no quadro", "ACH-003": "1.240 m² ≠ 1.180 m²", "ACH-004": "edição de 1998", "ACH-007": "“os quadro”" };
+          const TEXTO = { "ACH-003": "1.240 ≠ 1.180 m²", "ACH-001": "revisão A × B", "ACH-004": "edição de 1998", "ACH-007": "“os quadro”" };
           const tags = {};
           for (const pg of Object.values(P)) {
             if (!pg.id) continue;
@@ -193,8 +195,8 @@
 
           /* ---------- o fio do cruzamento: o texto da p. 14 contra o quadro da p. 31 ---------- */
           const svg = (tag, a, pai = fios) => { const e = document.createElementNS(NS, tag); for (const k in a) e.setAttribute(k, a[k]); pai.appendChild(e); return e; };
-          const yA = P14.yMarca + 7, yB = P31.yMarca + 7;
-          const cruza = svg("path", { d: `M${P14.x + 96},${yA} C${P14.x + 330},${yA - 40} ${P31.x + 120},${yB + 60} ${P31.x + PW - PAD - 40},${yB + 2}`, class: "cruza" });
+          const yA = PROT.yMarca + 7, yB = COMP.yMarca + 7;
+          const cruza = svg("path", { d: `M${PROT.x + 96},${yA} C${PROT.x + 330},${yA - 40} ${COMP.x + 120},${yB + 60} ${COMP.x + PW - PAD - 40},${yB + 2}`, class: "cruza" });
           const lenCruza = 700;
           cruza.style.strokeDasharray = `${lenCruza}`;
 
@@ -250,7 +252,7 @@
           const fileira = [capa, ld, memRot, ...cartoes, resto, pranRot, vol, selo];
 
           /* ---------- utilidades de texto, função do tempo ---------- */
-          const GLIFOS = "0123456789,m³";
+          const GLIFOS = "0123456789,.m²AB";
           const mistura = (de, para, p) => {
             let out = "";
             for (let i = 0; i < para.length; i++) {
@@ -295,16 +297,16 @@
           tl.fromTo("#halo", { scale: 1, opacity: 0.85 }, { scale: 1.07, opacity: 1, duration: D / 4, ease: "sine.inOut", yoyo: true, repeat: 3 }, 0);
 
           /* 0–1.9 s · LÊ: de longe, a câmera entra na p. 14 enquanto a linha de leitura desce e para no número */
-          const ateMarca = P14.yMarca - PY + LH;
+          const ateMarca = PROT.yMarca - PY + LH;
           tl.fromTo(lido, { height: 30 }, { height: ateMarca, duration: R.marca - 0.25, ease: "power1.inOut", immediateRender: false }, 0.25);
-          tl.fromTo("#cam", { "--s": 0.95, "--fy": 555 }, { "--s": 2.2, "--fy": P14.yMarca - 10, duration: 1.6, ease: "power2.inOut", immediateRender: false }, 0);
-          lavar(P14, WASH.block, R.marca, 0.36);
+          tl.fromTo("#cam", { "--s": 0.95, "--fy": 555 }, { "--s": 2.2, "--fy": PROT.yMarca - 10, duration: 1.6, ease: "power2.inOut", immediateRender: false }, 0);
+          lavar(PROT, WASH.decide, R.marca, 0.36);
 
           /* 1.9–3.4 s · CRUZA: o quadro da p. 31 entra no quadro, o fio liga os dois números */
-          tl.to("#cam", { "--s": 1.22, "--fx": 860, "--fy": 380, duration: 1.15, ease: "power3.inOut" }, 1.8);
+          tl.to("#cam", { "--s": 1.22, "--fx": 860, "--fy": 430, duration: 1.15, ease: "power3.inOut" }, 1.8);
           tl.fromTo(cruza, { strokeDashoffset: lenCruza }, { strokeDashoffset: 0, duration: 0.6, ease: "power2.inOut", immediateRender: false }, R.cruza + 0.2);
-          lavar(P31, WASH.block, R.cruza + 0.72, 0.3);
-          nasce("ACH-002", R.ach002);
+          lavar(COMP, WASH.decide, R.cruza + 0.72, 0.3);
+          nasce("ACH-003", R.ach003);
 
           /* 3.4–7.5 s · ACHA: a câmera recua, o feixe varre as páginas e os achados nascem no trecho */
           tl.to("#cam", { "--s": 0.56, "--fx": 1080, "--fy": 520, "--rx": 16, "--rz": -4, duration: 1.0, ease: "power3.inOut" }, R.recua);
@@ -313,7 +315,7 @@
           const passa = (x) => R.varre + ((x - X0) / (X1 - X0)) * R.varreDur;
           tl.fromTo("#feixe", { x: X0, opacity: 0 }, { x: X1, opacity: 1, duration: R.varreDur, ease: "none", immediateRender: false }, R.varre);
           tl.to("#feixe", { opacity: 0, duration: 0.3 }, R.varre + R.varreDur);
-          for (const n of [9, 19, 27]) {
+          for (const n of [1, 19, 27]) {
             const pg = P[n], t = passa(pg.x + 180);
             lavar(pg, WASH[pg.nivel], t);
             nasce(pg.id, t + 0.05);
@@ -322,19 +324,22 @@
 
           /* 7.5–10.1 s · PARECER: a legenda dá o veredito; na revisão B o número da p. 14 é corrigido */
           tl.to("#cam", { "--s": 0.7, "--fx": 720, "--fy": 500, "--rx": 10, "--rz": -2.5, duration: 1.6, ease: "power2.inOut" }, 7.6);
-          trocar(P14.mc, "48,60 m³", "46,20 m³", R.corrige, 0.42);
-          tl.to(P14.mc, { "--c": WASH.ok, duration: 0.3 }, R.corrige + 0.3);
-          tl.to(tags["ACH-002"].pt, { backgroundColor: COR.ok, duration: 0.25 }, R.corrige + 0.3);
+          trocar(PROT.mc, "1.240 m²", "1.180 m²", R.corrige, 0.42);
+          trocar(P[1].mc, "REVISÃO: A", "REVISÃO: B", R.corrige, 0.42);
+          tl.to(P[1].mc, { "--c": WASH.ok, duration: 0.3 }, R.corrige + 0.3);
+          tl.to(tags["ACH-001"].pt, { backgroundColor: COR.ok, duration: 0.25 }, R.corrige + 0.3);
+          tl.to(PROT.mc, { "--c": WASH.ok, duration: 0.3 }, R.corrige + 0.3);
+          tl.to(tags["ACH-003"].pt, { backgroundColor: COR.ok, duration: 0.25 }, R.corrige + 0.3);
           tl.to(cruza, { opacity: 0, duration: 0.4 }, R.corrige + 0.2);
           for (const pg of Object.values(P)) trocar(pg.rev, "REV. A", "REV. B", R.corrige + 0.1, 0.3);
 
           /* 10.1–12.6 s · MONTA: a p. 14 vira o memorial da fileira, e o volume se monta */
           const m = R.monta;
           tl.to(Object.values(tags).flatMap((t) => [t.tag, t.haste]), { opacity: 0, duration: 0.3 }, m - 0.15);
-          for (const pg of Object.values(P)) if (pg !== P14) tl.to(pg.e, { opacity: 0, filter: "blur(6px)", duration: 0.5, ease: "power2.in" }, m + 0.05);
+          for (const pg of Object.values(P)) if (pg !== PROT) tl.to(pg.e, { opacity: 0, filter: "blur(6px)", duration: 0.5, ease: "power2.in" }, m + 0.05);
           tl.to(lido, { opacity: 0, duration: 0.3 }, m);
           tl.to("#cam", { "--s": 0.82, "--fx": 860, "--fy": VY - 70, "--rx": 13, "--rz": -3, duration: 1.3, ease: "power3.inOut" }, m);
-          tl.to(P14.e, { x: slot.x - P14.x, y: slot.y - PY, scale: 120 / PW, duration: 1.2, ease: "power3.inOut" }, m + 0.05);
+          tl.to(PROT.e, { x: slot.x - PROT.x, y: slot.y - PY, scale: 120 / PW, duration: 1.2, ease: "power3.inOut" }, m + 0.05);
           const entra = (e, t) => tl.fromTo(e, { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out", immediateRender: false }, t);
           const liga = (f, t) => {
             tl.fromTo(f.porta, { scale: 0 }, { scale: 1, duration: 0.22, ease: "back.out(2)", immediateRender: false }, t);
@@ -349,19 +354,21 @@
 
           /* 13.35–17.7 s · O ORBE: a fileira e a página se apagam; o orbe (na legenda) toma a cena */
           const f = R.fecha;
-          tl.to([...fileira, P14.e], { opacity: 0, filter: "blur(8px)", duration: 0.5, ease: "power2.in", stagger: 0.03 }, f);
+          tl.to([...fileira, PROT.e], { opacity: 0, filter: "blur(8px)", duration: 0.5, ease: "power2.in", stagger: 0.03 }, f);
           FIOS.forEach((fi, i) => { tl.to(fi.linha, { strokeDashoffset: fi.len, duration: 0.35, ease: "power2.in" }, f + i * 0.05); tl.to([fi.ponta], { opacity: 0, duration: 0.2 }, f); tl.to(fi.porta, { scale: 0, duration: 0.3 }, f + 0.2); });
           tl.to("#cam", { "--s": 0.6, "--rx": 18, "--rz": -4, duration: 4.0, ease: "sine.inOut" }, f + 0.2);
 
           /* 17.7–20 s · VOLTA: atrás do orbe, tudo volta a ser o primeiro quadro, e a câmera mergulha na p. 14 */
           const v = R.volta;
-          tl.set(P14.e, { x: 0, y: 0, scale: 1 }, v - 0.2);
-          trocar(P14.mc, "46,20 m³", "48,60 m³", v - 0.2, 0.05);
-          tl.set(P14.mc, { backgroundSize: "0% 100%" }, v - 0.2);
+          tl.set(PROT.e, { x: 0, y: 0, scale: 1 }, v - 0.2);
+          trocar(PROT.mc, "1.180 m²", "1.240 m²", v - 0.2, 0.05);
+          trocar(P[1].mc, "REVISÃO: B", "REVISÃO: A", v - 0.2, 0.05);
+          tl.set(PROT.mc, { backgroundSize: "0% 100%" }, v - 0.2);
           for (const pg of Object.values(P)) trocar(pg.rev, "REV. B", "REV. A", v - 0.2, 0.05);
           tl.set(lido, { height: 30, opacity: 1 }, v - 0.2);
           for (const pg of Object.values(P)) if (pg.mc) tl.set(pg.mc, { backgroundSize: "0% 100%" }, v - 0.2);
-          tl.set(tags["ACH-002"].pt, { backgroundColor: COR.block }, v - 0.2);
+          tl.set(tags["ACH-003"].pt, { backgroundColor: COR.decide }, v - 0.2);
+          tl.set(tags["ACH-001"].pt, { backgroundColor: COR.block }, v - 0.2);
           tl.set(cruza, { strokeDashoffset: lenCruza, opacity: 1 }, v - 0.2);
           tl.set(vnum, { textContent: "0" }, v - 0.2);
           for (const pg of Object.values(P)) tl.to(pg.e, { opacity: 1, filter: "blur(0px)", duration: 0.7, ease: "power2.out" }, v);
