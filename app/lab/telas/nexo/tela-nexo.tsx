@@ -341,11 +341,14 @@ function Palco({ q, lidas }: { q: Quadro; lidas: number }) {
   const { fitView } = useReactFlow();
 
   const posicoes = useMemo(() => new Map(alvo.nodes.filter((n) => n.type === "folha").map((n) => [n.id, n.position])), [alvo]);
-  const cai = arrasto ? ondeCai(alvo.fileiras as Fileiras, posicoes, arrasto.id, { x: arrasto.pos.x + LARGURA_DA_FOLHA / 2, y: arrasto.pos.y + ALTURA_DO_NO / 2 }) : null;
+  const arrastandoFolha = arrasto ? posicoes.has(arrasto.id) : false;
+  const cai = arrasto && arrastandoFolha ? ondeCai(alvo.fileiras as Fileiras, posicoes, arrasto.id, { x: arrasto.pos.x + LARGURA_DA_FOLHA / 2, y: arrasto.pos.y + ALTURA_DO_NO / 2 }) : null;
 
   const vistos = useMemo(() => {
-    if (!arrasto) return nos;
-    const r = nos.map((n) =>
+    // Os papéis (capa, separatrizes, LD, volume) também saem na mão, para puxar o fio; soltos, voltam ao lugar.
+    const soltos = nos.map((n) => (n.type === "doc" ? { ...n, draggable: true } : n));
+    if (!arrasto) return soltos;
+    const r = soltos.map((n) =>
       n.id === arrasto.id
         ? { ...n, position: arrasto.pos, className: "mp-erguida", dragging: true }
         : n.id === cai?.antes
@@ -365,7 +368,7 @@ function Palco({ q, lidas }: { q: Quadro; lidas: number }) {
     setArrasto(null);
     const atual = ordem ?? ordemPadrao(q.tomos, q.sem);
     ajustar(no.id, no.position);
-    if (!cai) return;
+    if (no.type === "doc" || !cai) return;
     const de = [...atual.entries()].find(([, ids]) => ids.includes(no.id))?.[0] ?? cai.tomo;
     const nova = new Map([...atual.entries()].map(([t, ids]) => [t, ids.filter((id) => id !== no.id)]));
     const destino = [...(nova.get(cai.tomo) ?? [])];

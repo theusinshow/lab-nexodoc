@@ -70,8 +70,10 @@ export function useNosQueAndam(alvo: Node[], duracao: number) {
     }
 
     let raf = 0;
-    const inicio = performance.now();
+    // O relógio começa no primeiro quadro desenhado: se a tela engasgar ao soltar, o deslize não é engolido.
+    let inicio = -1;
     const passo = (agora: number) => {
+      if (inicio < 0) inicio = agora;
       const t = Math.min(1, (agora - inicio) / (duracao * 1000));
       const q = quadro(t);
       naTela.current = q;
@@ -88,6 +90,8 @@ export function useNosQueAndam(alvo: Node[], duracao: number) {
   /** A folha foi solta aqui: ela parte deste ponto (e não do lugar de antes do arrasto). */
   const ajustar = (id: string, posicao: Node["position"]) => {
     naTela.current = naTela.current.map((n) => (n.id === id ? { ...n, position: posicao } : n));
+    // No mesmo quadro em que a mão solta: sem isso a peça pisca no lugar final antes de deslizar.
+    setNos((atual) => atual.map((n) => (n.id === id ? { ...n, position: posicao } : n)));
     setSolto((n) => n + 1);
   };
 

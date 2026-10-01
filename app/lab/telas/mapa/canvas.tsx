@@ -1,10 +1,10 @@
 "use client";
 
-import { Background, BackgroundVariant, getBezierPath, Handle, MiniMap, Position, ReactFlow, useStore, type Edge, type EdgeProps, type Node, type NodeProps, type OnNodeDrag, type OnNodesChange } from "@xyflow/react";
+import { Background, BackgroundVariant, Handle, MiniMap, Position, ReactFlow, useStore, type Edge, type EdgeProps, type Node, type NodeProps, type OnNodeDrag, type OnNodesChange } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import "./cartoes.css";
 import { CircleMinus } from "lucide-react";
-import { memo } from "react";
+import { memo, useLayoutEffect } from "react";
 
 import { densidadeDoZoom, oQueMostrar } from "@/modules/nexo/lib/densidade-do-canvas";
 
@@ -164,18 +164,113 @@ export type DadosDaSeta = { acesa?: boolean; fraca?: boolean };
 const R = 6;
 const porta = (x: number, y: number) => `M${x},${y - R} A${R},${R} 0 0 1 ${x},${y + R} Z`;
 
-const Seta = memo(function Seta({ sourceX, sourceY, targetX, targetY, data }: EdgeProps<Edge<DadosDaSeta>>) {
-  // Sai da porta, corre em curva suave e ENTRA na borda da outra peça com a
-  // ponta aberta (>). Reta quando as peças estão alinhadas; dobra quando uma
-  // delas anda. O fio para antes da ponta para não engrossar o vértice.
-  const fimX = targetX - 1;
-  const [caminho] = getBezierPath({ sourceX: sourceX + R - 1, sourceY, sourcePosition: Position.Right, targetX: fimX - 1, targetY, targetPosition: Position.Left, curvature: 0.35 });
+/*
+ * A FÍSICA DO FIO. A seta é presa na porta de quem sai e aponta para quem
+ * chega; o meio dela tem massa. Quando uma ponta anda (a mão arrasta o papel,
+ * ou a tela reorganiza), o meio fica para trás, balança e assenta: mola
+ * subamortecida, sem laço contínuo (o quadro só roda enquanto há movimento).
+ * Parada, é a curva exata; ao abrir a tela não mexe nada.
+ */
+const MOLA = 210;
+const ATRITO = 15;
+const CURVA = 0.35;
+
+type Ponto = { x: number; y: number };
+
+/** As alças horizontais da curva (como o getBezierPath do React Flow). */
+function alcasDaCurva(s: Ponto, t: Ponto): [Ponto, Ponto] {
+  const dx = Math.max(Math.abs(t.x - s.x) * CURVA, 24);
+  return [
+    { x: s.x + dx, y: s.y },
+    { x: t.x - dx, y: t.y },
+  ];
+}
+
+/** Ponto do meio da cúbica (t = 0,5). */
+const meio = (s: Ponto, c1: Ponto, c2: Ponto, t: Ponto): Ponto => ({ x: (s.x + 3 * c1.x + 3 * c2.x + t.x) / 8, y: (s.y + 3 * c1.y + 3 * c2.y + t.y) / 8 });
+
+/**
+ * O estado de cada fio mora FORA do componente: durante o arrasto o React Flow
+ * remonta a seta (ela troca de camada), e a mola não pode perder o embalo.
+ */
+type Fio = { s: Ponto; t: Ponto; p: Ponto | null; v: Ponto; quadro: number; ultimo: number; linha: SVGPathElement | null; ponta: SVGPathElement | null };
+const FIOS = new Map<string, Fio>();
+
+function desenharFio(f: Fio) {
+  const { s, t } = f;
+  let [c1, c2] = alcasDaCurva(s, t);
+  const ideal = meio(s, c1, c2, t);
+  const p = f.p ?? ideal;
+  // Deslocar as duas alças por d move o meio por 0,75 d.
+  const d = { x: (p.x - ideal.x) / 0.75, y: (p.y - ideal.y) / 0.75 };
+  c1 = { x: c1.x + d.x, y: c1.y + d.y };
+  c2 = { x: c2.x + d.x, y: c2.y + d.y };
+  f.linha?.setAttribute("d", `M${s.x},${s.y} C${c1.x},${c1.y} ${c2.x},${c2.y} ${t.x - 1},${t.y}`);
+  // A ponta segue a tangente da chegada: aponta sempre para o documento seguinte.
+  let tx = t.x - c2.x;
+  let ty = t.y - c2.y;
+  const n = Math.hypot(tx, ty) || 1;
+  tx /= n;
+  ty /= n;
+  const b = { x: t.x - tx * 7, y: t.y - ty * 7 };
+  f.ponta?.setAttribute("d", `M${b.x - ty * 6.5},${b.y + tx * 6.5} L${t.x},${t.y} L${b.x + ty * 6.5},${b.y - tx * 6.5}`);
+  return ideal;
+}
+
+function balancar(f: Fio, agora: number) {
+  const dt = Math.min(0.032, (agora - f.ultimo) / 1000 || 0.016);
+  f.ultimo = agora;
+  const [c1, c2] = alcasDaCurva(f.s, f.t);
+  const alvo = meio(f.s, c1, c2, f.t);
+  const p = f.p ?? alvo;
+  const ax = MOLA * (alvo.x - p.x) - ATRITO * f.v.x;
+  const ay = MOLA * (alvo.y - p.y) - ATRITO * f.v.y;
+  f.v = { x: f.v.x + ax * dt, y: f.v.y + ay * dt };
+  f.p = { x: p.x + f.v.x * dt, y: p.y + f.v.y * dt };
+  if (Math.hypot(alvo.x - f.p.x, alvo.y - f.p.y) < 0.15 && Math.hypot(f.v.x, f.v.y) < 0.5) {
+    f.p = alvo;
+    f.v = { x: 0, y: 0 };
+    f.quadro = 0;
+  } else f.quadro = requestAnimationFrame((t) => balancar(f, t));
+  desenharFio(f);
+}
+
+const Seta = memo(function Seta({ id, sourceX, sourceY, targetX, targetY, data }: EdgeProps<Edge<DadosDaSeta>>) {
+  const chave = useStore((s) => s.rfId) + id;
+  let f = FIOS.get(chave);
+  if (!f) {
+    f = { s: { x: 0, y: 0 }, t: { x: 0, y: 0 }, p: null, v: { x: 0, y: 0 }, quadro: 0, ultimo: 0, linha: null, ponta: null };
+    FIOS.set(chave, f);
+  }
+  const fio = f;
+  const s = { x: sourceX + R - 1, y: sourceY };
+  const t = { x: targetX - 1, y: targetY };
+
+  // A cada posição nova das pontas: o fio redesenha já (preso nas duas) e, se o meio ficou para trás, a mola roda.
+  useLayoutEffect(() => {
+    const andou = fio.s.x !== s.x || fio.s.y !== s.y || fio.t.x !== t.x || fio.t.y !== t.y;
+    const nasceu = fio.p === null;
+    fio.s = s;
+    fio.t = t;
+    const ideal = desenharFio(fio);
+    if (nasceu || matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      fio.p = ideal;
+      fio.v = { x: 0, y: 0 };
+      desenharFio(fio);
+      return;
+    }
+    if (andou && !fio.quadro) {
+      fio.ultimo = performance.now();
+      fio.quadro = requestAnimationFrame((agora) => balancar(fio, agora));
+    }
+  });
+
   const cls = `mp-seta3${data?.acesa ? " mp-seta3--acesa" : ""}${data?.fraca ? " mp-seta3--fraca" : ""}`;
   return (
     <g className={cls}>
-      <path d={caminho} className="mp-seta3-linha" />
+      <path ref={(el) => { if (el) fio.linha = el; }} className="mp-seta3-linha" />
       <path d={porta(sourceX, sourceY)} className="mp-seta3-porta" />
-      <path d={`M${fimX - 7},${targetY - 6.5} L${fimX},${targetY} L${fimX - 7},${targetY + 6.5}`} className="mp-seta3-ponta" />
+      <path ref={(el) => { if (el) fio.ponta = el; }} className="mp-seta3-ponta" />
     </g>
   );
 });
