@@ -29,7 +29,7 @@
   border: 0;
   border-radius: var(--ds-radius-row);
   background: var(--ds-nexo-wash);
-  box-shadow: inset 0 0 0 1px rgb(195 163 255 / 0.2);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ds-nexo) 20%, transparent);
   color: var(--ds-text-primary);
   font: inherit;
   font-size: var(--ds-text-xs);
@@ -91,7 +91,7 @@
 }
 .ds .pd-cartao--sobre { background: var(--ds-nexo-wash); box-shadow: inset 0 0 0 1px var(--ds-nexo-line), 0 16px 40px -18px rgb(0 0 0 / 0.8); }
 .ds .pd-cartao--sobre::after { border-color: var(--ds-nexo-line); }
-.ds .pd-cartao--sobre .pd-cartao-icone { color: var(--ds-nexo); background: rgb(195 163 255 / 0.12); }
+.ds .pd-cartao--sobre .pd-cartao-icone { color: var(--ds-nexo); background: color-mix(in srgb, var(--ds-nexo) 12%, transparent); }
 .ds .pd-cartao--sobre .pd-cartao-texto { color: var(--ds-nexo-soft); }
 
 /* ---------- tarefa aberta ---------- */
@@ -132,7 +132,7 @@
   cursor: pointer;
   transition: border-color var(--ds-dur-feedback), background var(--ds-dur-feedback);
 }
-.ds .pd-soltar:hover { border-color: var(--ds-nexo-line); background: rgb(195 163 255 / 0.04); }
+.ds .pd-soltar:hover { border-color: var(--ds-nexo-line); background: color-mix(in srgb, var(--ds-nexo) 4%, transparent); }
 .ds .pd-soltar-icone { display: grid; place-items: center; width: 48px; height: 48px; margin-bottom: 6px; border-radius: 14px; background: var(--ds-surface-overlay); box-shadow: var(--ds-edge-strong); }
 .ds .pd-soltar b { font-weight: 500; font-size: var(--ds-text-lg); }
 .ds .pd-soltar span { color: var(--ds-text-secondary); font-size: var(--ds-text-xs); }
@@ -176,7 +176,7 @@
   box-shadow: inset 0 0 0 1px var(--ds-line-default);
   transition: box-shadow var(--ds-dur-state), background var(--ds-dur-state);
 }
-.ds .pd-compositor:focus-within { background: var(--ds-surface-card); box-shadow: inset 0 0 0 1px var(--ds-nexo-line), 0 0 0 4px rgb(195 163 255 / 0.08); }
+.ds .pd-compositor:focus-within { background: var(--ds-surface-card); box-shadow: inset 0 0 0 1px var(--ds-nexo-line), 0 0 0 4px color-mix(in srgb, var(--ds-nexo) 8%, transparent); }
 .ds .pd-compositor textarea { flex: 1; min-width: 0; resize: none; border: 0; outline: none; background: none; color: var(--ds-text-primary); font: inherit; font-size: var(--ds-text-sm); padding: 4px 0; }
 .ds .pd-compositor textarea:focus-visible { outline: none; }
 .ds .pd-compositor textarea::placeholder { color: var(--ds-text-tertiary); }

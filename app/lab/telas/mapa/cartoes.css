@@ -173,7 +173,7 @@
 .ds .mp-no-casca { position: relative; }
 /* O QUE MUDOU fica marcado, parado: um contorno violeta fino (âmbar se corrigido ou
    desatualizado). Nada pisca ao abrir; a marca é informação, não efeito. */
-.ds .mp-no-casca--destaque > .ct, .ds .mp-no-casca--destaque .pp-pilha { border-radius: 3px; box-shadow: 0 0 0 1.5px rgb(195 163 255 / 0.6); }
+.ds .mp-no-casca--destaque > .ct, .ds .mp-no-casca--destaque .pp-pilha { border-radius: 3px; box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--ds-nexo) 60%, transparent); }
 .ds .mp-no-casca--destaque:has(.pp--corrigido, .pp--desatualizado) .pp-pilha { box-shadow: 0 0 0 1.5px rgb(240 180 80 / 0.75); }
 
 /* A FOLHA TIRADA fica no lugar dela até gerar, para dar para voltar atrás: o cartão

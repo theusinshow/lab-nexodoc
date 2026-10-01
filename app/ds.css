@@ -78,8 +78,8 @@
   --ds-nexo: var(--ds-p-violeta-9);
   --ds-nexo-strong: var(--ds-p-violeta-10);
   --ds-nexo-soft: var(--ds-p-violeta-12);
-  --ds-nexo-wash: rgb(195 163 255 / 0.1);
-  --ds-nexo-line: rgb(195 163 255 / 0.35);
+  --ds-nexo-wash: color-mix(in srgb, var(--ds-nexo) 10%, transparent);
+  --ds-nexo-line: color-mix(in srgb, var(--ds-nexo) 35%, transparent);
   --ds-focus-ring: var(--ds-p-violeta-9);
 
   /* A ação principal é CLARA, não colorida: uma pílula de papel por tela. A
@@ -210,7 +210,7 @@
   box-shadow: 0 0 0 2px var(--ds-surface-page), 0 0 0 4px var(--ds-focus-ring);
 }
 .ds ::selection {
-  background: rgb(195 163 255 / 0.3);
+  background: color-mix(in srgb, var(--ds-nexo) 30%, transparent);
 }
 .ds .ds-num {
   font-variant-numeric: tabular-nums;
@@ -557,7 +557,7 @@
 }
 .ds .gr-pagina--lida { box-shadow: none; background: rgb(255 255 255 / calc(0.06 + var(--tom))); }
 .ds .gr-pagina--atual { box-shadow: inset 0 0 0 1.5px var(--ds-nexo); background: var(--ds-nexo-wash); animation: gr-ler 1.4s ease-in-out infinite; }
-@keyframes gr-ler { 50% { background: rgb(195 163 255 / 0.28); } }
+@keyframes gr-ler { 50% { background: color-mix(in srgb, var(--ds-nexo) 28%, transparent); } }
 /* filter, não opacity: a opacidade é do motion (entrada), e o estilo em linha dele venceria */
 .ds .gr-pagina { transition: background var(--ds-dur-state), filter var(--ds-dur-feedback); }
 .ds .gr-pagina--recua { filter: opacity(0.22); }
@@ -628,7 +628,7 @@
 .ds .gr-acumulada svg { display: block; width: 100%; overflow: visible; }
 .ds .gr-acumulada-linha { fill: none; stroke: #c9ccd4; stroke-width: 1.5; stroke-linejoin: round; }
 .ds .gr-acumulada-area { stroke: none; }
-.ds .gr-acumulada-ponto { position: absolute; right: -3px; width: 6px; height: 6px; margin-top: -3px; border-radius: 50%; background: var(--ds-nexo); box-shadow: 0 0 0 3px rgb(195 163 255 / 0.18); }
+.ds .gr-acumulada-ponto { position: absolute; right: -3px; width: 6px; height: 6px; margin-top: -3px; border-radius: 50%; background: var(--ds-nexo); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ds-nexo) 18%, transparent); }
 
 /* ---------- barras por mês ---------- */
 .ds .gr-meses { display: flex; align-items: flex-end; gap: 8px; }

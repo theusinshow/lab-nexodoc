@@ -405,7 +405,7 @@
   height: 100%;
   border-radius: 24px;
   border: 1.5px dashed var(--ds-nexo-line);
-  background: rgb(195 163 255 / 0.04);
+  background: color-mix(in srgb, var(--ds-nexo) 4%, transparent);
   text-align: center;
 }
 .ds .pn-soltar-caixa b { margin-top: 10px; font-size: var(--ds-text-2xl); font-weight: 400; letter-spacing: -0.025em; }

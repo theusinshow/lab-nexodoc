@@ -390,3 +390,18 @@
 .vt-cheia-tela { position: relative; z-index: 1; flex: 1; overflow: auto; }
 /* A barra fica acima do que a tela sobrepõe (paleta, atalhos): sair da tela cheia nunca fica coberto. */
 .vt-cheia-barra { position: relative; z-index: 2; }
+
+/* ---------- COMPARAÇÃO: a cor viva só no orbe (01/10/2026) ----------
+   O Matheus achou o violeta espalhado pela interface com cara de "app de IA".
+   A chave "Cor só no orbe" do rodapé da navegação troca, no lab inteiro, o
+   destaque violeta por grafite: seleção, foco, progresso e trabalho ficam em
+   cinza claro, e a única coisa colorida da tela passa a ser o orbe (e os
+   sinais de achado, que já tinham cor própria). Some também o brilho azul
+   borrado do topo do Painel. Comparação, não decisão: o padrão segue violeta. */
+:root[data-cor-viva="orbe"] {
+  --ds-nexo: #e4e6eb;
+  --ds-nexo-strong: #5d6270;
+  --ds-nexo-soft: #ffffff;
+  --ds-focus-ring: #eeeff2;
+}
+:root[data-cor-viva="orbe"] .ds .pn-brilho { display: none; }

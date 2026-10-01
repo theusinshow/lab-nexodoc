@@ -3,6 +3,7 @@
 import { motion } from "motion/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useSyncExternalStore } from "react";
 
 import { MOLA, escalarMola } from "@/lib/ds/movimento";
 
@@ -47,9 +48,37 @@ const FASES: { href: string; rotulo: string; fase: string; pronta: boolean; grup
   { href: "/lab/inventario", rotulo: "Inventário", fase: "", pronta: true },
 ];
 
+/*
+ * A COR VIVA SÓ NO ORBE: uma comparação para o lab inteiro. Mora no `<html>`
+ * (data-cor-viva), porque os tokens --ds-* moram no :root; a escolha fica no
+ * localStorage para atravessar as telas. Ver lab.css.
+ */
+const CHAVE_COR = "lab-cor-viva";
+const avisarCor = () => window.dispatchEvent(new Event(CHAVE_COR));
+function assinarCor(cb: () => void) {
+  window.addEventListener(CHAVE_COR, cb);
+  return () => window.removeEventListener(CHAVE_COR, cb);
+}
+function trocarCor(soNoOrbe: boolean) {
+  if (soNoOrbe) document.documentElement.dataset.corViva = "orbe";
+  else delete document.documentElement.dataset.corViva;
+  try {
+    localStorage.setItem(CHAVE_COR, soNoOrbe ? "orbe" : "violeta");
+  } catch {}
+  avisarCor();
+}
+
 export function NavegacaoDoLab() {
   const caminho = usePathname();
   const { lento, setLento, reduzido, setReduzido, escala } = useLab();
+  const soNoOrbe = useSyncExternalStore(assinarCor, () => document.documentElement.dataset.corViva === "orbe", () => false);
+  useEffect(() => {
+    let salvo: string | null = null;
+    try {
+      salvo = localStorage.getItem(CHAVE_COR);
+    } catch {}
+    if (salvo === "orbe") trocarCor(true);
+  }, []);
 
   return (
     <nav className="lab-nav" aria-label="Laboratório">
@@ -95,6 +124,7 @@ export function NavegacaoDoLab() {
       <div className="lab-nav-rodape">
         <Chave rotulo="Câmera lenta (4x)" ligada={lento} onTroca={setLento} />
         <Chave rotulo="Movimento reduzido" ligada={reduzido} onTroca={setReduzido} />
+        <Chave rotulo="Cor só no orbe" ligada={soNoOrbe} onTroca={trocarCor} />
       </div>
     </nav>
   );

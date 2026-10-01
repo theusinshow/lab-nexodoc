@@ -21,7 +21,7 @@
   color: var(--ds-text-tertiary);
   transition: box-shadow var(--ds-dur-feedback);
 }
-.ds .pc-busca:focus-within { box-shadow: inset 0 0 0 1px var(--ds-nexo-line), 0 0 0 4px rgb(195 163 255 / 0.08); }
+.ds .pc-busca:focus-within { box-shadow: inset 0 0 0 1px var(--ds-nexo-line), 0 0 0 4px color-mix(in srgb, var(--ds-nexo) 8%, transparent); }
 .ds .pc-busca input { flex: 1; min-width: 0; border: 0; outline: none; background: none; color: var(--ds-text-primary); font: inherit; font-size: var(--ds-text-xs); }
 .ds .pc-busca input::placeholder { color: var(--ds-text-tertiary); }
 .ds .pc-conta { margin-left: auto; font-size: var(--ds-text-2xs); color: var(--ds-text-tertiary); }
@@ -57,7 +57,7 @@
 .ds .pc-etapa-cabeca:hover:not(:disabled) { color: var(--ds-text-primary); background: rgb(255 255 255 / 0.03); }
 .ds .pc-etapa-cabeca:disabled { cursor: default; }
 .ds .pc-etapa-cabeca[aria-pressed="true"] { color: var(--ds-text-primary); }
-.ds .pc-etapa-ativa { position: absolute; inset: 0; border-radius: var(--ds-radius-control); background: var(--ds-nexo-wash); box-shadow: inset 0 0 0 1px rgb(195 163 255 / 0.28); }
+.ds .pc-etapa-ativa { position: absolute; inset: 0; border-radius: var(--ds-radius-control); background: var(--ds-nexo-wash); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ds-nexo) 28%, transparent); }
 .ds .pc-etapa-nome, .ds .pc-etapa-conta, .ds .pc-etapa-barra { position: relative; }
 .ds .pc-etapa-nome { font-size: var(--ds-text-2xs); }
 .ds .pc-etapa-conta { font-size: var(--ds-text-lg); color: var(--ds-text-primary); line-height: 1; }
@@ -95,10 +95,10 @@
   border-radius: 2px;
 }
 .ds .pc-trilha-fundo { background: rgb(255 255 255 / 0.07); }
-.ds .pc-trilha-feita { background: rgb(195 163 255 / 0.45); transform-origin: left; }
+.ds .pc-trilha-feita { background: color-mix(in srgb, var(--ds-nexo) 45%, transparent); transform-origin: left; }
 .ds .pc-trilha-feita--ok { background: rgb(123 216 165 / 0.45); }
 .ds .pc-no { position: relative; display: grid; place-items: center; height: 100%; }
-.ds .pc-no--coluna { background: rgb(195 163 255 / 0.05); }
+.ds .pc-no--coluna { background: color-mix(in srgb, var(--ds-nexo) 5%, transparent); }
 .ds .pc-no-feito { display: grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; background: #2a2c45; color: var(--ds-nexo-soft); }
 .ds .pc-trilha-feita--ok ~ .pc-no .pc-no-feito { background: #1f3a2d; color: var(--ds-state-ok); }
 .ds .pc-no-futuro { width: 8px; height: 8px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px rgb(255 255 255 / 0.14); background: var(--ds-surface-card); }

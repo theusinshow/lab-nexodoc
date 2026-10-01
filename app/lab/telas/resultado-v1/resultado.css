@@ -207,7 +207,7 @@
 .ds .rs-evidencias figure { margin: 0; border-radius: var(--ds-radius-row); background: var(--ds-surface-sunken); box-shadow: var(--ds-edge); }
 .ds .rs-evidencias figcaption { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px 0; font-size: 11.5px; color: var(--ds-text-tertiary); }
 .ds .rs-evidencias blockquote { margin: 0; padding: 6px 12px 12px; font-family: var(--ds-font-mono); font-size: 12px; line-height: 1.6; color: var(--ds-text-secondary); }
-.ds .rs-evidencias mark { padding: 1px 3px; border-radius: 4px; background: rgb(195 163 255 / 0.18); box-shadow: inset 0 -1.5px 0 var(--ds-nexo); color: var(--ds-text-primary); }
+.ds .rs-evidencias mark { padding: 1px 3px; border-radius: 4px; background: color-mix(in srgb, var(--ds-nexo) 18%, transparent); box-shadow: inset 0 -1.5px 0 var(--ds-nexo); color: var(--ds-text-primary); }
 .ds .rs-conversa, .ds .rs-historico { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; font-size: var(--ds-text-xs); }
 .ds .rs-conversa li { display: flex; gap: 10px; }
 .ds .rs-conversa b { font-weight: 500; }
