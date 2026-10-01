@@ -3,6 +3,7 @@
 import { Background, BackgroundVariant, getBezierPath, Handle, MiniMap, Position, ReactFlow, useStore, type Edge, type EdgeProps, type Node, type NodeProps, type OnNodeDrag, type OnNodesChange } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import "./cartoes.css";
+import { CircleMinus } from "lucide-react";
 import { memo } from "react";
 
 import { densidadeDoZoom, oQueMostrar } from "@/modules/nexo/lib/densidade-do-canvas";
@@ -76,7 +77,12 @@ const NoDaFolha = memo(function NoDaFolha({ data }: NodeProps<Node<DadosDaFolha>
     <div className={`mp-no-casca${destaque ? " mp-no-casca--destaque" : ""}${removida ? " mp-no-casca--removida" : ""}`}>
       {alcas}
       <CartaoDaFolha f={f} estilo={estilo} distancia={densidade} escolhida={escolhida} apagada={apagada} />
-      {removida && <span className="mp-no-removida">removida</span>}
+      {removida && (
+        <span className="mp-no-removida">
+          <CircleMinus size={11} strokeWidth={2} aria-hidden />
+          Removida
+        </span>
+      )}
     </div>
   );
 });
