@@ -125,3 +125,19 @@
   .ds .pb-auditorias .adm-linha > :nth-child(10), .ds .pb-auditorias .adm-linha > :nth-child(5), .ds .pb-auditorias .adm-linha > :nth-child(6) { display: none; }
   .ds .pb-auditorias .adm-linha { grid-template-columns: 24px minmax(0, 1.4fr) 88px 112px 44px 60px 84px 84px; }
 }
+
+/* adicionar: o e-mail primeiro, grande, sem procurar */
+.ds .pb-adicionar { display: grid; grid-template-columns: minmax(240px, 1.6fr) minmax(160px, 1fr) auto auto auto; align-items: end; gap: 12px; padding: 0 16px 16px; }
+.ds .pb-adicionar label, .ds .pb-adicionar-chave { display: grid; gap: 6px; min-width: 0; }
+.ds .pb-adicionar label > span, .ds .pb-adicionar-chave > span { font-size: 11.5px; color: var(--ds-text-tertiary); }
+.ds .pb-campo--grande { height: 38px; min-height: 38px; width: 100%; font-size: 13.5px; }
+.ds .pb-campo--erro { box-shadow: inset 0 0 0 1px var(--ds-state-error); }
+.ds .pb-adicionar .pb-opcoes--chave .pb-opcao { height: 32px; }
+.ds .pb-adicionar-botao { height: 38px; }
+.ds .pb-adicionar-retorno { margin: -6px 16px 14px; font-size: 12.5px; color: var(--ds-text-secondary); }
+.ds .pb-adicionar-retorno--erro { color: var(--ds-state-error); }
+.ds .adm-bloco:has(.pb-adicionar) { container-type: inline-size; }
+@container (max-width: 1080px) {
+  .ds .pb-adicionar { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); }
+  .ds .pb-adicionar-botao { justify-self: start; }
+}

@@ -172,6 +172,107 @@ function Ficha({ p, porta, adminsAtivos, inicial, onFechar, onAplicar }: { p: Pe
   );
 }
 
+/*
+ * ADICIONAR: o e-mail é o que importa, então é o primeiro campo da tela.
+ * No app de hoje o "Adicionar" (POST /api/admin/users) só cria a CONTA; sem o
+ * vínculo, com a porta fechada, a pessoa adicionada leva 403. Aqui o mesmo
+ * gesto faz as duas coisas: cria a conta e libera no escritório
+ * (POST /api/admin/users/escritorio), que nasce convidado.
+ */
+type NovaPessoa = { email: string; nome: string; admin: boolean; escritorio: "fora" | "MEMBER" | "ADMIN" };
+
+function Adicionar({ porta, onAdicionar }: { porta: Porta; onAdicionar: (n: NovaPessoa) => "criada" | "atualizada" }) {
+  const { k } = useTempo();
+  const [email, setEmail] = useState("");
+  const [nome, setNome] = useState("");
+  const [admin, setAdmin] = useState(false);
+  const [noEscritorio, setNoEscritorio] = useState<NovaPessoa["escritorio"]>("MEMBER");
+  const [erro, setErro] = useState("");
+  const [feito, setFeito] = useState("");
+
+  const enviar = () => {
+    const limpo = email.trim().toLowerCase();
+    if (!limpo || !limpo.includes("@")) return setErro("Informe um e-mail válido."), setFeito("");
+    const r = onAdicionar({ email: limpo, nome: nome.trim(), admin, escritorio: noEscritorio });
+    setErro("");
+    setFeito(
+      r === "atualizada"
+        ? `${limpo} já tinha conta: nome e papel atualizados.`
+        : noEscritorio === "fora"
+          ? porta === "convite"
+            ? `${limpo} tem conta, mas sem escritório: vai levar 403 até ser liberado.`
+            : `${limpo} tem conta; o primeiro login cria o vínculo como MEMBER.`
+          : `${limpo} entra como convidado; o primeiro login com o Google ativa.`,
+    );
+    setEmail("");
+    setNome("");
+  };
+
+  return (
+    <section className="adm-bloco" aria-labelledby="pb-adicionar">
+      <header>
+        <h2 id="pb-adicionar">Adicionar pessoa</h2>
+      </header>
+      <p className="din-lede">O e-mail da conta Google com que a pessoa vai entrar.</p>
+      <form className="pb-adicionar" onSubmit={(e) => (e.preventDefault(), enviar())} aria-label="Adicionar pessoa" noValidate>
+        <label className="pb-adicionar-email">
+          <span>E-mail</span>
+          <input
+            className={`pb-campo pb-campo--grande${erro ? " pb-campo--erro" : ""}`}
+            type="email"
+            value={email}
+            onChange={(e) => (setEmail(e.target.value), setErro(""))}
+            placeholder="nome@prosul.com.br"
+            autoComplete="off"
+            aria-invalid={!!erro}
+            aria-describedby="pb-adicionar-retorno"
+          />
+        </label>
+        <label className="pb-adicionar-nome">
+          <span>Nome</span>
+          <input className="pb-campo pb-campo--grande" value={nome} onChange={(e) => setNome(e.target.value)} placeholder="opcional" autoComplete="off" />
+        </label>
+        <div className="pb-adicionar-chave">
+          <span>Centro de controle</span>
+          <Chave rotulo="Centro de controle" valor={admin ? "ADMIN" : "USER"} opcoes={[{ id: "USER", rotulo: "Usuário" }, { id: "ADMIN", rotulo: "Admin" }]} onTrocar={(v) => setAdmin(v === "ADMIN")} />
+        </div>
+        <div className="pb-adicionar-chave">
+          <span>Escritório PROSUL</span>
+          <Chave
+            rotulo="Escritório PROSUL"
+            valor={noEscritorio}
+            opcoes={[
+              { id: "MEMBER", rotulo: "Membro" },
+              { id: "ADMIN", rotulo: "Admin" },
+              { id: "fora", rotulo: "Fora" },
+            ]}
+            onTrocar={setNoEscritorio}
+          />
+        </div>
+        <Botao variante="primary" type="submit" className="pb-adicionar-botao">
+          <UserPlus size={14} /> Adicionar
+        </Botao>
+      </form>
+      <AnimatePresence initial={false} mode="wait">
+        {(erro || feito) && (
+          <motion.p
+            key={erro || feito}
+            id="pb-adicionar-retorno"
+            className={`pb-adicionar-retorno${erro ? " pb-adicionar-retorno--erro" : ""}`}
+            role={erro ? "alert" : "status"}
+            initial={{ opacity: 0, y: -3 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: RITMO.troca * k, ease: SUAVE }}
+          >
+            {erro || feito}
+          </motion.p>
+        )}
+      </AnimatePresence>
+    </section>
+  );
+}
+
 export function Pessoas({ variante }: { variante: VariantePessoas }) {
   const { k } = useTempo();
   const [porta, setPorta] = useState<Porta>(variante === "convite" ? "convite" : "prosul");
@@ -221,8 +322,21 @@ export function Pessoas({ variante }: { variante: VariantePessoas }) {
         ? "Contas que existem e não têm vínculo. Com a porta aberta, o próximo login delas cria o vínculo sozinho, como MEMBER; liberar agora só adianta."
         : "Contas que existem e não têm vínculo com a PROSUL. Com a porta apontando para outro escritório, o próximo login as leva para lá.";
 
+  const adicionar = (n: { email: string; nome: string; admin: boolean; escritorio: "fora" | "MEMBER" | "ADMIN" }) => {
+    const vinculo: Vinculo = n.escritorio === "fora" ? null : { papel: n.escritorio, situacao: "INVITED" };
+    const existente = pessoas.find((p) => p.email === n.email);
+    if (existente) {
+      mudar(existente.id, (p) => ({ ...p, nome: n.nome || p.nome, papel: n.admin ? "ADMIN" : "USER", ativo: true, vinculo: p.vinculo ?? vinculo }));
+      return "atualizada" as const;
+    }
+    setPessoas((ps) => [{ id: `n${ps.length}`, criada: "01/10", nome: n.nome || n.email, email: n.email, papel: n.admin ? "ADMIN" : "USER", ativo: true, vinculo, auditorias: 0, lds: 0, geradas: 0, atualizado: "01/10 09:30" }, ...ps]);
+    return "criada" as const;
+  };
+
   return (
     <>
+      <Adicionar porta={porta} onAdicionar={adicionar} />
+
       <section className="adm-bloco" aria-labelledby="pb-porta">
         <header>
           <h2 id="pb-porta">A porta de entrada</h2>
@@ -305,17 +419,6 @@ export function Pessoas({ variante }: { variante: VariantePessoas }) {
           <h2 id="pb-pessoas">Pessoas</h2>
           <span className="adm-fraco">{plural(visiveis.length, "pessoa", "pessoas")}</span>
         </header>
-        <form className="pb-linha-form" onSubmit={(e) => e.preventDefault()} aria-label="Adicionar pessoa">
-          <input className="pb-campo" placeholder="email@prosul.com.br" aria-label="E-mail da pessoa a adicionar" />
-          <input className="pb-campo" placeholder="Nome" aria-label="Nome da pessoa a adicionar" />
-          <select className="pb-campo pb-select" aria-label="Papel da pessoa a adicionar" defaultValue="USER">
-            <option value="USER">Usuário</option>
-            <option value="ADMIN">Admin</option>
-          </select>
-          <Botao variante="ghost" tamanho="sm" type="submit">
-            <UserPlus size={14} /> Adicionar
-          </Botao>
-        </form>
         <form className="pb-linha-form pb-filtros" onSubmit={(e) => e.preventDefault()} aria-label="Filtrar pessoas">
           <label className="pb-busca">
             <Search size={14} aria-hidden />
