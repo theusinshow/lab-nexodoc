@@ -1,19 +1,20 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
-import { Check, CircleAlert, Info, LoaderCircle, LogOut, Mail, ShieldQuestion, Terminal } from "lucide-react";
+import { Check, CircleAlert, Info, LoaderCircle, LogOut, Mail, Terminal } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { Botao, Orbe, Tecla } from "@/components/ds/basicos";
 
 import { SUAVE } from "../conversa/turnos";
+import { Carimbo, Prancha, type Situacao } from "./prancha";
 import "./entrada.css";
 
 /*
- * A ENTRADA: login e sem acesso. Uma porta, não uma vitrine: um painel só no
- * mesmo chão pontilhado do mapa, nada se mexendo sozinho (o orbe gigante e a
- * saudação que se decifrava saem). Os textos são os do app; o que muda é a
- * ordem e o peso.
+ * A ENTRADA: login e sem acesso. À esquerda a porta; à direita a folha que o
+ * Nexo lê, com o carimbo desta entrada (o campo SITUAÇÃO carrega o estado).
+ * Os textos são os do app. Nada se mexe sozinho: o retículo e os campos do
+ * carimbo respondem ao cursor.
  */
 
 export type SituacaoEntrada =
@@ -135,33 +136,30 @@ function Contato({ aberto, onAbrir, desfecho }: { aberto: boolean; onAbrir: (a: 
   );
 }
 
-function Login({ situacao }: { situacao: SituacaoEntrada }) {
-  const [indo, setIndo] = useState(situacao === "indo");
+function Login({ situacao, indo, onIr }: { situacao: SituacaoEntrada; indo: boolean; onIr: () => void }) {
   const [contato, setContato] = useState(situacao === "contato" || situacao.startsWith("recado"));
-  const dev = situacao === "dev";
   const desfecho: Recado | undefined = situacao === "recado-enviado" ? "enviado" : situacao === "recado-nao-saiu" ? "nao-configurado" : undefined;
 
   return (
     <>
-      <h1 className="en-titulo">Entrar no Nexo</h1>
-      <p className="en-lede">Use a conta Google do escritório.</p>
+      <h1 className="en-titulo">Entre no Nexo</h1>
+      <p className="en-lede">Documentação de projetos de engenharia, do carimbo ao volume.</p>
 
-      {situacao === "erro" && <Aviso tom="erro">Não foi possível autenticar com o Google. Tente de novo; se repetir, fale com o responsável aqui embaixo.</Aviso>}
+      {situacao === "erro" && <Aviso tom="erro">Não foi possível autenticar com o Google. Tente de novo; se repetir, fale com o responsável.</Aviso>}
 
-      <button type="button" className="en-google" disabled={indo} onClick={() => setIndo(true)} aria-describedby="en-nota">
+      <button type="button" className="en-google" disabled={indo} onClick={onIr} aria-describedby="en-nota">
         {indo ? <LoaderCircle size={16} className="en-gira" aria-hidden /> : <MarcaDoGoogle />}
         {indo ? "Indo para o Google" : "Entrar com Google"}
       </button>
       <p id="en-nota" className="en-nota">
-        Depois do Google, o Nexo confere se a conta está liberada. Se não estiver, a próxima tela diz quem libera.
+        Use a conta Google do escritório. Depois dela, o Nexo confere se a conta está liberada; se não estiver, diz quem libera.
       </p>
 
-      {dev && (
+      {situacao === "dev" && (
         <form className="en-dev" onSubmit={(e) => e.preventDefault()}>
           <p className="en-dev-rotulo">
             <Terminal size={13} strokeWidth={1.75} aria-hidden />
-            Desenvolvimento
-            <span>só aparece com NEXODOC_DEV_AUTH</span>
+            Acesso de desenvolvimento
           </p>
           <div className="en-dev-linha">
             <input type="email" autoComplete="off" placeholder="em branco: dev@prosul.local" aria-label="Entrar como" />
@@ -183,13 +181,9 @@ function SemAcesso({ comResponsavel }: { comResponsavel: boolean }) {
   const assunto = encodeURIComponent("Liberação de acesso ao Nexo");
   return (
     <>
-      <p className="en-sinal">
-        <ShieldQuestion size={14} strokeWidth={1.75} aria-hidden />
-        Acesso ainda não liberado
-      </p>
       <h1 className="en-titulo">Sua conta está certa, falta a liberação</h1>
       <p className="en-lede">
-        Você entrou como <span className="ds-code en-email">victor@prosul.com.br</span>. A conta é válida; ela só ainda não foi habilitada para o Nexo.
+        Você entrou como <span className="pr-mono en-email">victor@prosul.com.br</span>. A conta é válida; ela só ainda não foi habilitada para o Nexo.
       </p>
 
       {comResponsavel ? (
@@ -198,7 +192,7 @@ function SemAcesso({ comResponsavel }: { comResponsavel: boolean }) {
           <ul>
             {ADMINS.map((a) => (
               <li key={a}>
-                <span className="ds-code">{a}</span>
+                <span className="pr-mono">{a}</span>
                 <a className="ds-btn ds-btn--ghost ds-btn--sm" href={`mailto:${a}?subject=${assunto}`} onClick={(e) => e.preventDefault()}>
                   <Mail size={14} strokeWidth={1.75} aria-hidden />
                   Pedir liberação
@@ -222,22 +216,38 @@ function SemAcesso({ comResponsavel }: { comResponsavel: boolean }) {
   );
 }
 
+function situacaoDoCarimbo(s: SituacaoEntrada, indo: boolean): Situacao {
+  if (indo) return { texto: "Indo para o Google", tom: "andando" };
+  if (s === "erro") return { texto: "Google recusou a entrada", tom: "erro" };
+  if (s === "dev") return { texto: "Acesso de desenvolvimento", tom: "dev" };
+  if (s === "sem-acesso" || s === "sem-responsavel") return { texto: "Liberação pendente", tom: "info" };
+  return { texto: "Aguardando entrada" };
+}
+
 export function TelaEntrada({ situacao }: { situacao: SituacaoEntrada }) {
   const semAcesso = situacao === "sem-acesso" || situacao === "sem-responsavel";
+  const [indo, setIndo] = useState(situacao === "indo");
+  const estado = situacaoDoCarimbo(situacao, indo);
+  const responsavel = semAcesso ? "victor@prosul.com.br" : null;
   return (
     <div className="en">
-      <header className="en-marca">
-        <Orbe tamanho={18} />
-        <span>Nexo</span>
-      </header>
-      <main className="en-painel">
-        {semAcesso ? <SemAcesso comResponsavel={situacao === "sem-acesso"} /> : <Login situacao={situacao} />}
-      </main>
-      <footer className="en-pe ds-num">
-        <span>PROSUL</span>
-        <span>versão {VERSAO}</span>
-        <span>No celular dá para ler e tratar achados; montar volume rende mais no computador.</span>
-      </footer>
+      <section className="en-porta">
+        <header className="en-marca">
+          <Orbe tamanho={18} />
+          <span>Nexo</span>
+        </header>
+        <main className="en-conteudo">{semAcesso ? <SemAcesso comResponsavel={situacao === "sem-acesso"} /> : <Login situacao={situacao} indo={indo} onIr={() => setIndo(true)} />}</main>
+        <div className="en-carimbo-celular">
+          <Carimbo situacao={estado} responsavel={responsavel} compacto />
+        </div>
+        <footer className="en-pe">
+          <span>PROSUL</span>
+          <span className="pr-mono">versão {VERSAO}</span>
+        </footer>
+      </section>
+      <section className="en-mesa" aria-label="Prancha de amostra com o carimbo desta entrada">
+        <Prancha situacao={estado} responsavel={responsavel} />
+      </section>
     </div>
   );
 }
