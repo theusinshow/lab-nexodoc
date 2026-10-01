@@ -1,0 +1,93 @@
+/* A ENTRADA: o chão pontilhado do mapa, um painel só, nada que se mexa sozinho. */
+.ds .en {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  min-height: 860px;
+  padding: 28px 36px;
+  background-color: var(--ds-surface-page);
+  background-image: radial-gradient(rgb(255 255 255 / 0.07) 1px, transparent 1.2px);
+  background-size: 22px 22px;
+}
+
+.ds .en-marca { display: flex; align-items: center; gap: 9px; font-size: var(--ds-text-md); font-weight: 600; letter-spacing: -0.01em; }
+
+.ds .en-painel {
+  align-self: center;
+  justify-self: center;
+  width: 420px;
+  padding: 32px 32px 20px;
+  border-radius: var(--ds-radius-card);
+  background: var(--ds-surface-card);
+  box-shadow: inset 0 0 0 1px var(--ds-line-subtle), 0 24px 60px -24px rgb(0 0 0 / 0.6);
+}
+
+.ds .en-titulo { margin: 0; font-size: var(--ds-text-xl); font-weight: 600; letter-spacing: -0.015em; line-height: 1.25; }
+.ds .en-lede { margin: 8px 0 0; font-size: var(--ds-text-sm); line-height: 1.55; color: var(--ds-text-secondary); }
+.ds .en-email { color: var(--ds-text-primary); }
+
+/* O botão de entrar: o único primário da tela, papel claro com o G colorido. */
+.ds .en-google {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  width: 100%; height: 42px; margin-top: 24px;
+  border: 0; border-radius: var(--ds-radius-control);
+  background: var(--ds-action-bg); color: var(--ds-action-fg);
+  font: inherit; font-size: var(--ds-text-md); font-weight: 500;
+  cursor: pointer; transition: background 0.16s, transform 0.16s;
+}
+.ds .en-google:hover:not(:disabled) { background: var(--ds-action-bg-hover); }
+.ds .en-google:active:not(:disabled) { transform: scale(0.985); }
+.ds .en-google:disabled { cursor: progress; opacity: 0.85; }
+.ds .en-nota { margin: 10px 0 0; font-size: 12.5px; line-height: 1.5; color: var(--ds-text-tertiary); }
+
+.ds .en-gira { animation: en-gira 0.9s linear infinite; }
+@keyframes en-gira { to { transform: rotate(360deg); } }
+
+/* Avisos: cor só no ícone e no texto, nunca no fundo do painel inteiro. */
+.ds .en-aviso { display: flex; gap: 8px; align-items: flex-start; margin: 16px 0 0; font-size: 13px; line-height: 1.5; color: var(--ds-text-secondary); }
+.ds .en-aviso svg { flex: none; margin-top: 3px; }
+.ds .en-aviso--erro svg { color: var(--ds-state-error); }
+.ds .en-aviso--erro { color: var(--ds-text-primary); }
+.ds .en-aviso--ok svg { color: var(--ds-state-ok); }
+.ds .en-aviso--atencao svg { color: var(--ds-state-attention); }
+.ds .en-aviso--info svg { color: var(--ds-state-info); }
+
+/* Dev: separado por fio, com o nome da chave que o faz existir. */
+.ds .en-dev { margin-top: 20px; padding-top: 16px; border-top: 1px dashed var(--ds-line-default); }
+.ds .en-dev-rotulo { display: flex; align-items: center; gap: 6px; margin: 0 0 8px; font-size: 12px; font-weight: 500; color: var(--ds-text-secondary); }
+.ds .en-dev-rotulo span { margin-left: auto; font-family: var(--ds-font-mono, ui-monospace, monospace); font-size: 11px; font-weight: 400; color: var(--ds-text-tertiary); }
+.ds .en-dev-linha { display: flex; gap: 8px; }
+
+.ds .en input, .ds .en textarea {
+  width: 100%; min-width: 0; padding: 7px 10px;
+  border: 0; border-radius: 8px;
+  background: rgb(255 255 255 / 0.035); box-shadow: inset 0 0 0 1px var(--ds-line-default);
+  font: inherit; font-size: 13px; color: var(--ds-text-primary); resize: none;
+  transition: box-shadow 0.2s;
+}
+.ds .en input:focus-visible, .ds .en textarea:focus-visible { outline: none; box-shadow: inset 0 0 0 1px var(--ds-text-secondary); }
+.ds .en input::placeholder, .ds .en textarea::placeholder { color: var(--ds-text-tertiary); }
+
+.ds .en-rodape { margin-top: 24px; padding-top: 12px; border-top: 1px solid var(--ds-line-subtle); }
+.ds .en-rodape .ds-btn--quiet { margin-left: -10px; }
+.ds .en-rodape--linha { display: grid; gap: 6px; justify-items: start; }
+.ds .en-rodape--linha p { margin: 0; font-size: 12.5px; color: var(--ds-text-tertiary); }
+
+.ds .en-form { display: grid; gap: 12px; padding-top: 4px; }
+.ds .en-form-titulo { margin: 0; font-size: var(--ds-text-sm); font-weight: 500; }
+.ds .en-campo { display: grid; gap: 5px; }
+.ds .en-campo > span { display: flex; font-size: 12px; color: var(--ds-text-secondary); }
+.ds .en-campo em { margin-left: auto; font-style: normal; color: var(--ds-text-tertiary); }
+.ds .en-form .en-aviso { margin: 0; }
+.ds .en-form-acoes { display: flex; gap: 6px; }
+
+/* Sem acesso */
+.ds .en-sinal { display: flex; align-items: center; gap: 7px; margin: 0 0 12px; font-size: 12.5px; font-weight: 500; color: var(--ds-state-info); }
+.ds .en-quem { margin-top: 20px; }
+.ds .en-quem-titulo { margin: 0 0 6px; font-size: 12px; color: var(--ds-text-secondary); }
+.ds .en-quem ul { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--ds-line-subtle); }
+.ds .en-quem li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--ds-line-subtle); font-size: 13px; }
+.ds .en-quem a { text-decoration: none; }
+
+.ds .en-pe { display: flex; gap: 18px; font-size: 12px; color: var(--ds-text-tertiary); }
+.ds .en-pe span:last-child { margin-left: auto; }
