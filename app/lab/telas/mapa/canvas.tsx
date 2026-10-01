@@ -1,6 +1,6 @@
 "use client";
 
-import { Background, BackgroundVariant, Handle, MarkerType, MiniMap, Position, ReactFlow, useStore, type Edge, type Node, type NodeProps } from "@xyflow/react";
+import { Background, BackgroundVariant, Handle, MiniMap, Position, ReactFlow, useStore, type Edge, type EdgeProps, type Node, type NodeProps } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import "./cartoes.css";
 import { memo } from "react";
@@ -25,7 +25,8 @@ import { dd } from "./lado";
 export const LARGURA_DA_FOLHA = 140;
 export const ALTURA_DO_NO = 108;
 const LARGURA_DO_DOC = LARGURA_DO_PAPEL + 12;
-const PASSO_DA_FOLHA = 152;
+/** 24 px entre as folhas: o bastante para a seta se ler como seta, e não como um risco. */
+const PASSO_DA_FOLHA = 164;
 const ENTRE_DISCIPLINAS = 28;
 export const Y_DA_FILEIRA = (i: number) => i * 300;
 /** O papel é mais alto que a folha: sobe para os centros ficarem na mesma linha. */
@@ -114,6 +115,37 @@ const NoDoGrupo = memo(function NoDoGrupo({ data }: NodeProps<Node<DadosDoGrupo>
   );
 });
 
+/*
+ * A SETA DA ORDEM DO VOLUME. Uma linha, uma ponta desenhada (não o marcador
+ * padrão) e duas camadas de movimento:
+ * - a ONDA: um brilho que corre a fileira da capa ao volume, em sequência,
+ *   dizendo "é nesta ordem que o volume sai" (só no palco do Nexo);
+ * - o FLUXO: nas setas que encostam no que acabou de mudar, um tracejado íris
+ *   que corre no sentido da seta enquanto o destaque dura.
+ * A seta nova (de uma folha que mudou de vizinha) se DESENHA ao nascer.
+ */
+export type DadosDaSeta = { i: number; acesa?: boolean; fraca?: boolean };
+
+const Seta = memo(function Seta({ sourceX, sourceY, targetX, targetY, data }: EdgeProps<Edge<DadosDaSeta>>) {
+  const x0 = sourceX + 3;
+  const x1 = targetX - 3;
+  const y = (sourceY + targetY) / 2;
+  if (x1 - x0 < 6) return null;
+  const linha = `M${x0},${y} L${x1},${y}`;
+  const ponta = `M${x1 - 4.5},${y - 4} L${x1},${y} L${x1 - 4.5},${y + 4}`;
+  const cls = `mp-seta2${data?.acesa ? " mp-seta2--acesa" : ""}${data?.fraca ? " mp-seta2--fraca" : ""}`;
+  return (
+    <g className={cls} style={{ ["--i" as string]: data?.i ?? 0 }}>
+      <path d={linha} pathLength={1} className="mp-seta2-linha" />
+      <path d={linha} pathLength={1} className="mp-seta2-fluxo" />
+      <path d={linha} pathLength={1} className="mp-seta2-onda" />
+      <path d={ponta} className="mp-seta2-ponta" />
+    </g>
+  );
+});
+
+export const TIPOS_DE_SETA = { seta: Seta };
+
 export const TIPOS = { folha: NoDaFolha, doc: NoDoDoc, rotulo: NoDoRotulo, grupo: NoDoGrupo, corte: NoDoCorte };
 
 /** Onde cada coisa fica: as fileiras, e a posição de cada folha para centralizar nela. */
@@ -151,13 +183,22 @@ export function montarCanvas({
   const posicao = new Map<string, { x: number; y: number }>();
   const inicioDaFileira = new Map<number, { x: number; y: number }>();
   const ordem = new Map(FOLHAS.map((f, i) => [f.id, i]));
+  // i conta a seta DENTRO da fileira: a onda de cada tomo começa junto, na capa.
+  let naFileira = 0;
   const seta = (a: string, b: string) =>
-    edges.push({ id: `${a}>${b}`, source: a, target: b, type: "straight", markerEnd: { type: MarkerType.ArrowClosed, width: 12, height: 12, color: "rgba(255,255,255,0.22)" }, className: "mp-seta" });
+    edges.push({
+      id: `${a}>${b}`,
+      source: a,
+      target: b,
+      type: "seta",
+      data: { i: naFileira++, acesa: !!(destaque?.has(a) || destaque?.has(b)), fraca: !!(removidas?.has(a) || removidas?.has(b)) },
+    });
 
   tomos.forEach((t, ti) => {
     const y = Y_DA_FILEIRA(ti);
     inicioDaFileira.set(t.n, { x: 0, y });
     const fs = FOLHAS.filter((f) => t.disciplinas.includes(f.disc) && !sem?.has(f.id));
+    naFileira = 0;
     nodes.push({ id: `rot-${t.n}`, type: "rotulo", position: { x: 0, y: y + 18 }, data: { titulo: tomos.length === 1 ? "Volume" : `Tomo ${dd(t.n)}`, sub: `${fs.length - (removidas ? fs.filter((f) => removidas.has(f.id)).length : 0)} folhas, ${t.paginas} p.` }, selectable: false });
     let x = X_INICIAL;
     let anterior: string | null = null;
@@ -233,6 +274,7 @@ export function Tela({
       nodes={nodes}
       edges={edges}
       nodeTypes={TIPOS}
+      edgeTypes={TIPOS_DE_SETA}
       defaultViewport={viewportInicial}
       fitView={enquadrar !== undefined}
       fitViewOptions={enquadrar !== undefined ? { padding: 0.08, maxZoom: enquadrar, nodes: enquadrarEm?.map((id) => ({ id })) } : undefined}

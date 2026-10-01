@@ -94,3 +94,12 @@
   .ds .nw-canvas .react-flow__node.nw-nasce > *, .ds .nw-revela .mp-no-casca > .ct, .ds .nw-pingar .ct-marca::after { animation: none; }
 }
 .ds .nw-fio .cx-gerando-linha, .ds .nw-fio .cx-gerando-linha > span { width: 100%; }
+
+/* A ONDA: no palco do Nexo, um brilho corre cada fileira da capa ao volume, em
+   sequência, e a ponta acende quando ele passa. Diz a ordem em que o volume sai. */
+.ds .nw-canvas .mp-seta2-onda { stroke: var(--ds-nexo-soft); stroke-width: 2.25; stroke-dasharray: 0.45 2; stroke-dashoffset: 0.45; filter: drop-shadow(0 0 3px rgb(163 166 255 / 0.9)); animation: nw-onda calc(7s * var(--k, 1)) linear infinite; animation-delay: calc((1.4s + var(--i) * 0.075s) * var(--k, 1)); }
+@keyframes nw-onda { 0% { stroke-dashoffset: 0.45; } 5% { stroke-dashoffset: -1; } 100% { stroke-dashoffset: -1; } }
+.ds .nw-canvas .mp-seta2:not(.mp-seta2--fraca) .mp-seta2-ponta { animation: mp-aparece calc(0.3s * var(--k, 1)) both, nw-onda-ponta calc(7s * var(--k, 1)) linear infinite; animation-delay: calc((0.3s + var(--i) * 0.015s) * var(--k, 1)), calc((1.4s + var(--i) * 0.075s) * var(--k, 1)); }
+@keyframes nw-onda-ponta { 0%, 3% { stroke: rgb(255 255 255 / 0.4); } 5% { stroke: var(--ds-nexo-soft); } 10%, 100% { stroke: rgb(255 255 255 / 0.4); } }
+.ds .nw-canvas .mp-seta2--acesa .mp-seta2-ponta { animation: mp-aparece calc(0.3s * var(--k, 1)) both; }
+@media (prefers-reduced-motion: reduce) { .ds .nw-canvas .mp-seta2-onda, .ds .nw-canvas .mp-seta2-ponta { animation: none; } }

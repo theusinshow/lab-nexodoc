@@ -251,3 +251,25 @@
 .ds .mp-corte-traco { height: 100%; border-left: 1.5px dashed rgb(163 166 255 / 0.75); }
 .ds .mp-corte-texto { position: absolute; top: -30px; left: 50%; transform: translateX(-50%); padding: 4px 9px; border-radius: 7px; background: rgb(163 166 255 / 0.14); box-shadow: inset 0 0 0 1px var(--ds-nexo-line); font-size: 12.5px; color: var(--ds-nexo-soft); white-space: nowrap; }
 @media (prefers-reduced-motion: reduce) { .ds .mp-lendo--agora .mp-lendo-varre { animation: none; top: 50%; } }
+
+/* A SETA DA ORDEM DO VOLUME: linha e ponta desenhadas; nasce se desenhando */
+.ds .mp-seta2 path { fill: none; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+.ds .mp-seta2-linha { stroke: rgb(255 255 255 / 0.26); stroke-width: 1.25; stroke-dasharray: 1; stroke-dashoffset: 0; animation: mp-seta-nasce calc(0.5s * var(--k, 1)) cubic-bezier(0.22, 1, 0.36, 1) both; animation-delay: calc(var(--i) * 0.015s * var(--k, 1)); }
+.ds .mp-seta2-ponta { stroke: rgb(255 255 255 / 0.4); stroke-width: 1.25; animation: mp-aparece calc(0.3s * var(--k, 1)) both; animation-delay: calc((0.3s + var(--i) * 0.015s) * var(--k, 1)); }
+@keyframes mp-seta-nasce { from { stroke-dashoffset: 1; } }
+.ds .mp-seta2-fluxo, .ds .mp-seta2-onda { stroke: transparent; }
+
+/* acesa: encosta no que acabou de mudar; o tracejado íris corre no sentido da seta, algumas vezes, e pousa */
+.ds .mp-seta2--acesa .mp-seta2-linha { stroke: rgb(163 166 255 / 0.35); }
+.ds .mp-seta2--acesa .mp-seta2-ponta { stroke: var(--ds-nexo-soft); }
+.ds .mp-seta2--acesa .mp-seta2-fluxo { stroke: var(--ds-nexo-soft); stroke-width: 1.75; stroke-dasharray: 0.16 0.14; animation: mp-seta-flui calc(0.8s * var(--k, 1)) linear 5 both; }
+@keyframes mp-seta-flui { from { stroke-dashoffset: 0.3; } to { stroke-dashoffset: 0; } }
+
+/* fraca: encosta numa folha tirada; vira pontilhado apagado */
+.ds .mp-seta2--fraca .mp-seta2-linha { stroke: rgb(255 255 255 / 0.12); stroke-dasharray: 0.08 0.1; animation: none; }
+.ds .mp-seta2--fraca .mp-seta2-ponta { stroke: rgb(255 255 255 / 0.16); }
+
+@media (prefers-reduced-motion: reduce) {
+  .ds .mp-seta2-linha, .ds .mp-seta2-ponta, .ds .mp-seta2--acesa .mp-seta2-fluxo { animation: none; }
+  .ds .mp-seta2--acesa .mp-seta2-fluxo { stroke-dasharray: none; }
+}
