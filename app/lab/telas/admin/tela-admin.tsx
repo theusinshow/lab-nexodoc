@@ -4,12 +4,14 @@ import { motion } from "motion/react";
 import { ArrowRight, BarChart3, CircleAlert, Database, Gauge, Info, KeyRound, LoaderCircle, RefreshCcw, ShieldCheck, UsersRound } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 
-import { Botao, Tecla } from "@/components/ds/basicos";
+import { Botao, Segmento, Tecla } from "@/components/ds/basicos";
 import { useTempo } from "@/lib/ds/tempo";
 
 import { Topo } from "../_comum/topo";
 import { RITMO, SUAVE } from "../conversa/turnos";
 import { ACOES, ATENCAO_DEGRADADO, AUDITORIAS, DESTINOS, FALHAS, LDS, STATUS, TOTAIS, TUDO_EM_ORDEM, type Destino } from "./dados";
+import { Dinheiro, type VarianteDinheiro } from "./dinheiro";
+import { PERIODOS } from "./dados-dinheiro";
 import "../mapa/mapa.css";
 import "./admin.css";
 
@@ -20,14 +22,15 @@ import "./admin.css";
  * Esta rodada: o trilho e o Cockpit; os outros quatro destinos vêm depois.
  */
 
-export type SituacaoAdmin = "sem-token" | "cockpit" | "atencao" | "erro";
+export type SituacaoAdmin = "sem-token" | "cockpit" | "atencao" | "erro" | "dinheiro" | "dinheiro-sem-cotacao" | "dinheiro-sem-preco";
+const comDados = (s: SituacaoAdmin) => s !== "sem-token" && s !== "erro";
 const ICONES: Record<Destino, typeof Gauge> = { cockpit: Gauge, dinheiro: BarChart3, motor: ShieldCheck, pessoas: UsersRound, dados: Database };
-const PRONTOS: Destino[] = ["cockpit"];
+const PRONTOS: Destino[] = ["cockpit", "dinheiro"];
 
 function Trilho({ situacao, atual, onIr }: { situacao: SituacaoAdmin; atual: Destino; onIr: (d: Destino) => void }) {
   const { k } = useTempo();
-  const status = situacao === "atencao" ? STATUS.degradado : situacao === "cockpit" ? STATUS.ok : null;
-  const [editando, setEditando] = useState(situacao !== "cockpit" && situacao !== "atencao");
+  const status = situacao === "atencao" ? STATUS.degradado : comDados(situacao) ? STATUS.ok : null;
+  const [editando, setEditando] = useState(!comDados(situacao));
   return (
     <nav className="adm-trilho" aria-label="Navegação administrativa">
       <p className={`adm-veredito${status ? ` adm-veredito--${status.veredito}` : ""}`}>
@@ -268,8 +271,10 @@ function Cockpit({ situacao }: { situacao: SituacaoAdmin }) {
 }
 
 export function TelaAdmin({ situacao }: { situacao: SituacaoAdmin }) {
-  const [destino, setDestino] = useState<Destino>("cockpit");
-  const tem = situacao === "cockpit" || situacao === "atencao";
+  const [destino, setDestino] = useState<Destino>(situacao.startsWith("dinheiro") ? "dinheiro" : "cockpit");
+  const [periodo, setPeriodo] = useState<string>("7");
+  const tem = comDados(situacao);
+  const variante: VarianteDinheiro = situacao === "dinheiro-sem-cotacao" ? "sem-cotacao" : situacao === "dinheiro-sem-preco" ? "sem-preco" : "normal";
 
   useEffect(() => {
     const tecla = (e: KeyboardEvent) => {
@@ -293,6 +298,7 @@ export function TelaAdmin({ situacao }: { situacao: SituacaoAdmin }) {
         </div>
         {tem && (
           <div className="adm-atualizado">
+            {destino === "dinheiro" && <Segmento rotulo="Período" valor={periodo} onTroca={setPeriodo} opcoes={PERIODOS.map((p) => ({ valor: String(p), rotulo: `${p} dias` }))} />}
             <span className="ds-num">dados de 21:14</span>
             <Botao variante="quiet" tamanho="sm">
               <RefreshCcw size={13} /> Atualizar <Tecla>R</Tecla>
@@ -303,7 +309,7 @@ export function TelaAdmin({ situacao }: { situacao: SituacaoAdmin }) {
       <div className="adm-corpo">
         <Trilho situacao={situacao} atual={destino} onIr={setDestino} />
         <main className="adm-conteudo">
-          <Cockpit situacao={situacao} />
+          {destino === "dinheiro" ? <Dinheiro variante={variante} periodo={Number(periodo)} /> : <Cockpit situacao={situacao === "dinheiro" || situacao.startsWith("dinheiro-") ? "cockpit" : situacao} />}
         </main>
       </div>
     </div>

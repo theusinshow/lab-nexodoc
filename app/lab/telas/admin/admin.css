@@ -101,3 +101,73 @@
 .ds .adm-gira { animation: adm-gira 0.9s linear infinite; color: var(--ds-nexo); }
 @keyframes adm-gira { to { transform: rotate(360deg); } }
 .ds .adm-vazio { margin: 0; padding: 28px 16px 32px; font-size: 12.5px; color: var(--ds-text-tertiary); }
+
+/* ---------- DINHEIRO ---------- */
+.ds .din-topo { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: 16px; }
+.ds .din-tetos-grade { display: grid; grid-template-columns: 1fr 1fr; }
+.ds .din-controle { display: grid; gap: 8px; align-content: start; padding: 4px 16px 16px; }
+.ds .din-controle + .din-controle { box-shadow: inset 1px 0 0 var(--ds-line-subtle); }
+.ds .din-controle-cabeca { display: grid; gap: 4px; }
+.ds .din-controle-rotulo { margin: 0; font-size: 12px; color: var(--ds-text-tertiary); }
+.ds .din-controle-cabeca b { font-size: 24px; font-weight: 400; letter-spacing: -0.03em; }
+.ds .din-origem { display: flex; align-items: center; gap: 7px; margin: 0; font-size: 11.5px; color: var(--ds-text-tertiary); flex-wrap: wrap; }
+.ds .din-origem .mp-mono { font-size: 11px; }
+.ds .din-origem-ponto { width: 6px; height: 6px; border-radius: 50%; flex: none; }
+.ds .din-origem-ponto--banco { background: var(--ds-text-primary); }
+.ds .din-origem-ponto--ambiente { box-shadow: inset 0 0 0 1.5px var(--ds-text-secondary); }
+.ds .din-origem-ponto--padrao { box-shadow: inset 0 0 0 1px var(--ds-text-tertiary); }
+.ds .din-medidor { display: grid; gap: 5px; }
+.ds .din-medidor i { display: block; height: 4px; border-radius: 2px; background: var(--ds-text-secondary); transform-origin: 0 50%; box-shadow: 0 0 0 0 transparent; position: relative; }
+.ds .din-medidor { position: relative; }
+.ds .din-medidor::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 4px; border-radius: 2px; background: rgb(255 255 255 / 0.07); }
+.ds .din-medidor span { font-size: 11.5px; color: var(--ds-text-secondary); }
+.ds .din-desc { margin: 0; font-size: 12px; line-height: 1.5; color: var(--ds-text-tertiary); }
+.ds .din-campo { display: flex; align-items: center; gap: 6px; margin-top: 4px; }
+.ds .din-campo input { flex: 1; min-width: 0; height: 32px; padding: 0 10px; border: 0; border-radius: 8px; background: rgb(255 255 255 / 0.035); box-shadow: inset 0 0 0 1px var(--ds-line-default); font: inherit; font-family: var(--ds-font-mono); font-size: 12px; color: var(--ds-text-primary); }
+.ds .din-campo input::placeholder { color: var(--ds-text-tertiary); font-family: var(--ds-font-sans); font-size: 11.5px; }
+.ds .din-campo input:focus-visible { outline: none; box-shadow: inset 0 0 0 1px var(--ds-text-secondary); }
+.ds .din-prefixo { font-family: var(--ds-font-mono); font-size: 11.5px; color: var(--ds-text-tertiary); }
+.ds .din-cotacao-corpo { display: grid; gap: 8px; padding: 4px 16px 16px; }
+.ds .din-cotacao-valor { display: flex; align-items: baseline; gap: 6px; margin: 0; }
+.ds .din-cotacao-valor b { font-size: 24px; font-weight: 400; letter-spacing: -0.03em; }
+.ds .din-moeda { font-size: 12px; color: var(--ds-text-tertiary); }
+.ds .din-nao { font-size: 18px; color: var(--ds-text-tertiary); }
+
+.ds .din-numeros { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.ds .adm-num--fixo { cursor: default; }
+.ds .adm-num--fixo:hover { background: none; }
+
+.ds .din-duas { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); }
+.ds .din-barras { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 10px; height: 230px; padding: 4px 16px 16px; }
+.ds .din-barra { display: grid; grid-template-rows: 1fr auto auto; gap: 4px; min-width: 0; text-align: center; }
+.ds .din-barra-poço { display: flex; align-items: flex-end; padding: 3px; border-radius: 6px; background: rgb(255 255 255 / 0.025); }
+.ds .din-barra-poço i { display: block; width: 100%; border-radius: 3px; background: var(--ds-text-tertiary); transition: background 0.2s; }
+.ds .din-barra:hover .din-barra-poço i { background: var(--ds-text-secondary); }
+.ds .din-barra--hoje .din-barra-poço i { background: var(--ds-text-primary); }
+.ds .din-barra-dia { font-size: 11.5px; color: var(--ds-text-tertiary); }
+.ds .din-barra-usd { font-size: 11.5px; color: var(--ds-text-secondary); }
+.ds .din-tabela--modelos .adm-linha { grid-template-columns: minmax(0, 1fr) auto 96px; }
+.ds .din-tabela--itens .adm-linha { grid-template-columns: minmax(0, 1fr) 120px; min-height: 40px; }
+.ds .din-direita { text-align: right; justify-self: end; }
+.ds .din-cab { min-height: 32px !important; font-size: 11.5px; color: var(--ds-text-tertiary); border-top: 0 !important; }
+.ds .din-tabela--obras .adm-linha { grid-template-columns: minmax(0, 1fr) 84px 110px 110px; }
+.ds .din-custo { display: grid; justify-items: end; gap: 1px; }
+.ds .din-custo small { font-size: 11px; color: var(--ds-text-tertiary); }
+.ds .din-tabela--tarefas .adm-linha { grid-template-columns: minmax(0, 1fr) 150px 110px 96px; min-height: 40px; }
+.ds .din-lede { margin: -4px 16px 8px; max-width: 80ch; font-size: 12px; line-height: 1.5; color: var(--ds-text-tertiary); }
+.ds .din-selo { padding: 2px 7px; border-radius: 5px; background: var(--ds-state-info-wash); color: var(--ds-state-info); font-family: var(--ds-font-mono); font-size: 11px; }
+.ds .din-interno-total { font-size: 12.5px; color: var(--ds-text-secondary); }
+.ds .din-ressalva { display: flex; gap: 8px; margin: 0 16px 10px; padding: 10px 12px; border-radius: 10px; background: rgb(255 255 255 / 0.03); box-shadow: inset 0 0 0 1px var(--ds-line-subtle); font-size: 12px; line-height: 1.5; color: var(--ds-text-secondary); }
+.ds .din-ressalva svg { flex: none; margin-top: 2px; color: var(--ds-state-attention); }
+.ds .din-fluxos { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); margin: 0 16px 12px; border-radius: 12px; box-shadow: inset 0 0 0 1px var(--ds-line-subtle); overflow: hidden; }
+.ds .din-fluxo { display: grid; gap: 4px; padding: 10px 12px; }
+.ds .din-fluxo + .din-fluxo { box-shadow: inset 1px 0 0 var(--ds-line-subtle); }
+.ds .din-fluxo p { display: flex; justify-content: space-between; gap: 8px; margin: 0; font-size: 12px; }
+.ds .din-fluxo b { font-weight: 450; }
+.ds .din-fluxo small { font-size: 11px; color: var(--ds-text-tertiary); }
+.ds .din-tetos-grade { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.ds .din-controle { min-width: 0; }
+.ds .din-origem .mp-mono { overflow-wrap: anywhere; }
+.ds .din-campo { flex-wrap: wrap; }
+.ds .din-campo input { flex: 1 1 140px; }
+.ds .adm-bloco > header .adm-fraco { font-size: 12px; text-align: right; }
