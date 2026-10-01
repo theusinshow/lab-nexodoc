@@ -16,7 +16,7 @@ export interface Tarefa {
 }
 
 export const TAREFAS: Tarefa[] = [
-  { id: "auditoria", nome: "Auditoria", estado: "14 achados", detalhe: "memorial geral, rev. A, hoje", acao: "Abrir o resultado", tom: "aviso" },
+  { id: "auditoria", nome: "Auditoria", estado: "6 abertos", detalhe: "9 achados no memorial geral, rev. A, hoje", acao: "Abrir o resultado", tom: "aviso" },
   { id: "ld", nome: "Lista de documentos", estado: "2 tomos", detalhe: "33 folhas, gerada em 29/09", acao: "Ver no mapa" },
   { id: "capas", nome: "Capas", estado: "2 capas", detalhe: "Criciúma, gerada em 29/09", acao: "Ver no mapa" },
   { id: "volume", nome: "Volume", estado: "não montado", detalhe: "412 páginas prontas para juntar", acao: "Montar volume" },
@@ -35,7 +35,7 @@ export interface Item {
 }
 
 export const DOCUMENTOS: Item[] = [
-  { id: "d1", nome: "117_25_md_geral_a.pdf", tipo: "Memorial geral", situacao: "auditado, 14 achados", tom: "aviso", quando: "hoje, 17:42", quem: "Victor" },
+  { id: "d1", nome: "117_25_md_geral_a.pdf", tipo: "Memorial geral", situacao: "auditado, 9 achados", tom: "aviso", quando: "hoje, 21:08", quem: "Victor" },
   { id: "d2", nome: "117_25_md_hid_a.pdf", tipo: "Memorial hidrossanitário", situacao: "auditado, 4 achados", quando: "22/09", quem: "Carla" },
   { id: "d3", nome: "117_25_md_ele_a.pdf", tipo: "Memorial elétrico", situacao: "não auditado", tom: "critico", quando: "22/09", quem: "Carla" },
   { id: "d4", nome: "117_25_md_est_a.pdf", tipo: "Memorial estrutural", situacao: "auditado, sem achados", quando: "20/09", quem: "Victor" },
@@ -43,7 +43,7 @@ export const DOCUMENTOS: Item[] = [
 ];
 
 export const ARQUIVOS: Item[] = [
-  { id: "a1", nome: "117_25_md_geral_a.pdf", tipo: "PDF", tamanho: "4,2 MB", origem: "conversa", quando: "hoje, 17:38", quem: "Victor" },
+  { id: "a1", nome: "117_25_md_geral_a.pdf", tipo: "PDF", tamanho: "4,2 MB", origem: "conversa", quando: "hoje, 21:07", quem: "Victor" },
   { id: "a2", nome: "117_25_ARQ_rev-B.pdf", tipo: "PDF", tamanho: "38 MB", origem: "conversa", quando: "27/09", quem: "Victor" },
   { id: "a3", nome: "117_25_EST_rev-A.pdf", tipo: "PDF", tamanho: "21 MB", origem: "conversa", quando: "27/09", quem: "Victor" },
   { id: "a4", nome: "117_25_HID_rev-A.pdf", tipo: "PDF", tamanho: "12 MB", origem: "conversa", quando: "27/09", quem: "Victor" },
@@ -55,7 +55,7 @@ export const ARQUIVOS: Item[] = [
 ];
 
 export const GERADOS: Item[] = [
-  { id: "g1", nome: "Parecer_117-25_md-geral_rev-A.pdf", tipo: "Parecer", situacao: "14 achados", quando: "hoje, 17:44", quem: "Nexo" },
+  { id: "g1", nome: "Parecer_117-25_md-geral_rev-A.pdf", tipo: "Parecer", situacao: "9 achados", quando: "hoje, 21:13", quem: "Nexo" },
   { id: "g2", nome: "LD_117-25_TOMO-01.pdf", tipo: "Lista de documentos", situacao: "20 folhas", quando: "29/09", quem: "Nexo" },
   { id: "g3", nome: "LD_117-25_TOMO-02.pdf", tipo: "Lista de documentos", situacao: "13 folhas", quando: "29/09", quem: "Nexo" },
   { id: "g4", nome: "Capa_117-25_TOMO-01.pdf", tipo: "Capa", situacao: "Criciúma", quando: "29/09", quem: "Nexo" },
@@ -65,8 +65,8 @@ export const GERADOS: Item[] = [
 ];
 
 export const EVENTOS: Item[] = [
-  { id: "e1", nome: "Auditou o memorial geral, rev. A", tipo: "auditoria", situacao: "14 achados, 3 com você", tom: "aviso", quando: "hoje, 17:44", quem: "Victor" },
-  { id: "e2", nome: "Passou 2 achados de estrutura para Carla", tipo: "achado", quando: "hoje, 17:50", quem: "Victor" },
+  { id: "e1", nome: "Auditou o memorial geral, rev. A", tipo: "auditoria", situacao: "9 achados, 2 com você", tom: "aviso", quando: "hoje, 21:13", quem: "Victor" },
+  { id: "e2", nome: "Passou a área coberta para Rafael e a grafia para Jéssica", tipo: "achado", quando: "hoje, 21:21", quem: "Victor" },
   { id: "e3", nome: "Gerou LD, capa e separatrizes dos 2 tomos", tipo: "geração", quando: "29/09, 11:20", quem: "Victor" },
   { id: "e4", nome: "Corrigiu o título da HID-04 à mão", tipo: "folha", quando: "29/09, 11:02", quem: "Victor" },
   { id: "e5", nome: "Leu os selos de 33 pranchas", tipo: "leitura", quando: "27/09, 16:30", quem: "Nexo" },

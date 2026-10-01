@@ -35,12 +35,11 @@ export const COM_VOCE: Parecer[] = [
     obra: "Unidade Básica de Saúde da Rua São Francisco de Assis",
     titulo: "Memorial geral, rev. A",
     pessoa: "Nexo, na sua auditoria",
-    desde: "hoje, 17:44",
+    desde: "hoje, 21:13",
     dias: 0,
     achados: [
       { id: "ACH-001", impacto: "block", disc: "geral", titulo: "Revisão B no carimbo, revisão A na capa", pagina: 1 },
-      { id: "ACH-002", impacto: "block", disc: "estrutural", titulo: "Volume de concreto diverge entre memorial e quadro", pagina: 18 },
-      { id: "ACH-006", impacto: "note", disc: "geral", titulo: "Numeração de capítulos pula do 6 para o 8", pagina: 27 },
+      { id: "ACH-002", impacto: "block", disc: "geral", titulo: "O memorial cita a prancha ARQ-07, que não está na lista de documentos", pagina: 6 },
     ],
   },
   {
@@ -48,29 +47,18 @@ export const COM_VOCE: Parecer[] = [
     codigo: "SIM047-26",
     cliente: "Prefeitura Municipal de Criciúma",
     obra: "Quadra poliesportiva coberta do CAIC",
-    titulo: "Memorial de cálculo estrutural, rev. B",
+    titulo: "Memorial descritivo, rev. B",
     pessoa: "Carla",
     desde: "26/09",
     dias: 5,
     achados: [
-      { id: "ACH-011", impacto: "decide", disc: "estrutural", titulo: "Vento calculado pela NBR 6123 sem o fator S3 da cobertura", pagina: 9 },
-      { id: "ACH-014", impacto: "block", disc: "estrutural", titulo: "Carga da cobertura metálica diverge entre memória e prancha EST-04", pagina: 22 },
+      { id: "ACH-002", impacto: "block", disc: "arquitetura", titulo: "Rampa de acesso com 12% de inclinação; a NBR 9050 pede até 8,33%", pagina: 7 },
+      { id: "ACH-007", impacto: "decide", disc: "arquitetura", titulo: "Memorial cita 4 vestiários, a planta mostra 3", pagina: 12 },
     ],
   },
 ];
 
 export const QUE_VOCE_PASSOU: Parecer[] = [
-  {
-    id: "p1",
-    codigo: "117-25",
-    cliente: "Prefeitura Municipal de Criciúma",
-    obra: "Unidade Básica de Saúde da Rua São Francisco de Assis",
-    titulo: "Memorial geral, rev. A",
-    pessoa: "Carla",
-    desde: "hoje, 17:50",
-    dias: 0,
-    achados: [{ id: "ACH-004", impacto: "decide", disc: "hidrossanitario", titulo: "NBR 5626 citada na edição de 1998; a vigente é de 2020", pagina: 31 }],
-  },
   {
     id: "p2",
     codigo: "117-25",
@@ -78,9 +66,9 @@ export const QUE_VOCE_PASSOU: Parecer[] = [
     obra: "Unidade Básica de Saúde da Rua São Francisco de Assis",
     titulo: "Memorial geral, rev. A",
     pessoa: "Rafael",
-    desde: "hoje, 17:50",
+    desde: "hoje, 21:20",
     dias: 0,
-    achados: [{ id: "ACH-003", impacto: "decide", disc: "arquitetura", titulo: "Área coberta de 1.240 m² no texto, 1.180 m² no quadro", pagina: 6 }],
+    achados: [{ id: "ACH-003", impacto: "decide", disc: "arquitetura", titulo: "Área coberta de 1.240 m² no texto, 1.180 m² no quadro", pagina: 9 }],
   },
   {
     id: "p3",
@@ -89,9 +77,9 @@ export const QUE_VOCE_PASSOU: Parecer[] = [
     obra: "Unidade Básica de Saúde da Rua São Francisco de Assis",
     titulo: "Memorial geral, rev. A",
     pessoa: "Jéssica",
-    desde: "hoje, 17:51",
+    desde: "hoje, 21:21",
     dias: 0,
-    achados: [{ id: "ACH-008", impacto: "texto", disc: "geral", titulo: "Município grafado “Criciuma”, sem acento", pagina: 2 }],
+    achados: [{ id: "ACH-008", impacto: "texto", disc: "geral", titulo: "Município grafado “Criciuma”, sem acento", pagina: 31 }],
   },
   {
     id: "p4",

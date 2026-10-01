@@ -69,8 +69,8 @@ function Agora() {
       <ul className="mp-lista mp-lista--docs pr-agora">
         <li>
           <span className="mp-lista-texto">
-            <b>3 achados esperam por você</b>
-            <span>Memorial geral, rev. A: 2 impedem a entrega.</span>
+            <b>2 achados esperam por você</b>
+            <span>Memorial geral, rev. A: os 2 impedem a entrega.</span>
           </span>
           <button type="button" className="mp-lista-ver" onClick={() => ir("resultado", "fila")}>
             Abrir

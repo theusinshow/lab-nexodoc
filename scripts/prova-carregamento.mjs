@@ -3,7 +3,7 @@ import { chromium } from "playwright";
 
 const S = process.argv[2];
 const BASE = "http://localhost:3200/prototipo";
-const TELAS = ["Início", "Projetos", "Projeto (uma obra)", "Achados", "Resultado da auditoria", "Auditoria rodando", "Administração", "Ajuda", "Mapa do volume", "Montar o volume", "Conversa com o Nexo"];
+const TELAS = ["Painel", "Projetos", "Projeto (uma obra)", "Achados", "Resultado da auditoria", "Auditoria rodando", "Administração", "Ajuda", "Mapa do volume", "Montar o volume", "Conversa com o Nexo"];
 const b = await chromium.launch();
 const p = await b.newPage({ viewport: { width: 1440, height: 900 } });
 const erros = [];

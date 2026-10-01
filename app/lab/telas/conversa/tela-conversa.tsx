@@ -156,9 +156,9 @@ function Fio({ situacao }: { situacao: SituacaoConversa }): ReactNode {
         <>
           <DeVoce arquivos={MEMORIAL} texto="audita esse memorial, é o da UBS" />
           <DoNexo atraso={0.3}>
-            <Passo texto="Auditei o memorial geral, revisão A, em 4 min 12 s" />
+            <Passo texto="Auditei o memorial geral, revisão A, em 4 min 21 s" />
             <p className="cx-texto">
-              <b>14 achados.</b> 3 impedem a entrega, 6 pedem uma decisão sua e 5 são de texto. O mais sério é a NBR 5626 citada na edição de 1998, no capítulo 6.
+              <b>9 achados.</b> 2 impedem a entrega, 3 pedem decisão técnica e 4 são de texto. O mais sério é a capa em revisão A com o carimbo em revisão B, na página 1.
             </p>
             <Saidas itens={[{ texto: "Abrir o resultado", principal: true }, { texto: "Perguntar sobre um achado" }, { texto: "Auditar de novo (nova rodada)" }]} />
           </DoNexo>

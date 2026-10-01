@@ -20,16 +20,18 @@ import { ResumoDoEscritorio } from "./resumo-do-escritorio";
 export type SituacaoD2 = "padrao" | "buscando" | "tarefa-escolhida" | "arquivo-recebido" | "arrastando" | "nada-com-voce" | "primeiro-acesso";
 
 const CONTINUAR = [
-  { obra: "117-25", cidade: "Criciúma", trabalho: "Auditoria do memorial geral", estado: "2 bloqueios para corrigir", tom: "block", quando: "há 4 h" },
+  { obra: "117-25", cidade: "Criciúma", trabalho: "Auditoria do memorial geral", estado: "2 bloqueios para corrigir", tom: "block", quando: "há 30 min" },
   { obra: "SIM099-26", cidade: "São José", trabalho: "Volume da Praça da Juventude", estado: "montado, falta exportar", tom: "decide", quando: "ontem" },
   { obra: "SIM118-25", cidade: "Criciúma", trabalho: "LD e capa do Ginásio", estado: "gerados", tom: "ok", quando: "21/09" },
   { obra: "063-26", cidade: "Tubarão", trabalho: "Auditoria da Cancha de Bocha", estado: "1 bloqueio", tom: "block", quando: "18/09" },
 ] as const;
 
+// Os mesmos da tela Achados e do sino: a 117-25 (sua auditoria) e o memorial da SIM047-26 (da Carla).
 const COM_VOCE = [
-  { titulo: "Volumes divergentes entre memorial e quadro", obra: "117-25", grav: "block", pagina: 14, de: "Victor" },
   { titulo: "Revisão B no carimbo, revisão A na capa", obra: "117-25", grav: "block", pagina: 1, de: "Victor" },
-  { titulo: "Área coberta de 1.240 m² no texto, 1.180 m² no quadro", obra: "SIM047-26", grav: "decide", pagina: 9, de: "Rafael" },
+  { titulo: "O memorial cita a prancha ARQ-07, que não está na lista de documentos", obra: "117-25", grav: "block", pagina: 6, de: "Victor" },
+  { titulo: "Rampa de acesso com 12% de inclinação; a NBR 9050 pede até 8,33%", obra: "SIM047-26", grav: "block", pagina: 7, de: "Carla" },
+  { titulo: "Memorial cita 4 vestiários, a planta mostra 3", obra: "SIM047-26", grav: "decide", pagina: 12, de: "Carla" },
 ] as const;
 
 /** O que a tarefa precisa, curto o bastante para caber inteiro na fileira. */

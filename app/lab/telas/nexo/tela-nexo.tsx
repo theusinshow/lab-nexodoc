@@ -52,7 +52,7 @@ function Conversas() {
       aberta: true,
       conversas: [
         { titulo: "Montar o volume", tipo: "montagem", quando: "18:02", ativa: true },
-        { titulo: "Auditar o memorial geral", tipo: "auditoria", quando: "17:44" },
+        { titulo: "Auditar o memorial geral", tipo: "auditoria", quando: "21:08" },
         { titulo: "LD, capa e separatrizes", tipo: "montagem", quando: "29/09" },
       ],
     },

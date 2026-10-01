@@ -50,7 +50,7 @@ type Tela = { nome: string; grupo: string; situacoes: Situacao[]; render: (s: st
 // Os componentes recebem a situação tipada; aqui ela já veio de uma das listas.
 const TELAS: Record<IdTela, Tela> = {
   entrada: { nome: "Entrada", grupo: "Entrar", situacoes: S_ENTRADA, render: (s) => <TelaEntrada situacao={s as any} /> },
-  inicio: { nome: "Início", grupo: "Trabalhar", situacoes: S_INICIO, render: (s) => <TelaInicioD2 situacao={s as any} /> },
+  inicio: { nome: "Painel", grupo: "Trabalhar", situacoes: S_INICIO, render: (s) => <TelaInicioD2 situacao={s as any} /> },
   conversa: { nome: "Conversa com o Nexo", grupo: "Trabalhar", situacoes: S_CONVERSA, render: (s) => <TelaConversa situacao={s as any} /> },
   nexo: { nome: "Montar o volume", grupo: "Trabalhar", situacoes: S_NEXO, render: (s) => <TelaNexo situacao={s as any} /> },
   mapa: { nome: "Mapa do volume", grupo: "Trabalhar", situacoes: S_MAPA, render: (s) => <TelaMapa situacao={s as any} /> },

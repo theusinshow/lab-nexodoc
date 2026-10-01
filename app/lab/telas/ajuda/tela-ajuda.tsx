@@ -7,6 +7,7 @@ import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { Botao, Tecla } from "@/components/ds/basicos";
 import { useTempo } from "@/lib/ds/tempo";
 
+import { useIr, type IdTela } from "../_comum/prototipo";
 import { Topo } from "../_comum/topo";
 import { RITMO, SUAVE } from "../conversa/turnos";
 import { achaLugar, achaPalavra, achaTarefa, HIERARQUIA, LUGARES, PALAVRAS, semAcento, TAREFAS, type Lugar, type Palavra, type Tarefa } from "./dados";
@@ -81,7 +82,11 @@ function OPrincipal({ onAbrir }: { onAbrir: (id: string) => void }) {
   );
 }
 
+/** Onde cada tarefa começa, no protótipo. */
+const COMECA_EM: Record<string, [IdTela, string?]> = { Painel: ["inicio"], Resultado: ["resultado", "nao-emitir"], Nexo: ["nexo"] };
+
 function DaTarefa({ t, onPalavra }: { t: Tarefa; onPalavra: (id: string) => void }) {
+  const ir = useIr();
   return (
     <div className="mp-lado-bloco">
       <div className="aj-cabeca">
@@ -108,7 +113,7 @@ function DaTarefa({ t, onPalavra }: { t: Tarefa; onPalavra: (id: string) => void
         ))}
       </ol>
       <div className="aj-pe">
-        <Botao variante="primary" tamanho="sm">
+        <Botao variante="primary" tamanho="sm" onClick={() => COMECA_EM[t.comeca] && ir(...COMECA_EM[t.comeca])}>
           {t.ir} <Tecla>↵</Tecla>
         </Botao>
       </div>

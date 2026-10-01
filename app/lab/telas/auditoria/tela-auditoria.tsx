@@ -54,7 +54,7 @@ const BLOCOS = [
 const paginasDe = (b: (typeof BLOCOS)[number]) => Array.from({ length: b.ate - b.de + 1 }, (_, i) => b.de + i);
 
 /** Pontos marcados por página (42 páginas) — onde os problemas se juntam. */
-const PONTOS = [1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 2, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 2, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+const PONTOS = [1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 2, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 
 /**
  * Os achados até agora por NÍVEL (as faixas de impacto do parecer) e, dentro
@@ -68,7 +68,6 @@ const NIVEIS: GrupoDoMapa[] = [
     tom: "block",
     itens: [
       { id: "identidade", rotulo: "Identidade / documental", valor: 2 },
-      { id: "quantitativo", rotulo: "Quantitativo", valor: 2 },
     ],
   },
   {
@@ -78,11 +77,12 @@ const NIVEIS: GrupoDoMapa[] = [
     itens: [
       { id: "norma", rotulo: "Norma", valor: 1 },
       { id: "especificacao", rotulo: "Especificação", valor: 1 },
+      { id: "quantitativo", rotulo: "Quantitativo", valor: 1 },
       { id: "tecnico", rotulo: "Técnico", valor: 1 },
     ],
   },
-  { id: "note", rotulo: "Revisão de texto", tom: "note", itens: [{ id: "forma", rotulo: "Numeração e unidades", valor: 0 }] },
-  { id: "texto", rotulo: "Gramática", tom: "texto", itens: [{ id: "editorial", rotulo: "Redação e gramática", valor: 3, tom: "texto" }] },
+  { id: "note", rotulo: "Revisão de texto", tom: "note", itens: [{ id: "forma", rotulo: "Numeração e unidades", valor: 2 }] },
+  { id: "texto", rotulo: "Gramática", tom: "texto", itens: [{ id: "editorial", rotulo: "Redação e gramática", valor: 2, tom: "texto" }] },
 ];
 
 const REGISTRO = [
@@ -317,7 +317,7 @@ export function TelaAuditoria({ situacao }: { situacao: SituacaoAud }) {
               <div>
                 <AlertTriangle size={16} />
                 <span>
-                  <b>Cancelar a auditoria?</b> Ela para agora e não gera parecer. Para auditar depois, comece de novo pelo Início.
+                  <b>Cancelar a auditoria?</b> Ela para agora e não gera parecer. Para auditar depois, comece de novo pelo Painel.
                 </span>
                 <Botao variante="quiet" tamanho="sm" onClick={() => setConfirmar(false)}>
                   Continuar auditando
@@ -356,7 +356,7 @@ export function TelaAuditoria({ situacao }: { situacao: SituacaoAud }) {
               <span>Três tentativas no bloco 9, a última às 21:11:40. As três etapas anteriores terminaram e o que acharam está guardado.</span>
             </div>
             <Botao variante="ghost" tamanho="sm" onClick={() => ir("inicio")}>
-              Voltar ao início
+              Voltar ao painel
             </Botao>
             <Botao variante="primary" tamanho="sm" onClick={() => ir("auditoria", "em-curso")}>
               <RotateCcw />
@@ -501,7 +501,7 @@ export function TelaAuditoria({ situacao }: { situacao: SituacaoAud }) {
         {!concluida && !falhou && (
           <footer className="au-depois">
             <span className="au-depois-texto">
-              Pode fechar a aba: a auditoria continua no servidor e fica em Continuar, no Início. Quando terminar, o resultado abre aqui, com o
+              Pode fechar a aba: a auditoria continua no servidor e fica em Continuar, no Painel. Quando terminar, o resultado abre aqui, com o
               veredito e a fila de achados.
             </span>
             <label>
