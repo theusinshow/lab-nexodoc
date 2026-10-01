@@ -44,6 +44,21 @@
     "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, isso ai mesmo\" (rodada 1: trilho + Cockpit).",
     "em": "2026-10-01T05:03:41.145Z"
   },
+  "tela.admin.dinheiro": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus em 02/10: \"aprovado, vamos para o proximo\" (com os graficos de components/ds/medidas).",
+    "em": "2026-10-01T13:19:05.477Z"
+  },
+  "tela.admin.dinheiro-sem-cotacao": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus em 02/10: \"aprovado, vamos para o proximo\" (com os graficos de components/ds/medidas).",
+    "em": "2026-10-01T13:19:05.528Z"
+  },
+  "tela.admin.dinheiro-sem-preco": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus em 02/10: \"aprovado, vamos para o proximo\" (com os graficos de components/ds/medidas).",
+    "em": "2026-10-01T13:19:05.574Z"
+  },
   "tela.admin.erro": {
     "status": "aprovado",
     "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, isso ai mesmo\" (rodada 1: trilho + Cockpit).",
