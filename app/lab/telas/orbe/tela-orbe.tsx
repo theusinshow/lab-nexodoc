@@ -4,17 +4,16 @@ import { Canvas } from "@react-three/fiber";
 import { useEffect, useState } from "react";
 
 import { Botao, Tecla } from "@/components/ds/basicos";
-import { AgentOrbScene, type VidaDoOrbe } from "@/modules/nexo/components/agent-orb/AgentOrbScene";
+import { AgentOrbScene, VIDA_DE_ANTES, type VidaDoOrbe } from "@/modules/nexo/components/agent-orb/AgentOrbScene";
 import type { AgentState } from "@/modules/nexo/components/agent-orb/agent-orb.types";
 
 import "./orbe.css";
 
 /*
- * O ORBE, rodada 3 (01/10/2026): o de hoje, em íris e com expressão por
- * estado, ficou "murcho, sem vida". Quatro jeitos de dar vida ao MESMO orbe
- * (luz, corpo e movimento, iridescência, e os três juntos), ao lado do atual.
- * É o orbe real do app (AgentOrbScene); só muda a prop `vida`. Os controles
- * disparam os eventos que o app dispara: estado, progresso, arquivos, achado.
+ * O ORBE, rodada 4 (01/10/2026): o Matheus gostou de corpo e movimento, tirou
+ * o acréscimo de luz e perguntou se a cor deve ficar mudando. A proposta: não
+ * (a cor é sinal de estado). Aqui antes, o escolhido sem película (padrão) e
+ * com película, no orbe real do app (AgentOrbScene, prop `vida`).
  */
 
 const ESTADOS: { id: AgentState; nome: string; o_que_muda: string }[] = [
@@ -30,11 +29,9 @@ const ESTADOS: { id: AgentState; nome: string; o_que_muda: string }[] = [
 ];
 
 const VARIACOES: { id: string; nome: string; o_que: string; vida: Partial<VidaDoOrbe> }[] = [
-  { id: "atual", nome: "Atual", o_que: "A íris da rodada 2, para comparar.", vida: {} },
-  { id: "luz", nome: "Mais luz", o_que: "O vidro acende por dentro e a aura ilumina o fundo: vira fonte de luz.", vida: { luz: 1, aura: 1, vigor: 0.25 } },
-  { id: "corpo", nome: "Mais corpo e movimento", o_que: "Lâminas cheias até o centro, o pulso de cada estado aparece, respira e gira mais.", vida: { vigor: 1, respira: 1, giro: 1.8, aura: 0.35 } },
-  { id: "irid", nome: "Iridescente", o_que: "O aro e a alma andam de tom entre a íris e um azul-gelo, como película.", vida: { irid: 0.85, luz: 0.5, aura: 0.6, vigor: 0.35, iris2: "#8fdcff" } },
-  { id: "tudo", nome: "Tudo junto", o_que: "Luz, corpo e película juntos, em doses menores.", vida: { luz: 0.8, aura: 0.8, vigor: 0.8, irid: 0.55, respira: 0.7, giro: 1.5, iris2: "#8fdcff" } },
+  { id: "antes", nome: "Antes", o_que: "O orbe em íris, sem as regulagens de vida: o que estava murcho.", vida: VIDA_DE_ANTES },
+  { id: "fixa", nome: "Escolhido · sem mudar de cor", o_que: "Corpo e movimento, sem a luz. A cor só muda quando o estado tem algo a dizer (concluído, aguardando, erro). É o padrão agora.", vida: {} },
+  { id: "pelicula", nome: "Escolhido · com película", o_que: "O mesmo, com o tom andando entre a íris e o azul-gelo ao longo da volta.", vida: { irid: 0.55 } },
 ];
 
 function Palco({ estado, atividade, arquivos, achados, tam, vida }: { estado: AgentState; atividade: number; arquivos: number; achados: number; tam: number; vida: Partial<VidaDoOrbe> }) {

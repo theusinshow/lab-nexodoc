@@ -139,7 +139,7 @@ export const VIDRO_DO_ORBE: VidroDoOrbe = {
 
 /*
  * A VIDA DO ORBE (01/10/2026): o Matheus achou o orbe "murcho, sem vida". Seis
- * regulagens, todas em zero (giro em 1) reproduzindo o de antes:
+ * regulagens (em VIDA_DE_ANTES, todas em zero e giro em 1, é o orbe de antes):
  *  - luz: o vidro acende por dentro;
  *  - aura: a luz sai da esfera e acende o fundo;
  *  - vigor: lâminas cheias até o centro, e o pulso de cada estado aparece;
@@ -157,7 +157,16 @@ export interface VidaDoOrbe {
   giro: number;
 }
 
-export const VIDA_DO_ORBE: VidaDoOrbe = { luz: 0, aura: 0, vigor: 0, irid: 0, iris2: "#8fdcff", respira: 0, giro: 1 };
+/*
+ * O PADRÃO, escolhido em 01/10/2026: corpo e movimento, SEM o acréscimo de luz
+ * (o Matheus tirou a luz por dentro e a aura) e sem a cor andando sozinha — a
+ * cor do orbe só muda quando o estado tem algo a dizer (concluído, aguardando,
+ * erro). Luz, aura e iridescência continuam reguláveis por prop.
+ */
+export const VIDA_DO_ORBE: VidaDoOrbe = { luz: 0, aura: 0, vigor: 0.9, irid: 0, iris2: "#8fdcff", respira: 0.8, giro: 1.6 };
+
+/** O orbe de antes das regulagens de vida, para comparar no laboratório. */
+export const VIDA_DE_ANTES: VidaDoOrbe = { luz: 0, aura: 0, vigor: 0, irid: 0, iris2: "#8fdcff", respira: 0, giro: 1 };
 
 const BODY_COLOR = CORES_DO_ORBE.corpo;
 const RIM_COLOR = CORES_DO_ORBE.aro;
