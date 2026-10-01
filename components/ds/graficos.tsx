@@ -218,13 +218,12 @@ export function FaixaDeVeredito({
   valor?: ReactNode;
 }) {
   const { mola } = useTempo();
-  let inicio = 0;
   return (
     <div className="gr-faixa">
       <div className="gr-faixa-trilho">
-        {faixas.map((f) => {
-          const de = inicio;
-          inicio = f.ate;
+        {faixas.map((f, i) => {
+          // cada faixa começa onde a anterior terminou
+          const de = i === 0 ? 0 : faixas[i - 1].ate;
           const ativa = posicao >= de && posicao <= f.ate;
           return (
             <span key={f.rotulo} className={`gr-faixa-seg gr-faixa-seg--${f.tom}${ativa ? " gr-faixa-seg--ativa" : ""}`} style={{ left: `${de}%`, width: `${f.ate - de}%` }}>

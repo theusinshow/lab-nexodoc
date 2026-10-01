@@ -189,8 +189,12 @@ export function NumeroQueChega({ valor }: { valor: number }) {
   const { dur } = useTempo();
   // A duração vai por ref: `dur` é uma função nova a cada render, e como
   // dependência do efeito ela cancelava a contagem no primeiro quadro.
+  // Escrita num efeito (e não no corpo do render), antes do efeito que conta.
   const total = useRef(0);
-  total.current = dur("layout") * 2000;
+  const totalMs = dur("layout") * 2000;
+  useEffect(() => {
+    total.current = totalMs;
+  });
   useEffect(() => {
     const de = naTela.current;
     const ate = valor;
