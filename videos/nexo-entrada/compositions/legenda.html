@@ -16,12 +16,13 @@
         .veu.base { bottom: 0; height: 430px; background: linear-gradient(rgb(8 9 11 / 0) 0%, rgb(8 9 11 / 0.9) 45%, #08090b 100%); }
         .hud { position: absolute; left: 130px; right: 130px; top: 84px; display: flex; justify-content: space-between; align-items: flex-start; }
         .marca { display: flex; align-items: flex-start; gap: 14px; }
-        .orbe { position: relative; flex: none; width: 34px; height: 34px; margin-top: 3px; border-radius: 50%; overflow: hidden; box-shadow: 0 0 22px rgb(140 143 255 / 0.32); z-index: 5; }
-        /* o orbe no fim: provisório até o orbe completo existir (o do produto é GL) */
-        .aura { position: absolute; left: 720px; top: 470px; width: 1100px; height: 1100px; margin: -550px 0 0 -550px; border-radius: 50%; background: radial-gradient(closest-side, rgb(140 143 255 / 0.34), rgb(111 195 255 / 0.1) 45%, transparent 100%); }
+        .orbe { position: relative; flex: none; width: 34px; height: 34px; margin-top: 3px; border-radius: 50%; background: #08090b; box-shadow: 0 0 22px rgb(154 108 240 / 0.32); z-index: 5; }
+        /* O ORBE DE VERDADE: 48 quadros do AgentOrbScene (violeta → coral) capturados e fechados em laço
+           (assets/orbe-vivo.png, 8 × 6). Cada célula tem 8% de margem em volta da esfera: 34 / 0,84.
+           O fundo da página atrás do vidro: sem ele a aura atravessa o corpo e a esfera fica lilás. */
+        .aura { position: absolute; left: 720px; top: 470px; width: 1100px; height: 1100px; margin: -550px 0 0 -550px; border-radius: 50%; background: radial-gradient(closest-side, rgb(154 108 240 / 0.34), rgb(255 162 147 / 0.1) 45%, transparent 100%); }
         .nome { position: absolute; left: 0; right: 0; top: 664px; text-align: center; font-size: 46px; font-weight: 520; letter-spacing: -0.025em; }
-        .orbe-a { position: absolute; inset: 0; border-radius: 50%; background: radial-gradient(circle at 32% 28%, rgb(255 255 255 / 0.85) 0 4%, transparent 22%), conic-gradient(from 0deg, #8c8fff, #6fc3ff, #e8b7ff, #ffc98a, #9ea2ff, #8c8fff); }
-        .orbe-b { position: absolute; inset: 0; border-radius: 50%; background: radial-gradient(circle at 70% 78%, rgb(8 9 11 / 0.55), transparent 55%), radial-gradient(circle at 50% 50%, transparent 58%, rgb(255 255 255 / 0.18) 70%, transparent 72%); }
+        .orbe-a, .orbe-b { position: absolute; left: -3.24px; top: -3.24px; width: 40.48px; height: 40.48px; background: url("assets/orbe-vivo.png") 0 0 / 323.84px 242.88px no-repeat; }
         .marca-txt b { display: block; font-family: "Geist Mono", monospace; font-size: 22px; font-weight: 500; letter-spacing: -0.01em; line-height: 1; }
         .marca-txt i { display: block; margin-top: 7px; font-style: normal; font-family: "Geist Mono", monospace; font-size: 16px; color: #a4a8b3; }
         .parecer { width: 520px; }
@@ -102,8 +103,6 @@
           gsap.set(".tipo .w", { yPercent: 115 });
           gsap.set(".legenda", { opacity: 0 });
 
-          tl.fromTo("#orbeA", { rotation: 0 }, { rotation: 360, duration: D, ease: "none" }, 0);
-          tl.fromTo("#orbeB", { rotation: 0 }, { rotation: -360, duration: D, ease: "none" }, 0);
 
           const entra = (sel, t) => tl.fromTo(`${sel} .w`, { yPercent: 115 }, { yPercent: 0, duration: 0.62, ease: "power3.out", stagger: 0.07, immediateRender: false }, t);
           const sai = (sel, t) => tl.to(`${sel} .w`, { yPercent: -115, duration: 0.36, ease: "power3.in", stagger: 0.035 }, t);
@@ -155,7 +154,7 @@
           const ALVO = { x: 720 - 147, y: 470 - 104, s: 9 };
           tl.to("#marcaTxt", { opacity: 0, x: -10, duration: 0.35, ease: "power2.in" }, 13.35);
           tl.to("#orbe", { x: ALVO.x, y: ALVO.y, scale: ALVO.s, duration: 1.25, ease: "power3.inOut" }, 13.45);
-          tl.to("#orbe", { boxShadow: "0 0 26px rgb(140 143 255 / 0.55)", duration: 1.25 }, 13.45);
+          tl.to("#orbe", { boxShadow: "0 0 26px rgb(154 108 240 / 0.55)", duration: 1.25 }, 13.45);
           tl.to("#aura", { opacity: 1, scale: 1, duration: 1.4, ease: "power2.out" }, 13.9);
           // fora da janela dele o nome não existe na cena (escondido na máscara, ainda contaria contraste)
           gsap.set("#nome", { opacity: 0 });
@@ -166,15 +165,24 @@
           tl.to("#orbe", { scale: ALVO.s * 1.035, duration: 1.6, ease: "sine.inOut", yoyo: true, repeat: 1 }, 14.9);
           sai("#nome", 18.2);
           tl.to("#aura", { opacity: 0, scale: 0.7, duration: 0.9, ease: "power2.in" }, 18.25);
-          tl.to("#orbe", { x: 0, y: 0, scale: 1, boxShadow: "0 0 22px rgb(140 143 255 / 0.32)", duration: 1.2, ease: "power3.inOut" }, 18.35);
+          tl.to("#orbe", { x: 0, y: 0, scale: 1, boxShadow: "0 0 22px rgb(154 108 240 / 0.32)", duration: 1.2, ease: "power3.inOut" }, 18.35);
           tl.fromTo("#marcaTxt", { opacity: 0, x: -10 }, { opacity: 1, x: 0, duration: 0.45, ease: "power2.out", immediateRender: false }, 19.1);
 
           /* textos de estado: função do tempo e do losango */
           const ESTADOS = [["liberado", "#7bd8a5"], ["com ressalvas", "#d9c27a"], ["revisar", "#f0b45c"], ["não emitir", "#ff7d6e"]];
           const losango = document.getElementById("losango"), estado = document.getElementById("estado");
           const r1niv = document.getElementById("r1niv"), r2niv = document.getElementById("r2niv");
+          /* o orbe vive: 4 voltas do laço de 48 quadros em 20 s, com fusão entre um quadro e o próximo
+             (a captura é a 9,6 quadros por segundo; trocar seco daria degrau) */
+          const orbeA = document.getElementById("orbeA"), orbeB = document.getElementById("orbeB");
+          const CEL = 40.48, NQ = 48;
+          const quadro = (el, i) => { el.style.backgroundPosition = `${-(i % 8) * CEL}px ${-Math.floor(i / 8) * CEL}px`; };
           const escrever = () => {
             const t = tl.time();
+            const f = ((t / D) * 4 * NQ) % NQ;
+            quadro(orbeA, Math.floor(f));
+            quadro(orbeB, (Math.floor(f) + 1) % NQ);
+            orbeB.style.opacity = String(f - Math.floor(f));
             if (Number(gsap.getProperty(losango, "opacity")) < 0.05) { estado.textContent = "—"; estado.style.color = "#a4a8b3"; }
             else if (t < 7.6) { estado.textContent = "auditando"; estado.style.color = "#a3a6ff"; }
             else {

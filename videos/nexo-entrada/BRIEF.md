@@ -29,7 +29,8 @@ a faixa do parecer, a fileira do volume com as setas aprovadas, o orbe, Geist, d
   diz as duas funções ("Audita o memorial. Monta o volume.") sobre a fileira e o parecer.
 - 13,35–17,7 s: O ORBE (pedido do Matheus, 01/10): o orbe do HUD sai do canto, cresce no centro
   com "Nexo" embaixo e respira, sozinho no escuro. PROVISÓRIO: o orbe completo ainda vai ser montado
-  (o do produto é GL); este é o conic-gradient do HUD ampliado.
+  (o do produto é GL). ATUALIZADO 01/10: agora é o orbe real (AgentOrbScene, violeta → coral) em
+  48 quadros capturados e fechados em laço (assets/orbe-vivo.png), não mais o conic-gradient.
 - 17,7–20 s: atrás do orbe, a câmera mergulha de volta na p. 14; o orbe volta ao canto: o último
   quadro é o primeiro.
 - SEM FUNDO PONTILHADO (Matheus não gostou): escuro, halo e vinheta. Véus no topo e na base
