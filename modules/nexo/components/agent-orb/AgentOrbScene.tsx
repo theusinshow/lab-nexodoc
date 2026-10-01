@@ -22,6 +22,7 @@ import {
   surfaceFragmentShader,
   coreVertexShader,
   coreFragmentShader,
+  auraFragmentShader,
 } from "./agent-orb.shaders";
 import {
   paramsForState,
@@ -136,6 +137,28 @@ export const VIDRO_DO_ORBE: VidroDoOrbe = {
   translucidez: 0.55,
 };
 
+/*
+ * A VIDA DO ORBE (01/10/2026): o Matheus achou o orbe "murcho, sem vida". Seis
+ * regulagens, todas em zero (giro em 1) reproduzindo o de antes:
+ *  - luz: o vidro acende por dentro;
+ *  - aura: a luz sai da esfera e acende o fundo;
+ *  - vigor: lâminas cheias até o centro, e o pulso de cada estado aparece;
+ *  - irid: aro e alma andam de tom entre a íris e `iris2`, como película;
+ *  - respira: a escala pulsa de leve, junto com a respiração;
+ *  - giro: multiplica a velocidade de giro do vidro.
+ */
+export interface VidaDoOrbe {
+  luz: number;
+  aura: number;
+  vigor: number;
+  irid: number;
+  iris2: string;
+  respira: number;
+  giro: number;
+}
+
+export const VIDA_DO_ORBE: VidaDoOrbe = { luz: 0, aura: 0, vigor: 0, irid: 0, iris2: "#8fdcff", respira: 0, giro: 1 };
+
 const BODY_COLOR = CORES_DO_ORBE.corpo;
 const RIM_COLOR = CORES_DO_ORBE.aro;
 const SOUL_TEAL = CORES_DO_ORBE.almaProfunda;
@@ -181,6 +204,9 @@ const OrbSurfaceMaterial = shaderMaterial(
     uBrilho: VIDRO_DO_ORBE.brilho,
     uEspessura: VIDRO_DO_ORBE.espessura,
     uTranslucidez: VIDRO_DO_ORBE.translucidez,
+    uLuz: 0,
+    uIrid: 0,
+    uIris2: new THREE.Color(VIDA_DO_ORBE.iris2),
   },
   surfaceVertexShader,
   surfaceFragmentShader,
@@ -198,16 +224,24 @@ const OrbCoreMaterial = shaderMaterial(
     uColorC: new THREE.Color(SOUL_TEAL_BRIGHT),
     uColorD: new THREE.Color(SOUL_TEAL_LIGHT),
     uOndaDaAlma: VIDRO_DO_ORBE.ondaDaAlma,
+    uVigor: 0,
+    uIrid: 0,
+    uIris2: new THREE.Color(VIDA_DO_ORBE.iris2),
   },
   coreVertexShader,
   coreFragmentShader,
 );
 extend({ OrbCoreMaterial });
 
+// A aura: luz que sai da esfera (plano atrás de tudo, aditivo).
+const OrbAuraMaterial = shaderMaterial({ uCor: new THREE.Color(RIM_COLOR), uForca: 0 }, coreVertexShader, auraFragmentShader);
+extend({ OrbAuraMaterial });
+
 declare module "@react-three/fiber" {
   interface ThreeElements {
     orbSurfaceMaterial: ThreeElement<typeof OrbSurfaceMaterial>;
     orbCoreMaterial: ThreeElement<typeof OrbCoreMaterial>;
+    orbAuraMaterial: ThreeElement<typeof OrbAuraMaterial>;
   }
 }
 
@@ -224,6 +258,7 @@ export function AgentOrbScene({
   ajuste,
   expressao = "nova",
   achados = 0,
+  vida,
 }: {
   state: AgentState;
   activity: number;
@@ -252,6 +287,8 @@ export function AgentOrbScene({
   expressao?: "hoje" | "nova";
   /** Achados encontrados até agora: cada um a mais dispara um anel âmbar (auditando). */
   achados?: number;
+  /** As regulagens de vida (ver VIDA_DO_ORBE); ausentes, o orbe é o de antes. */
+  vida?: Partial<VidaDoOrbe>;
 }) {
   const outerRef = useRef<THREE.Group>(null); // escala (hover + drag + press)
   const tiltRef = useRef<THREE.Group>(null); // inclinação que segue o ponteiro
@@ -299,6 +336,9 @@ export function AgentOrbScene({
   const achadosAntes = useRef(achados);
   const corDoPulso = useRef(new THREE.Color("#a3a6ff"));
   const ondaRef = useRef(0);
+  const auraRef = useRef<THREE.ShaderMaterial>(null);
+  const vidaCur = useRef({ luz: 0, aura: 0, vigor: 0, irid: 0, respira: 0, giro: 1 });
+  const vidaAlvo = { ...VIDA_DO_ORBE, ...vida };
 
   useEffect(() => {
     target.current = { ...paramsForState(state, activity), ...(nova ? AJUSTE_NOVO[state] : undefined), ...ajuste };
@@ -546,6 +586,26 @@ export function AgentOrbScene({
     ondaRef.current = d(ondaRef.current, nova && state === "analyzing" ? 0.09 : 0, 4);
     cu.uOndaDaAlma.value = { ...VIDRO_DO_ORBE, ...vidro }.ondaDaAlma + ondaRef.current;
 
+    /* A VIDA: cada regulagem caminha até o alvo; o tom da película vem da prop. */
+    const v = vidaCur.current;
+    v.luz = d(v.luz, vidaAlvo.luz, 4);
+    v.aura = d(v.aura, vidaAlvo.aura, 4);
+    v.vigor = d(v.vigor, vidaAlvo.vigor, 4);
+    v.irid = d(v.irid, vidaAlvo.irid, 4);
+    v.respira = d(v.respira, vidaAlvo.respira, 4);
+    v.giro = d(v.giro, vidaAlvo.giro, 4);
+    su.uLuz.value = v.luz * (0.85 + 0.15 * breath);
+    su.uIrid.value = v.irid;
+    su.uIris2.value.set(vidaAlvo.iris2);
+    cu.uVigor.value = v.vigor;
+    cu.uIrid.value = v.irid;
+    cu.uIris2.value.set(vidaAlvo.iris2);
+    if (auraRef.current) {
+      // a aura respira com o pulso do estado: é por ela que o fundo "sente" o orbe
+      auraRef.current.uniforms.uForca.value = v.aura * (0.7 + 0.45 * c.pulse * breath) * boot;
+      auraRef.current.uniforms.uCor.value.copy(su.uRimColor.value);
+    }
+
     /* COR DE SINAL: concluído, aguardando e erro puxam aro e alma para o sinal. */
     if (nova) {
       const sinal = SINAL_DO_ESTADO[state];
@@ -608,7 +668,8 @@ export function AgentOrbScene({
       outerRef.current.scale.setScalar(
         d(
           outerRef.current.scale.x,
-          1 + h * 0.03 + dragRef.current * (nova ? 0.085 : 0.05) - pressRef.current * 0.045 + trocaRef.current * 0.03,
+          1 + h * 0.03 + dragRef.current * (nova ? 0.085 : 0.05) - pressRef.current * 0.045 + trocaRef.current * 0.03 +
+            vidaCur.current.respira * 0.035 * (breath - 0.85) / 0.15,
           10,
         ),
       );
@@ -617,7 +678,7 @@ export function AgentOrbScene({
     trocaRef.current = d(trocaRef.current, 0, 7);
     if (spinRef.current && !reduced) {
       // O giro nasce alto e assenta no alvo — volante grande parando.
-      spinRef.current.rotation.y += dt * c.spin * (1 + (1 - boot) * 3);
+      spinRef.current.rotation.y += dt * c.spin * (1 + (1 - boot) * 3) * vidaCur.current.giro;
     }
 
     /*
@@ -722,6 +783,11 @@ export function AgentOrbScene({
 
   return (
     <group ref={outerRef}>
+      {/* AURA — a luz que sai da esfera; atrás de tudo, não inclina com o ponteiro. */}
+      <mesh renderOrder={-2} position={[0, 0, -0.6]}>
+        <planeGeometry args={[3.4, 3.4]} />
+        <orbAuraMaterial ref={auraRef} key={OrbAuraMaterial.key} transparent depthWrite={false} blending={THREE.AdditiveBlending} />
+      </mesh>
       {/* A inclinação em direção ao ponteiro envolve o corpo (alma + vidro), mas
           NÃO os anéis: eles são sinais de estado e devem ficar de frente. */}
       <group ref={tiltRef}>

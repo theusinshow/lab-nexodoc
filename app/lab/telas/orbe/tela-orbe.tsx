@@ -4,17 +4,17 @@ import { Canvas } from "@react-three/fiber";
 import { useEffect, useState } from "react";
 
 import { Botao, Tecla } from "@/components/ds/basicos";
-import { AgentOrbScene } from "@/modules/nexo/components/agent-orb/AgentOrbScene";
+import { AgentOrbScene, type VidaDoOrbe } from "@/modules/nexo/components/agent-orb/AgentOrbScene";
 import type { AgentState } from "@/modules/nexo/components/agent-orb/agent-orb.types";
 
 import "./orbe.css";
 
 /*
- * O ORBE, rodada 2 (01/10/2026): o Matheus preferiu manter o orbe de hoje,
- * trocar as cores e melhorar as animações. Aqui os dois lado a lado, com o
- * orbe REAL do app (AgentOrbScene): à esquerda como está em produção (teal), à
- * direita íris com a expressão nova. Os controles disparam os mesmos eventos
- * que o app dispara: estado, progresso, arquivos no contexto, achado.
+ * O ORBE, rodada 3 (01/10/2026): o de hoje, em íris e com expressão por
+ * estado, ficou "murcho, sem vida". Quatro jeitos de dar vida ao MESMO orbe
+ * (luz, corpo e movimento, iridescência, e os três juntos), ao lado do atual.
+ * É o orbe real do app (AgentOrbScene); só muda a prop `vida`. Os controles
+ * disparam os eventos que o app dispara: estado, progresso, arquivos, achado.
  */
 
 const ESTADOS: { id: AgentState; nome: string; o_que_muda: string }[] = [
@@ -29,11 +29,19 @@ const ESTADOS: { id: AgentState; nome: string; o_que_muda: string }[] = [
   { id: "error", nome: "Erro", o_que_muda: "Para de girar, aro coral e o batimento de erro." },
 ];
 
-function Palco({ expressao, estado, atividade, arquivos, achados, tam }: { expressao: "hoje" | "nova"; estado: AgentState; atividade: number; arquivos: number; achados: number; tam: number }) {
+const VARIACOES: { id: string; nome: string; o_que: string; vida: Partial<VidaDoOrbe> }[] = [
+  { id: "atual", nome: "Atual", o_que: "A íris da rodada 2, para comparar.", vida: {} },
+  { id: "luz", nome: "Mais luz", o_que: "O vidro acende por dentro e a aura ilumina o fundo: vira fonte de luz.", vida: { luz: 1, aura: 1, vigor: 0.25 } },
+  { id: "corpo", nome: "Mais corpo e movimento", o_que: "Lâminas cheias até o centro, o pulso de cada estado aparece, respira e gira mais.", vida: { vigor: 1, respira: 1, giro: 1.8, aura: 0.35 } },
+  { id: "irid", nome: "Iridescente", o_que: "O aro e a alma andam de tom entre a íris e um azul-gelo, como película.", vida: { irid: 0.85, luz: 0.5, aura: 0.6, vigor: 0.35, iris2: "#8fdcff" } },
+  { id: "tudo", nome: "Tudo junto", o_que: "Luz, corpo e película juntos, em doses menores.", vida: { luz: 0.8, aura: 0.8, vigor: 0.8, irid: 0.55, respira: 0.7, giro: 1.5, iris2: "#8fdcff" } },
+];
+
+function Palco({ estado, atividade, arquivos, achados, tam, vida }: { estado: AgentState; atividade: number; arquivos: number; achados: number; tam: number; vida: Partial<VidaDoOrbe> }) {
   return (
     <div className="ob2-canvas" style={{ width: tam, height: tam }}>
       <Canvas dpr={[1, 2]} gl={{ alpha: true, antialias: true }} camera={{ position: [0, 0, 4.25], fov: 42 }} style={{ width: "100%", height: "100%" }}>
-        <AgentOrbScene state={estado} activity={atividade} fileCount={arquivos} hovered={false} pressed={false} reduced={false} expressao={expressao} achados={achados} />
+        <AgentOrbScene state={estado} activity={atividade} fileCount={arquivos} hovered={false} pressed={false} reduced={false} achados={achados} vida={vida} />
       </Canvas>
     </div>
   );
@@ -98,26 +106,20 @@ export function TelaOrbe() {
       </p>
 
       <div className="ob2-lado">
-        {(["hoje", "nova"] as const).map((x) => (
-          <section key={x} className={`ob2-col ob2-col--${x}`} aria-label={x === "hoje" ? "O orbe de hoje" : "O orbe novo"}>
+        {VARIACOES.map((v) => (
+          <section key={v.id} className="ob2-col" aria-label={v.nome}>
             <header>
-              <h2>{x === "hoje" ? "Hoje" : "Novo"}</h2>
-              <span>{x === "hoje" ? "teal, como está em produção" : "íris do sistema novo, expressão por estado"}</span>
+              <h2>{v.nome}</h2>
             </header>
+            <p className="ob2-o-que">{v.o_que}</p>
             <div className="ob2-palco">
-              <Palco expressao={x} estado={estado} atividade={atividade} arquivos={arquivos} achados={achados} tam={380} />
+              <Palco estado={estado} atividade={atividade} arquivos={arquivos} achados={achados} tam={300} vida={v.vida} />
             </div>
-            <div className="ob2-pequenos">
-              {[160, 96].map((t) => (
-                <figure key={t}>
-                  <div className="ob2-degrau">
-                    <Palco expressao={x} estado={estado} atividade={atividade} arquivos={arquivos} achados={achados} tam={t} />
-                  </div>
-                  <figcaption>
-                    <b className="ds-num">{t}</b> {t === 160 ? "conversa (compact)" : "porta do Nexo"}
-                  </figcaption>
-                </figure>
-              ))}
+            <div className="ob2-pequeno">
+              <Palco estado={estado} atividade={atividade} arquivos={arquivos} achados={achados} tam={96} vida={v.vida} />
+              <span>
+                <b className="ds-num">96</b> porta do Nexo
+              </span>
             </div>
           </section>
         ))}
