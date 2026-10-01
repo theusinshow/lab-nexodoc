@@ -9,7 +9,8 @@ export default function PaginaDeEntrada() {
         <p className="lab-trilha">Telas para aprovar</p>
         <h1>Entrada</h1>
         <p className="lab-lede">
-          Login e sem acesso. Um painel só no chão pontilhado do mapa; o orbe gigante e a saudação animada saem. Os textos são os do app.
+          Login e sem acesso. À esquerda o login de sempre; à direita o filme do Nexo, 15 s em loop feitos em HyperFrames
+          (videos/nexo-entrada): do carimbo ao volume.
         </p>
       </header>
       <VitrineDeEntrada />

@@ -1,20 +1,17 @@
 "use client";
 
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion, useReducedMotionConfig } from "motion/react";
 import { Check, CircleAlert, Info, LoaderCircle, LogOut, Mail, Terminal } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { Botao, Orbe, Tecla } from "@/components/ds/basicos";
 
 import { SUAVE } from "../conversa/turnos";
-import { Carimbo, Prancha, type Situacao } from "./prancha";
 import "./entrada.css";
 
 /*
- * A ENTRADA: login e sem acesso. À esquerda a porta; à direita a folha que o
- * Nexo lê, com o carimbo desta entrada (o campo SITUAÇÃO carrega o estado).
- * Os textos são os do app. Nada se mexe sozinho: o retículo e os campos do
- * carimbo respondem ao cursor.
+ * A ENTRADA: login e sem acesso. À esquerda o login de sempre; à direita o
+ * filme do Nexo (do carimbo ao volume). Os textos são os do app.
  */
 
 export type SituacaoEntrada =
@@ -183,7 +180,7 @@ function SemAcesso({ comResponsavel }: { comResponsavel: boolean }) {
     <>
       <h1 className="en-titulo">Sua conta está certa, falta a liberação</h1>
       <p className="en-lede">
-        Você entrou como <span className="pr-mono en-email">victor@prosul.com.br</span>. A conta é válida; ela só ainda não foi habilitada para o Nexo.
+        Você entrou como <span className="en-mono en-email">victor@prosul.com.br</span>. A conta é válida; ela só ainda não foi habilitada para o Nexo.
       </p>
 
       {comResponsavel ? (
@@ -192,7 +189,7 @@ function SemAcesso({ comResponsavel }: { comResponsavel: boolean }) {
           <ul>
             {ADMINS.map((a) => (
               <li key={a}>
-                <span className="pr-mono">{a}</span>
+                <span className="en-mono">{a}</span>
                 <a className="ds-btn ds-btn--ghost ds-btn--sm" href={`mailto:${a}?subject=${assunto}`} onClick={(e) => e.preventDefault()}>
                   <Mail size={14} strokeWidth={1.75} aria-hidden />
                   Pedir liberação
@@ -216,19 +213,36 @@ function SemAcesso({ comResponsavel }: { comResponsavel: boolean }) {
   );
 }
 
-function situacaoDoCarimbo(s: SituacaoEntrada, indo: boolean): Situacao {
-  if (indo) return { texto: "Indo para o Google", tom: "andando" };
-  if (s === "erro") return { texto: "Google recusou a entrada", tom: "erro" };
-  if (s === "dev") return { texto: "Acesso de desenvolvimento", tom: "dev" };
-  if (s === "sem-acesso" || s === "sem-responsavel") return { texto: "Liberação pendente", tom: "info" };
-  return { texto: "Aguardando entrada" };
+/**
+ * O FILME DA ENTRADA: 15 s em loop, feito em HyperFrames (videos/nexo-entrada).
+ * É decorativo e mudo; o login nunca espera por ele. O primeiro quadro é o
+ * pôster, então o vídeo entra sem salto quando termina de carregar. Com
+ * movimento reduzido fica um quadro parado (o mapa já montado e conferido),
+ * e em tela estreita o painel some e nada é baixado.
+ */
+function Filme() {
+  const reduzir = !!useReducedMotionConfig();
+  const [largo, setLargo] = useState(false);
+  useEffect(() => {
+    const mq = matchMedia("(min-width: 900px)");
+    const ver = () => setLargo(mq.matches);
+    ver();
+    mq.addEventListener("change", ver);
+    return () => mq.removeEventListener("change", ver);
+  }, []);
+  if (!largo) return null;
+  if (reduzir) return <img className="en-filme-midia" src="/lab/entrada/nexo-entrada-poster.webp" alt="" />;
+  return (
+    <video className="en-filme-midia" autoPlay muted loop playsInline preload="auto" poster="/lab/entrada/nexo-entrada-inicio.webp" aria-hidden>
+      <source src="/lab/entrada/nexo-entrada.webm" type="video/webm" />
+      <source src="/lab/entrada/nexo-entrada.mp4" type="video/mp4" />
+    </video>
+  );
 }
 
 export function TelaEntrada({ situacao }: { situacao: SituacaoEntrada }) {
   const semAcesso = situacao === "sem-acesso" || situacao === "sem-responsavel";
   const [indo, setIndo] = useState(situacao === "indo");
-  const estado = situacaoDoCarimbo(situacao, indo);
-  const responsavel = semAcesso ? "victor@prosul.com.br" : null;
   return (
     <div className="en">
       <section className="en-porta">
@@ -237,16 +251,13 @@ export function TelaEntrada({ situacao }: { situacao: SituacaoEntrada }) {
           <span>Nexo</span>
         </header>
         <main className="en-conteudo">{semAcesso ? <SemAcesso comResponsavel={situacao === "sem-acesso"} /> : <Login situacao={situacao} indo={indo} onIr={() => setIndo(true)} />}</main>
-        <div className="en-carimbo-celular">
-          <Carimbo situacao={estado} responsavel={responsavel} compacto />
-        </div>
         <footer className="en-pe">
           <span>PROSUL</span>
-          <span className="pr-mono">versão {VERSAO}</span>
+          <span className="en-mono">versão {VERSAO}</span>
         </footer>
       </section>
-      <section className="en-mesa" aria-label="Prancha de amostra com o carimbo desta entrada">
-        <Prancha situacao={estado} responsavel={responsavel} />
+      <section className="en-filme" aria-hidden>
+        <Filme />
       </section>
     </div>
   );

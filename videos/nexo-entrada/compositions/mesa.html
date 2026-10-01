@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8">
+    <title>Mesa: o mundo e a câmera</title>
+  </head>
+  <body>
+    <template>
+      <style>
+        @font-face { font-family: "Geist"; src: url("assets/fonts/Geist.woff2") format("woff2"); font-weight: 100 900; }
+        @font-face { font-family: "Geist Mono"; src: url("assets/fonts/GeistMono.woff2") format("woff2"); font-weight: 100 900; }
+
+        #root { position: absolute; inset: 0; overflow: hidden; background: #08090b; color: #eeeff2; font-family: "Geist", system-ui, sans-serif; }
+
+        .halo {
+          position: absolute; left: 50%; top: 52%; width: 1500px; height: 1100px; margin: -550px 0 0 -750px;
+          background: radial-gradient(closest-side, rgb(124 128 245 / 0.13), rgb(124 128 245 / 0.04) 55%, transparent 100%);
+        }
+        /* A CÂMERA: as variáveis moram em #cam e tudo que depende dela as lê. */
+        #cam { --s: 3.2; --fx: 1054; --fy: 380; --rx: 0; --rz: 0; --dx: 0; --dy: 0; position: absolute; inset: 0; }
+        .longe {
+          position: absolute; inset: -400px;
+          background-image: linear-gradient(rgb(255 255 255 / 0.035) 1px, transparent 1px), linear-gradient(90deg, rgb(255 255 255 / 0.035) 1px, transparent 1px);
+          background-size: 176px 176px;
+          transform: translate(calc(var(--fx) * -0.35px + var(--dx) * 0.4px), calc(var(--fy) * -0.35px + var(--dy) * 0.4px));
+        }
+        /* a vinheta é máscara, não camada por cima: o mundo some no chão nas bordas */
+        .palco {
+          position: absolute; inset: 0; perspective: 1700px; perspective-origin: 720px 500px;
+          -webkit-mask-image: radial-gradient(ellipse 80% 76% at 50% 50%, #000 50%, rgb(0 0 0 / 0.12) 100%);
+          mask-image: radial-gradient(ellipse 80% 76% at 50% 50%, #000 50%, rgb(0 0 0 / 0.12) 100%);
+        }
+        .plano { position: absolute; inset: 0; transform-origin: 720px 540px; transform: rotateX(calc(var(--rx) * 1deg)) rotateZ(calc(var(--rz) * 1deg)); }
+        .mundo {
+          position: absolute; left: 0; top: 0; width: 2100px; height: 1100px; transform-origin: 0 0;
+          transform: translate(calc(720px - var(--s) * var(--fx) * 1px + var(--dx) * 1px), calc(540px - var(--s) * var(--fy) * 1px + var(--dy) * 1px)) scale(var(--s));
+        }
+        .mesa {
+          position: absolute; left: -1600px; top: -1300px; width: 5300px; height: 3700px;
+          background-image: radial-gradient(rgb(255 255 255 / 0.11) 1px, transparent 1.3px);
+          background-size: 22px 22px; background-position: 11px 11px;
+        }
+
+        .peca { position: absolute; }
+        .rotulo-peca { position: absolute; left: 0; bottom: calc(100% + 8px); white-space: nowrap; line-height: 1.15; }
+        .rotulo-peca b { display: block; font-size: 13px; font-weight: 500; letter-spacing: -0.005em; }
+        .rotulo-peca i { display: block; font-style: normal; font-size: 11px; color: #a4a8b3; font-family: "Geist Mono", monospace; }
+
+        .papel {
+          position: absolute; inset: 0; border-radius: 2px; background: #a9adb6; color: #0a0b0d; overflow: hidden;
+          box-shadow: 0 1px 2px rgb(0 0 0 / 0.5), 0 14px 30px -12px rgb(0 0 0 / 0.75);
+          padding: 10px 9px; display: flex; flex-direction: column; align-items: center; text-align: center;
+        }
+        .papel .claro { position: absolute; inset: 0; background: #f2f3f5; }
+        .papel > *:not(.claro) { position: relative; }
+        .marca-pref { display: flex; gap: 2px; margin-top: 2px; }
+        .marca-pref i { display: block; width: 15px; height: 4px; }
+        .p-mini { font-size: 4.6px; letter-spacing: 0.05em; color: #1f2126; text-transform: uppercase; }
+        .p-obra { font-size: 7.4px; font-weight: 700; line-height: 1.2; margin-top: 12px; letter-spacing: 0.01em; }
+        .p-med { font-size: 5.4px; font-weight: 600; letter-spacing: 0.04em; margin-top: 6px; }
+        .p-vol { font-size: 6.2px; font-weight: 700; margin-top: 14px; letter-spacing: 0.03em; }
+        .p-rodape { margin-top: auto; font-size: 4.6px; color: #1f2126; letter-spacing: 0.06em; }
+        .p-sep { font-size: 9px; font-weight: 700; letter-spacing: 0.06em; margin-top: 58px; }
+        .p-ld-tit { font-size: 6px; font-weight: 700; letter-spacing: 0.05em; }
+        .p-ld-sub { font-size: 3.9px; color: #1f2126; margin-top: 2px; }
+        .ld-linhas { width: 100%; margin-top: 6px; border-top: 0.6px solid rgb(10 11 13 / 0.5); }
+        .ld-linha { display: flex; gap: 4px; align-items: baseline; padding: 1.6px 0; border-bottom: 0.4px solid rgb(10 11 13 / 0.14); font-size: 4.1px; text-align: left; }
+        .ld-linha em { font-style: normal; font-family: "Geist Mono", monospace; width: 21px; flex: none; color: #1d1f24; }
+        .ld-linha span { flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: #1f2126; }
+        .ld-linha u { text-decoration: none; font-family: "Geist Mono", monospace; color: #1f2126; }
+        .atras { position: absolute; border-radius: 2px; background: #b7bac2; box-shadow: 0 6px 16px -8px rgb(0 0 0 / 0.7); }
+        .p-volnum { font-family: "Geist Mono", monospace; font-size: 22px; font-weight: 500; margin-top: 18px; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+        .p-volp { font-size: 5.4px; color: #1f2126; letter-spacing: 0.05em; }
+
+        /* o carimbo: a tabela do selo, a mesma do cartão do Mapa */
+        .cart {
+          position: absolute; width: 140px; height: 98px; border-radius: 2px; background: #181a1f; overflow: hidden;
+          box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.2), 0 10px 24px -14px rgb(0 0 0 / 0.9);
+          display: grid; grid-template-columns: 52px 52px 36px; grid-template-rows: 32px 66px;
+        }
+        .cel { position: relative; padding: 4.5px 6px; box-shadow: inset -1px -1px 0 rgb(255 255 255 / 0.12); min-width: 0; }
+        .cel small { position: relative; display: block; font-family: "Geist Mono", monospace; font-size: 6.4px; letter-spacing: 0.06em; text-transform: uppercase; color: #a4a8b3; }
+        .cel b { position: relative; display: flex; align-items: center; gap: 3px; margin-top: 2px; font-weight: 450; font-size: 10px; line-height: 1.2; white-space: nowrap; }
+        .cel .mono { font-family: "Geist Mono", monospace; font-variant-numeric: tabular-nums; font-size: 9.6px; }
+        .c-tit { grid-column: 1 / -1; }
+        .c-tit b { white-space: normal; display: block; font-size: 9.4px; letter-spacing: 0.01em; line-height: 1.28; }
+        .sq { display: block; width: 6px; height: 6px; border-radius: 1px; flex: none; }
+        .lavagem { position: absolute; inset: 0; opacity: 0; }
+        .tk-janela { display: block; height: 12px; overflow: hidden; }
+        .tk { display: block; }
+        .tk span { display: block; height: 12px; line-height: 12px; }
+        .canto { position: absolute; left: 0; top: 0; width: 9px; height: 9px; border: 0 solid #a3a6ff; opacity: 0; }
+        .canto.tl { border-top-width: 1.6px; border-left-width: 1.6px; }
+        .canto.tr { border-top-width: 1.6px; border-right-width: 1.6px; }
+        .canto.bl { border-bottom-width: 1.6px; border-left-width: 1.6px; }
+        .canto.br { border-bottom-width: 1.6px; border-right-width: 1.6px; }
+        .leitura { position: absolute; left: 0; top: 0; width: 140px; height: 1.4px; background: #a3a6ff; box-shadow: 0 0 10px 1px rgb(124 128 245 / 0.75); opacity: 0; }
+        .resto { position: absolute; width: 70px; height: 98px; border-radius: 2px; border: 1px dashed rgb(255 255 255 / 0.22); display: grid; place-items: center; font-family: "Geist Mono", monospace; font-size: 15px; color: #a4a8b3; }
+        .bloco-tit { position: absolute; display: flex; align-items: center; gap: 6px; white-space: nowrap; font-size: 13px; font-weight: 500; }
+        .bloco-tit i { width: 7px; height: 7px; border-radius: 50%; display: block; }
+        .bloco-tit em { font-style: normal; font-family: "Geist Mono", monospace; font-size: 11px; color: #a4a8b3; font-weight: 400; }
+        .tomo { position: absolute; width: 100px; line-height: 1.2; }
+        .tomo b { display: block; font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
+        .tomo i { display: block; font-style: normal; font-family: "Geist Mono", monospace; font-size: 10.5px; color: #a4a8b3; margin-top: 3px; }
+
+        .achado-tag {
+          position: absolute; display: flex; align-items: center; gap: 5px; padding: 3px 7px 3px 6px; border-radius: 3px; white-space: nowrap;
+          background: #1f2127; box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.2), 0 8px 18px -8px rgb(0 0 0 / 0.9);
+          font-family: "Geist Mono", monospace; font-size: 9px;
+        }
+        .achado-tag .pt { width: 6px; height: 6px; border-radius: 50%; display: block; }
+
+        #feixe { position: absolute; left: 0; top: 250px; width: 2px; height: 560px; margin-left: -1px; background: #d4d5ff; box-shadow: 0 0 16px 3px rgb(124 128 245 / 0.7); opacity: 0; }
+        #feixe::before { content: ""; position: absolute; right: 2px; top: 0; width: 150px; height: 100%; background: radial-gradient(ellipse 100% 60% at 100% 50%, rgb(124 128 245 / 0.18), transparent 70%); }
+
+        svg.fios { position: absolute; left: 0; top: 0; overflow: visible; }
+        .fio-linha { fill: none; stroke: rgb(255 255 255 / 0.62); stroke-width: 2; stroke-linecap: round; }
+        .fio-porta { fill: rgb(255 255 255 / 0.62); }
+        .fio-ponta { fill: none; stroke: rgb(255 255 255 / 0.62); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+        .fio-luz { fill: none; stroke: #d4d5ff; stroke-width: 2.6; stroke-linecap: round; filter: drop-shadow(0 0 4px rgb(124 128 245 / 0.9)); }
+        .moldura { fill: none; stroke: rgb(255 255 255 / 0.16); stroke-width: 1.2; }
+      </style>
+
+      <div data-hf-id="hf-rqgq" id="root" data-composition-id="mesa" data-width="1440" data-height="1080">
+        <div data-hf-id="hf-u2ur" class="halo" id="halo" data-layout-ignore=""></div>
+        <div data-hf-id="hf-ftaq" id="cam">
+          <div data-hf-id="hf-n7v6" class="longe" data-layout-ignore=""></div>
+          <div data-hf-id="hf-zacd" class="palco">
+            <div data-hf-id="hf-6dgk" class="plano">
+              <div data-hf-id="hf-msg3" class="mundo">
+                <div data-hf-id="hf-vgvf" class="mesa" data-layout-ignore=""></div>
+                <svg data-hf-id="hf-ebmf" class="fios" id="fios" width="2100" height="1100" viewBox="0 0 2100 1100" />
+                <div data-hf-id="hf-exqb" id="pecas"></div>
+                <div data-hf-id="hf-71n2" id="feixe"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+              </div>
+
+      <script>
+        /* =====================================================================
+         * A MESA: o mapa do volume como ele é no Nexo, e uma câmera só.
+         * O relógio é o mesmo do letreiro (compositions/letreiro.html); os
+         * instantes compartilhados estão em RELOGIO e lá, com os mesmos valores.
+         * O último quadro é o primeiro: a câmera volta ao carimbo da ARQ-03
+         * e ele se esvazia. Tudo é função do tempo.
+         * ===================================================================== */
+        (() => {
+          const D = 15;
+          const RELOGIO = { varre: 6.95, varreDur: 2.5, corrigeEle: 9.75, corrigeArq: 10.35, gera: 10.75, fecha: 12.45 };
+          const tl = gsap.timeline({ paused: true });
+          const pecas = document.getElementById("pecas");
+          const fios = document.getElementById("fios");
+          const NS = "http://www.w3.org/2000/svg";
+
+          /* ---------- geometria ---------- */
+          const PW = 120, PH = 166, CW = 140, CH = 98, GAP = 10, PAD = 12;
+          const X = { capa: 120, sep: 304, ld: 488, bloco: 672, vol: 1888 };
+          const DISC = {
+            ARQ: { cor: "#8fa9d0", nome: "Arquitetura" },
+            EST: { cor: "#a79ac9", nome: "Estrutural" },
+            HID: { cor: "#79b6c4", nome: "Hidrossanitário" },
+            ELE: { cor: "#c9b47f", nome: "Elétrico" },
+          };
+          const TOMOS = [
+            {
+              n: 1, y: 380, folhas: 20, paginas: 238, sep: "ARQUITETURA", sepSig: "ARQ", capaSub: "ARQUITETURA E ESTRUTURAL",
+              blocos: [
+                { d: "ARQ", total: 12, cartoes: [["01/12", "B", "IMPLANTAÇÃO E SITUAÇÃO"], ["02/12", "B", "PLANTA BAIXA - LAYOUT"], ["03/12", "A", "PLANTA BAIXA - COTAS E NÍVEIS"], ["04/12", "B", "PLANTA DE FORRO"]] },
+                { d: "EST", total: 8, cartoes: [["01/08", "A", "LOCAÇÃO E CARGAS"], ["02/08", "A", "FÔRMAS DA FUNDAÇÃO"]] },
+              ],
+              ld: [["ARQ-01", "IMPLANTAÇÃO E SITUAÇÃO", "B"], ["ARQ-02", "PLANTA BAIXA - LAYOUT", "B"], ["ARQ-03", "PLANTA BAIXA - COTAS E NÍVEIS", "A"], ["ARQ-04", "PLANTA DE FORRO", "B"],
+                   ["ARQ-05", "CORTES AA E BB", "B"], ["ARQ-06", "CORTES CC E DD", "B"], ["ARQ-07", "FACHADAS NORTE E SUL", "B"], ["ARQ-08", "FACHADAS LESTE E OESTE", "B"],
+                   ["EST-01", "LOCAÇÃO E CARGAS", "A"], ["EST-02", "FÔRMAS DA FUNDAÇÃO", "A"], ["EST-03", "ARMAÇÃO DAS SAPATAS", "A"]],
+            },
+            {
+              n: 2, y: 700, folhas: 13, paginas: 174, sep: "HIDROSSANITÁRIO", sepSig: "HID", capaSub: "HIDROSSANITÁRIO E ELÉTRICO",
+              blocos: [
+                { d: "HID", total: 6, cartoes: [["01/06", "A", "ÁGUA FRIA - PLANTA"], ["02/06", "A", "ÁGUA FRIA - ISOMÉTRICOS"]] },
+                { d: "ELE", total: 7, cartoes: [["01/07", "A", "ENTRADA DE ENERGIA"], ["02/07", "A", "ILUMINAÇÃO"], ["03/07", "A", "TOMADAS E PONTOS DE FORÇA"], ["—/07", "A", "QUADROS E DIAGRAMAS UNIFILARES"]] },
+              ],
+              ld: [["HID-01", "ÁGUA FRIA - PLANTA", "A"], ["HID-02", "ÁGUA FRIA - ISOMÉTRICOS", "A"], ["HID-03", "ESGOTO SANITÁRIO - PLANTA", "A"], ["HID-04", "ESGOTO - DETALHES DAS CAIXAS", "A"],
+                   ["HID-05", "ÁGUAS PLUVIAIS", "A"], ["HID-06", "RESERVATÓRIO E BARRILETE", "A"], ["ELE-01", "ENTRADA DE ENERGIA", "A"], ["ELE-02", "ILUMINAÇÃO", "A"],
+                   ["ELE-03", "TOMADAS E PONTOS DE FORÇA", "A"], ["ELE-04", "QUADROS E DIAGRAMAS", "A"]],
+            },
+          ];
+
+          /* ---------- utilidades ---------- */
+          const el = (tag, cls, pai, html) => {
+            const e = document.createElement(tag);
+            if (cls) e.className = cls;
+            if (html !== undefined) e.innerHTML = html;
+            if (pai) pai.appendChild(e);
+            return e;
+          };
+          const pos = (e, x, y, w, h) => {
+            e.style.left = x + "px"; e.style.top = y + "px";
+            if (w) e.style.width = w + "px";
+            if (h) e.style.height = h + "px";
+            return e;
+          };
+          const svg = (tag, attrs, pai = fios) => {
+            const e = document.createElementNS(NS, tag);
+            for (const k in attrs) e.setAttribute(k, attrs[k]);
+            pai.appendChild(e);
+            return e;
+          };
+          /* Decifrar: cada caractere passa por glifos de selo antes de assentar.
+             O glifo vem do índice e de p quantizado: o mesmo p, o mesmo quadro. */
+          const GLIFOS = "ABCDEFGHJKLMNPRSTUVXZ0123456789/-";
+          const mistura = (txt, p) => {
+            let out = "";
+            for (let i = 0, n = txt.length; i < n; i++) {
+              const local = (p - (i / n) * 0.62) / 0.38;
+              if (local >= 1) out += txt[i];
+              else if (local > 0) out += txt[i] === " " ? " " : GLIFOS[(i * 7 + Math.floor(p * 48) * 13) % GLIFOS.length];
+            }
+            return out;
+          };
+          const decifrar = (alvo, txt, ini, dur) => {
+            const pr = { p: 0 };
+            alvo.textContent = "";
+            tl.fromTo(pr, { p: 0 }, { p: 1, duration: dur, ease: "none", immediateRender: false, onUpdate: () => (alvo.textContent = mistura(txt, pr.p)) }, ini);
+          };
+          const apagar = (alvo, txt, ini, dur) => {
+            const pr = { p: 1 };
+            tl.fromTo(pr, { p: 1 }, { p: 0, duration: dur, ease: "none", immediateRender: false, onUpdate: () => (alvo.textContent = mistura(txt, pr.p)) }, ini);
+          };
+          const contar = (alvo, de, ate, ini, dur) => {
+            const pr = { v: de };
+            tl.fromTo(pr, { v: de }, { v: ate, duration: dur, ease: "power2.out", immediateRender: false, onUpdate: () => (alvo.textContent = String(Math.round(pr.v))) }, ini);
+          };
+
+          /* ---------- o mundo ---------- */
+          const R = { cartoes: {}, tomos: [], fios: [], molduras: [] };
+
+          const papel = (x, y, rotulo, sub, conteudo, extra) => {
+            const p = pos(el("div", "peca", pecas), x, y - PH / 2, PW, PH);
+            if (extra) extra(p);
+            const pap = el("div", "papel", p, `<i class="claro"></i>${conteudo}`);
+            const r = el("div", "rotulo-peca", p, `<b data-layout-allow-overlap>${rotulo}</b><i data-layout-allow-overlap>${sub}</i>`);
+            return { p, pap, claro: pap.querySelector(".claro"), sub: r.querySelector("i") };
+          };
+
+          const cartao = (x, y, d, [fol, rev, tit], id) => {
+            const c = pos(el("div", "cart", pecas), x, y - CH / 2);
+            c.innerHTML = `
+              <div class="cel c-fol"><i class="lavagem"></i><small>folha</small><b class="mono v-fol"></b></div>
+              <div class="cel c-dis"><small>disc.</small><b><i class="sq" style="background:${DISC[d].cor}"></i><span class="v-dis"></span></b></div>
+              <div class="cel c-rev"><i class="lavagem"></i><small>rev.</small><b class="mono"><span class="tk-janela"><span class="tk" data-layout-allow-overflow><span>${rev}</span><span>B</span></span></span></b></div>
+              <div class="cel c-tit"><small>título</small><b class="v-tit"></b></div>
+              <i class="canto tl"></i><i class="canto tr"></i><i class="canto bl"></i><i class="canto br"></i><i class="leitura"></i>`;
+            const q = (s) => c.querySelector(s);
+            return (R.cartoes[id] = {
+              c, id, d, fol, rev, tit, x, y, vFol: q(".v-fol"), vDis: q(".v-dis"), vTit: q(".v-tit"), janela: q(".tk-janela"), tk: q(".tk"),
+              lavFol: q(".c-fol .lavagem"), lavRev: q(".c-rev .lavagem"), cantos: [...c.querySelectorAll(".canto")], leitura: q(".leitura"),
+            });
+          };
+
+          const fio = (x1, x2, y) => {
+            const r = 6;
+            const g = svg("g", {});
+            const linha = svg("path", { d: `M${x1 + r - 1},${y} L${x2 - 2},${y}`, class: "fio-linha" }, g);
+            const porta = svg("path", { d: `M${x1},${y - r} A${r},${r} 0 0 1 ${x1},${y + r} Z`, class: "fio-porta" }, g);
+            const ponta = svg("path", { d: `M${x2 - 8},${y - 6.5} L${x2 - 1},${y} L${x2 - 8},${y + 6.5}`, class: "fio-ponta" }, g);
+            const luz = svg("path", { d: `M${x1 + r - 1},${y} L${x2 - 2},${y}`, class: "fio-luz" }, g);
+            const len = x2 - 2 - (x1 + r - 1);
+            linha.style.strokeDasharray = `${len}`;
+            luz.style.strokeDasharray = `14 ${len + 40}`;
+            porta.style.transformBox = "fill-box";
+            porta.style.transformOrigin = "0% 50%";
+            const f = { linha, porta, ponta, luz, len };
+            R.fios.push(f);
+            return f;
+          };
+          const moldura = (x, y, w, h) => {
+            const rect = svg("rect", { x, y, width: w, height: h, rx: 9, class: "moldura" });
+            const m = { rect, len: 2 * (w + h) };
+            rect.style.strokeDasharray = `${m.len}`;
+            R.molduras.push(m);
+            return m;
+          };
+
+          for (const t of TOMOS) {
+            const T = { t, fios: [], blocos: [] };
+            const y = t.y;
+            const tt = String(t.n).padStart(2, "0");
+            T.rotulo = pos(el("div", "tomo", pecas, `<b data-layout-allow-overlap>Tomo ${tt}</b><i data-layout-allow-overlap>${t.folhas} folhas · ${t.paginas} p.</i>`), 0, y - 20);
+            T.capa = papel(X.capa, y, "Capa", "a gerar", `
+              <div class="marca-pref"><i style="background:#f5c400"></i><i style="background:#2a2d35"></i><i style="background:#e6e8eb; box-shadow: inset 0 0 0 0.4px #99a"></i></div>
+              <div class="p-mini" style="margin-top:6px">Prefeitura Municipal de Criciúma</div>
+              <div class="p-obra">UBS DA RUA SÃO FRANCISCO DE ASSIS</div>
+              <div class="p-mini" style="margin-top:3px">Bairro São Luiz</div>
+              <div class="p-med">PROJETO EXECUTIVO</div>
+              <div class="p-vol">VOLUME 1</div>
+              <div class="p-mini" style="margin-top:2px">${t.capaSub}</div>
+              <div class="p-med" style="margin-top:3px">(TOMO ${tt})</div>
+              <div class="p-rodape">SETEMBRO 2026 · 117-25</div>`);
+            T.sep = papel(X.sep, y, "2 separatrizes", "a gerar", `
+              <div class="p-mini" style="margin-top:2px">117-25</div><div class="p-sep">${t.sep}</div><div class="p-mini" style="margin-top:4px">${t.sepSig}</div>`,
+              (p) => (T.sepAtras = pos(el("i", "atras", p), 5, 5, PW, PH)));
+            T.ld = papel(X.ld, y, "Lista de documentos", "a gerar", `
+              <div class="p-ld-tit">LISTA DE DOCUMENTOS</div>
+              <div class="p-ld-sub">117-25 · UBS DA RUA SÃO FRANCISCO DE ASSIS · TOMO ${tt}</div>
+              <div class="ld-linhas">${t.ld.map(([c, d, r]) => `<div class="ld-linha"><em>${c}</em><span>${d}</span><u>${r}</u></div>`).join("")}</div>`);
+            T.ldLinhas = [...T.ld.pap.querySelectorAll(".ld-linha")];
+
+            let x = X.bloco;
+            const faixas = [];
+            for (const b of t.blocos) {
+              const ini = x;
+              const B = { d: b.d, cartoes: [] };
+              let cx = ini + PAD;
+              for (const dados of b.cartoes) {
+                const n = Number(dados[0].split("/")[0]) || 4;
+                B.cartoes.push(cartao(cx, y, b.d, dados, `${b.d}-${String(n).padStart(2, "0")}`));
+                cx += CW + GAP;
+              }
+              B.resto = pos(el("div", "resto", pecas, `+${b.total - b.cartoes.length}`), cx, y - CH / 2);
+              const fim = cx + 70 + PAD;
+              B.moldura = moldura(ini, y - CH / 2 - PAD, fim - ini, CH + 2 * PAD);
+              B.tit = pos(el("div", "bloco-tit", pecas, `<i style="background:${DISC[b.d].cor}"></i>${DISC[b.d].nome}<em>${b.total} folhas</em>`), ini + 2, y - CH / 2 - PAD - 24);
+              faixas.push([ini, fim]);
+              T.blocos.push(B);
+              x = fim + 64;
+            }
+            T.vol = papel(X.vol, y, `Volume ${tt}`, "a gerar", `
+              <div class="p-mini" style="margin-top:2px">117-25 · Tomo ${tt}</div>
+              <div class="p-vol" style="margin-top:18px">VOLUME ${tt}</div>
+              <div class="p-volnum"><span class="vnum"></span></div>
+              <div class="p-volp">PÁGINAS</div>
+              <div class="p-rodape">PDF · LD · CAPA · SEPARATRIZES</div>`,
+              (p) => (T.atras = [pos(el("i", "atras", p), 8, 8, PW, PH), pos(el("i", "atras", p), 4, 4, PW, PH)]));
+            T.vnum = T.vol.pap.querySelector(".vnum");
+
+            T.fios.push(fio(X.capa + PW, X.sep, y), fio(X.sep + PW, X.ld, y), fio(X.ld + PW, faixas[0][0], y), fio(faixas[0][1], faixas[1][0], y), fio(faixas[1][1], X.vol, y));
+            R.tomos.push(T);
+          }
+
+          const A3 = R.cartoes["ARQ-03"];
+          const E4 = R.cartoes["ELE-04"];
+          const tag1 = pos(el("div", "achado-tag", pecas, `<i class="pt" style="background:#f0b45c"></i>ACH-014`), A3.x + 74, A3.y - CH / 2 - 26);
+          const tag2 = pos(el("div", "achado-tag", pecas, `<i class="pt" style="background:#ff7d6e"></i>ACH-015`), E4.x + 74, E4.y - CH / 2 - 26);
+          const tag1pt = tag1.querySelector(".pt"), tag2pt = tag2.querySelector(".pt");
+
+          /* ---------- estado de repouso: o primeiro quadro, que é também o último ---------- */
+          const todos = [];
+          for (const T of R.tomos) {
+            todos.push(T.rotulo, T.capa.p, T.sep.p, T.ld.p, T.vol.p);
+            for (const B of T.blocos) {
+              todos.push(B.resto, B.tit);
+              for (const c of B.cartoes) if (c !== A3) todos.push(c.c);
+            }
+          }
+          gsap.set(todos, { opacity: 0 });
+          gsap.set([tag1, tag2, A3.janela], { opacity: 0 });
+          for (const f of R.fios) { gsap.set(f.linha, { strokeDashoffset: f.len }); gsap.set(f.porta, { scale: 0 }); gsap.set([f.ponta, f.luz], { opacity: 0 }); }
+          for (const m of R.molduras) gsap.set(m.rect, { strokeDashoffset: m.len });
+          for (const T of R.tomos) {
+            gsap.set(T.ldLinhas, { opacity: 0 });
+            gsap.set([T.capa.claro, T.sep.claro, T.ld.claro, T.vol.claro], { clipPath: "inset(0% 0% 100% 0%)" });
+          }
+          gsap.set("#feixe", { opacity: 0, x: 470 });
+          gsap.set(R.tomos.map((T) => T.vnum), { opacity: 0 });
+
+          /* ============================ O TEMPO ============================ */
+
+          // Ambiente: o que é periódico fecha um número inteiro de ciclos em 15 s.
+          tl.set("#cam", { "--s": 3.2, "--fx": A3.x + CW / 2, "--fy": A3.y, "--rx": 0, "--rz": 0 }, 0);
+          tl.fromTo("#cam", { "--dx": -5 }, { "--dx": 5, duration: D / 4, ease: "sine.inOut", yoyo: true, repeat: 3 }, 0);
+          tl.fromTo("#cam", { "--dy": -3 }, { "--dy": 3, duration: D / 6, ease: "sine.inOut", yoyo: true, repeat: 5 }, 0);
+          tl.fromTo("#halo", { scale: 1, opacity: 0.85 }, { scale: 1.07, opacity: 1, duration: D / 4, ease: "sine.inOut", yoyo: true, repeat: 3 }, 0);
+
+          /* 0–1.9 s · LÊ: os cantos íris pulam de campo em campo, a linha de leitura desce */
+          const CELS = { fol: [0, 0, 52, 32], dis: [52, 0, 52, 32], rev: [104, 0, 36, 32], tit: [0, 32, 140, 66] };
+          const cantos = ([x, y, w, h]) => [[x + 2, y + 2], [x + w - 11, y + 2], [x + 2, y + h - 11], [x + w - 11, y + h - 11]];
+          cantos(CELS.fol).forEach(([cx, cy], i) => gsap.set(A3.cantos[i], { x: cx, y: cy }));
+          tl.fromTo(A3.cantos, { opacity: 0, scale: 1.6 }, { opacity: 1, scale: 1, duration: 0.3, ease: "power3.out", stagger: 0.02, immediateRender: false }, 0.28);
+          tl.fromTo(A3.leitura, { y: 0, opacity: 0 }, { y: 96, opacity: 1, duration: 1.2, ease: "power1.inOut", immediateRender: false }, 0.3);
+          tl.to(A3.leitura, { opacity: 0, duration: 0.2, ease: "power1.out" }, 1.52);
+          const salto = (cel, t) => cantos(CELS[cel]).forEach(([cx, cy], i) => tl.to(A3.cantos[i], { x: cx, y: cy, duration: 0.3, ease: "power3.inOut" }, t));
+          decifrar(A3.vFol, A3.fol, 0.42, 0.34);
+          salto("dis", 0.66);
+          decifrar(A3.vDis, "ARQ", 0.78, 0.26);
+          salto("rev", 0.96);
+          tl.fromTo(A3.janela, { opacity: 0, filter: "blur(3px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.24, ease: "power2.out", immediateRender: false }, 1.04);
+          salto("tit", 1.26);
+          decifrar(A3.vTit, A3.tit, 1.3, 0.5);
+          tl.to(A3.cantos, { opacity: 0, duration: 0.3, ease: "power2.in" }, 1.86);
+
+          /* 1.75–3.85 s · a câmera recua: a folha era parte de um volume */
+          const CENTRO = { fx: 1004, fy: 540 };
+          tl.fromTo("#cam", { "--s": 3.2, "--fx": A3.x + CW / 2, "--fy": A3.y }, { "--s": 0.64, "--fx": CENTRO.fx, "--fy": CENTRO.fy, duration: 2.0, ease: "power3.inOut", immediateRender: false }, 1.75);
+          tl.fromTo("#cam", { "--rx": 0, "--rz": 0 }, { "--rx": 20, "--rz": -5, duration: 2.05, ease: "power2.inOut", immediateRender: false }, 1.8);
+          // as vizinhas entram em foco enquanto a câmera recua (rack focus)
+          R.tomos[0].blocos[0].cartoes.filter((c) => c !== A3).forEach((c, i) => {
+            const t = 1.95 + i * 0.07;
+            tl.fromTo(c.c, { opacity: 0, filter: "blur(7px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.7, ease: "power2.out", immediateRender: false }, t);
+            decifrar(c.vFol, c.fol, t + 0.15, 0.3);
+            decifrar(c.vDis, c.d, t + 0.2, 0.2);
+            decifrar(c.vTit, c.tit, t + 0.25, 0.4);
+            tl.fromTo(c.janela, { opacity: 0 }, { opacity: 1, duration: 0.2, immediateRender: false }, t + 0.3);
+          });
+
+          /* 2.3–5.9 s · MONTA: o volume se monta na ordem de leitura */
+          const montaTomo = (T, t0) => {
+            const P = (alvo, t) => tl.fromTo(alvo, { opacity: 0, y: 26 }, { opacity: 1, y: 0, duration: 0.55, ease: "power3.out", immediateRender: false }, t);
+            const F = (f, t) => {
+              tl.fromTo(f.porta, { scale: 0 }, { scale: 1, duration: 0.22, ease: "back.out(2)", immediateRender: false }, t);
+              tl.fromTo(f.linha, { strokeDashoffset: f.len }, { strokeDashoffset: 0, duration: 0.34, ease: "power2.out", immediateRender: false }, t + 0.06);
+              tl.fromTo(f.ponta, { opacity: 0, x: -6 }, { opacity: 1, x: 0, duration: 0.2, ease: "power2.out", immediateRender: false }, t + 0.3);
+            };
+            P(T.rotulo, t0);
+            P(T.capa.p, t0 + 0.12);
+            F(T.fios[0], t0 + 0.42);
+            P(T.sep.p, t0 + 0.52);
+            tl.fromTo(T.sepAtras, { x: -5, y: -5 }, { x: 0, y: 0, duration: 0.5, ease: "power3.out", immediateRender: false }, t0 + 0.7);
+            F(T.fios[1], t0 + 0.8);
+            P(T.ld.p, t0 + 0.9);
+            // a LD se escreve, uma linha por folha lida
+            tl.fromTo(T.ldLinhas, { opacity: 0, x: -4 }, { opacity: 1, x: 0, duration: 0.3, ease: "power2.out", stagger: 0.07, immediateRender: false }, t0 + 1.1);
+            F(T.fios[2], t0 + 1.2);
+            T.blocos.forEach((B, bi) => {
+              const tb = t0 + 1.35 + bi * 0.62;
+              tl.fromTo(B.moldura.rect, { strokeDashoffset: B.moldura.len }, { strokeDashoffset: 0, duration: 0.7, ease: "power2.inOut", immediateRender: false }, tb);
+              tl.fromTo(B.tit, { opacity: 0, x: -10 }, { opacity: 1, x: 0, duration: 0.45, ease: "power3.out", immediateRender: false }, tb + 0.1);
+              B.cartoes.forEach((c, i) => {
+                if (T.t.n === 1 && bi === 0) return; // a ARQ já está na mesa
+                const tc = tb + 0.12 + i * 0.06;
+                tl.fromTo(c.c, { opacity: 0, y: 18, scale: 0.94 }, { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "power3.out", immediateRender: false }, tc);
+                decifrar(c.vFol, c.fol, tc + 0.12, 0.26);
+                decifrar(c.vDis, c.d, tc + 0.14, 0.18);
+                decifrar(c.vTit, c.tit, tc + 0.16, 0.36);
+                tl.fromTo(c.janela, { opacity: 0 }, { opacity: 1, duration: 0.2, immediateRender: false }, tc + 0.2);
+              });
+              tl.fromTo(B.resto, { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power3.out", immediateRender: false }, tb + 0.12 + B.cartoes.length * 0.06);
+              if (bi === 0) F(T.fios[3], tb + 0.5);
+            });
+            F(T.fios[4], t0 + 2.35);
+            P(T.vol.p, t0 + 2.45);
+            tl.fromTo(T.atras, { x: -10, y: -12, opacity: 0 }, { x: 0, y: 0, opacity: 1, duration: 0.55, ease: "power3.out", stagger: 0.08, immediateRender: false }, t0 + 2.6);
+          };
+          montaTomo(R.tomos[0], 2.3);
+          montaTomo(R.tomos[1], 2.85);
+          tl.to("#cam", { "--s": 0.68, "--rx": 16, "--rz": -4, duration: 2.0, ease: "sine.inOut" }, 3.9);
+
+          /* 6.0–9.45 s · CONFERE: o feixe da auditoria varre os dois tomos */
+          tl.to("#cam", { "--s": 1.04, "--fx": 640, "--fy": 540, "--rx": 7, "--rz": -1.5, duration: 0.95, ease: "power3.inOut" }, 6.0);
+          const V = { t0: RELOGIO.varre, dur: RELOGIO.varreDur, x0: 470, x1: 1870, ease: "sine.inOut" };
+          const easeV = gsap.parseEase(V.ease);
+          const quandoPassa = (x) => {
+            const alvo = (x - V.x0) / (V.x1 - V.x0);
+            let lo = 0, hi = 1;
+            for (let k = 0; k < 40; k++) { const m = (lo + hi) / 2; if (easeV(m) < alvo) lo = m; else hi = m; }
+            return V.t0 + lo * V.dur;
+          };
+          tl.fromTo("#feixe", { x: V.x0, opacity: 0 }, { x: V.x1, opacity: 1, duration: V.dur, ease: V.ease, immediateRender: false }, V.t0);
+          tl.to("#feixe", { opacity: 0, duration: 0.3 }, V.t0 + V.dur);
+          // a câmera acompanha o feixe um pouco mais devagar: ele anda na tela
+          tl.fromTo("#cam", { "--fx": 640 }, { "--fx": 1600, duration: V.dur, ease: V.ease, immediateRender: false }, V.t0);
+
+          const t1 = quandoPassa(A3.x + CW - 18); // revisão A na ARQ-03 (≈ 8,13 s)
+          tl.fromTo(A3.lavRev, { opacity: 0, backgroundColor: "rgb(240 180 92 / 0.28)" }, { opacity: 1, duration: 0.18, ease: "power2.out", immediateRender: false }, t1);
+          tl.fromTo(tag1, { opacity: 0, y: 8, scale: 0.9 }, { opacity: 1, y: 0, scale: 1, duration: 0.34, ease: "back.out(2.2)", immediateRender: false }, t1 + 0.06);
+          const t2 = quandoPassa(E4.x + 26); // carimbo sem número na ELE-04 (≈ 8,75 s)
+          tl.fromTo(E4.lavFol, { opacity: 0, backgroundColor: "rgb(255 125 110 / 0.26)" }, { opacity: 1, duration: 0.18, ease: "power2.out", immediateRender: false }, t2);
+          tl.fromTo(E4.vFol, { color: "#eeeff2" }, { color: "#ff7d6e", duration: 0.2, immediateRender: false }, t2);
+          tl.fromTo(tag2, { opacity: 0, y: 8, scale: 0.9 }, { opacity: 1, y: 0, scale: 1, duration: 0.34, ease: "back.out(2.2)", immediateRender: false }, t2 + 0.06);
+
+          /* 9.45–10.75 s · as correções, vistas de longe */
+          tl.to("#cam", { "--s": 0.7, "--fx": CENTRO.fx, "--fy": CENTRO.fy, "--rx": 16, "--rz": -4, duration: 1.3, ease: "power3.inOut" }, 9.45);
+          const ce = RELOGIO.corrigeEle;
+          apagar(E4.vFol, "—/07", ce, 0.12);
+          decifrar(E4.vFol, "04/07", ce + 0.12, 0.3);
+          tl.to(E4.vFol, { color: "#eeeff2", duration: 0.3 }, ce + 0.3);
+          tl.to(E4.lavFol, { opacity: 0, duration: 0.4 }, ce + 0.3);
+          tl.to(tag2pt, { backgroundColor: "#7bd8a5", duration: 0.2 }, ce + 0.3);
+          const ca = RELOGIO.corrigeArq;
+          tl.fromTo(A3.tk, { y: 0 }, { y: -12, duration: 0.42, ease: "back.out(1.6)", immediateRender: false }, ca);
+          tl.to(A3.lavRev, { opacity: 0, duration: 0.4 }, ca + 0.2);
+          tl.to(tag1pt, { backgroundColor: "#7bd8a5", duration: 0.2 }, ca + 0.2);
+
+          /* 10.75–12.4 s · GERA: a luz percorre cada tomo e os papéis saem do molde */
+          const geradoEm = [];
+          R.tomos.forEach((T, ti) => {
+            const tg = RELOGIO.gera + ti * 0.18;
+            T.fios.forEach((f, i) => {
+              tl.fromTo(f.luz, { opacity: 0, strokeDashoffset: 14 }, { opacity: 1, strokeDashoffset: -(f.len + 2), duration: 0.26, ease: "power1.inOut", immediateRender: false }, tg + i * 0.18);
+              tl.to(f.luz, { opacity: 0, duration: 0.08 }, tg + i * 0.18 + 0.24);
+            });
+            [T.capa, T.sep, T.ld].forEach((pp, i) => {
+              tl.fromTo(pp.claro, { clipPath: "inset(0% 0% 100% 0%)" }, { clipPath: "inset(0% 0% 0% 0%)", duration: 0.4, ease: "power2.inOut", immediateRender: false }, tg + i * 0.18);
+              geradoEm.push([pp.sub, i === 0 ? "gerada" : i === 1 ? "geradas" : "gerada", tg + i * 0.18 + 0.22]);
+            });
+            tl.fromTo(T.vol.claro, { clipPath: "inset(0% 0% 100% 0%)" }, { clipPath: "inset(0% 0% 0% 0%)", duration: 0.45, ease: "power2.inOut", immediateRender: false }, tg + 0.9);
+            geradoEm.push([T.vol.sub, "gerado", tg + 1.1]);
+            tl.fromTo(T.vnum, { opacity: 0 }, { opacity: 1, duration: 0.2, immediateRender: false }, tg + 0.95);
+            contar(T.vnum, 0, T.t.paginas, tg + 0.95, 0.6);
+          });
+          tl.to("#cam", { "--s": 0.72, "--fx": 1040, "--rx": 14, "--rz": -4, duration: 1.65, ease: "sine.inOut" }, RELOGIO.gera);
+
+          /* 12.45–15 s · FECHA: tudo volta para dentro do carimbo */
+          const fecha = RELOGIO.fecha;
+          tl.to("#cam", { "--s": 3.2, "--fx": A3.x + CW / 2, "--fy": A3.y, duration: 2.0, ease: "power3.inOut" }, fecha);
+          tl.to("#cam", { "--rx": 0, "--rz": 0, duration: 1.9, ease: "power2.inOut" }, fecha + 0.05);
+          // o que está longe da ARQ-03 sai primeiro, desfocando (a câmera mergulha)
+          const dist = (e) => Math.hypot((parseFloat(e.style.left) || 0) - A3.x, ((parseFloat(e.style.top) || 0) - A3.y) * 1.4);
+          const saindo = todos.slice().sort((a, b) => dist(b) - dist(a));
+          saindo.forEach((e, i) => tl.to(e, { opacity: 0, filter: "blur(8px)", duration: 0.5, ease: "power2.in" }, fecha + (i / saindo.length) * 1.2));
+          R.fios.forEach((f, i) => {
+            const tf = fecha + 0.05 + (i % 5) * 0.08;
+            tl.to(f.linha, { strokeDashoffset: f.len, duration: 0.4, ease: "power2.in" }, tf);
+            tl.to(f.ponta, { opacity: 0, duration: 0.2 }, tf);
+            tl.to(f.porta, { scale: 0, duration: 0.3, ease: "power2.in" }, tf + 0.2);
+          });
+          R.molduras.forEach((m, i) => tl.to(m.rect, { strokeDashoffset: m.len, duration: 0.6, ease: "power2.in" }, fecha + 0.15 + i * 0.05));
+          tl.to([tag1, tag2], { opacity: 0, duration: 0.3 }, fecha - 0.15);
+          // a ARQ-03 se esvazia: volta a ser o carimbo em branco do primeiro quadro
+          tl.to(A3.janela, { opacity: 0, filter: "blur(3px)", duration: 0.25 }, 14.05);
+          apagar(A3.vFol, A3.fol, 14.1, 0.3);
+          apagar(A3.vDis, "ARQ", 14.12, 0.24);
+          apagar(A3.vTit, A3.tit, 14.15, 0.45);
+          // o que mudou de estado volta ao de partida, já invisível
+          tl.set(A3.tk, { y: 0 }, 14.6);
+          R.tomos.forEach((T) => tl.set(T.vnum, { opacity: 0 }, 14.6));
+          tl.set(tag1pt, { backgroundColor: "#f0b45c" }, 14.6);
+          tl.set(tag2pt, { backgroundColor: "#ff7d6e" }, 14.6);
+          R.tomos.forEach((T) => {
+            tl.set(T.ldLinhas, { opacity: 0 }, 14.6);
+            tl.set([T.capa.claro, T.sep.claro, T.ld.claro, T.vol.claro], { clipPath: "inset(0% 0% 100% 0%)" }, 14.6);
+          });
+          Object.values(R.cartoes).forEach((c) => { if (c !== A3) tl.set(c.janela, { opacity: 0 }, 14.6); });
+
+          // "a gerar" vira "gerada": escrito depois dos tweens do quadro, como função do tempo
+          const escrever = () => {
+            const t = tl.time();
+            for (const [alvo, txt, quando] of geradoEm) alvo.textContent = t >= quando && t < 14.6 ? txt : "a gerar";
+          };
+          tl.eventCallback("onUpdate", escrever);
+          escrever();
+
+          window.__timelines["mesa"] = tl;
+        })();
+      </script>
+    </template>
+  </body>
+</html>
