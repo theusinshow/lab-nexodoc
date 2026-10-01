@@ -9,7 +9,7 @@ import { densidadeDoZoom, oQueMostrar } from "@/modules/nexo/lib/densidade-do-ca
 
 import { type Disciplina } from "../resultado-e/dados";
 import { SeloDaDisciplina } from "../resultado-e/disciplina";
-import { documentosDoTomo, FOLHAS, RESTOS, TOMOS, type Documento, type Folha } from "./dados";
+import { documentosDoTomo, FOLHAS, RESTOS, TOMOS, type Documento, type Folha, type Tomo } from "./dados";
 import { CartaoDaFolha, useEstiloDoCartao } from "./cartoes";
 import { ALTURA_DO_DOC, LARGURA_DO_PAPEL, PapelDoDocumento, type EstadoDoDoc } from "./documentos";
 import { dd } from "./lado";
@@ -33,8 +33,8 @@ const Y_DO_PAPEL = -46;
 export const X_INICIAL = 160;
 
 
-export type DadosDaFolha = { f: Folha; lida: boolean; escolhida: boolean; apagada: boolean };
-export type DadosDoDoc = { d: Documento; estado: EstadoDoDoc; tomo: number | null };
+export type DadosDaFolha = { f: Folha; lida: boolean; escolhida: boolean; apagada: boolean; destaque?: boolean; removida?: boolean };
+export type DadosDoDoc = { d: Documento; estado: EstadoDoDoc; tomo: number | null; destaque?: boolean };
 export type DadosDoRotulo = { titulo: string; sub: string; resto?: boolean };
 export type DadosDoGrupo = { disc: Disciplina; n: number };
 
@@ -51,7 +51,7 @@ function useDensidade() {
 }
 
 const NoDaFolha = memo(function NoDaFolha({ data }: NodeProps<Node<DadosDaFolha>>) {
-  const { f, lida, escolhida, apagada } = data;
+  const { f, lida, escolhida, apagada, destaque, removida } = data;
   const densidade = useDensidade();
   const estilo = useEstiloDoCartao();
   if (!lida)
@@ -72,9 +72,10 @@ const NoDaFolha = memo(function NoDaFolha({ data }: NodeProps<Node<DadosDaFolha>
       </div>
     );
   return (
-    <div className="mp-no-casca">
+    <div className={`mp-no-casca${destaque ? " mp-no-casca--destaque" : ""}${removida ? " mp-no-casca--removida" : ""}`}>
       {alcas}
       <CartaoDaFolha f={f} estilo={estilo} distancia={densidade} escolhida={escolhida} apagada={apagada} />
+      {removida && <span className="mp-no-removida">removida</span>}
     </div>
   );
 });
@@ -82,7 +83,7 @@ const NoDaFolha = memo(function NoDaFolha({ data }: NodeProps<Node<DadosDaFolha>
 const NoDoDoc = memo(function NoDoDoc({ data }: NodeProps<Node<DadosDoDoc>>) {
   const densidade = useDensidade();
   return (
-    <div className="mp-no-casca">
+    <div className={`mp-no-casca${data.destaque ? " mp-no-casca--destaque" : ""}`}>
       {alcas}
       <PapelDoDocumento d={data.d} estado={data.estado} tomo={data.tomo} distancia={densidade} />
     </div>
@@ -117,7 +118,18 @@ export function montarCanvas({
   estadoDoDoc,
   estadoDoVolume,
   comSobras,
+  tomos = TOMOS,
+  destaque,
+  removidas,
+  sem,
 }: {
+  /** Folhas que já saíram do volume: não entram no mapa. */
+  sem?: Set<string>;
+  tomos?: Tomo[];
+  /** O que a última mensagem mudou: acende uma vez. */
+  destaque?: Set<string>;
+  /** Folhas tiradas do volume: ficam no lugar, apagadas, até sumirem. */
+  removidas?: Set<string>;
   lidas: number;
   sel: string | null;
   filtro: (f: Folha) => boolean;
@@ -133,11 +145,11 @@ export function montarCanvas({
   const seta = (a: string, b: string) =>
     edges.push({ id: `${a}>${b}`, source: a, target: b, type: "straight", markerEnd: { type: MarkerType.ArrowClosed, width: 12, height: 12, color: "rgba(255,255,255,0.22)" }, className: "mp-seta" });
 
-  TOMOS.forEach((t, ti) => {
+  tomos.forEach((t, ti) => {
     const y = Y_DA_FILEIRA(ti);
     inicioDaFileira.set(t.n, { x: 0, y });
-    const fs = FOLHAS.filter((f) => t.disciplinas.includes(f.disc));
-    nodes.push({ id: `rot-${t.n}`, type: "rotulo", position: { x: 0, y: y + 18 }, data: { titulo: `Tomo ${dd(t.n)}`, sub: `${fs.length} folhas, ${t.paginas} p.` }, selectable: false });
+    const fs = FOLHAS.filter((f) => t.disciplinas.includes(f.disc) && !sem?.has(f.id));
+    nodes.push({ id: `rot-${t.n}`, type: "rotulo", position: { x: 0, y: y + 18 }, data: { titulo: tomos.length === 1 ? "Volume" : `Tomo ${dd(t.n)}`, sub: `${fs.length - (removidas ? fs.filter((f) => removidas.has(f.id)).length : 0)} folhas, ${t.paginas} p.` }, selectable: false });
     let x = X_INICIAL;
     let anterior: string | null = null;
     const liga = (id: string) => {
@@ -145,7 +157,7 @@ export function montarCanvas({
       anterior = id;
     };
     for (const d of documentosDoTomo(t)) {
-      nodes.push({ id: d.id, type: "doc", position: { x, y: y + Y_DO_PAPEL }, width: LARGURA_DO_DOC, height: ALTURA_DO_DOC, data: { d, estado: estadoDoDoc(d, t.n), tomo: t.n } });
+      nodes.push({ id: d.id, type: "doc", position: { x, y: y + Y_DO_PAPEL }, width: LARGURA_DO_DOC, height: ALTURA_DO_DOC, data: { d, estado: estadoDoDoc(d, t.n), tomo: t.n, destaque: destaque?.has(d.id) } });
       liga(d.id);
       x += LARGURA_DO_DOC + 20;
     }
@@ -161,7 +173,7 @@ export function montarCanvas({
           position: { x, y },
           width: LARGURA_DA_FOLHA,
           height: ALTURA_DO_NO,
-          data: { f, lida: (ordem.get(f.id) ?? 0) < lidas, escolhida: sel === f.id, apagada: !filtro(f) },
+          data: { f, lida: (ordem.get(f.id) ?? 0) < lidas, escolhida: sel === f.id, apagada: !filtro(f), destaque: destaque?.has(f.id), removida: removidas?.has(f.id) },
         });
         liga(f.id);
         x += PASSO_DA_FOLHA;
@@ -169,12 +181,12 @@ export function montarCanvas({
     }
     x += ENTRE_DISCIPLINAS;
     const vol: Documento = { id: `vol-${t.n}`, tipo: "volume", nome: `Volume, tomo ${dd(t.n)}`, detalhe: "" };
-    nodes.push({ id: vol.id, type: "doc", position: { x, y: y + Y_DO_PAPEL }, width: LARGURA_DO_DOC, height: ALTURA_DO_DOC, data: { d: vol, estado: estadoDoVolume(t.n), tomo: t.n } });
+    nodes.push({ id: vol.id, type: "doc", position: { x, y: y + Y_DO_PAPEL }, width: LARGURA_DO_DOC, height: ALTURA_DO_DOC, data: { d: vol, estado: estadoDoVolume(t.n), tomo: t.n, destaque: destaque?.has(vol.id) } });
     liga(vol.id);
   });
 
   if (comSobras) {
-    const y = Y_DA_FILEIRA(TOMOS.length);
+    const y = Y_DA_FILEIRA(tomos.length);
     inicioDaFileira.set(0, { x: 0, y });
     nodes.push({ id: "rot-0", type: "rotulo", position: { x: 0, y: y + 18 }, data: { titulo: "Fora da divisão", sub: "de antes dos tomos", resto: true }, selectable: false });
     RESTOS.forEach((d, i) => nodes.push({ id: d.id, type: "doc", position: { x: X_INICIAL + i * (LARGURA_DO_DOC + 20), y: y + Y_DO_PAPEL }, width: LARGURA_DO_DOC, height: ALTURA_DO_DOC, data: { d, estado: "sobra", tomo: null } }));
@@ -189,12 +201,22 @@ export function Tela({
   onFolha,
   onVazio,
   viewportInicial,
+  enquadrar,
+  enquadrarEm,
+  minimapa = true,
+  zoomMinimo = 0.3,
 }: {
+  zoomMinimo?: number;
   nodes: Node[];
   edges: Edge[];
   onFolha: (id: string) => void;
   onVazio: () => void;
-  viewportInicial: { x: number; y: number; zoom: number };
+  viewportInicial?: { x: number; y: number; zoom: number };
+  /** Abre enquadrando tudo, até o zoom dado (o palco do Nexo é estreito). */
+  enquadrar?: number;
+  /** Enquadra só estes nós (o trecho que a última mensagem mexeu), e não tudo. */
+  enquadrarEm?: string[];
+  minimapa?: boolean;
 }) {
   return (
     <ReactFlow
@@ -202,7 +224,9 @@ export function Tela({
       edges={edges}
       nodeTypes={TIPOS}
       defaultViewport={viewportInicial}
-      minZoom={0.3}
+      fitView={enquadrar !== undefined}
+      fitViewOptions={enquadrar !== undefined ? { padding: 0.08, maxZoom: enquadrar, nodes: enquadrarEm?.map((id) => ({ id })) } : undefined}
+      minZoom={zoomMinimo}
       maxZoom={1.5}
       nodesDraggable={false}
       nodesConnectable={false}
@@ -213,7 +237,7 @@ export function Tela({
       onPaneClick={onVazio}
     >
       <Background variant={BackgroundVariant.Dots} gap={22} size={1} color="rgba(255,255,255,0.07)" />
-      <MiniMap
+      {minimapa && <MiniMap
         className="mp-minimapa"
         pannable
         zoomable
@@ -224,7 +248,7 @@ export function Tela({
         maskStrokeColor="rgba(255,255,255,0.35)"
         maskStrokeWidth={1}
         bgColor="transparent"
-      />
+      />}
     </ReactFlow>
   );
 }

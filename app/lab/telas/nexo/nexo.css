@@ -1,0 +1,52 @@
+/*
+ * O NEXO: conversas | palco (mapa do volume) | chat. Como o NexoShell no modo
+ * ativo: barra de 300 px, palco no centro, copiloto docado à direita.
+ */
+.ds .nw { min-height: 100%; }
+.ds .nw-mesa { display: grid; grid-template-columns: 240px minmax(0, 1fr) 430px; height: 900px; border-top: 1px solid var(--ds-line-subtle); }
+
+/* conversas */
+.ds .nw-conversas { display: flex; flex-direction: column; gap: 10px; min-width: 0; padding: 14px 12px; border-right: 1px solid var(--ds-line-subtle); overflow: auto; }
+.ds .nw-nova { justify-content: flex-start; }
+.ds .nw-busca { width: auto; }
+.ds .nw-pastas { display: grid; gap: 4px; margin-top: 6px; }
+.ds .nw-pasta-cabeca { display: flex; align-items: center; gap: 7px; min-width: 0; margin: 0; padding: 7px 6px; border-radius: 7px; font-size: 12px; color: var(--ds-text-secondary); cursor: pointer; }
+.ds .nw-pasta-cabeca:hover { background: rgb(255 255 255 / 0.03); }
+.ds .nw-pasta-cabeca .mp-mono { flex: none; font-size: 11px; color: var(--ds-text-primary); }
+.ds .nw-pasta-nome { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.ds .nw-pasta-cabeca .ds-num { margin-left: auto; font-size: 11px; }
+.ds .nw-pasta ul { display: grid; gap: 1px; margin: 0 0 6px; padding: 0 0 0 14px; list-style: none; }
+.ds .nw-pasta li { display: grid; gap: 1px; padding: 7px 10px; border-radius: 7px; cursor: pointer; transition: background 0.2s; }
+.ds .nw-pasta li:hover { background: rgb(255 255 255 / 0.03); }
+.ds .nw-ativa { background: rgb(255 255 255 / 0.06) !important; }
+.ds .nw-conversa-titulo { overflow: hidden; font-size: 13px; white-space: nowrap; text-overflow: ellipsis; color: var(--ds-text-primary); }
+.ds .nw-conversa-meta { display: flex; justify-content: space-between; font-size: 11px; color: var(--ds-text-tertiary); }
+
+/* palco */
+.ds .nw-palco { display: flex; flex-direction: column; min-width: 0; background: rgb(0 0 0 / 0.12); }
+.ds .nw-palco-cabeca { display: flex; align-items: center; gap: 12px; height: 48px; padding: 0 10px 0 16px; border-bottom: 1px solid var(--ds-line-subtle); background: var(--ds-surface-page); }
+.ds .nw-obra { margin: 0; min-width: 0; }
+.ds .nw-estado { padding-left: 10px; border-left: 1px solid var(--ds-line-subtle); color: var(--ds-text-secondary); white-space: nowrap; }
+.ds .nw-vistas { display: inline-flex; gap: 2px; margin-left: auto; padding: 3px; border-radius: 9px; box-shadow: inset 0 0 0 1px var(--ds-line-subtle); }
+.ds .nw-vistas button { height: 26px; padding: 0 10px; border: 0; border-radius: 6px; background: none; font: inherit; font-size: 12px; color: var(--ds-text-tertiary); cursor: pointer; }
+.ds .nw-vistas button[aria-selected="true"] { background: rgb(255 255 255 / 0.08); color: var(--ds-text-primary); }
+.ds .nw-espaco { display: inline-flex; gap: 2px; }
+.ds .nw-espaco button { display: grid; place-items: center; width: 30px; height: 30px; border: 0; border-radius: 7px; background: none; color: var(--ds-text-tertiary); cursor: pointer; }
+.ds .nw-espaco button:hover { background: rgb(255 255 255 / 0.06); color: var(--ds-text-primary); }
+.ds .nw-canvas { position: relative; flex: 1; min-height: 0; }
+.ds .nw-canvas .react-flow { --xy-background-color: transparent; background: transparent; }
+.ds .nw-canvas .react-flow__pane { cursor: grab; }
+
+/* chat docado */
+.ds .nw-chat { display: flex; flex-direction: column; min-width: 0; min-height: 0; border-left: 1px solid var(--ds-line-subtle); }
+.ds .nw-chat-cabeca { display: flex; align-items: baseline; gap: 10px; height: 48px; padding: 16px 20px 0; border-bottom: 1px solid var(--ds-line-subtle); }
+.ds .nw-chat-titulo { font-size: 13.5px; color: var(--ds-text-primary); }
+.ds .nw-chat-cabeca .mp-g-fraco { font-family: var(--ds-font-mono); font-size: 11px; }
+.ds .nw-fio { flex: 1; width: auto; margin: 0; padding: 20px 20px 24px; gap: 28px; overflow: auto; }
+.ds .nw-fio .cx-voce { max-width: 88%; }
+.ds .nw-campo { padding: 0 14px 14px; }
+.ds .nw-campo .cx-campo { width: 100%; }
+/* no chat docado a coluna é estreita: o nome do arquivo encolhe com reticências em vez de vazar */
+.ds .nw-fio .cx-pecas--coluna { width: 100%; }
+.ds .nw-fio .cx-pecas--coluna .cx-peca-nome, .ds .nw-fio .cx-gerando-linha .cx-peca-nome { flex: 1 1 auto; min-width: 0; }
+.ds .nw-fio .cx-gerando-linha, .ds .nw-fio .cx-gerando-linha > * { min-width: 0; }

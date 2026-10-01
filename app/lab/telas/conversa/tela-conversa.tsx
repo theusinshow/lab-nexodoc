@@ -47,7 +47,7 @@ const GERADOS = [
  * enviar. Os arquivos entram e saem com layout (os vizinhos escorregam para o
  * lugar); enviar vira Parar girando, e acende quando há o que mandar.
  */
-function Campo({ arquivos: iniciais, respondendo, texto: inicial = "", modo }: { arquivos?: Arquivo[]; respondendo?: boolean; texto?: string; modo?: boolean }) {
+export function Campo({ arquivos: iniciais, respondendo, texto: inicial = "", modo }: { arquivos?: Arquivo[]; respondendo?: boolean; texto?: string; modo?: boolean }) {
   const { k } = useTempo();
   const [texto, setTexto] = useState(inicial);
   const [arquivos, setArquivos] = useState(iniciais ?? []);

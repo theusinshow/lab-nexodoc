@@ -164,3 +164,12 @@
 .ds .ct--carimbo.ct--sel { box-shadow: 0 0 0 1.5px var(--ds-text-primary), 0 12px 30px rgb(0 0 0 / 0.45) !important; }
 .ds .ct-tabela:not(.ct-tabela--perto) { grid-template-rows: auto 1fr; }
 .ds .ct--carimbo .ct-cel { align-content: start; }
+
+/* ---------- o que a última mensagem mudou: acende uma vez; a folha tirada fica apagada no lugar ---------- */
+.ds .mp-no-casca { position: relative; }
+.ds .mp-no-casca--destaque > :not(.mp-alca) { animation: mp-acende 2.4s cubic-bezier(0.22, 1, 0.36, 1) both; }
+@keyframes mp-acende { 0% { box-shadow: 0 0 0 0 rgb(163 166 255 / 0); } 18% { box-shadow: 0 0 0 10px rgb(163 166 255 / 0.55); } 100% { box-shadow: 0 0 0 5px rgb(163 166 255 / 0.4); } }
+.ds .mp-no-casca--removida .ct { opacity: 0.28; filter: grayscale(1); }
+.ds .mp-no-casca--removida .ct::after { content: ""; position: absolute; left: 6px; right: 6px; top: 50%; height: 1.5px; background: var(--ds-sev-block); transform: rotate(-12deg); }
+.ds .mp-no-removida { position: absolute; left: 50%; bottom: -22px; transform: translateX(-50%); font-size: 11px; color: var(--ds-sev-block); white-space: nowrap; }
+@media (prefers-reduced-motion: reduce) { .ds .mp-no-casca--destaque > :not(.mp-alca) { animation: none; box-shadow: 0 0 0 1.5px rgb(163 166 255 / 0.45); } }
