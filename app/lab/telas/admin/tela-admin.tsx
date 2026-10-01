@@ -27,7 +27,7 @@ import "./admin.css";
  * Esta rodada: o trilho e o Cockpit; os outros quatro destinos vêm depois.
  */
 
-export type SituacaoAdmin = "sem-token" | "cockpit" | "atencao" | "erro" | "dinheiro" | "dinheiro-sem-cotacao" | "dinheiro-sem-preco" | "motor" | "motor-amostra" | "motor-teste-falhou" | "pessoas" | "pessoas-lote" | "pessoas-convite" | "dados" | "dados-expurgo" | "dados-excluir";
+export type SituacaoAdmin = "sem-token" | "cockpit" | "atencao" | "erro" | "dinheiro" | "dinheiro-sem-cotacao" | "dinheiro-sem-preco" | "motor" | "motor-amostra" | "motor-teste-falhou" | "pessoas" | "pessoas-lote" | "pessoas-convite" | "pessoas-ficha" | "dados" | "dados-expurgo" | "dados-excluir";
 const comDados = (s: SituacaoAdmin) => s !== "sem-token" && s !== "erro";
 const ICONES: Record<Destino, typeof Gauge> = { cockpit: Gauge, dinheiro: BarChart3, motor: ShieldCheck, pessoas: UsersRound, dados: Database };
 const PRONTOS: Destino[] = ["cockpit", "dinheiro", "motor", "pessoas", "dados"];
@@ -284,7 +284,7 @@ export function TelaAdmin({ situacao }: { situacao: SituacaoAdmin }) {
   const [destino, setDestino] = useState<Destino>(situacao.startsWith("dinheiro") ? "dinheiro" : situacao.startsWith("motor") ? "motor" : situacao.startsWith("pessoas") ? "pessoas" : situacao.startsWith("dados") ? "dados" : "cockpit");
   const [periodo, setPeriodo] = useState<string>("7");
   const tem = comDados(situacao);
-  const varPessoas: VariantePessoas = situacao === "pessoas-lote" ? "lote" : situacao === "pessoas-convite" ? "convite" : "normal";
+  const varPessoas: VariantePessoas = situacao === "pessoas-lote" ? "lote" : situacao === "pessoas-convite" ? "convite" : situacao === "pessoas-ficha" ? "ficha" : "normal";
   const varBanco: VarianteBanco = situacao === "dados-expurgo" ? "expurgo" : situacao === "dados-excluir" ? "excluir" : "normal";
   const varMotor: VarianteMotor = situacao === "motor-amostra" ? "amostra" : situacao === "motor-teste-falhou" ? "teste-falhou" : "normal";
   const variante: VarianteDinheiro = situacao === "dinheiro-sem-cotacao" ? "sem-cotacao" : situacao === "dinheiro-sem-preco" ? "sem-preco" : "normal";

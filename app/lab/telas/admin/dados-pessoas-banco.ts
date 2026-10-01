@@ -21,18 +21,19 @@ export const EXPLICACAO_DA_PORTA: Record<Porta, string> = {
 };
 
 export type Vinculo = { papel: "OWNER" | "ADMIN" | "MEMBER"; situacao: "ACTIVE" | "INVITED" | "DISABLED" } | null;
-export type Pessoa = { id: string; nome: string; email: string; papel: "ADMIN" | "USER"; ativo: boolean; vinculo: Vinculo; auditorias: number; lds: number; geradas: number; atualizado: string };
+export type Pessoa = { id: string; nome: string; email: string; papel: "ADMIN" | "USER"; ativo: boolean; vinculo: Vinculo; auditorias: number; lds: number; geradas: number; criada: string; atualizado: string };
 
 export const PESSOAS: Pessoa[] = [
-  { id: "p1", nome: "Matheus Mendes", email: "matheus@prosul.com.br", papel: "ADMIN", ativo: true, vinculo: { papel: "OWNER", situacao: "ACTIVE" }, auditorias: 41, lds: 12, geradas: 9, atualizado: "30/09 21:12" },
-  { id: "p2", nome: "Fernanda Duarte", email: "fernanda@prosul.com.br", papel: "ADMIN", ativo: true, vinculo: { papel: "ADMIN", situacao: "ACTIVE" }, auditorias: 23, lds: 8, geradas: 6, atualizado: "30/09 16:40" },
-  { id: "p3", nome: "Victor Alves", email: "victor@prosul.com.br", papel: "USER", ativo: true, vinculo: { papel: "MEMBER", situacao: "ACTIVE" }, auditorias: 29, lds: 11, geradas: 8, atualizado: "30/09 11:05" },
-  { id: "p4", nome: "Rafael Souza", email: "rafael@prosul.com.br", papel: "USER", ativo: true, vinculo: { papel: "MEMBER", situacao: "ACTIVE" }, auditorias: 18, lds: 7, geradas: 5, atualizado: "29/09 18:22" },
-  { id: "p5", nome: "Camila Rocha", email: "camila@prosul.com.br", papel: "USER", ativo: true, vinculo: { papel: "MEMBER", situacao: "ACTIVE" }, auditorias: 9, lds: 4, geradas: 2, atualizado: "29/09 09:47" },
-  { id: "p6", nome: "Bruno Lima", email: "bruno@prosul.com.br", papel: "USER", ativo: true, vinculo: { papel: "MEMBER", situacao: "ACTIVE" }, auditorias: 6, lds: 2, geradas: 1, atualizado: "26/09 14:02" },
-  { id: "p7", nome: "Juliana Prado", email: "juliana@prosul.com.br", papel: "USER", ativo: true, vinculo: { papel: "MEMBER", situacao: "INVITED" }, auditorias: 0, lds: 0, geradas: 0, atualizado: "24/09 14:08" },
-  { id: "p8", nome: "Diego Ferraz", email: "diego.ferraz@gmail.com", papel: "USER", ativo: true, vinculo: null, auditorias: 2, lds: 1, geradas: 0, atualizado: "21/09 10:30" },
-  { id: "p9", nome: "Tiago Martins", email: "tiago@prosul.com.br", papel: "USER", ativo: false, vinculo: { papel: "MEMBER", situacao: "DISABLED" }, auditorias: 14, lds: 3, geradas: 3, atualizado: "02/09 17:44" },
+  { id: "p1", criada: "02/06", nome: "Matheus Mendes", email: "matheus@prosul.com.br", papel: "ADMIN", ativo: true, vinculo: { papel: "OWNER", situacao: "ACTIVE" }, auditorias: 41, lds: 12, geradas: 9, atualizado: "30/09 21:12" },
+  { id: "p2", criada: "02/06", nome: "Fernanda Duarte", email: "fernanda@prosul.com.br", papel: "ADMIN", ativo: true, vinculo: { papel: "ADMIN", situacao: "ACTIVE" }, auditorias: 23, lds: 8, geradas: 6, atualizado: "30/09 16:40" },
+  { id: "p3", criada: "14/06", nome: "Victor Alves", email: "victor@prosul.com.br", papel: "USER", ativo: true, vinculo: { papel: "MEMBER", situacao: "ACTIVE" }, auditorias: 29, lds: 11, geradas: 8, atualizado: "30/09 11:05" },
+  { id: "p4", criada: "14/06", nome: "Rafael Souza", email: "rafael@prosul.com.br", papel: "USER", ativo: true, vinculo: { papel: "MEMBER", situacao: "ACTIVE" }, auditorias: 18, lds: 7, geradas: 5, atualizado: "29/09 18:22" },
+  { id: "p5", criada: "03/07", nome: "Camila Rocha", email: "camila@prosul.com.br", papel: "USER", ativo: true, vinculo: { papel: "MEMBER", situacao: "ACTIVE" }, auditorias: 9, lds: 4, geradas: 2, atualizado: "29/09 09:47" },
+  { id: "p6", criada: "21/07", nome: "Bruno Lima", email: "bruno@prosul.com.br", papel: "USER", ativo: true, vinculo: { papel: "MEMBER", situacao: "ACTIVE" }, auditorias: 6, lds: 2, geradas: 1, atualizado: "26/09 14:02" },
+  { id: "p7", criada: "24/09", nome: "Juliana Prado", email: "juliana@prosul.com.br", papel: "USER", ativo: true, vinculo: { papel: "MEMBER", situacao: "INVITED" }, auditorias: 0, lds: 0, geradas: 0, atualizado: "24/09 14:08" },
+  { id: "p8", criada: "21/09", nome: "Diego Ferraz", email: "diego.ferraz@gmail.com", papel: "USER", ativo: true, vinculo: null, auditorias: 2, lds: 1, geradas: 0, atualizado: "21/09 10:30" },
+  { id: "p10", criada: "30/09", nome: "Lucas Teixeira", email: "lucas.teixeira@prosul.com.br", papel: "USER", ativo: true, vinculo: null, auditorias: 0, lds: 0, geradas: 0, atualizado: "30/09 08:12" },
+  { id: "p9", criada: "14/06", nome: "Tiago Martins", email: "tiago@prosul.com.br", papel: "USER", ativo: false, vinculo: { papel: "MEMBER", situacao: "DISABLED" }, auditorias: 14, lds: 3, geradas: 3, atualizado: "02/09 17:44" },
 ];
 
 /** escritorioLabel do app. */

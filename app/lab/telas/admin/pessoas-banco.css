@@ -43,21 +43,16 @@
 .ds .pb-perigo-texto { margin-left: auto; }
 
 /* a tabela de pessoas */
-.ds .pb-tabela .adm-linha { grid-template-columns: 24px minmax(210px, 1.7fr) 76px 104px 140px minmax(90px, 0.7fr) 40px 60px 84px 190px; min-height: 52px; }
+.ds .pb-tabela .adm-linha { grid-template-columns: 24px minmax(170px, 1.5fr) 96px 120px minmax(96px, 0.8fr) minmax(100px, 240px) 36px 84px 28px; min-height: 52px; }
 .ds .pb-pessoa--marcada { background: rgb(255 255 255 / 0.03); border-radius: 8px; }
 .ds .pb-pessoa--fora .adm-tit b { color: var(--ds-text-secondary); }
 .ds .pb-papel { justify-self: start; padding: 1px 7px; border-radius: 5px; box-shadow: inset 0 0 0 1px var(--ds-line-default); font-size: 11.5px; color: var(--ds-text-secondary); }
 .ds .pb-papel--admin { background: var(--ds-nexo-wash); box-shadow: none; color: var(--ds-nexo-soft); }
-.ds .pb-vinculo { display: flex; align-items: center; gap: 8px; }
 .ds .pb-vinculo-rotulo { font-family: var(--ds-font-mono); font-size: 11px; color: var(--ds-text-secondary); }
 .ds .pb-vinculo--convidado { color: var(--ds-state-info); }
 .ds .pb-vinculo--desligado { color: var(--ds-text-tertiary); text-decoration: line-through; }
-.ds .pb-acao { padding: 0; border: 0; background: none; font: inherit; font-size: 11.5px; color: var(--ds-text-tertiary); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; opacity: 0; transition: opacity 0.2s, color 0.2s; }
-.ds .pb-acao:hover { color: var(--ds-text-primary); }
 .ds .pb-aud { display: grid; grid-template-columns: minmax(0, 1fr) 24px; align-items: center; gap: 8px; }
 .ds .pb-aud b { font-weight: 450; text-align: right; }
-.ds .pb-acoes { display: flex; justify-content: flex-end; gap: 2px; opacity: 0; transition: opacity 0.2s; }
-.ds .pb-pessoa:hover .pb-acoes, .ds .pb-pessoa:focus-within .pb-acoes, .ds .pb-pessoa:hover .pb-acao, .ds .pb-pessoa:focus-within .pb-acao { opacity: 1; }
 
 /* conversas e expurgo */
 .ds .pb-conversas .pb-obra { grid-template-columns: 24px minmax(0, 1fr) minmax(120px, 0.6fr) 84px 120px; min-height: 52px; margin-top: 6px; }
@@ -88,3 +83,45 @@
 .ds .pb-auditorias .adm-linha { grid-template-columns: 24px minmax(0, 1.4fr) 88px 112px 70px 70px 44px 60px 84px minmax(0, 1fr) 84px; min-height: 44px; }
 .ds .pb-lds .adm-linha { grid-template-columns: 24px minmax(0, 1.4fr) 100px minmax(0, 1fr) 70px 50px 50px 60px 84px; min-height: 48px; }
 .ds .pb-corta { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+
+/* a fila de quem está sem escritório: é aqui que se aprova alguém */
+.ds .pb-fila { display: grid; padding: 0 8px 8px; }
+.ds .pb-pedido { display: grid; grid-template-columns: minmax(160px, 1fr) minmax(0, auto) auto; align-items: center; gap: 16px; padding: 10px 8px; border-top: 1px solid var(--ds-line-subtle); overflow: hidden; }
+.ds .pb-pedido-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; font-size: 12px; color: var(--ds-text-tertiary); }
+.ds .pb-fora-do-dominio { padding: 1px 7px; border-radius: 5px; background: var(--ds-state-attention-wash); font-style: normal; font-size: 11.5px; color: var(--ds-state-attention); }
+.ds .pb-pedido-acoes { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+.ds .pb-fila-vazia { margin: 0; padding: 14px 8px; border-top: 1px solid var(--ds-line-subtle); font-size: 12.5px; color: var(--ds-text-tertiary); }
+
+/* a linha abre a ficha de acesso */
+.ds .pb-pessoa { cursor: pointer; transition: background 0.2s; }
+.ds .pb-pessoa:hover { background: rgb(255 255 255 / 0.025); }
+.ds .pb-pessoa--aberta { background: rgb(255 255 255 / 0.04); }
+.ds .pb-abrir { display: grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 0; border-radius: 8px; background: none; color: var(--ds-text-tertiary); cursor: pointer; transition: transform 0.25s, color 0.2s, background 0.2s; }
+.ds .pb-abrir:hover { color: var(--ds-text-primary); background: rgb(255 255 255 / 0.06); }
+.ds .pb-abrir[aria-expanded="true"] { transform: rotate(180deg); color: var(--ds-text-primary); }
+.ds .pb-ficha { overflow: hidden; }
+.ds .pb-ficha-dentro { display: grid; gap: 12px; margin: 4px 0 10px; padding: 14px; border-radius: 12px; background: rgb(255 255 255 / 0.03); box-shadow: inset 0 0 0 1px var(--ds-line-default); }
+.ds .pb-chaves { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.ds .pb-chave { display: grid; align-content: start; gap: 8px; min-width: 0; padding: 12px; border-radius: 10px; box-shadow: inset 0 0 0 1px var(--ds-line-subtle); transition: box-shadow 0.2s, background 0.2s; }
+.ds .pb-chave--mudou { background: rgb(255 255 255 / 0.03); box-shadow: inset 0 0 0 1px var(--ds-text-tertiary); }
+.ds .pb-chave h4 { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 12.5px; font-weight: 500; }
+.ds .pb-chave p { margin: 0; font-size: 12px; line-height: 1.5; color: var(--ds-text-secondary); }
+.ds .pb-opcoes--chave { display: flex; flex-wrap: wrap; justify-self: start; max-width: 100%; }
+.ds .pb-opcoes--chave .pb-opcao { height: 28px; padding: 0 10px; font-size: 12px; }
+.ds .pb-opcao:disabled { cursor: default; opacity: 0.45; }
+.ds .pb-ficha-pe { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.ds .pb-ficha-resumo, .ds .pb-ficha-trava { flex: 1; min-width: 220px; margin: 0; font-size: 12.5px; }
+.ds .pb-ficha-resumo b { font-weight: 500; }
+.ds .pb-ficha-trava { display: flex; align-items: center; gap: 8px; color: var(--ds-state-error); }
+
+/* nada sai da caixa: o painel estreito larga as colunas de apoio */
+.ds .adm-bloco:has(.pb-tabela, .pb-fila, .pb-auditorias) { container-type: inline-size; }
+@container (max-width: 920px) {
+  .ds .pb-tabela .adm-linha { grid-template-columns: 24px minmax(150px, 1fr) 96px 110px minmax(90px, 0.8fr) 28px; }
+  .ds .pb-tabela .adm-linha > :nth-child(6), .ds .pb-tabela .adm-linha > :nth-child(7), .ds .pb-tabela .adm-linha > :nth-child(8) { display: none; }
+  .ds .pb-chaves { grid-template-columns: 1fr; }
+  .ds .pb-pedido { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .ds .pb-pedido-acoes { justify-content: flex-start; }
+  .ds .pb-auditorias .adm-linha > :nth-child(10), .ds .pb-auditorias .adm-linha > :nth-child(5), .ds .pb-auditorias .adm-linha > :nth-child(6) { display: none; }
+  .ds .pb-auditorias .adm-linha { grid-template-columns: 24px minmax(0, 1.4fr) 88px 112px 44px 60px 84px 84px; }
+}
