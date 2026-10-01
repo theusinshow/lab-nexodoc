@@ -1,6 +1,6 @@
 "use client";
 
-import { Background, BackgroundVariant, Handle, MiniMap, Position, ReactFlow, useStore, type Edge, type EdgeProps, type Node, type NodeProps, type OnNodeDrag, type OnNodesChange } from "@xyflow/react";
+import { Background, BackgroundVariant, getBezierPath, Handle, MiniMap, Position, ReactFlow, useStore, type Edge, type EdgeProps, type Node, type NodeProps, type OnNodeDrag, type OnNodesChange } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import "./cartoes.css";
 import { memo } from "react";
@@ -11,7 +11,7 @@ import { type Disciplina } from "../resultado-e/dados";
 import { SeloDaDisciplina } from "../resultado-e/disciplina";
 import { documentosDoTomo, FOLHAS, RESTOS, TOMOS, type Documento, type Folha, type Tomo } from "./dados";
 import { CartaoDaFolha, useEstiloDoCartao } from "./cartoes";
-import { ALTURA_DO_DOC, LARGURA_DO_PAPEL, PapelDoDocumento, type EstadoDoDoc } from "./documentos";
+import { ALTURA_DO_DOC, ALTURA_DO_PAPEL, ALTURA_DO_TITULO, LARGURA_DO_PAPEL, PapelDoDocumento, type EstadoDoDoc } from "./documentos";
 import { dd } from "./lado";
 
 /*
@@ -28,14 +28,14 @@ const LARGURA_DO_DOC = LARGURA_DO_PAPEL + 12;
 /** Dentro do bloco as folhas ficam juntas (12 px): não há seta entre elas. */
 const PASSO_DA_FOLHA = 152;
 /** Entre os papéis (capa, separatrizes, LD): espaço para uma seta inteira. */
-const ENTRE_PECAS = 44;
+const ENTRE_PECAS = 76;
 /** Entre um bloco de folhas e o próximo (ou o papel ao lado). */
-const ENTRE_BLOCOS = 60;
+const ENTRE_BLOCOS = 92;
 /** A moldura do bloco passa 10 px por fora das folhas. */
 const FOLGA_DO_BLOCO = 10;
 export const Y_DA_FILEIRA = (i: number) => i * 300;
-/** O papel é mais alto que a folha: sobe para os centros ficarem na mesma linha. */
-const Y_DO_PAPEL = -46;
+/** O papel é mais alto que a folha: sobe até o CENTRO do papel cair no centro da folha (a linha das setas). O título fica acima. */
+const Y_DO_PAPEL = ALTURA_DO_NO / 2 - ALTURA_DO_PAPEL / 2 - ALTURA_DO_TITULO;
 export const X_INICIAL = 160;
 
 
@@ -85,7 +85,9 @@ const NoDoDoc = memo(function NoDoDoc({ data }: NodeProps<Node<DadosDoDoc>>) {
   const densidade = useDensidade();
   return (
     <div className={`mp-no-casca${data.destaque ? " mp-no-casca--destaque" : ""}`}>
-      {alcas}
+      {/* As alças ficam nas bordas do PAPEL, na altura do meio dele: a seta sai e chega no papel, não na legenda. */}
+      <Handle type="target" position={Position.Left} className="mp-alca" isConnectable={false} style={{ top: ALTURA_DO_TITULO + ALTURA_DO_PAPEL / 2 }} />
+      <Handle type="source" position={Position.Right} className="mp-alca" isConnectable={false} style={{ top: ALTURA_DO_TITULO + ALTURA_DO_PAPEL / 2, left: LARGURA_DO_PAPEL, right: "auto" }} />
       <PapelDoDocumento d={data.d} estado={data.estado} tomo={data.tomo} distancia={densidade} />
     </div>
   );
@@ -117,19 +119,21 @@ const NoDoRotulo = memo(function NoDoRotulo({ data }: NodeProps<Node<DadosDoRotu
  * hoje (uma seta por folha viraria duzentas linhas cruzando a grade).
  */
 export type DadosDoBloco = { disc: Disciplina; n: number; largura: number };
-const ALTURA_DO_BLOCO = ALTURA_DO_NO + 54;
-/** O bloco começa 40 px acima da folha (o cabeçalho); a alça fica no centro da FOLHA, não do bloco. */
-const TOPO_DO_BLOCO = -40;
+/** O título do bloco fica fora, em cima da moldura; a moldura passa 10 px por fora das folhas. */
+const TITULO_DO_BLOCO = 30;
+const ALTURA_DO_BLOCO = TITULO_DO_BLOCO + ALTURA_DO_NO + 20;
+const TOPO_DO_BLOCO = -(TITULO_DO_BLOCO + 10);
 
 const NoDoBloco = memo(function NoDoBloco({ data }: NodeProps<Node<DadosDoBloco>>) {
   return (
     <div className="mp-bloco" style={{ width: data.largura, height: ALTURA_DO_BLOCO }}>
       <Handle type="target" position={Position.Left} className="mp-alca" isConnectable={false} style={{ top: -TOPO_DO_BLOCO + ALTURA_DO_NO / 2 }} />
       <Handle type="source" position={Position.Right} className="mp-alca" isConnectable={false} style={{ top: -TOPO_DO_BLOCO + ALTURA_DO_NO / 2 }} />
-      <p className="mp-bloco-cabeca">
+      <p className="mp-bloco-cabeca" style={{ height: TITULO_DO_BLOCO }}>
         <SeloDaDisciplina disc={data.disc} nome />
-        <span className="ds-num">{data.n}</span>
+        <span className="ds-num">{data.n === 1 ? "1 folha" : `${data.n} folhas`}</span>
       </p>
+      <i className="mp-bloco-moldura" aria-hidden />
     </div>
   );
 });
@@ -148,15 +152,15 @@ const NoDaFresta = memo(function NoDaFresta() {
 export type DadosDaSeta = { acesa?: boolean; fraca?: boolean };
 
 const Seta = memo(function Seta({ sourceX, sourceY, targetX, targetY, data }: EdgeProps<Edge<DadosDaSeta>>) {
-  const x0 = sourceX + 1;
-  const x1 = targetX - 1;
-  const y = (sourceY + targetY) / 2;
-  if (x1 - x0 < 14 || x1 - x0 > 140 || Math.abs(sourceY - targetY) > 14) return null;
+  // Curva que sai e chega na horizontal: reta quando as peças estão alinhadas,
+  // e dobra com suavidade quando uma delas anda (arrastar, acomodar).
+  const [caminho] = getBezierPath({ sourceX, sourceY, sourcePosition: Position.Right, targetX, targetY, targetPosition: Position.Left, curvature: 0.35 });
   const cls = `mp-seta3${data?.acesa ? " mp-seta3--acesa" : ""}${data?.fraca ? " mp-seta3--fraca" : ""}`;
   return (
     <g className={cls}>
-      <path d={`M${x0},${y} L${x1 - 5},${y}`} className="mp-seta3-linha" />
-      <path d={`M${x1 - 6},${y - 3.5} L${x1},${y} L${x1 - 6},${y + 3.5} Z`} className="mp-seta3-ponta" />
+      <path d={caminho} className="mp-seta3-linha" />
+      <circle cx={sourceX} cy={sourceY} r={4.5} className="mp-seta3-porta" />
+      <circle cx={targetX} cy={targetY} r={4.5} className="mp-seta3-porta" />
     </g>
   );
 });

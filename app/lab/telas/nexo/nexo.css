@@ -79,3 +79,6 @@
 
 @media (prefers-reduced-motion: reduce) { .ds .nw-canvas .react-flow__node.nw-nasce > *, .ds .nw-canvas .react-flow__node.nw-sai > * { animation: none; } }
 .ds .nw-fio .cx-gerando-linha, .ds .nw-fio .cx-gerando-linha > span { width: 100%; }
+/* a barra do canvas flutua no pé, ao centro (como num quadro de nós); o aviso do arrasto sobe acima dela */
+.ds .nw-canvas .mp-zoom { left: 50%; transform: translateX(-50%); }
+.ds .nw-feito { bottom: 64px; }

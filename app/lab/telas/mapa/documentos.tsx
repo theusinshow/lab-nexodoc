@@ -22,8 +22,9 @@ export type EstadoDoDoc = "a-gerar" | "gerado" | "corrigido" | "desatualizado" |
 
 export const LARGURA_DO_PAPEL = 112;
 export const ALTURA_DO_PAPEL = 158;
-/** A legenda embaixo do papel faz parte do nó. */
-export const ALTURA_DO_DOC = ALTURA_DO_PAPEL + 44;
+/** O título do papel fica EM CIMA dele (nome e estado), e faz parte do nó. */
+export const ALTURA_DO_TITULO = 44;
+export const ALTURA_DO_DOC = ALTURA_DO_PAPEL + ALTURA_DO_TITULO;
 
 const NOME_DO_ESTADO: Record<EstadoDoDoc, string> = {
   "a-gerar": "a gerar",

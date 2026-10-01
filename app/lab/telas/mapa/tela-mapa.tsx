@@ -30,7 +30,7 @@ const passa = (r: Recorte, f: Folha) => r === "todas" || (r === "conferir" ? pre
 const ZOOM_DE_TRABALHO = 0.95;
 
 /** O zoom, em número, e os botões dele. Fica no canto do canvas, como no app. */
-function ControlesDoZoom({ onEnquadrar }: { onEnquadrar: () => void }) {
+export function ControlesDoZoom({ onEnquadrar }: { onEnquadrar: () => void }) {
   const { zoomIn, zoomOut } = useReactFlow();
   const zoom = useStore((s) => s.transform[2]);
   return (

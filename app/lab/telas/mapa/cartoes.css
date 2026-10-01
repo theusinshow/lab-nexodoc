@@ -113,17 +113,19 @@
 .ds .pp-papel { position: relative; z-index: 1; display: flex; flex-direction: column; width: 100%; height: 100%; overflow: hidden; border-radius: 2px; background: var(--pp-papel); color: var(--pp-tinta); box-shadow: 0 1px 0 rgb(0 0 0 / 0.25), 0 10px 24px rgb(0 0 0 / 0.35); transition: opacity 0.35s, box-shadow 0.3s; }
 .ds .pp-atras { position: absolute; inset: 0; border-radius: 2px; background: #cfccc5; transform: translate(calc(var(--pp-i) * 4px), calc(var(--pp-i) * 4px)); box-shadow: 0 6px 14px rgb(0 0 0 / 0.3); }
 .ds .pp-mono { font-family: var(--ds-font-mono); }
-.ds .pp-legenda { display: grid; gap: 1px; width: 124px; font-size: 12px; color: var(--ds-text-secondary); white-space: nowrap; }
+/* o título do papel, em cima dele (como o rótulo de um nó num canvas): nome e, embaixo, o estado */
+.ds .pp-legenda { order: -1; display: grid; align-content: end; gap: 1px; width: 124px; height: 36px; font-size: 12px; color: var(--ds-text-secondary); white-space: nowrap; }
 .ds .pp-legenda span { overflow: hidden; text-overflow: ellipsis; }
 .ds .pp-estado { flex: none; font-style: normal; font-size: 11px; color: var(--ds-text-tertiary); }
 .ds .pp-estado--corrigido, .ds .pp-estado--desatualizado, .ds .pp-estado--sobra { color: var(--ds-sev-decide); }
 
 /* a gerar: papel fantasma, tracejado; ainda não existe */
-.ds .pp--a-gerar { --pp-tinta: rgb(255 255 255 / 0.4); --pp-fraca: rgb(255 255 255 / 0.22); --pp-regua: rgb(255 255 255 / 0.18); --pp-linha: rgb(255 255 255 / 0.07); }
-.ds .pp--a-gerar .pp-papel { background: rgb(255 255 255 / 0.015) !important; box-shadow: none; outline: 1px dashed rgb(255 255 255 / 0.28); outline-offset: -1px; }
-.ds .pp--a-gerar .pp-atras { background: transparent; box-shadow: none; outline: 1px dashed rgb(255 255 255 / 0.13); outline-offset: -1px; }
-.ds .pp--a-gerar .pp-capa > :first-child { opacity: 0.35; filter: grayscale(1); }
-.ds .pp--a-gerar .pp-ld-falta { background: none; }
+/* "A gerar" é papel de verdade (é o que o Nexo vai imprimir), só que ainda sem tinta forte:
+   um tom abaixo do gerado e sem sombra. Tracejado e transparente lia como item apagado. */
+.ds .pp--a-gerar { --pp-papel: #c9c7c1; --pp-tinta: #3a3a3c; --pp-fraca: #7d7b77; }
+.ds .pp--a-gerar .pp-papel { box-shadow: 0 1px 0 rgb(0 0 0 / 0.25); }
+.ds .pp--a-gerar .pp-atras { background: #b3b1ab; box-shadow: none; }
+.ds .pp--a-gerar.pp--volume .pp-papel { background: #c3c1bb; }
 .ds .pp--corrigido .pp-papel, .ds .pp--desatualizado .pp-papel, .ds .pp--sobra .pp-papel { box-shadow: 0 0 0 2px rgb(from var(--ds-sev-decide) r g b / 0.85), 0 10px 24px rgb(0 0 0 / 0.35); }
 .ds .pp--sobra .pp-papel { opacity: 0.7; }
 .ds .pp-longe { margin: auto; font-size: 24px; color: var(--pp-fraca); }

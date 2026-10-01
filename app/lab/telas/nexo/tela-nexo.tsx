@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactFlowProvider, type Node, type OnNodeDrag, type OnNodesChange } from "@xyflow/react";
+import { ReactFlowProvider, useReactFlow, type Node, type OnNodeDrag, type OnNodesChange } from "@xyflow/react";
 import { AnimatePresence, motion, useReducedMotionConfig } from "motion/react";
 import { MessageSquarePlus, PanelLeftClose, PanelRightClose, Search } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
@@ -14,6 +14,7 @@ import { Campo } from "../conversa/tela-conversa";
 import { DeVoce, Lacuna, Passo, PecaDeArquivo, RITMO, SUAVE, Saidas, Troca, type Arquivo } from "../conversa/turnos";
 import { ALTURA_DO_NO, LARGURA_DA_FOLHA, montarCanvas, ondeCai, ordemPadrao, Tela } from "../mapa/canvas";
 import { CartaoAtual } from "../mapa/cartoes";
+import { ControlesDoZoom } from "../mapa/tela-mapa";
 import { FOLHAS } from "../mapa/dados";
 import { useCamera, useNosQueAndam } from "./andar";
 import { FAIXAS, quadroDa, ROTEIROS, type Quadro, type SituacaoNexo } from "./roteiro";
@@ -337,6 +338,7 @@ function Palco({ q, lidas }: { q: Quadro; lidas: number }) {
   // Só o que a mão fez anda: soltar uma folha acomoda tudo em 240 ms. Abrir a tela não anima nada.
   const { nos, ajustar } = useNosQueAndam(alvo.nodes, reduzir ? 0 : 0.24);
   const pronto = useCamera(alvo.nodes, q.foco, 0.9, 0, false);
+  const { fitView } = useReactFlow();
 
   const posicoes = useMemo(() => new Map(alvo.nodes.filter((n) => n.type === "folha").map((n) => [n.id, n.position])), [alvo]);
   const cai = arrasto ? ondeCai(alvo.fileiras as Fileiras, posicoes, arrasto.id, { x: arrasto.pos.x + LARGURA_DA_FOLHA / 2, y: arrasto.pos.y + ALTURA_DO_NO / 2 }) : null;
@@ -397,6 +399,7 @@ function Palco({ q, lidas }: { q: Quadro; lidas: number }) {
   return (
     <div className={`nw-canvas${pronto ? " nw-canvas--pronto" : ""}`}>
       <Tela nodes={vistos} edges={alvo.edges} onFolha={() => {}} onVazio={() => {}} zoomMinimo={0.08} minimapa={false} arrastavel onNodesChange={aoMudar} onNodeDragStop={aoSoltar} />
+      <ControlesDoZoom onEnquadrar={() => fitView({ padding: 0.08, duration: 240 })} />
       <AnimatePresence>
         {feito && (
           <motion.div
