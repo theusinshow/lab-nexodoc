@@ -1,0 +1,107 @@
+/* A ENTRADA (login e sem acesso): à esquerda a porta, à direita o filme. Desenho aprovado em /lab/telas/entrada. */
+.ds .en {
+  display: grid;
+  grid-template-columns: 448px 1fr;
+  min-height: 100dvh;
+  background: var(--ds-surface-page);
+}
+.ds .en ::selection { background: var(--ds-nexo-wash); color: var(--ds-text-primary); }
+
+.ds .en-porta {
+  display: grid;
+  grid-template-rows: auto 1fr auto auto;
+  padding: 32px 48px 28px;
+  box-shadow: 1px 0 0 var(--ds-line-subtle);
+  position: relative;
+  z-index: 1;
+}
+.ds .en-marca { display: flex; align-items: center; gap: 9px; font-size: var(--ds-text-md); font-weight: 600; letter-spacing: -0.01em; }
+.ds .en-conteudo { align-self: center; padding: 48px 0; }
+
+.ds .en-titulo { margin: 0; font-size: 30px; font-weight: 600; letter-spacing: -0.025em; line-height: 1.15; text-wrap: balance; }
+.ds .en-lede { margin: 12px 0 0; font-size: var(--ds-text-md); line-height: 1.55; color: var(--ds-text-secondary); text-wrap: pretty; }
+.ds .en-email { color: var(--ds-text-primary); }
+.ds .en-mono { font-family: var(--ds-font-mono, ui-monospace, monospace); font-variant-numeric: tabular-nums; font-size: 0.93em; }
+
+/* O único primário da tela: papel claro, o G colorido (marca de terceiro). */
+.ds .en-google {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  width: 100%; height: 44px; margin-top: 32px;
+  border: 0; border-radius: var(--ds-radius-control);
+  background: var(--ds-action-bg); color: var(--ds-action-fg);
+  font: inherit; font-size: var(--ds-text-md); font-weight: 500;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.4);
+  transition: background 0.16s cubic-bezier(0.22, 1, 0.36, 1), transform 0.16s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.ds .en-google:hover:not(:disabled) { background: var(--ds-action-bg-hover); }
+.ds .en-google:active:not(:disabled) { transform: scale(0.985); }
+.ds .en-google:disabled { cursor: progress; background: color-mix(in srgb, var(--ds-action-bg) 82%, var(--ds-surface-page)); }
+.ds .en-google:focus-visible { outline: 2px solid var(--ds-focus-ring); outline-offset: 3px; }
+.ds .en-nota { margin: 12px 0 0; font-size: 13px; line-height: 1.55; color: var(--ds-text-tertiary); text-wrap: pretty; }
+
+.ds .en-gira { animation: en-gira 0.9s linear infinite; }
+@keyframes en-gira { to { transform: rotate(360deg); } }
+
+/* Avisos: a cor fica no ícone, o texto lê em neutro. */
+.ds .en-aviso { display: flex; gap: 9px; align-items: flex-start; margin: 20px 0 0; font-size: 13.5px; line-height: 1.5; color: var(--ds-text-secondary); }
+.ds .en-aviso svg { flex: none; margin-top: 3px; }
+.ds .en-aviso--erro { color: var(--ds-text-primary); }
+.ds .en-aviso--erro svg { color: var(--ds-state-error); }
+.ds .en-aviso--ok svg { color: var(--ds-state-ok); }
+.ds .en-aviso--atencao svg { color: var(--ds-state-attention); }
+.ds .en-aviso--info svg { color: var(--ds-state-info); }
+
+.ds .en-dev { margin-top: 24px; padding-top: 16px; border-top: 1px dashed var(--ds-line-default); }
+.ds .en-dev-rotulo { display: flex; align-items: center; gap: 7px; margin: 0 0 10px; font-size: 12.5px; font-weight: 500; color: var(--ds-text-secondary); }
+.ds .en-dev-linha { display: flex; gap: 8px; }
+
+.ds .en input, .ds .en textarea {
+  width: 100%; min-width: 0; padding: 8px 11px;
+  border: 0; border-radius: 8px;
+  background: rgb(255 255 255 / 0.035); box-shadow: inset 0 0 0 1px var(--ds-line-default);
+  font: inherit; font-size: 13.5px; color: var(--ds-text-primary); resize: none; caret-color: var(--ds-nexo-soft);
+  transition: box-shadow 0.2s;
+}
+.ds .en input:focus-visible, .ds .en textarea:focus-visible { outline: none; box-shadow: inset 0 0 0 1px var(--ds-text-secondary); }
+.ds .en input::placeholder, .ds .en textarea::placeholder { color: var(--ds-text-tertiary); }
+
+.ds .en-rodape { margin-top: 32px; padding-top: 14px; border-top: 1px solid var(--ds-line-subtle); }
+.ds .en-rodape .ds-btn--quiet { margin-left: -10px; }
+.ds .en-rodape--linha { display: grid; gap: 8px; justify-items: start; }
+.ds .en-rodape--linha p { margin: 0; font-size: 13px; color: var(--ds-text-tertiary); }
+
+.ds .en-form { display: grid; gap: 12px; padding-top: 4px; }
+.ds .en-form-titulo { margin: 0; font-size: var(--ds-text-sm); font-weight: 500; }
+.ds .en-campo { display: grid; gap: 6px; }
+.ds .en-campo > span { display: flex; font-size: 12.5px; color: var(--ds-text-secondary); }
+.ds .en-campo em { margin-left: auto; font-style: normal; color: var(--ds-text-tertiary); }
+.ds .en-form .en-aviso { margin: 0; }
+.ds .en-form-acoes { display: flex; gap: 6px; }
+
+.ds .en-quem { margin-top: 28px; }
+.ds .en-quem-titulo { margin: 0 0 8px; font-size: 12.5px; color: var(--ds-text-secondary); }
+.ds .en-quem ul { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--ds-line-subtle); }
+.ds .en-quem li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--ds-line-subtle); font-size: 13.5px; }
+.ds .en-quem a { text-decoration: none; }
+
+.ds .en-pe { display: flex; gap: 14px; font-size: 12px; color: var(--ds-text-tertiary); }
+
+/* ---------- O FILME: o vídeo cobre o painel, no mesmo chão da página ---------- */
+.ds .en-filme { position: relative; overflow: hidden; background: #08090b; }
+.ds .en-filme-midia { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 50%; display: block; }
+
+/* ---------- A nota do celular: só aparece quando o filme sai ---------- */
+.ds .en-celular { display: none; margin: 0 0 20px; padding: 12px 14px; border-radius: 10px; background: rgb(255 255 255 / 0.03); box-shadow: inset 0 0 0 1px var(--ds-line-subtle); }
+.ds .en-celular p { margin: 0; font-size: 13px; line-height: 1.5; color: var(--ds-text-secondary); }
+.ds .en-celular p:first-child { color: var(--ds-text-primary); font-weight: 500; }
+
+/* ---------- Tela estreita: o filme sai, o login fica ---------- */
+@media (max-width: 900px) {
+  .ds .en { grid-template-columns: 1fr; min-height: 100dvh; }
+  .ds .en-filme { display: none; }
+  .ds .en-porta { padding: 24px 20px; box-shadow: none; }
+  .ds .en-conteudo { padding: 40px 0 24px; }
+  .ds .en-titulo { font-size: 26px; }
+  .ds .en-celular { display: grid; gap: 2px; }
+}
