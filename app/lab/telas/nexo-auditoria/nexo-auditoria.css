@@ -46,15 +46,54 @@
 .ds .na-lista li::marker { color: var(--ds-text-tertiary); font-family: var(--ds-font-mono); font-size: 12px; }
 
 /* a fila no palco: lista e achado dividem a largura, e o achado lê de cima para baixo */
-.ds .re--embutido .rs-fila { grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr); height: max(560px, calc(100vh - 64px - 48px - 32px)); }
+.ds .re--embutido .rs-fila { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); height: max(560px, calc(100vh - 64px - 48px - 32px)); }
 .ds .re--embutido .rs-partes > div { grid-template-columns: minmax(0, 1fr); gap: 2px; }
 .ds .re--embutido .rs-detalhe-corpo h2 { font-size: 19px; }
 
 /* recolher conversas e chat: o palco fica com a largura */
 .ds .na .nw-mesa { transition: grid-template-columns var(--ds-dur-layout) var(--ds-ease-out); }
-.ds .na-mesa--sem-conversas { grid-template-columns: 0 minmax(0, 1fr) 430px; }
-.ds .na-mesa--sem-chat { grid-template-columns: 240px minmax(0, 1fr) 0; }
-.ds .na-mesa--sem-conversas.na-mesa--sem-chat { grid-template-columns: 0 minmax(0, 1fr) 0; }
+.ds .na .nw-mesa { --na-conversas: 240px; --na-chat: 430px; grid-template-columns: var(--na-conversas) minmax(0, 1fr) var(--na-chat); }
+/* abaixo de 1440 o palco perderia a fila: conversas e chat cedem um pouco */
+@media (max-width: 1439px) {
+  .ds .na .nw-mesa { --na-conversas: 196px; --na-chat: 360px; }
+}
+.ds .na .nw-mesa.na-mesa--sem-conversas { --na-conversas: 0px; }
+.ds .na .nw-mesa.na-mesa--sem-chat { --na-chat: 0px; }
 .ds .na-mesa--sem-conversas > .nw-conversas,
 .ds .na-mesa--sem-chat > .nw-chat { overflow: hidden; padding-left: 0; padding-right: 0; border: 0; visibility: hidden; }
 .ds .nw-espaco button[aria-pressed="true"] { background: rgb(255 255 255 / 0.08); color: var(--ds-text-primary); }
+
+/* A LISTA ESTREITA LÊ EM DUAS FAIXAS: em cima o número, a disciplina e o dono;
+   embaixo o título inteiro, em até duas linhas. Cortar o título em "Revisão B
+   n…" deixava a fila ilegível no palco. As abas de cima rolam de lado em vez
+   de sumir pela borda. */
+.ds .re.re--embutido .rs-linha-corpo {
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "id meta" "titulo titulo";
+  row-gap: 3px;
+  height: auto;
+  min-height: 52px;
+  padding: 8px 10px 9px 8px;
+}
+.ds .re.re--embutido .rs-linha-id { grid-area: id; }
+.ds .re.re--embutido .rs-linha-meta { grid-area: meta; }
+.ds .re.re--embutido .rs-linha-titulo {
+  grid-area: titulo;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  white-space: normal;
+  line-height: 1.4;
+}
+.ds .re--embutido .rs-lista-topo .ds-seg { max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+.ds .re--embutido .rs-lista-topo .ds-seg::-webkit-scrollbar { display: none; }
+.ds .re--embutido .rs-lista-topo .ds-seg button { flex: none; }
+
+/* a faixa de cima do achado e a linha do dono quebram em vez de cortar */
+.ds .re--embutido .rs-detalhe-topo { flex-wrap: wrap; row-gap: 6px; padding-left: 16px; }
+.ds .re--embutido .rs-dono { flex-wrap: wrap; row-gap: 8px; }
+.ds .re--embutido .rs-dono > * { white-space: nowrap; }
+.ds .re--embutido .rs-detalhe-corpo { padding: 16px 16px 18px; }
+/* as ações do achado quebram linha no palco estreito; os atalhos J/K saem (o teclado continua valendo) */
+.ds .re--embutido .rs-botoes { flex-wrap: wrap; row-gap: 6px; }
+.ds .re--embutido .rs-atalhos { display: none; }
