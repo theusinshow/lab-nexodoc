@@ -157,16 +157,25 @@ const NoDaFresta = memo(function NoDaFresta() {
  */
 export type DadosDaSeta = { acesa?: boolean; fraca?: boolean };
 
-const Seta = memo(function Seta({ sourceX, sourceY, targetX, targetY, data }: EdgeProps<Edge<DadosDaSeta>>) {
-  // Curva que sai e chega na horizontal: reta quando as peças estão alinhadas,
-  // e dobra com suavidade quando uma delas anda (arrastar, acomodar).
-  const [caminho] = getBezierPath({ sourceX, sourceY, sourcePosition: Position.Right, targetX, targetY, targetPosition: Position.Left, curvature: 0.35 });
+const Seta = memo(function Seta({ id, sourceX, sourceY, targetX, targetY, data }: EdgeProps<Edge<DadosDaSeta>>) {
+  // Nasce num ponto pequeno colado na peça de origem; o fio clareia no sentido da
+  // leitura e chega numa ponta afinada, a 3 px da peça seguinte. Reta quando as
+  // peças estão alinhadas; dobra com suavidade quando uma delas anda.
+  const ponta = targetX - 3;
+  const [caminho] = getBezierPath({ sourceX: sourceX + 4, sourceY, sourcePosition: Position.Right, targetX: ponta - 6, targetY, targetPosition: Position.Left, curvature: 0.35 });
   const cls = `mp-seta3${data?.acesa ? " mp-seta3--acesa" : ""}${data?.fraca ? " mp-seta3--fraca" : ""}`;
+  const grad = `mp-seta-${id.replace(/[^a-zA-Z0-9-]/g, "_")}`;
   return (
     <g className={cls}>
-      <path d={caminho} className="mp-seta3-linha" />
-      <circle cx={sourceX} cy={sourceY} r={4.5} className="mp-seta3-porta" />
-      <circle cx={targetX} cy={targetY} r={4.5} className="mp-seta3-porta" />
+      <defs>
+        <linearGradient id={grad} gradientUnits="userSpaceOnUse" x1={sourceX} y1={sourceY} x2={targetX} y2={targetY}>
+          <stop offset="0" className="mp-seta3-de" />
+          <stop offset="1" className="mp-seta3-para" />
+        </linearGradient>
+      </defs>
+      <path d={caminho} className="mp-seta3-linha" stroke={`url(#${grad})`} />
+      <circle cx={sourceX + 1} cy={sourceY} r={2.75} className="mp-seta3-origem" />
+      <path d={`M${ponta},${targetY} L${ponta - 10},${targetY - 4.5} L${ponta - 7},${targetY} L${ponta - 10},${targetY + 4.5} Z`} className="mp-seta3-ponta" />
     </g>
   );
 });

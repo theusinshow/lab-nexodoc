@@ -259,11 +259,18 @@
 .ds .mp-bloco-cabeca .ds-num { font-size: 11px; color: var(--ds-text-tertiary); }
 
 /* A SETA ESTRUTURADA: fio fino reto e ponta cheia pequena. Sem brilho, sem movimento. */
-.ds .mp-seta3-linha { fill: none; stroke: rgb(255 255 255 / 0.3); stroke-width: 1.5; stroke-linecap: round; }
-.ds .mp-seta3-porta { fill: var(--ds-surface-raised); stroke: rgb(255 255 255 / 0.55); stroke-width: 1.5; }
-.ds .mp-seta3--acesa .mp-seta3-linha { stroke: rgb(163 166 255 / 0.6); }
-.ds .mp-seta3--acesa .mp-seta3-porta { stroke: var(--ds-nexo-soft); fill: rgb(163 166 255 / 0.25); }
-.ds .mp-seta3--fraca .mp-seta3-linha { stroke-dasharray: 2 3; }
+.ds .mp-seta3-linha { fill: none; stroke-width: 1.5; stroke-linecap: round; }
+.ds .mp-seta3-de { stop-color: rgb(255 255 255 / 0.14); }
+.ds .mp-seta3-para { stop-color: rgb(255 255 255 / 0.5); }
+.ds .mp-seta3-origem { fill: rgb(255 255 255 / 0.32); }
+.ds .mp-seta3-ponta { fill: rgb(255 255 255 / 0.62); stroke: rgb(255 255 255 / 0.62); stroke-width: 1; stroke-linejoin: round; }
+/* acesa: encosta no que mudou; o mesmo desenho, em íris */
+.ds .mp-seta3--acesa .mp-seta3-de { stop-color: rgb(163 166 255 / 0.25); }
+.ds .mp-seta3--acesa .mp-seta3-para { stop-color: rgb(163 166 255 / 0.85); }
+.ds .mp-seta3--acesa .mp-seta3-origem { fill: rgb(163 166 255 / 0.55); }
+.ds .mp-seta3--acesa .mp-seta3-ponta { fill: var(--ds-nexo-soft); stroke: var(--ds-nexo-soft); }
+/* fraca: encosta numa folha tirada */
+.ds .mp-seta3--fraca .mp-seta3-linha { stroke-dasharray: 2 4; }
 
 /* O ARRASTO, que segue a mão: a folha se ergue (leve), as vizinhas abrem espaço,
    uma fresta marca onde ela cai; ao soltar, tudo se acomoda em 240 ms. */
