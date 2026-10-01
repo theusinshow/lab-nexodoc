@@ -80,14 +80,22 @@ export const CORES_DO_ORBE_TEAL: CoresDoOrbe = {
 };
 
 /*
- * COR SÓ PARA SINAL: três estados puxam o aro e os anéis para a cor do sinal
- * (os mesmos tons do sistema, --ds-state-*); a alma continua íris. O resto é íris.
+ * COR SÓ PARA SINAL: três estados levam o aro, os anéis e a alma para a cor do
+ * sinal (os tons do sistema, --ds-state-*). O resto do tempo, a paleta do orbe.
  */
-const SINAL_DO_ESTADO: Partial<Record<AgentState, string>> = {
-  complete: "#7bd8a5",
-  waiting: "#f0b45c",
-  error: "#ff7d6e",
+/*
+ * A ALMA ACOMPANHA O SINAL com uma paleta PRÓPRIA por sinal, e não misturando
+ * a íris com o verde (que dava teal) ou com o âmbar (que dava rosa). Cada uma
+ * vai do fundo ao claro na mesma lógica da íris.
+ */
+const PALETA_DO_SINAL: Partial<Record<AgentState, { aro: string; almaA: string; almaC: string; lamina: string }>> = {
+  complete: { aro: "#7bd8a5", almaA: "#2f9e6c", almaC: "#8be3b2", lamina: "#d2f5e2" },
+  waiting: { aro: "#f0b45c", almaA: "#c47f2b", almaC: "#f5c27a", lamina: "#fbe6c4" },
+  error: { aro: "#ff7d6e", almaA: "#cf4a3f", almaC: "#ff9a8c", lamina: "#ffd6cf" },
 };
+const SINAL_DO_ESTADO: Partial<Record<AgentState, string>> = Object.fromEntries(
+  Object.entries(PALETA_DO_SINAL).map(([k, v]) => [k, v!.aro]),
+);
 
 /*
  * A EXPRESSÃO NOVA: cada estado ganha uma assinatura própria de movimento,
@@ -234,6 +242,7 @@ const OrbCoreMaterial = shaderMaterial(
     uColorD: new THREE.Color(SOUL_TEAL_LIGHT),
     uOndaDaAlma: VIDRO_DO_ORBE.ondaDaAlma,
     uVigor: 0,
+    uNasce: 1,
     uIrid: 0,
     uIris2: new THREE.Color(VIDA_DO_ORBE.iris2),
   },
@@ -268,6 +277,7 @@ export function AgentOrbScene({
   expressao = "nova",
   achados = 0,
   vida,
+  sempreNascer = false,
 }: {
   state: AgentState;
   activity: number;
@@ -298,6 +308,8 @@ export function AgentOrbScene({
   achados?: number;
   /** As regulagens de vida (ver VIDA_DO_ORBE); ausentes, o orbe é o de antes. */
   vida?: Partial<VidaDoOrbe>;
+  /** Laboratório: nasce toda vez que monta (no app, só no primeiro carregamento). */
+  sempreNascer?: boolean;
 }) {
   const outerRef = useRef<THREE.Group>(null); // escala (hover + drag + press)
   const tiltRef = useRef<THREE.Group>(null); // inclinação que segue o ponteiro
@@ -320,7 +332,11 @@ export function AgentOrbScene({
   /** Fração do arco de leitura já fechada (0..1), amortecida. */
   const progressoRef01 = useRef(0);
   /** 0 → 1 na primeira montagem da sessão; já nasce em 1 nas seguintes. */
-  const bootRef = useRef(jaLigou || reduced ? 1 : 0);
+  const bootRef = useRef((jaLigou && !sempreNascer) || reduced ? 1 : 0);
+  // o relógio do nascer (0 a 1 em ~1,15 s), separado do boot do aro
+  const nasceRef = useRef((jaLigou && !sempreNascer) || reduced ? 1 : 0);
+  const cabecaRef = useRef<THREE.Mesh>(null);
+  const cabecaMatRef = useRef<THREE.MeshBasicMaterial>(null);
   /** Escala de cada satélite (0..1): eles NASCEM, não aparecem prontos. */
   const satScale = useRef<number[]>(Array.from({ length: MAX_SATS }, () => 0));
   /** Instante de nascimento de cada satélite. -1 = não nasceu; -2 = já assentou. */
@@ -337,7 +353,8 @@ export function AgentOrbScene({
   // cor de sinal corrente (0 = íris, 1 = cor do sinal) e a cor-alvo
   const sinalRef = useRef(0);
   const sinalCor = useRef(new THREE.Color("#a3a6ff"));
-  const baseRef = useRef({ aro: new THREE.Color(), almaA: new THREE.Color(), almaC: new THREE.Color() });
+  const baseRef = useRef({ aro: new THREE.Color(), almaA: new THREE.Color(), almaC: new THREE.Color(), lamina: new THREE.Color() });
+  const sinalPal = useRef({ almaA: new THREE.Color(), almaC: new THREE.Color(), lamina: new THREE.Color() });
   const mistura = useRef(new THREE.Color());
   // o impulso da troca de estado e o ritmo da fala
   const trocaRef = useRef(0);
@@ -382,6 +399,7 @@ export function AgentOrbScene({
     baseRef.current.aro.set(c.aro);
     baseRef.current.almaA.set(c.almaProfunda);
     baseRef.current.almaC.set(c.almaClara);
+    baseRef.current.lamina.set(c.laminaClara);
     for (const m of [ringMatRef.current, progressoMatRef.current, pulsoMatRef.current]) m?.color.set(c.aro);
     for (const s of satRefs.current) if (s) (s.material as THREE.MeshBasicMaterial).color.set(c.laminaClara);
     const sup = surfaceRef.current;
@@ -523,6 +541,11 @@ export function AgentOrbScene({
       ? 1
       : THREE.MathUtils.damp(bootRef.current, 1, 5, dt);
     const boot = bootRef.current;
+    // NASCER: a alma cresce do centro, passa um pouco do tamanho e assenta
+    nasceRef.current = reduced ? 1 : Math.min(1, nasceRef.current + dt / 1.15);
+    const x = nasceRef.current;
+    const salto = 1.7;
+    const nasce = x >= 1 ? 1 : 1 + (salto + 1) * Math.pow(x - 1, 3) + salto * Math.pow(x - 1, 2);
     const bootAro = Math.max(0, (boot - 0.25) / 0.75);
 
     /*
@@ -581,6 +604,7 @@ export function AgentOrbScene({
     const cu = core.uniforms;
     if (!reduced) cu.uTime.value += dt;
     cu.uActivity.value = ativ;
+    cu.uNasce.value = nova ? nasce : 1;
     /*
      * A FALA: respondendo, o pulso não é mais uma senoide lisa, e sim sílabas
      * (duas frequências que se cortam), para a alma parecer falar.
@@ -618,16 +642,23 @@ export function AgentOrbScene({
     /* COR DE SINAL: concluído, aguardando e erro puxam aro e alma para o sinal. */
     if (nova) {
       const sinal = SINAL_DO_ESTADO[state];
+      const pal = PALETA_DO_SINAL[state];
       if (sinal) sinalCor.current.set(sinal);
+      if (pal) {
+        sinalPal.current.almaA.set(pal.almaA);
+        sinalPal.current.almaC.set(pal.almaC);
+        sinalPal.current.lamina.set(pal.lamina);
+      }
       sinalRef.current = d(sinalRef.current, sinal ? 1 : 0, 3.5);
       const k = sinalRef.current;
       const b = baseRef.current;
       su.uRimColor.value.copy(mistura.current.copy(b.aro).lerp(sinalCor.current, k * 0.85));
       for (const m of [ringMatRef.current, progressoMatRef.current]) m?.color.copy(su.uRimColor.value);
-      // o sinal vive no aro e nos anéis; a alma continua íris, com um toque só
-      // (misturada de verdade, íris + verde vira teal e íris + âmbar vira rosa)
-      cu.uColorA.value.copy(b.almaA).lerp(sinalCor.current, k * 0.18);
-      cu.uColorC.value.copy(b.almaC).lerp(sinalCor.current, k * 0.28);
+      // a alma troca de PALETA inteira (fundo, claro e lâmina), e não de tinta
+      const sp = sinalPal.current;
+      cu.uColorA.value.copy(b.almaA).lerp(sp.almaA, k);
+      cu.uColorC.value.copy(b.almaC).lerp(sp.almaC, k);
+      cu.uColorD.value.copy(b.lamina).lerp(sp.lamina, k);
     }
 
     // Drag: campo visual expande e o anel de drop-target aparece.
@@ -661,6 +692,19 @@ export function AgentOrbScene({
         // Múltiplo de 3: o corte tem de cair em fronteira de triângulo, senão o
         // último some inteiro em vez de o arco crescer liso.
         pr.geometry.setDrawRange(0, Math.floor((total * frac) / 3) * 3);
+      }
+      // A CABEÇA: um ponto aceso na ponta do arco, que corre na frente da leitura
+      const cab = cabecaRef.current;
+      const cm = cabecaMatRef.current;
+      if (cab && cm) {
+        cab.visible = nova && pr.visible;
+        if (cab.visible) {
+          const a = Math.PI / 2 + Math.PI * 2 * frac;
+          cab.position.set(Math.cos(a) * 1.155, Math.sin(a) * 1.155, 0);
+          cab.scale.setScalar(1 + 0.25 * Math.sin(time * 6));
+          cm.opacity = pm.opacity;
+          cm.color.copy(su.uRimColor.value).lerp(new THREE.Color(1, 1, 1), 0.45);
+        }
       }
     }
 
@@ -845,6 +889,12 @@ export function AgentOrbScene({
           side={THREE.DoubleSide}
           blending={THREE.AdditiveBlending}
         />
+      </mesh>
+
+      {/* A CABEÇA DO PROGRESSO — o ponto aceso que corre na ponta do arco. */}
+      <mesh ref={cabecaRef} renderOrder={3} visible={false}>
+        <sphereGeometry args={[0.05, 16, 16]} />
+        <meshBasicMaterial ref={cabecaMatRef} transparent opacity={0} depthWrite={false} blending={THREE.AdditiveBlending} />
       </mesh>
 
       {/* DROP-TARGET — anel que aparece ao arrastar um documento sobre a esfera. */}

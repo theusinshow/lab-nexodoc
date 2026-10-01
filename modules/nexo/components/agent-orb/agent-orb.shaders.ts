@@ -280,6 +280,7 @@ uniform vec3 uColorC; // teal claro
 uniform vec3 uColorD; // teal quase branco (2a camada)
 uniform float uOndaDaAlma; // irregularidade da borda da alma (0 = recorte exato)
 uniform float uVigor; // 0 = como era · 1 = lâminas cheias até o centro, pulso visível
+uniform float uNasce; // o nascer: 0 = ainda não existe · 1 = no tamanho (passa de 1 no impulso)
 uniform float uIrid;  // o tom da alma anda entre a íris e o segundo tom
 uniform vec3 uIris2;
 varying vec2 vUv;
@@ -287,7 +288,8 @@ varying vec2 vUv;
 ${SNOISE}
 
 void main() {
-  vec2 uv = (vUv - 0.5) * 2.0; // -1..1
+  // NASCER: a alma cresce do centro (dividir o uv pelo tamanho é ampliá-la)
+  vec2 uv = (vUv - 0.5) * 2.0 / max(uNasce, 0.04); // -1..1
   float t = uTime * (0.5 + uActivity * 0.4) * (1.0 + uVigor * 0.6);
 
   // Warp orgânico sutil (fluxo sedoso, sem grão de fumaça).
@@ -334,6 +336,8 @@ void main() {
   // O PULSO APARECE: antes ele só mexia 20% do brilho de um miolo pequeno.
   float core = smoothstep(0.34 * (1.0 + uVigor * (uPulse - 0.4) * 0.6), 0.0, r);
   float coreGlow = pow(core, 1.5) * (0.8 + 0.2 * uPulse) * (1.0 + uVigor * 0.35);
+  // o clarão de quando a alma assenta, no passo além do tamanho
+  coreGlow *= 1.0 + 1.6 * exp(-pow((uNasce - 1.06) * 9.0, 2.0));
   float forca = 1.0 + uVigor * (0.45 + 0.8 * uPulse);
 
   // Cor mono-teal: lâmina 1 teal→teal-claro pra fora; lâmina 2 teal-branco; miolo branco.
@@ -344,7 +348,7 @@ void main() {
 
   float mask = smoothstep(0.95, 0.78, r);
   float alpha = clamp((blade1 + blade2 * 0.85) * forca + coreGlow, 0.0, 1.0) * mask;
-  gl_FragColor = vec4(col, alpha * (0.92 + uActivity * 0.08));
+  gl_FragColor = vec4(col, alpha * (0.92 + uActivity * 0.08) * smoothstep(0.0, 0.3, uNasce));
 }
 `;
 

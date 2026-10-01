@@ -29,3 +29,13 @@
 .ds .ob2-degrau { display: grid; place-items: center; height: 180px; border-radius: 10px; background: #08090b; }
 .ds .ob2-pequenos figcaption { font-size: 11.5px; color: var(--ds-text-tertiary); text-align: center; }
 .ds .ob2-pequenos figcaption b { font-weight: 500; color: var(--ds-text-secondary); }
+
+/* rodada 5: paletas e o painel grande */
+.ds .ob2-paletas h2 { margin: 0 0 10px; font-size: 13.5px; font-weight: 500; color: var(--ds-text-secondary); }
+.ds .ob2-paletas-grade { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.ds .ob2-paleta { display: grid; justify-items: center; gap: 4px; padding: 12px 10px 14px; border: 0; border-radius: 14px; background: #08090b; box-shadow: inset 0 0 0 1px var(--ds-line-subtle); font: inherit; color: var(--ds-text-primary); text-align: center; cursor: pointer; transition: box-shadow 0.2s; }
+.ds .ob2-paleta[aria-checked="true"] { box-shadow: inset 0 0 0 1.5px var(--ds-text-secondary); }
+.ds .ob2-paleta b { font-size: 13px; font-weight: 500; }
+.ds .ob2-paleta span { font-size: 11.5px; color: var(--ds-text-tertiary); }
+.ds .ob2-col--grande { max-width: 760px; }
+.ds .ob2-palco--grande { height: 460px; }
