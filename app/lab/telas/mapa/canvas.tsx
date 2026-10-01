@@ -144,7 +144,7 @@ const NoDoBloco = memo(function NoDoBloco({ data }: NodeProps<Node<DadosDoBloco>
   );
 });
 
-/** Onde a folha arrastada vai cair: uma fresta íris entre duas folhas. */
+/** Onde a folha arrastada vai cair: uma fresta violeta entre duas folhas. */
 const NoDaFresta = memo(function NoDaFresta() {
   return <i className="mp-fresta" aria-hidden />;
 });
@@ -152,7 +152,7 @@ const NoDaFresta = memo(function NoDaFresta() {
 /*
  * A SETA ESTRUTURADA. Liga só peças do volume: capa → separatrizes → LD →
  * blocos de folhas → volume. Fio fino reto, ponta cheia pequena, como as guias
- * de uma árvore: estrutura, não enfeite. A que encosta no que mudou fica íris.
+ * de uma árvore: estrutura, não enfeite. A que encosta no que mudou fica violeta.
  * Enquanto um bloco anda para outro lugar, a seta dele espera ele pousar.
  */
 export type DadosDaSeta = { acesa?: boolean; fraca?: boolean };

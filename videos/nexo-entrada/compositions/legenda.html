@@ -184,7 +184,7 @@
             quadro(orbeB, (Math.floor(f) + 1) % NQ);
             orbeB.style.opacity = String(f - Math.floor(f));
             if (Number(gsap.getProperty(losango, "opacity")) < 0.05) { estado.textContent = "—"; estado.style.color = "#a4a8b3"; }
-            else if (t < 7.6) { estado.textContent = "auditando"; estado.style.color = "#a3a6ff"; }
+            else if (t < 7.6) { estado.textContent = "auditando"; estado.style.color = "#c3a3ff"; }
             else {
               const i = Math.max(0, Math.min(3, Math.round((Number(gsap.getProperty(losango, "x")) - xDe(0)) / (COL + 8))));
               [estado.textContent, estado.style.color] = ESTADOS[i];

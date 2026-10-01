@@ -79,7 +79,7 @@
 .ds .au-dir { text-align: right !important; white-space: nowrap; }
 .ds .au-marca { width: 28px; padding-right: 0 !important; }
 .ds .au-m { display: grid; place-items: center; width: 18px; height: 18px; margin-top: 1px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px rgb(255 255 255 / 0.14); }
-.ds .au-m--feita { background: rgb(163 166 255 / 0.14); box-shadow: none; color: var(--ds-nexo); }
+.ds .au-m--feita { background: rgb(195 163 255 / 0.14); box-shadow: none; color: var(--ds-nexo); }
 .ds .au-m--erro { background: var(--ds-state-error-wash); box-shadow: none; color: var(--ds-state-error); }
 .ds .au-m--agora { position: relative; box-shadow: inset 0 0 0 1.5px var(--ds-nexo); }
 .ds .au-m--agora i { width: 6px; height: 6px; border-radius: 50%; background: var(--ds-nexo); animation: au-pulso 1.6s ease-in-out infinite; }

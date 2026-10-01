@@ -51,7 +51,7 @@
   transition: box-shadow var(--ds-dur-state) var(--ds-ease-feedback);
 }
 .ds .pb-compositor--foco {
-  box-shadow: inset 0 0 0 1px var(--ds-nexo-line), 0 0 0 4px rgb(163 166 255 / 0.08), 0 18px 50px -24px rgb(0 0 0 / 0.8);
+  box-shadow: inset 0 0 0 1px var(--ds-nexo-line), 0 0 0 4px rgb(195 163 255 / 0.08), 0 18px 50px -24px rgb(0 0 0 / 0.8);
 }
 .ds .pb-compositor--destaque:not(.pb-compositor--foco) {
   box-shadow: inset 0 0 0 1px var(--ds-nexo-line), 0 18px 50px -24px rgb(0 0 0 / 0.8);
@@ -163,7 +163,7 @@
 }
 .ds .pb-item:hover { background: rgb(255 255 255 / 0.025); }
 .ds .pb-item--aberto, .ds .pb-item--aberto:hover { background: var(--ds-surface-raised); box-shadow: var(--ds-edge-strong); }
-.ds .pb-item--novo { background: var(--ds-nexo-wash); box-shadow: inset 0 0 0 1px rgb(163 166 255 / 0.22); }
+.ds .pb-item--novo { background: var(--ds-nexo-wash); box-shadow: inset 0 0 0 1px rgb(195 163 255 / 0.22); }
 .ds .pb-item--esqueleto { display: flex; align-items: center; gap: 14px; padding: 14px 12px; }
 .ds .pb-item-linha {
   display: flex;
@@ -404,7 +404,7 @@
   height: 100%;
   border-radius: 24px;
   border: 1.5px dashed var(--ds-nexo-line);
-  background: rgb(163 166 255 / 0.04);
+  background: rgb(195 163 255 / 0.04);
 }
 .ds .pb-soltar-caixa b { margin-top: 8px; font-size: var(--ds-text-2xl); font-weight: 400; letter-spacing: -0.025em; }
 .ds .pb-soltar-caixa span { color: var(--ds-text-secondary); }

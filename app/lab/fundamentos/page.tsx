@@ -50,7 +50,7 @@ export default function Fundamentos() {
       >
         <ol style={{ ...grade(320), listStyle: "none", margin: 0, padding: 0 }}>
           {[
-            ["Uma cor viva, com sentido", "O íris diz só quatro coisas: o Nexo está aqui, o Nexo está trabalhando, isto está selecionado, isto tem foco. Nunca decora."],
+            ["Uma cor viva, com sentido", "O violeta diz só quatro coisas: o Nexo está aqui, o Nexo está trabalhando, isto está selecionado, isto tem foco. Nunca decora."],
             ["A ação principal é clara", "Uma pílula clara por tela, no máximo. Se há duas, uma delas não é a principal."],
             ["Movimento responde a uma pergunta", "O que mudou, para onde foi, deu certo, está trabalhando. Animação que não responde a nenhuma não entra."],
             ["O documento manda", "Código de obra, página, revisão e carimbo aparecem como o engenheiro os escreve. Mono só para dado de verdade."],
@@ -121,7 +121,7 @@ export default function Fundamentos() {
       <Secao
         id="cor.nexo"
         titulo="Cor do Nexo e ação principal"
-        texto="O íris é o único sinal vivo da tela. A ação principal não usa cor: é a pílula clara. Assim os dois nunca disputam."
+        texto="O violeta, a cor do aro do orbe, é o único sinal vivo da tela. A ação principal não usa cor: é a pílula clara. Assim os dois nunca disputam."
       >
         <div style={grade(240)}>
           <AmostraDeCor token="--ds-nexo" nome="Nexo" papel="Presença, trabalho em curso, seleção." sobre={FUNDOS} piso={3} />
@@ -140,7 +140,7 @@ export default function Fundamentos() {
             <span style={{ width: 6, height: 6, borderRadius: 9, background: "currentColor" }} />
             Auditando
           </span>
-          <span className="lab-nota">Uma ação clara, uma recusa em contorno, e o íris dizendo que o Nexo trabalha.</span>
+          <span className="lab-nota">Uma ação clara, uma recusa em contorno, e o violeta dizendo que o Nexo trabalha.</span>
         </div>
       </Secao>
 
@@ -331,7 +331,7 @@ export default function Fundamentos() {
       <Secao
         id="foco"
         titulo="Foco"
-        texto="Anel íris de 2 px, afastado 2 px, só quando o foco vem do teclado. Aperte Tab para percorrer os controles abaixo."
+        texto="Anel violeta de 2 px, afastado 2 px, só quando o foco vem do teclado. Aperte Tab para percorrer os controles abaixo."
       >
         <div className="lab-cartao" style={{ padding: 18, display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
           <button type="button" style={{ height: 34, padding: "0 16px", border: 0, borderRadius: 999, background: "var(--ds-action-bg)", color: "var(--ds-action-fg)", font: "inherit", fontWeight: 500 }}>

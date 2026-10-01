@@ -256,7 +256,7 @@ export interface Coluna {
 /**
  * COLUNAS EM PÍLULA. Uma pílula por dia ou semana sobre o trilho com
  * textura; a parte (resolvidos) sobe por dentro do total em tom claro. A
- * última coluna é "agora" e ganha o iris. Sem eixo Y: o número que importa
+ * última coluna é "agora" e ganha o violeta. Sem eixo Y: o número que importa
  * está escrito acima do gráfico, e o mouse lê cada coluna.
  */
 export function ColunasEmPilula({
@@ -471,7 +471,7 @@ export function LinhaAcumulada({ valores, altura = 28 }: { valores: number[]; al
 
 /**
  * BARRAS POR MÊS. Poucas categorias com nome embaixo — o mês que está em
- * foco em iris, os outros em cinza, para comparar este mês com os
+ * foco em violeta, os outros em cinza, para comparar este mês com os
  * anteriores sem ler números.
  */
 export function BarrasPorMes({ meses, atual, altura = 26 }: { meses: { rotulo: string; valor: number }[]; atual: number | null; altura?: number }) {

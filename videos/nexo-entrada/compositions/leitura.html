@@ -12,7 +12,7 @@
 
         #root { position: absolute; inset: 0; overflow: hidden; background: #08090b; color: #eeeff2; font-family: "Geist", system-ui, sans-serif; }
         /* sem textura no chão: o escuro, um halo e a vinheta (o pontilhado saiu, a pedido) */
-        .halo { position: absolute; left: 50%; top: 50%; width: 1600px; height: 1200px; margin: -600px 0 0 -800px; background: radial-gradient(closest-side, rgb(124 128 245 / 0.12), rgb(124 128 245 / 0.035) 58%, transparent 100%); }
+        .halo { position: absolute; left: 50%; top: 50%; width: 1600px; height: 1200px; margin: -600px 0 0 -800px; background: radial-gradient(closest-side, rgb(154 108 240 / 0.12), rgb(154 108 240 / 0.035) 58%, transparent 100%); }
         #cam { --s: 0.95; --fx: 620; --fy: 555; --rx: 0; --rz: 0; --dx: 0; --dy: 0; position: absolute; inset: 0; }
         .palco { position: absolute; inset: 0; perspective: 1800px; perspective-origin: 720px 500px;
           -webkit-mask-image: radial-gradient(ellipse 82% 78% at 50% 50%, #000 52%, rgb(0 0 0 / 0.1) 100%);
@@ -32,7 +32,7 @@
         .qh { font-family: "Geist Mono", monospace; font-size: 6.4px; letter-spacing: 0.05em; color: #4d515a; }
         .mc { padding: 0 1.5px; margin: 0 -1.5px; border-radius: 1.5px; background-image: linear-gradient(var(--c), var(--c)); background-repeat: no-repeat; background-size: 0% 100%; }
         .pg-rod { position: absolute; left: 24px; right: 24px; bottom: 14px; display: flex; justify-content: space-between; font-family: "Geist Mono", monospace; font-size: 6.2px; color: #4d515a; }
-        .lido { position: absolute; left: 0; right: 0; top: 0; height: 0; background: rgb(124 128 245 / 0.08); border-bottom: 1.4px solid #8f92ff; box-shadow: 0 6px 14px -6px rgb(124 128 245 / 0.9); }
+        .lido { position: absolute; left: 0; right: 0; top: 0; height: 0; background: rgb(154 108 240 / 0.08); border-bottom: 1.4px solid #b48cff; box-shadow: 0 6px 14px -6px rgb(154 108 240 / 0.9); }
 
         .tag { position: absolute; display: flex; align-items: center; gap: 10px; height: 42px; padding: 0 16px 0 13px; border-radius: 8px; white-space: nowrap; transform-origin: 10px 100%;
           background: #1c1e24; box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.2), 0 12px 26px -10px rgb(0 0 0 / 0.95); font-family: "Geist Mono", monospace; font-size: 19px; }
@@ -41,8 +41,8 @@
         .tag em { font-style: normal; color: #a4a8b3; font-size: 16.5px; }
         .haste { position: absolute; width: 1.5px; transform-origin: 50% 0; opacity: 0.85; }
 
-        #feixe { position: absolute; left: 0; top: 250px; width: 2px; height: 600px; margin-left: -1px; background: #d4d5ff; box-shadow: 0 0 16px 3px rgb(124 128 245 / 0.7); opacity: 0; }
-        #feixe::before { content: ""; position: absolute; right: 2px; top: 0; width: 160px; height: 100%; background: radial-gradient(ellipse 100% 60% at 100% 50%, rgb(124 128 245 / 0.16), transparent 70%); }
+        #feixe { position: absolute; left: 0; top: 250px; width: 2px; height: 600px; margin-left: -1px; background: #e2d4ff; box-shadow: 0 0 16px 3px rgb(154 108 240 / 0.7); opacity: 0; }
+        #feixe::before { content: ""; position: absolute; right: 2px; top: 0; width: 160px; height: 100%; background: radial-gradient(ellipse 100% 60% at 100% 50%, rgb(154 108 240 / 0.16), transparent 70%); }
 
         svg.fios { position: absolute; left: 0; top: 0; overflow: visible; }
         .fio-linha { fill: none; stroke: rgb(255 255 255 / 0.62); stroke-width: 2; stroke-linecap: round; }
