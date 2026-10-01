@@ -45,5 +45,65 @@
 .ds .vm-pag--aqui { background: var(--ds-surface-raised); color: var(--ds-text-primary); box-shadow: inset 0 0 0 1px var(--vm-tom); }
 
 /* "Ver no memorial" mora no achado: no aberto da fila e na linha do Resumo C */
-.ds .rs-ver-memorial { margin-left: auto; }
+/* VER NO MEMORIAL EM DESTAQUE (01/10/2026, pedido do Matheus): é o caminho
+   do achado até a prova. Quando o achado abre, uma luz violeta dá UMA volta no
+   contorno do botão e some; o contorno violeta fica, parado. Não gira para
+   sempre: chama o olho no instante em que o achado chega, e só. A volta
+   recomeça a cada achado novo (o botão é remontado pelo id). */
+@property --rs-volta { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+.ds .ds-btn.rs-ver-memorial {
+  position: relative;
+  isolation: isolate;
+  margin-left: auto;
+  color: var(--ds-text-primary);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ds-nexo) 55%, transparent);
+  background: color-mix(in srgb, var(--ds-nexo) 7%, transparent);
+}
+.ds .ds-btn.rs-ver-memorial:hover {
+  box-shadow: inset 0 0 0 1px var(--ds-nexo);
+  background: color-mix(in srgb, var(--ds-nexo) 12%, transparent);
+}
+.ds .ds-btn.rs-ver-memorial svg { color: var(--ds-nexo); }
+.ds .ds-btn.rs-ver-memorial::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  z-index: -1;
+  padding: 1.5px;
+  border-radius: inherit;
+  background: conic-gradient(from var(--rs-volta), transparent 0deg 240deg, color-mix(in srgb, var(--ds-nexo) 60%, transparent) 300deg, var(--ds-nexo-soft) 345deg, transparent 360deg);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  opacity: 0;
+  animation: rs-volta 1.5s cubic-bezier(0.45, 0, 0.2, 1) 0.3s both;
+}
+/* um halo curto acompanha a volta, para o botão se destacar do resto do achado */
+.ds .ds-btn.rs-ver-memorial::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--ds-nexo) 16%, transparent), 0 0 18px color-mix(in srgb, var(--ds-nexo) 30%, transparent);
+  animation: rs-halo 1.5s ease-out 0.3s both;
+}
+@keyframes rs-volta {
+  0% { --rs-volta: 0deg; opacity: 0; }
+  12% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { --rs-volta: 360deg; opacity: 0; }
+}
+@keyframes rs-halo {
+  0% { opacity: 0; }
+  25% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ds .ds-btn.rs-ver-memorial::before,
+  .ds .ds-btn.rs-ver-memorial::after { animation: none; opacity: 0; }
+}
 .ds .rc-acoes .rc-memorial:hover { background: rgb(255 255 255 / 0.1); color: var(--ds-text-primary); }

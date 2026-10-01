@@ -477,7 +477,7 @@ export function Fila({
                 <span className="rs-sem-dono">Sem responsável</span>
               )}
               <Menu rotulo={atual.responsavel ? "Trocar" : "Atribuir a…"} variante="quiet" alinhar="left" itens={PESSOAS.map((p) => ({ rotulo: p.rotulo, onClick: () => onMudar(atual.id, atual.desfecho, p.valor) }))} />
-              <Botao variante="ghost" tamanho="sm" className="rs-ver-memorial" title="Abre o memorial nesta página, com o trecho grifado (M)" onClick={() => onAbrirPagina?.(atual.id)}>
+              <Botao key={atual.id} variante="ghost" tamanho="sm" className="rs-ver-memorial" title="Abre o memorial nesta página, com o trecho grifado (M)" onClick={() => onAbrirPagina?.(atual.id)}>
                 <FileSearch /> Ver no memorial, p. {atual.pagina} <Tecla>M</Tecla>
               </Botao>
             </div>
