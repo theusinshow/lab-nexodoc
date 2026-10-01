@@ -33,7 +33,8 @@ const Y_DO_PAPEL = -46;
 export const X_INICIAL = 160;
 
 
-export type DadosDaFolha = { f: Folha; lida: boolean; escolhida: boolean; apagada: boolean; destaque?: boolean; removida?: boolean };
+export type DadosDaFolha = { f: Folha; lida: boolean; agora?: boolean; escolhida: boolean; apagada: boolean; destaque?: boolean; removida?: boolean };
+export type DadosDoCorte = { texto: string };
 export type DadosDoDoc = { d: Documento; estado: EstadoDoDoc; tomo: number | null; destaque?: boolean };
 export type DadosDoRotulo = { titulo: string; sub: string; resto?: boolean };
 export type DadosDoGrupo = { disc: Disciplina; n: number };
@@ -51,24 +52,19 @@ function useDensidade() {
 }
 
 const NoDaFolha = memo(function NoDaFolha({ data }: NodeProps<Node<DadosDaFolha>>) {
-  const { f, lida, escolhida, apagada, destaque, removida } = data;
+  const { f, lida, agora, escolhida, apagada, destaque, removida } = data;
   const densidade = useDensidade();
   const estilo = useEstiloDoCartao();
+  // Ainda não lida: a página do PDF em contorno, com o canto do selo marcado.
+  // A que está sendo lida AGORA tem a linha que varre o selo; a fila espera quieta.
   if (!lida)
     return (
-      <div className={`mp-no mp-no--folha mp-no--lendo mp-no--${densidade}`} title="lendo o selo">
+      <div className={`mp-lendo${agora ? " mp-lendo--agora" : ""} mp-lendo--${densidade}`} title={agora ? "lendo o selo" : "na fila"}>
         {alcas}
-        <div className="mp-no-corpo">
-          <div className="mp-no-linha">
-            <span className="mp-no-num mp-g-fraco">{dd(f.paginaNoPdf)}</span>
-          </div>
-          {densidade !== "longe" && (
-            <>
-              <span className="mp-g-esqueleto" style={{ width: "86%", marginTop: 6 }} />
-              <span className="mp-g-esqueleto" style={{ width: "54%", marginTop: 6 }} />
-            </>
-          )}
-        </div>
+        <span className="mp-lendo-pag ds-num">p. {dd(f.paginaNoPdf)}</span>
+        <i className="mp-lendo-selo" aria-hidden>
+          <i className="mp-lendo-varre" />
+        </i>
       </div>
     );
   return (
@@ -86,6 +82,16 @@ const NoDoDoc = memo(function NoDoDoc({ data }: NodeProps<Node<DadosDoDoc>>) {
     <div className={`mp-no-casca${data.destaque ? " mp-no-casca--destaque" : ""}`}>
       {alcas}
       <PapelDoDocumento d={data.d} estado={data.estado} tomo={data.tomo} distancia={densidade} />
+    </div>
+  );
+});
+
+/** Onde o Nexo propõe cortar o volume: um traço tracejado entre duas folhas, com a pergunta em cima. */
+const NoDoCorte = memo(function NoDoCorte({ data }: NodeProps<Node<DadosDoCorte>>) {
+  return (
+    <div className="mp-corte">
+      <span className="mp-corte-texto">{data.texto}</span>
+      <i className="mp-corte-traco" aria-hidden />
     </div>
   );
 });
@@ -108,7 +114,7 @@ const NoDoGrupo = memo(function NoDoGrupo({ data }: NodeProps<Node<DadosDoGrupo>
   );
 });
 
-export const TIPOS = { folha: NoDaFolha, doc: NoDoDoc, rotulo: NoDoRotulo, grupo: NoDoGrupo };
+export const TIPOS = { folha: NoDaFolha, doc: NoDoDoc, rotulo: NoDoRotulo, grupo: NoDoGrupo, corte: NoDoCorte };
 
 /** Onde cada coisa fica: as fileiras, e a posição de cada folha para centralizar nela. */
 export function montarCanvas({
@@ -122,7 +128,10 @@ export function montarCanvas({
   destaque,
   removidas,
   sem,
+  corteAntesDe,
 }: {
+  /** A divisão proposta e ainda não aceita: o traço entra antes desta folha. */
+  corteAntesDe?: string;
   /** Folhas que já saíram do volume: não entram no mapa. */
   sem?: Set<string>;
   tomos?: Tomo[];
@@ -166,6 +175,7 @@ export function montarCanvas({
       const doGrupo = fs.filter((f) => f.disc === disc);
       nodes.push({ id: `grp-${disc}`, type: "grupo", position: { x, y: y - 28 }, data: { disc, n: doGrupo.length }, selectable: false });
       for (const f of doGrupo) {
+        if (f.id === corteAntesDe) nodes.push({ id: "corte", type: "corte", position: { x: x - 16, y: y - 70 }, width: 8, height: 230, data: { texto: "tomo 02 começa aqui?" }, selectable: false });
         posicao.set(f.id, { x, y });
         nodes.push({
           id: f.id,
@@ -173,7 +183,7 @@ export function montarCanvas({
           position: { x, y },
           width: LARGURA_DA_FOLHA,
           height: ALTURA_DO_NO,
-          data: { f, lida: (ordem.get(f.id) ?? 0) < lidas, escolhida: sel === f.id, apagada: !filtro(f), destaque: destaque?.has(f.id), removida: removidas?.has(f.id) },
+          data: { f, lida: (ordem.get(f.id) ?? 0) < lidas, agora: ordem.get(f.id) === lidas, escolhida: sel === f.id, apagada: !filtro(f), destaque: destaque?.has(f.id), removida: removidas?.has(f.id) },
         });
         liga(f.id);
         x += PASSO_DA_FOLHA;

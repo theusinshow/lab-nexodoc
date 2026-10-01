@@ -1,67 +1,65 @@
 "use client";
 
 import { ReactFlowProvider } from "@xyflow/react";
-import { motion } from "motion/react";
-import { MessageSquarePlus, PanelLeftClose, PanelRightClose, Search } from "lucide-react";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { FileText, MessageSquarePlus, PanelLeftClose, PanelRightClose, Search } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 
-import { Botao, Tecla } from "@/components/ds/basicos";
+import { Botao, Orbe, Tecla } from "@/components/ds/basicos";
 import { useTempo } from "@/lib/ds/tempo";
 import { MarcaDaPrefeitura } from "@/modules/nexo/components/MarcaDaPrefeitura";
 
 import { Topo } from "../_comum/topo";
 import { Campo } from "../conversa/tela-conversa";
-import { DeVoce, DoNexo, Gerando, Lacuna, Passo, PecaDeArquivo, RITMO, SUAVE, Saidas, type Arquivo } from "../conversa/turnos";
+import { DeVoce, Lacuna, Passo, PecaDeArquivo, RITMO, SUAVE, Saidas, Troca, type Arquivo } from "../conversa/turnos";
 import { montarCanvas, Tela } from "../mapa/canvas";
 import { CartaoAtual } from "../mapa/cartoes";
-import { FOLHAS, TOMOS, type Tomo } from "../mapa/dados";
-import type { EstadoDoDoc } from "../mapa/documentos";
+import { FOLHAS } from "../mapa/dados";
+import { useCamera, useNosQueAndam } from "./andar";
+import { FAIXAS, focoDaLeitura, quadroDa, ROTEIROS, type Quadro, type SituacaoNexo } from "./roteiro";
 import "../conversa/conversa.css";
 import "../mapa/mapa.css";
 import "../mapa/cartoes.css";
 import "./nexo.css";
 
-export type SituacaoNexo = "soltou" | "lido" | "dividido" | "tirou" | "gerando" | "montado" | "desatualizado";
+export type { SituacaoNexo } from "./roteiro";
 
 /*
  * O NEXO COMO ELE É: uma tela só. À esquerda as conversas (por obra); no
  * centro o palco com o mapa do volume; à direita o chat. Montar um volume é
  * conversar: você solta os PDFs, o Nexo lê os selos e as folhas aparecem no
- * mapa; cada pedido no chat ("divide em 2 tomos", "tira a ARQ-12", "monta os
- * volumes") reorganiza o mapa, e o que mudou acende uma vez.
+ * mapa; cada pedido no chat reorganiza o mapa NA FRENTE de quem pediu: as
+ * folhas deslizam para o lugar novo, os papéis imprimem, a câmera vai até o
+ * que mudou. Chat e mapa andam no mesmo relógio (roteiro.ts).
  */
 
-const PRANCHAS: Arquivo[] = [
-  { nome: "117_25_ARQ_rev-B.pdf", paginas: 12 },
-  { nome: "117_25_EST_rev-A.pdf", paginas: 8 },
-  { nome: "117_25_HID_rev-A.pdf", paginas: 6 },
-  { nome: "117_25_ELE_rev-A.pdf", paginas: 7 },
-];
-const UM_TOMO: Tomo[] = [{ n: 1, disciplinas: ["arquitetura", "estrutural", "hidrossanitario", "eletrico"], paginas: 412 }];
-const DO_TOMO_2 = new Set(FOLHAS.filter((f) => f.disc === "hidrossanitario" || f.disc === "eletrico").map((f) => f.id));
+const PAGINAS = [12, 8, 6, 7];
+const TICK_DA_LEITURA = 0.2;
 
-interface Cena {
-  tomos: Tomo[];
-  lendo?: boolean;
-  destaque?: Set<string>;
-  removidas?: Set<string>;
-  sem?: Set<string>;
-  /** O trecho do mapa que o palco enquadra: o que a mensagem mexeu, legível. */
-  foco: string[];
-  docs: (id: string) => EstadoDoDoc;
-  vol: (n: number) => EstadoDoDoc;
-  estado: string;
+/** O relógio da situação: em que batida estamos, e quantas folhas já foram lidas. */
+function useRelogio(s: SituacaoNexo) {
+  const { k } = useTempo();
+  const reduzir = useReducedMotion();
+  const batidas = ROTEIROS[s].batidas;
+  const [b, setB] = useState(reduzir ? batidas.length : 0);
+  const [lidas, setLidas] = useState(s === "soltou" && !reduzir ? 0 : FOLHAS.length);
+  const q = useMemo(() => quadroDa(s, b), [s, b]);
+
+  useEffect(() => {
+    if (reduzir) return;
+    const ts = batidas.map((bt, i) => setTimeout(() => setB(i + 1), bt.em * 1000 * k));
+    return () => ts.forEach(clearTimeout);
+  }, [batidas, k, reduzir]);
+
+  useEffect(() => {
+    if (!q.lendo || lidas >= FOLHAS.length) return;
+    const t = setTimeout(() => setLidas((n) => n + 1), (lidas === 0 ? 0.7 : TICK_DA_LEITURA) * 1000 * k);
+    return () => clearTimeout(t);
+  }, [q.lendo, lidas, k]);
+
+  const fim = b >= batidas.length && lidas >= FOLHAS.length;
+  return { b, q, lidas, fim };
 }
-
-const CENAS: Record<SituacaoNexo, Cena> = {
-  soltou: { tomos: UM_TOMO, lendo: true, foco: ["rot-1", "capa-1", "sep-1", "ld-1", "ARQ-01", "ARQ-02", "ARQ-03", "ARQ-04"], docs: () => "a-gerar", vol: () => "a-gerar", estado: "lendo os selos" },
-  lido: { tomos: UM_TOMO, foco: ["rot-1", "capa-1", "sep-1", "ld-1", "ARQ-01", "ARQ-02", "ARQ-03", "ARQ-04"], docs: () => "a-gerar", vol: () => "a-gerar", estado: "33 folhas lidas, 4 para conferir" },
-  dividido: { tomos: TOMOS, destaque: DO_TOMO_2, foco: ["rot-1", "rot-2", "capa-1", "capa-2", "sep-2", "ld-2", "HID-01", "HID-02", "HID-03"], docs: () => "a-gerar", vol: () => "a-gerar", estado: "2 tomos" },
-  tirou: { tomos: TOMOS, removidas: new Set(["ARQ-12"]), foco: ["ARQ-10", "ARQ-11", "ARQ-12", "EST-01", "EST-02"], docs: () => "a-gerar", vol: () => "a-gerar", estado: "2 tomos, 32 folhas" },
-  gerando: { tomos: TOMOS, sem: new Set(["ARQ-12"]), destaque: new Set(["capa-1", "sep-1", "ld-1", "capa-2", "sep-2", "ld-2"]), foco: ["rot-1", "rot-2", "capa-1", "capa-2", "sep-2", "ld-2", "HID-01", "HID-02", "HID-03"], docs: () => "gerado", vol: () => "a-gerar", estado: "LD, capas e separatrizes gerados" },
-  montado: { tomos: TOMOS, sem: new Set(["ARQ-12"]), destaque: new Set(["vol-1", "vol-2"]), foco: ["EST-06", "EST-07", "EST-08", "vol-1", "vol-2"], docs: () => "gerado", vol: () => "gerado", estado: "2 volumes montados" },
-  desatualizado: { tomos: TOMOS, sem: new Set(["ARQ-12"]), destaque: new Set(["ld-1", "vol-1"]), foco: ["rot-1", "capa-1", "sep-1", "ld-1", "ARQ-01", "ARQ-02", "ARQ-03", "ARQ-04"], docs: (id) => (id === "ld-1" ? "corrigido" : "gerado"), vol: (n) => (n === 1 ? "desatualizado" : "gerado"), estado: "volume do tomo 01 velho" },
-};
 
 /* ------------------------------ as conversas ------------------------------ */
 
@@ -119,145 +117,268 @@ function Conversas() {
   );
 }
 
-/* ------------------------------ o fio de cada momento ------------------------------ */
+/* ------------------------------ o chat ------------------------------ */
 
-function Fio({ s }: { s: SituacaoNexo }): ReactNode {
-  const pedido = <DeVoce arquivos={PRANCHAS} texto="monta o volume da UBS com essas pranchas" atraso={s === "soltou" ? 0 : -1} />;
+/**
+ * A resposta do Nexo, montada pelo relógio: cada parte entra quando a batida
+ * dela chega. As que já estavam lá na abertura entram em escada; as que chegam
+ * depois entram sozinhas, na hora em que o mapa muda.
+ */
+function Resposta({ partes }: { partes: [string, ReactNode | false][] }) {
+  const { k } = useTempo();
+  const naAbertura = useRef<Set<string> | null>(null);
+  const visiveis = partes.filter(([, p]) => p !== false);
+  if (naAbertura.current === null) naAbertura.current = new Set(visiveis.map(([c]) => c));
+  return (
+    <div className="cx-nexo">
+      <motion.span className="cx-nexo-marca" aria-hidden initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: RITMO.entra * k, delay: 0.3 * k, ease: SUAVE }}>
+        <Orbe tamanho={16} />
+      </motion.span>
+      <div className="cx-nexo-corpo">
+        {visiveis.map(([chave, p], i) => (
+          <motion.div
+            key={chave}
+            className="cx-parte"
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: RITMO.entra * k, delay: (naAbertura.current!.has(chave) ? 0.38 + i * RITMO.escada : 0.05) * k, ease: SUAVE }}
+          >
+            {p}
+          </motion.div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** Lendo: a barra fina e a conta, que andam junto com as folhas que acendem no mapa. */
+function Progresso({ lidas }: { lidas: number }) {
+  return (
+    <div className="nw-progresso">
+      <span className="nw-progresso-barra" aria-hidden>
+        <i style={{ transform: `scaleX(${lidas / FOLHAS.length})` }} />
+      </span>
+      <span className="ds-num">
+        {lidas} de {FOLHAS.length} folhas
+      </span>
+    </div>
+  );
+}
+
+/** Gerando no ritmo do mapa: a linha vira arquivo no instante em que o papel imprime. */
+function GerandoNoRitmo({ prontos }: { prontos: number }) {
+  const itens = [
+    { id: "ld", fazendo: "Montando as 2 listas de documentos", feito: { nome: "LD_117-25_TOMO-01.pdf", paginas: 3 }, mais: 1 },
+    { id: "capa", fazendo: "Desenhando as 2 capas", feito: { nome: "Capa_117-25_TOMO-01.pdf", paginas: 1 }, mais: 1 },
+    { id: "sep", fazendo: "Gerando as 4 separatrizes", feito: { nome: "Separatrizes_117-25_TOMO-01.pdf", paginas: 2 }, mais: 1 },
+  ];
+  return (
+    <div className="cx-pecas cx-pecas--coluna">
+      {itens.map((it, i) => (
+        <Troca key={it.id} chave={i < prontos ? "feito" : i === prontos ? "agora" : "fila"} className="cx-gerando-linha">
+          {i < prontos ? (
+            <span className="nw-peca-e-mais">
+              <PecaDeArquivo gerado nova a={it.feito} />
+              <span className="nw-mais ds-num" title="e a do tomo 02">
+                +{it.mais}
+              </span>
+            </span>
+          ) : i === prontos ? (
+            <Passo texto={`${it.fazendo}…`} emCurso />
+          ) : (
+            <span className="cx-fila">{it.fazendo}, na fila</span>
+          )}
+        </Troca>
+      ))}
+    </div>
+  );
+}
+
+function Fio({ s, b, lidas }: { s: SituacaoNexo; b: number; lidas: number }): ReactNode {
+  const lendoAgora = FAIXAS.findIndex((f) => lidas < f.ate);
+  const pranchas: Arquivo[] = FAIXAS.map((f, i) => ({ nome: f.nome, paginas: PAGINAS[i], lendo: s === "soltou" && b >= 1 && i === lendoAgora }));
+  const pedido = <DeVoce arquivos={pranchas} texto="monta o volume da UBS com essas pranchas" atraso={s === "soltou" ? 0 : -1} />;
   switch (s) {
-    case "soltou":
+    case "soltou": {
+      const leu = lidas >= FOLHAS.length;
       return (
         <>
           {pedido}
-          <DoNexo atraso={0.3}>
-            <Passo texto="Lendo os selos das pranchas" emCurso />
-            <p className="cx-texto">As folhas aparecem no mapa conforme eu leio. Já dá para olhar as que acenderam.</p>
-          </DoNexo>
+          {b >= 1 && (
+            <Resposta
+              partes={[
+                ["passo", <Passo key="p" texto={leu ? "Li 33 folhas de 4 arquivos, em 4 disciplinas" : "Lendo os selos das pranchas"} emCurso={!leu} />],
+                ["conta", !leu && <Progresso lidas={lidas} />],
+                ["texto", leu ? <p className="cx-texto">Estão todas no mapa, na ordem do volume. Já dá para pedir a divisão, a LD ou a capa.</p> : <p className="cx-texto">As folhas acendem no mapa conforme eu leio o selo de cada uma.</p>],
+              ]}
+            />
+          )}
         </>
       );
+    }
     case "lido":
       return (
         <>
           {pedido}
-          <DoNexo atraso={0.3}>
-            <Passo texto="Li 33 folhas de 4 arquivos, em 4 disciplinas" />
-            <p className="cx-texto">São 412 páginas, mais do que um tomo costuma levar. Marquei no mapa 4 folhas para conferir.</p>
-            <p className="cx-frase">
-              Divido em <Lacuna valor="2 tomos" opcoes={["1 tomo", "2 tomos", "3 tomos"]} />, com o tomo 02 começando em{" "}
-              <Lacuna valor="HID-01" opcoes={["EST-01", "HID-01", "ELE-01"]} mono />?
-            </p>
-            <Saidas itens={[{ texto: "Dividir assim", principal: true }, { texto: "Um tomo só" }]} />
-          </DoNexo>
+          <Resposta
+            partes={[
+              ["passo", <Passo key="p" texto="Li 33 folhas de 4 arquivos, em 4 disciplinas" />],
+              ["texto", b >= 1 && <p className="cx-texto">São 412 páginas, mais do que um tomo costuma levar. Marquei no mapa 4 folhas para conferir.</p>],
+              [
+                "frase",
+                b >= 2 && (
+                  <p className="cx-frase">
+                    Divido em <Lacuna valor="2 tomos" opcoes={["1 tomo", "2 tomos", "3 tomos"]} />, com o tomo 02 começando em <Lacuna valor="HID-01" opcoes={["EST-01", "HID-01", "ELE-01"]} mono />?
+                  </p>
+                ),
+              ],
+              ["saidas", b >= 2 && <Saidas itens={[{ texto: "Dividir assim", principal: true }, { texto: "Um tomo só" }]} />],
+            ]}
+          />
         </>
       );
     case "dividido":
       return (
         <>
           <DeVoce texto="divide em 2 tomos, a HID começa o 2" />
-          <DoNexo atraso={0.3}>
-            <Passo texto="Dividi em 2 tomos" />
-            <p className="cx-texto">
-              Tomo 01 com ARQ e EST, 20 folhas e 238 páginas. Tomo 02 com HID e ELE, 13 folhas e 174 páginas. Acendi no mapa o que mudou de lugar.
-            </p>
-            <Saidas itens={[{ texto: "Desfazer" }]} />
-          </DoNexo>
+          <Resposta
+            partes={[
+              ["passo", <Passo key="p" texto={b >= 1 ? "Dividi em 2 tomos" : "Dividindo em 2 tomos"} emCurso={b < 1} />],
+              ["texto", b >= 1 && <p className="cx-texto">Tomo 01 com ARQ e EST, 20 folhas e 238 páginas. Tomo 02 com HID e ELE, 13 folhas e 174 páginas. Acendi no mapa o que mudou de lugar.</p>],
+              ["saidas", b >= 2 && <Saidas itens={[{ texto: "Desfazer" }]} />],
+            ]}
+          />
         </>
       );
     case "tirou":
       return (
         <>
           <DeVoce texto="tira a ARQ-12, a folha foi cancelada" />
-          <DoNexo atraso={0.3}>
-            <Passo texto="Tirei a ARQ-12 do tomo 01" />
-            <p className="cx-texto">Ficam 19 folhas no tomo 01. Ela continua apagada no mapa até você gerar, caso queira de volta.</p>
-            <Saidas itens={[{ texto: "Pode gerar", principal: true }, { texto: "Restaurar a ARQ-12" }]} />
-          </DoNexo>
+          <Resposta
+            partes={[
+              ["passo", <Passo key="p" texto={b >= 1 ? "Tirei a ARQ-12 do tomo 01" : "Tirando a ARQ-12"} emCurso={b < 1} />],
+              ["texto", b >= 1 && <p className="cx-texto">Ficam 19 folhas no tomo 01. Ela continua riscada no mapa até você gerar, caso queira de volta.</p>],
+              ["saidas", b >= 1 && <Saidas itens={[{ texto: "Pode gerar", principal: true }, { texto: "Restaurar a ARQ-12" }]} />],
+            ]}
+          />
         </>
       );
     case "gerando":
       return (
         <>
           <DeVoce texto="pode gerar" />
-          <DoNexo atraso={0.3}>
-            <Passo texto="Gerando para os 2 tomos" />
-            <Gerando
-              itens={[
-                { id: "ld", fazendo: "Montando as 2 listas de documentos", feito: { nome: "LD_117-25_TOMO-01.pdf", paginas: 3 } },
-                { id: "capa", fazendo: "Desenhando as 2 capas", feito: { nome: "Capa_117-25_TOMO-01.pdf", paginas: 1 } },
-                { id: "sep", fazendo: "Gerando as 4 separatrizes", feito: { nome: "Separatrizes_117-25_TOMO-01.pdf", paginas: 2 } },
-              ]}
-            />
-          </DoNexo>
+          <Resposta
+            partes={[
+              ["passo", <Passo key="p" texto={b >= 5 ? "Gerei para os 2 tomos" : "Gerando para os 2 tomos"} emCurso={b < 5} />],
+              ["pecas", b >= 2 && <GerandoNoRitmo prontos={Math.max(0, b - 2)} />],
+              ["saidas", b >= 5 && <Saidas itens={[{ texto: "Monta os volumes", principal: true }, { texto: "Baixar os editáveis (ZIP)" }]} />],
+            ]}
+          />
         </>
       );
     case "montado":
       return (
         <>
           <DeVoce texto="monta os 2 volumes" />
-          <DoNexo atraso={0.3}>
-            <Passo texto="Montei os 2 volumes e conferi" />
-            <div className="cx-pecas cx-pecas--coluna">
-              <PecaDeArquivo gerado nova a={{ nome: "Volume_117-25_TOMO-01.pdf", paginas: 238 }} atraso={0.45} />
-              <PecaDeArquivo gerado nova a={{ nome: "Volume_117-25_TOMO-02.pdf", paginas: 174 }} atraso={0.55} />
-            </div>
-            <Saidas itens={[{ texto: "Baixar os 2 (ZIP)", principal: true }, { texto: "Baixar os editáveis (ZIP)" }]} />
-          </DoNexo>
+          <Resposta
+            partes={[
+              ["passo", <Passo key="p" texto={b >= 3 ? "Montei os 2 volumes e conferi" : b >= 2 ? "Montando o volume do tomo 02" : "Montando o volume do tomo 01"} emCurso={b < 3} />],
+              ["v1", b >= 1 && <PecaDeArquivo gerado nova a={{ nome: "Volume_117-25_TOMO-01.pdf", paginas: 238 }} />],
+              ["v2", b >= 3 && <PecaDeArquivo gerado nova a={{ nome: "Volume_117-25_TOMO-02.pdf", paginas: 174 }} />],
+              ["saidas", b >= 3 && <Saidas itens={[{ texto: "Baixar os 2 (ZIP)", principal: true }, { texto: "Baixar os editáveis (ZIP)" }]} />],
+            ]}
+          />
         </>
       );
     case "desatualizado":
       return (
         <>
           <DeVoce texto="o título da LD do tomo 1 tá errado, é UBS da Rua São Francisco de Assis" />
-          <DoNexo atraso={0.3} copiar>
-            <Passo texto="Corrigi a LD do tomo 01" />
-            <Passo texto="O volume do tomo 01 foi montado antes da correção" aviso />
-            <p className="cx-texto">O PDF que você baixou ainda tem a LD antiga. O tomo 02 não mudou.</p>
-            <Saidas itens={[{ texto: "Remontar e baixar", principal: true }, { texto: "Deixar como está" }]} />
-          </DoNexo>
+          <Resposta
+            partes={[
+              ["passo", <Passo key="p" texto={b >= 1 ? "Corrigi a LD do tomo 01" : "Corrigindo a LD do tomo 01"} emCurso={b < 1} />],
+              ["aviso", b >= 3 && <Passo texto="O volume do tomo 01 foi montado antes da correção" aviso />],
+              ["texto", b >= 3 && <p className="cx-texto">O PDF que você baixou ainda tem a LD antiga. O tomo 02 não mudou.</p>],
+              ["saidas", b >= 3 && <Saidas itens={[{ texto: "Remontar e baixar", principal: true }, { texto: "Deixar como está" }]} />],
+            ]}
+          />
         </>
       );
   }
 }
 
-/* ------------------------------ a tela ------------------------------ */
+/* ------------------------------ o palco ------------------------------ */
 
-function Palco({ s }: { s: SituacaoNexo }) {
+/** Antes da leitura: os PDFs pousam no palco, empilhados, e o palco diz o que chegou. */
+function Chegando() {
   const { k } = useTempo();
-  const cena = CENAS[s];
-  const [lidas, setLidas] = useState(cena.lendo ? 6 : FOLHAS.length);
-  useEffect(() => {
-    if (!cena.lendo || lidas >= FOLHAS.length) return;
-    const t = setTimeout(() => setLidas((n) => n + 1), 360 * k);
-    return () => clearTimeout(t);
-  }, [cena.lendo, lidas, k]);
-  const { nodes, edges } = useMemo(
-    () =>
-      montarCanvas({
-        lidas,
-        sel: null,
-        filtro: () => true,
-        estadoDoDoc: (d) => cena.docs(d.id),
-        estadoDoVolume: (n) => cena.vol(n),
-        comSobras: false,
-        tomos: cena.tomos,
-        destaque: cena.destaque,
-        removidas: cena.removidas,
-        sem: cena.sem,
-      }),
-    [lidas, cena],
-  );
   return (
-    <div className="nw-canvas">
-      <Tela nodes={nodes} edges={edges} onFolha={() => {}} onVazio={() => {}} enquadrar={0.9} enquadrarEm={cena.foco} zoomMinimo={0.1} minimapa={false} />
+    <motion.div className="nw-chegando" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, scale: 0.985 }} transition={{ duration: RITMO.entra * k, ease: SUAVE }}>
+      <div className="nw-chegando-pilha">
+        {FAIXAS.map((f, i) => (
+          <motion.span
+            key={f.nome}
+            className="nw-chegando-pdf"
+            initial={{ opacity: 0, y: -18, rotate: (i - 1.5) * 2.5 }}
+            animate={{ opacity: 1, y: 0, rotate: (i - 1.5) * 1.2 }}
+            transition={{ duration: 0.6 * k, delay: (0.1 + i * 0.09) * k, ease: SUAVE }}
+            style={{ zIndex: 4 - i }}
+          >
+            <FileText size={13} />
+            <span className="mp-mono">{f.nome}</span>
+            <span className="ds-num">{PAGINAS[i]} p.</span>
+          </motion.span>
+        ))}
+      </div>
+      <p>4 PDFs, 33 páginas</p>
+    </motion.div>
+  );
+}
+
+function Palco({ s, q, lidas }: { s: SituacaoNexo; q: Quadro; lidas: number }) {
+  const { k } = useTempo();
+  const reduzir = useReducedMotion();
+  const duracao = reduzir ? 0 : 1.1 * k;
+  const alvo = useMemo(
+    () =>
+      q.vazio
+        ? { nodes: [], edges: [] }
+        : montarCanvas({
+            lidas,
+            sel: null,
+            filtro: () => true,
+            estadoDoDoc: (d) => q.docs(d.id),
+            estadoDoVolume: (n) => q.vol(n),
+            comSobras: false,
+            tomos: q.tomos,
+            destaque: q.destaque,
+            removidas: q.removidas,
+            sem: q.sem,
+            corteAntesDe: q.corte,
+          }),
+    [q, lidas],
+  );
+  const nos = useNosQueAndam(alvo.nodes, duracao);
+  // Lendo, a câmera acompanha a frente da leitura; ao terminar, recua para o volume inteiro.
+  const foco = q.lendo ? (lidas < 4 ? q.foco : focoDaLeitura(lidas)) : q.foco;
+  const pronto = useCamera(alvo.nodes, foco, 0.9, reduzir ? 0 : (q.lendo ? 0.9 : 1.15) * k);
+  return (
+    <div className={`nw-canvas${pronto ? " nw-canvas--pronto" : ""}${s === "soltou" ? " nw-revela" : ""}${q.pingar ? " nw-pingar" : ""}`}>
+      <Tela nodes={nos} edges={alvo.edges} onFolha={() => {}} onVazio={() => {}} zoomMinimo={0.08} minimapa={false} />
+      <AnimatePresence>{q.vazio && <Chegando key="chegando" />}</AnimatePresence>
     </div>
   );
 }
 
+/* ------------------------------ a tela ------------------------------ */
+
 export function TelaNexo({ situacao }: { situacao: SituacaoNexo }) {
   const { k } = useTempo();
-  const cena = CENAS[situacao];
+  const { b, q, lidas, fim } = useRelogio(situacao);
+  const estado = q.lendo && lidas < FOLHAS.length ? `lendo os selos, ${lidas} de ${FOLHAS.length}` : q.lendo ? "33 folhas lidas" : q.estado;
   return (
     <CartaoAtual.Provider value="carimbo">
-      <div className="mp nw">
+      <div className="mp nw" style={{ ["--k" as string]: k } as CSSProperties}>
         <Topo atual="Painel" />
         <div className="nw-mesa">
           <Conversas />
@@ -268,9 +389,11 @@ export function TelaNexo({ situacao }: { situacao: SituacaoNexo }) {
                 <MarcaDaPrefeitura prefeitura="Criciúma" forma="sinal" />
                 <span className="mp-mono">117-25</span>
                 <span>Mapa do volume</span>
-                <motion.span key={cena.estado} className="nw-estado" initial={{ opacity: 0, y: 3 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: RITMO.troca * k, ease: SUAVE }}>
-                  {cena.estado}
-                </motion.span>
+                <span className="nw-estado">
+                  <Troca chave={q.lendo ? "lendo" : estado} y={4}>
+                    {estado}
+                  </Troca>
+                </span>
               </span>
               <span className="nw-vistas" role="tablist" aria-label="Vistas do palco">
                 <button type="button" role="tab" aria-selected>
@@ -290,7 +413,7 @@ export function TelaNexo({ situacao }: { situacao: SituacaoNexo }) {
               </span>
             </header>
             <ReactFlowProvider>
-              <Palco key={situacao} s={situacao} />
+              <Palco s={situacao} q={q} lidas={lidas} />
             </ReactFlowProvider>
           </main>
 
@@ -300,10 +423,10 @@ export function TelaNexo({ situacao }: { situacao: SituacaoNexo }) {
               <span className="mp-g-fraco">117-25</span>
             </header>
             <div className="cx-fio nw-fio">
-              <Fio s={situacao} />
+              <Fio s={situacao} b={b} lidas={lidas} />
             </div>
             <div className="nw-campo">
-              <Campo respondendo={situacao === "soltou" || situacao === "gerando"} />
+              <Campo respondendo={!fim} />
             </div>
           </aside>
         </div>

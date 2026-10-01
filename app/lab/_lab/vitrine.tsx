@@ -1,8 +1,8 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
-import { Maximize2, X } from "lucide-react";
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { Maximize2, RotateCcw, X } from "lucide-react";
+import { Fragment, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 
 import { Botao } from "@/components/ds/basicos";
 
@@ -22,13 +22,17 @@ export function Vitrine<S extends string>({
   telaId,
   situacoes,
   render,
+  reiniciavel,
 }: {
+  /** A tela conta uma história no tempo: ganha "Rever", que a recomeça do zero. */
+  reiniciavel?: boolean;
   telaId: string;
   situacoes: { id: S; nome: string; dica: string }[];
   render: (s: S) => ReactNode;
 }) {
   const [atual, setAtual] = useState<S>(situacoes[0].id);
   const [cheia, setCheia] = useState(false);
+  const [volta, setVolta] = useState(0);
   const { aprovacoes } = useLab();
   const sit = situacoes.find((s) => s.id === atual)!;
 
@@ -59,6 +63,12 @@ export function Vitrine<S extends string>({
         <p>
           <b>{sit.nome}.</b> {sit.dica}
         </p>
+        {reiniciavel && (
+          <Botao variante="ghost" tamanho="sm" onClick={() => setVolta((n) => n + 1)}>
+            <RotateCcw />
+            Rever
+          </Botao>
+        )}
         <Botao variante="ghost" tamanho="sm" onClick={() => setCheia(true)}>
           <Maximize2 />
           Tela cheia
@@ -68,7 +78,7 @@ export function Vitrine<S extends string>({
 
       {/* Com a tela cheia aberta, a miniatura sai de cena: duas cópias vivas
           ouviriam o mesmo teclado. */}
-      <Moldura>{!cheia && render(atual)}</Moldura>
+      <Moldura>{!cheia && <Fragment key={`${atual}-${volta}`}>{render(atual)}</Fragment>}</Moldura>
 
       <AnimatePresence>
         {cheia && (
@@ -87,7 +97,9 @@ export function Vitrine<S extends string>({
                 <X />
               </Botao>
             </div>
-            <div className="vt-cheia-tela">{render(atual)}</div>
+            <div className="vt-cheia-tela">
+              <Fragment key={`${atual}-${volta}`}>{render(atual)}</Fragment>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

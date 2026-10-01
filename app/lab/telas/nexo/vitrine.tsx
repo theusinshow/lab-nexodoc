@@ -14,5 +14,5 @@ const SITUACOES: { id: SituacaoNexo; nome: string; dica: string }[] = [
 ];
 
 export function VitrineDoNexo() {
-  return <Vitrine telaId="nexo" situacoes={SITUACOES} render={(s) => <TelaNexo key={s} situacao={s} />} />;
+  return <Vitrine telaId="nexo" reiniciavel situacoes={SITUACOES} render={(s) => <TelaNexo key={s} situacao={s} />} />;
 }

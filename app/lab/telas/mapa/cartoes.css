@@ -119,9 +119,11 @@
 .ds .pp-estado--corrigido, .ds .pp-estado--desatualizado, .ds .pp-estado--sobra { color: var(--ds-sev-decide); }
 
 /* a gerar: papel fantasma, tracejado; ainda não existe */
-.ds .pp--a-gerar .pp-papel { opacity: 0.38; box-shadow: none; }
-.ds .pp--a-gerar .pp-atras { opacity: 0.25; box-shadow: none; }
-.ds .pp--a-gerar .pp-pilha::after { content: ""; position: absolute; inset: -4px; z-index: 2; border-radius: 4px; outline: 1px dashed rgb(255 255 255 / 0.3); pointer-events: none; }
+.ds .pp--a-gerar { --pp-tinta: rgb(255 255 255 / 0.4); --pp-fraca: rgb(255 255 255 / 0.22); --pp-regua: rgb(255 255 255 / 0.18); --pp-linha: rgb(255 255 255 / 0.07); }
+.ds .pp--a-gerar .pp-papel { background: rgb(255 255 255 / 0.015) !important; box-shadow: none; outline: 1px dashed rgb(255 255 255 / 0.28); outline-offset: -1px; }
+.ds .pp--a-gerar .pp-atras { background: transparent; box-shadow: none; outline: 1px dashed rgb(255 255 255 / 0.13); outline-offset: -1px; }
+.ds .pp--a-gerar .pp-capa > :first-child { opacity: 0.35; filter: grayscale(1); }
+.ds .pp--a-gerar .pp-ld-falta { background: none; }
 .ds .pp--corrigido .pp-papel, .ds .pp--desatualizado .pp-papel, .ds .pp--sobra .pp-papel { box-shadow: 0 0 0 2px rgb(from var(--ds-sev-decide) r g b / 0.85), 0 10px 24px rgb(0 0 0 / 0.35); }
 .ds .pp--sobra .pp-papel { opacity: 0.7; }
 .ds .pp-longe { margin: auto; font-size: 24px; color: var(--pp-fraca); }
@@ -145,8 +147,8 @@
 .ds .pp-ld { display: flex; flex-direction: column; gap: 3px; height: 100%; padding: 8px 7px 6px; }
 .ds .pp-ld-titulo { font-size: 5.6px; font-weight: 600; letter-spacing: 0.05em; text-align: center; }
 .ds .pp-ld-obra { font-size: 3.8px; color: var(--pp-fraca); text-align: center; }
-.ds .pp-ld-tabela { display: grid; margin-top: 4px; border-top: 0.5px solid #9a978f; }
-.ds .pp-ld-tabela p { display: grid; grid-template-columns: 18px 1fr 5px; gap: 3px; padding: 1.4px 0; border-bottom: 0.5px solid #c9c6be; font-size: 3.6px; line-height: 1.15; }
+.ds .pp-ld-tabela { display: grid; margin-top: 4px; border-top: 0.5px solid var(--pp-regua, #9a978f); }
+.ds .pp-ld-tabela p { display: grid; grid-template-columns: 18px 1fr 5px; gap: 3px; padding: 1.4px 0; border-bottom: 0.5px solid var(--pp-linha, #c9c6be); font-size: 3.6px; line-height: 1.15; }
 .ds .pp-ld-tabela p span:nth-child(2) { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .ds .pp-ld-tabela .pp-ld-cab { font-weight: 600; color: var(--pp-fraca); }
 .ds .pp-ld-falta { background: rgb(from var(--ds-sev-block) r g b / 0.14); }
@@ -167,9 +169,37 @@
 
 /* ---------- o que a última mensagem mudou: acende uma vez; a folha tirada fica apagada no lugar ---------- */
 .ds .mp-no-casca { position: relative; }
-.ds .mp-no-casca--destaque > :not(.mp-alca) { animation: mp-acende 2.4s cubic-bezier(0.22, 1, 0.36, 1) both; }
-@keyframes mp-acende { 0% { box-shadow: 0 0 0 0 rgb(163 166 255 / 0); } 18% { box-shadow: 0 0 0 10px rgb(163 166 255 / 0.55); } 100% { box-shadow: 0 0 0 5px rgb(163 166 255 / 0.4); } }
+.ds .mp-no-casca--destaque > .ct, .ds .mp-no-casca--destaque .pp-pilha { border-radius: 3px; animation: mp-acende calc(2.4s * var(--k, 1)) cubic-bezier(0.22, 1, 0.36, 1) both; }
+.ds .mp-no-casca--destaque .pp:not(.pp--a-gerar) .pp-pilha { animation-delay: calc(0.7s * var(--k, 1)); }
+.ds .mp-no-casca--destaque:has(.pp--corrigido, .pp--desatualizado) .pp-pilha { animation-name: mp-alerta; }
+@keyframes mp-acende { 0% { box-shadow: 0 0 0 0 rgb(163 166 255 / 0); } 22% { box-shadow: 0 0 0 9px rgb(163 166 255 / 0.5); } 100% { box-shadow: 0 0 0 2px rgb(163 166 255 / 0.55); } }
+@keyframes mp-alerta { 0% { box-shadow: 0 0 0 0 rgb(240 180 80 / 0); } 22% { box-shadow: 0 0 0 9px rgb(240 180 80 / 0.45); } 100% { box-shadow: 0 0 0 2px rgb(240 180 80 / 0.7); } }
+
+/* GERADO AGORA: o papel imprime de cima para baixo sobre o molde, com a cabeça
+   de impressão (um traço íris) passando na frente. Só quando acabou de mudar. */
+.ds .mp-no-casca--destaque .pp:not(.pp--a-gerar) .pp-papel { animation: pp-imprime calc(1.1s * var(--k, 1)) cubic-bezier(0.45, 0, 0.25, 1) both; }
+.ds .mp-no-casca--destaque .pp:not(.pp--a-gerar) .pp-pilha::before { content: ""; position: absolute; inset: 0; outline: 1px dashed rgb(255 255 255 / 0.28); outline-offset: -1px; animation: pp-molde-some calc(1.4s * var(--k, 1)) both; pointer-events: none; }
+.ds .mp-no-casca--destaque .pp:not(.pp--a-gerar) .pp-pilha::after { content: ""; position: absolute; left: -6px; right: -6px; top: 0; z-index: 3; height: 2px; border-radius: 2px; background: var(--ds-nexo-soft); box-shadow: 0 0 10px 1px rgb(163 166 255 / 0.8); animation: pp-cabeca calc(1.1s * var(--k, 1)) cubic-bezier(0.45, 0, 0.25, 1) both; pointer-events: none; }
+@keyframes pp-imprime { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(0 0 0 0); } }
+@keyframes pp-cabeca { 0% { top: 0; opacity: 0; } 8% { opacity: 1; } 88% { opacity: 1; } 100% { top: calc(100% - 2px); opacity: 0; } }
+@keyframes pp-molde-some { 0%, 75% { opacity: 1; } 100% { opacity: 0; } }
+.ds .mp-no-casca--destaque .pp--corrigido .pp-pilha::after, .ds .mp-no-casca--destaque .pp--desatualizado .pp-pilha::after { background: var(--ds-sev-decide); box-shadow: 0 0 10px 1px rgb(240 180 80 / 0.7); }
+/* o volume desatualizado não reimprime: ele já existe, só acende em âmbar */
+.ds .mp-no-casca--destaque .pp--desatualizado .pp-papel, .ds .mp-no-casca--destaque .pp--desatualizado .pp-pilha::before, .ds .mp-no-casca--destaque .pp--desatualizado .pp-pilha::after { animation: none; content: none; }
+.ds .mp-no-casca--destaque .pp--desatualizado .pp-pilha { animation-delay: 0s; }
+
+/* MONTADO AGORA: as folhas do volume chegam de trás, uma a uma, e a capa imprime por cima */
+.ds .mp-no-casca--destaque .pp--volume:not(.pp--a-gerar):not(.pp--desatualizado) .pp-atras { animation: pp-junta calc(0.7s * var(--k, 1)) cubic-bezier(0.22, 1, 0.36, 1) both; animation-delay: calc((3 - var(--pp-i)) * 0.16s * var(--k, 1)); }
+.ds .mp-no-casca--destaque .pp--volume:not(.pp--a-gerar):not(.pp--desatualizado) .pp-papel, .ds .mp-no-casca--destaque .pp--volume:not(.pp--a-gerar):not(.pp--desatualizado) .pp-pilha::after { animation-delay: calc(0.45s * var(--k, 1)); }
+@keyframes pp-junta { from { opacity: 0; transform: translate(-46px, 8px) rotate(-4deg); } }
 .ds .mp-no-casca--removida .ct { opacity: 0.28; filter: grayscale(1); }
-.ds .mp-no-casca--removida .ct::after { content: ""; position: absolute; left: 6px; right: 6px; top: 50%; height: 1.5px; background: var(--ds-sev-block); transform: rotate(-12deg); }
-.ds .mp-no-removida { position: absolute; left: 50%; bottom: -22px; transform: translateX(-50%); font-size: 11px; color: var(--ds-sev-block); white-space: nowrap; }
-@media (prefers-reduced-motion: reduce) { .ds .mp-no-casca--destaque > :not(.mp-alca) { animation: none; box-shadow: 0 0 0 1.5px rgb(163 166 255 / 0.45); } }
+.ds .mp-no-casca .ct { transition: box-shadow 0.3s, opacity calc(0.7s * var(--k, 1)), filter calc(0.7s * var(--k, 1)), background 0.25s; }
+.ds .mp-no-casca--removida .ct::after { content: ""; position: absolute; left: 6px; right: 6px; top: 50%; height: 1.5px; background: var(--ds-sev-block); transform: rotate(-12deg); transform-origin: left center; animation: mp-risca calc(0.55s * var(--k, 1)) calc(0.2s * var(--k, 1)) cubic-bezier(0.65, 0, 0.35, 1) both; }
+@keyframes mp-risca { from { transform: rotate(-12deg) scaleX(0); } }
+.ds .mp-no-removida { position: absolute; left: 50%; bottom: -22px; transform: translateX(-50%); font-size: 11px; color: var(--ds-sev-block); white-space: nowrap; animation: mp-aparece calc(0.4s * var(--k, 1)) calc(0.6s * var(--k, 1)) both; }
+@keyframes mp-aparece { from { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .ds .mp-no-casca--destaque > .ct, .ds .mp-no-casca--destaque .pp-pilha { animation: none; box-shadow: 0 0 0 2px rgb(163 166 255 / 0.55); }
+  .ds .mp-no-casca--destaque .pp-papel, .ds .mp-no-casca--destaque .pp-atras, .ds .mp-no-casca--removida .ct::after, .ds .mp-no-removida { animation: none; }
+  .ds .mp-no-casca--destaque .pp-pilha::before, .ds .mp-no-casca--destaque .pp-pilha::after { content: none; }
+}
