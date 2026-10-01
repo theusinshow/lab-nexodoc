@@ -353,5 +353,30 @@
     "status": "aprovado",
     "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, vamos para a próxima tela\".",
     "em": "2026-09-30T21:10:07.792296Z"
+  },
+  "tela.achados.com-voce": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, proxima tela\".",
+    "em": "2026-10-01T01:10:30.684023Z"
+  },
+  "tela.achados.parecer-escolhido": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, proxima tela\".",
+    "em": "2026-10-01T01:10:30.684023Z"
+  },
+  "tela.achados.que-voce-passou": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, proxima tela\".",
+    "em": "2026-10-01T01:10:30.684023Z"
+  },
+  "tela.achados.so-passados": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, proxima tela\".",
+    "em": "2026-10-01T01:10:30.684023Z"
+  },
+  "tela.achados.nada": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, proxima tela\".",
+    "em": "2026-10-01T01:10:30.684023Z"
   }
 }

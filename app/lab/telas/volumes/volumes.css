@@ -1,0 +1,135 @@
+/*
+ * MONTAR VOLUMES. Painel, lista, campos, rodapé vêm do Mapa e de Projetos;
+ * aqui a mesa de três colunas: biblioteca | montagem | conferência.
+ */
+.ds .vl-cabeca-acoes { display: flex; gap: 8px; }
+
+/* a barra: de qual obra, desfazer/refazer, onde está salvo */
+.ds .vl-barra { display: flex; align-items: center; gap: 18px; min-height: 52px; padding: 0 20px; border-bottom: 1px solid var(--ds-line-subtle); }
+.ds .vl-projeto { display: inline-flex; align-items: center; gap: 10px; font-size: 12.5px; }
+.ds .vl-projeto .mp-divisao-tomos { gap: 8px; }
+.ds .vl-historico { display: inline-flex; gap: 2px; }
+.ds .vl-historico button { display: grid; place-items: center; width: 28px; height: 28px; border: 0; border-radius: 7px; background: none; color: var(--ds-text-secondary); cursor: pointer; transition: background 0.2s; }
+.ds .vl-historico button:hover:not(:disabled) { background: rgb(255 255 255 / 0.06); color: var(--ds-text-primary); }
+.ds .vl-historico button:disabled { opacity: 0.3; cursor: default; }
+.ds .vl-rascunho { display: inline-flex; align-items: center; gap: 8px; margin-left: auto; font-size: 12px; color: var(--ds-text-tertiary); }
+.ds .vl-rascunho--falha { color: var(--ds-text-secondary); }
+.ds .vl-rascunho--falha i { flex: none; width: 6px; height: 6px; border-radius: 50%; background: var(--ds-sev-decide); }
+.ds .vl-aviso { display: flex; align-items: center; gap: 16px; padding: 10px 20px; border-bottom: 1px solid var(--ds-line-subtle); background: rgb(255 255 255 / 0.02); overflow: hidden; }
+.ds .vl-aviso p { flex: 1; margin: 0; font-size: 12.5px; color: var(--ds-text-secondary); }
+.ds .vl-aviso b { font-weight: 500; color: var(--ds-text-primary); }
+
+/* a mesa: três colunas */
+.ds .vl-mesa { position: relative; display: grid; grid-template-columns: 300px minmax(0, 1fr) 320px; min-height: 620px; }
+.ds .vl-col { display: flex; flex-direction: column; min-width: 0; }
+.ds .vl-biblioteca, .ds .vl-montagem { border-right: 1px solid var(--ds-line-subtle); }
+.ds .vl-col-cabeca { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; height: 44px; padding: 14px 18px 0; }
+.ds .vl-col-titulo { margin: 0; font-size: 13.5px; color: var(--ds-text-primary); }
+.ds .vl-col-cabeca span { font-size: 12px; }
+.ds .vl-pad { padding: 14px 18px; }
+
+/* biblioteca */
+.ds .vl-importar { display: flex; align-items: center; gap: 12px; margin: 4px 14px 10px; padding: 12px 14px; border-radius: 10px; outline: 1px dashed var(--ds-line-strong); outline-offset: -1px; color: var(--ds-text-secondary); cursor: pointer; transition: background 0.2s, outline-color 0.2s; }
+.ds .vl-importar:hover { background: rgb(255 255 255 / 0.03); outline-color: var(--ds-text-tertiary); }
+.ds .vl-importar span { display: grid; gap: 2px; }
+.ds .vl-importar b { font-weight: 400; font-size: 13px; color: var(--ds-text-primary); }
+.ds .vl-importar small { font-size: 11.5px; color: var(--ds-text-tertiary); }
+.ds .vl-importar--grande { padding: 28px 16px; }
+.ds .vl-fila { display: grid; gap: 4px; margin: 0 14px 10px; padding: 0; list-style: none; }
+.ds .vl-fila li { position: relative; display: grid; gap: 1px; padding: 7px 28px 7px 10px; border-radius: 8px; background: rgb(255 255 255 / 0.025); font-size: 11.5px; color: var(--ds-text-tertiary); }
+.ds .vl-fila li .mp-mono { font-size: 11px; color: var(--ds-text-primary); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.ds .vl-fila--duplicado span:nth-child(2), .ds .vl-fila--recusado span:nth-child(2) { display: flex; gap: 7px; color: var(--ds-text-secondary); }
+.ds .vl-fila--duplicado span:nth-child(2)::before, .ds .vl-fila--recusado span:nth-child(2)::before { content: ""; flex: none; width: 6px; height: 6px; margin-top: 5px; border-radius: 50%; background: var(--ds-sev-decide); }
+.ds .vl-fila--lendo span:last-child { background: linear-gradient(90deg, var(--ds-text-tertiary) 0%, var(--ds-text-primary) 45%, var(--ds-text-tertiary) 90%); background-size: 200% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: ds-varrer 2.6s linear infinite; }
+.ds .vl-fila li button { position: absolute; top: 6px; right: 6px; display: grid; place-items: center; width: 18px; height: 18px; border: 0; border-radius: 5px; background: none; color: var(--ds-text-tertiary); cursor: pointer; }
+.ds .vl-tipos { display: flex; flex-wrap: wrap; gap: 4px; padding: 0 14px 8px; }
+.ds .vl-tipos button { display: inline-flex; align-items: center; gap: 5px; height: 26px; padding: 0 9px; border: 0; border-radius: 7px; background: none; box-shadow: inset 0 0 0 1px var(--ds-line-subtle); font: inherit; font-size: 12px; color: var(--ds-text-tertiary); cursor: pointer; transition: color 0.2s, background 0.2s; }
+.ds .vl-tipos button[aria-selected="true"] { background: rgb(255 255 255 / 0.07); box-shadow: none; color: var(--ds-text-primary); }
+.ds .vl-tipos .ds-num { font-size: 11px; color: var(--ds-text-tertiary); }
+.ds .vl-busca { width: auto; margin: 0 14px 8px; }
+.ds .vl-arquivos { display: grid; margin: 0; padding: 0 6px 10px; list-style: none; }
+.ds .vl-arquivo { display: grid; grid-template-columns: 14px minmax(0, 1fr) auto auto; align-items: center; gap: 8px; width: 100%; height: 36px; padding: 0 8px; border: 0; border-radius: 8px; background: none; font: inherit; text-align: left; color: var(--ds-text-primary); cursor: pointer; transition: background 0.2s; }
+.ds .vl-arquivo:hover { background: rgb(255 255 255 / 0.03); }
+.ds .vl-seta { display: inline-flex; color: var(--ds-text-tertiary); }
+.ds .vl-arquivo-nome { overflow: hidden; font-size: 11.5px; white-space: nowrap; text-overflow: ellipsis; }
+.ds .vl-arquivo-tipo { font-size: 11px; color: var(--ds-text-tertiary); }
+.ds .vl-arquivo .ds-num { font-size: 11px; }
+.ds .vl-paginas { overflow: hidden; }
+.ds .vl-paginas-grade { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; padding: 4px 8px 10px 30px; }
+.ds .vl-pagina { position: relative; display: grid; align-content: space-between; height: 46px; padding: 5px 6px; border: 0; border-radius: 4px; background: var(--ds-surface-raised); box-shadow: inset 0 0 0 1px var(--ds-line-subtle); font: inherit; text-align: left; cursor: pointer; transition: box-shadow 0.2s, background 0.2s; }
+.ds .vl-pagina:hover { box-shadow: inset 0 0 0 1px var(--ds-line-strong); }
+.ds .vl-pagina--sel { background: rgb(255 255 255 / 0.08); box-shadow: inset 0 0 0 1.5px var(--ds-text-primary); }
+.ds .vl-pagina-n { font-size: 10px; color: var(--ds-text-tertiary); }
+.ds .vl-pagina-titulo { overflow: hidden; font-family: var(--ds-font-mono); font-size: 9.5px; white-space: nowrap; text-overflow: ellipsis; color: var(--ds-text-secondary); }
+.ds .vl-usada { position: absolute; top: 6px; right: 6px; width: 5px; height: 5px; border-radius: 50%; background: var(--ds-text-tertiary); }
+.ds .vl-mais { margin: 0 0 8px 30px; font-size: 11.5px; }
+
+/* montagem */
+.ds .vl-destino { margin: 4px 14px 12px; border-radius: 10px; background: rgb(255 255 255 / 0.025); box-shadow: inset 0 0 0 1px var(--ds-line-subtle); transition: box-shadow 0.3s, background 0.3s; }
+.ds .vl-destino--ativo { background: rgb(255 255 255 / 0.05); box-shadow: inset 0 0 0 1px var(--ds-line-strong); }
+.ds .vl-destino-linha { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; margin: 0; padding: 6px 8px 6px 14px; font-size: 12.5px; color: var(--ds-text-secondary); }
+.ds .vl-destino-linha b { font-weight: 500; color: var(--ds-text-primary); }
+.ds .vl-destino-acoes { display: inline-flex; align-items: center; gap: 8px; }
+.ds .vl-como { display: inline-flex; align-items: center; gap: 4px; height: 28px; padding: 0 8px 0 10px; border: 0; border-radius: 7px; background: none; box-shadow: inset 0 0 0 1px var(--ds-line-default); font: inherit; font-size: 12.5px; color: var(--ds-text-primary); cursor: pointer; }
+.ds .vl-volume { margin: 0 14px; border-radius: 12px; box-shadow: inset 0 0 0 1px var(--ds-line-default); overflow: hidden; }
+.ds .vl-volume-cabeca { display: flex; align-items: center; gap: 10px; height: 46px; padding: 0 10px 0 14px; border-bottom: 1px solid var(--ds-line-subtle); background: rgb(255 255 255 / 0.02); }
+.ds .vl-volume-nome { font-size: 14px; color: var(--ds-text-primary); }
+.ds .vl-volume-cabeca .mp-mono { font-size: 11px; }
+.ds .vl-estado { padding: 1px 7px; border-radius: 6px; box-shadow: inset 0 0 0 1px rgb(from var(--ds-sev-decide) r g b / 0.45); font-size: 11px; color: var(--ds-sev-decide); }
+.ds .vl-acoes-icone { display: inline-flex; gap: 2px; margin-left: auto; }
+.ds .vl-acoes-icone button { display: grid; place-items: center; width: 28px; height: 28px; border: 0; border-radius: 7px; background: none; color: var(--ds-text-tertiary); cursor: pointer; transition: background 0.2s, color 0.2s; }
+.ds .vl-acoes-icone button:hover { background: rgb(255 255 255 / 0.06); color: var(--ds-text-primary); }
+
+/* uma linha da montagem: as páginas do PDF que ela ocupa, o que é, o conteúdo */
+.ds .vl-linha { display: grid; grid-template-columns: 52px 86px minmax(0, 1fr); align-items: center; gap: 10px; min-height: 40px; padding: 6px 14px; border-bottom: 1px solid var(--ds-line-subtle); font-size: 12.5px; transition: background 0.3s; }
+.ds .vl-linha-p { font-size: 11px; color: var(--ds-text-tertiary); }
+.ds .vl-linha-rotulo { color: var(--ds-text-tertiary); }
+.ds .vl-linha-conteudo { min-width: 0; }
+.ds .vl-peca { overflow: hidden; font-size: 11.5px; white-space: nowrap; text-overflow: ellipsis; color: var(--ds-text-primary); }
+.ds .vl-auto { font-size: 11.5px; color: var(--ds-text-tertiary); }
+.ds .vl-separatriz { font-size: 11.5px; letter-spacing: 0.03em; color: var(--ds-text-secondary); }
+.ds .vl-linha--vazia .vl-falta { font-size: 12px; color: var(--ds-sev-decide); }
+.ds .vl-linha--alvo { background: rgb(255 255 255 / 0.035); outline: 1px dashed var(--ds-text-secondary); outline-offset: -4px; border-radius: 8px; }
+.ds .vl-grupo-cabeca { display: flex; align-items: center; gap: 10px; height: 38px; padding: 0 14px; border-bottom: 1px solid var(--ds-line-subtle); }
+.ds .vl-grupo-destino { display: grid; place-items: center; width: 16px; height: 16px; padding: 0; border: 0; border-radius: 50%; background: none; box-shadow: inset 0 0 0 1.4px var(--ds-line-strong); cursor: pointer; }
+.ds .vl-grupo-destino i { width: 7px; height: 7px; border-radius: 50%; background: transparent; transition: background 0.25s; }
+.ds .vl-grupo-destino[aria-pressed="true"] { box-shadow: inset 0 0 0 1.4px var(--ds-text-primary); }
+.ds .vl-grupo-destino[aria-pressed="true"] i { background: var(--ds-text-primary); }
+.ds .vl-grupo-nome { font-size: 13px; color: var(--ds-text-primary); }
+.ds .vl-grupo-cabeca .mp-mono { font-size: 11px; }
+.ds .vl-destino-marca { font-size: 11px; color: var(--ds-text-secondary); }
+.ds .vl-pranchas { display: flex; flex-wrap: wrap; align-items: center; gap: 3px; }
+.ds .vl-prancha { display: grid; place-items: center; min-width: 24px; height: 20px; padding: 0 4px; border-radius: 3px; background: var(--ds-surface-raised); box-shadow: inset 0 0 0 1px var(--ds-line-default); font-size: 10px; color: var(--ds-text-secondary); }
+.ds .vl-pranchas-de { margin-left: 6px; font-size: 11px; }
+.ds .vl-volume-pe { display: flex; align-items: center; justify-content: space-between; padding: 4px 10px 4px 4px; }
+.ds .vl-volume-pe .ds-num { font-size: 12px; }
+.ds .vl-novo-volume { align-self: flex-start; margin: 8px 4px 14px; }
+.ds .vl-vazio { padding: 40px 18px; }
+
+/* conferência */
+.ds .vl-pendencias { margin: 0; }
+.ds .vl-pendencia { display: flex; align-items: center; gap: 8px; }
+.ds .vl-grav { flex: none; width: 7px; height: 7px; border-radius: 50%; }
+.ds .vl-grav--aviso { background: var(--ds-sev-decide); }
+.ds .vl-grav--bloqueio { background: var(--ds-sev-block); }
+.ds .vl-conferir { display: grid; gap: 8px; justify-items: start; border-bottom: 1px solid var(--ds-line-subtle); }
+.ds .vl-situacao { margin: 0; font-size: 12.5px; color: var(--ds-text-secondary); }
+.ds .vl-situacao--ok { color: var(--ds-state-ok); }
+.ds .vl-saida { margin: 0; border-top: 0; }
+.ds .vl-saida .mp-campo { padding-left: 18px; padding-right: 18px; }
+.ds .vl-botoes { display: grid; gap: 10px; }
+.ds .vl-botoes-col { display: grid; gap: 8px; }
+.ds .vl-exportando { display: grid; gap: 8px; }
+.ds .vl-exportando p { margin: 0; font-size: 12.5px; color: var(--ds-text-primary); }
+
+/* prévia: sobre a mesa, a fita do volume na ordem */
+.ds .vl-previa { position: absolute; inset: 0; z-index: 10; display: grid; grid-template-rows: auto 1fr auto; background: rgb(from var(--ds-surface-page) r g b / 0.96); backdrop-filter: blur(4px); }
+.ds .vl-previa-cabeca { display: flex; align-items: center; gap: 16px; height: 52px; padding: 0 12px 0 20px; border-bottom: 1px solid var(--ds-line-subtle); font-size: 13px; }
+.ds .vl-previa-cabeca .ds-num { margin-left: auto; font-size: 12px; }
+.ds .vl-previa-fechar { display: grid; place-items: center; width: 30px; height: 30px; border: 0; border-radius: 8px; background: none; color: var(--ds-text-secondary); cursor: pointer; }
+.ds .vl-previa-fechar:hover { background: rgb(255 255 255 / 0.06); color: var(--ds-text-primary); }
+.ds .vl-previa-fita { display: flex; align-items: center; gap: 18px; padding: 24px; overflow-x: auto; }
+.ds .vl-previa-item { display: grid; flex: none; justify-items: start; gap: 8px; padding: 8px; border: 0; border-radius: 10px; background: none; font: inherit; font-size: 11.5px; text-align: left; color: var(--ds-text-tertiary); cursor: pointer; opacity: 0.55; transition: opacity 0.3s, background 0.3s; }
+.ds .vl-previa-item--atual { opacity: 1; background: rgb(255 255 255 / 0.04); color: var(--ds-text-primary); }
+.ds .vl-previa-item .pp-legenda { display: none; }
+.ds .vl-previa-pe { display: flex; align-items: center; justify-content: space-between; padding: 6px 12px; border-top: 1px solid var(--ds-line-subtle); font-size: 12px; }
