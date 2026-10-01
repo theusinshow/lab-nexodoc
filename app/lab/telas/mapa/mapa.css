@@ -260,15 +260,12 @@
 
 /* A SETA ESTRUTURADA: fio fino reto e ponta cheia pequena. Sem brilho, sem movimento. */
 /* a junção tem a cor da borda da moldura do bloco: o fio parece sair dela */
-.ds .mp-seta3-linha { fill: none; stroke-width: 1.5; stroke-linecap: round; }
-.ds .mp-seta3-borda { stop-color: rgb(255 255 255 / 0.2); }
-.ds .mp-seta3-meio { stop-color: rgb(255 255 255 / 0.5); }
-.ds .mp-seta3-juncao { fill: rgb(255 255 255 / 0.2); }
-.ds .mp-seta3-rumo { fill: none; stroke: rgb(255 255 255 / 0.7); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.ds .mp-seta3 { --seta: rgb(255 255 255 / 0.62); }
+.ds .mp-seta3-linha { fill: none; stroke: var(--seta); stroke-width: 2; stroke-linecap: round; }
+.ds .mp-seta3-porta { fill: var(--seta); }
+.ds .mp-seta3-ponta { fill: none; stroke: var(--seta); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 /* acesa: encosta no que mudou; o mesmo desenho, em íris */
-.ds .mp-seta3--acesa .mp-seta3-borda, .ds .mp-seta3--acesa .mp-seta3-juncao { stop-color: rgb(163 166 255 / 0.45); fill: rgb(163 166 255 / 0.45); }
-.ds .mp-seta3--acesa .mp-seta3-meio { stop-color: rgb(163 166 255 / 0.85); }
-.ds .mp-seta3--acesa .mp-seta3-rumo { stroke: var(--ds-nexo-soft); }
+.ds .mp-seta3--acesa { --seta: var(--ds-nexo-soft); }
 /* fraca: encosta numa folha tirada */
 .ds .mp-seta3--fraca .mp-seta3-linha { stroke-dasharray: 2 4; }
 

@@ -158,37 +158,24 @@ const NoDaFresta = memo(function NoDaFresta() {
 export type DadosDaSeta = { acesa?: boolean; fraca?: boolean };
 
 /**
- * A CONCORDÂNCIA: o fio escorre da moldura do bloco em duas curvas côncavas,
- * da cor da borda, como uma solda. Só nos blocos; o papel não tem moldura, e o
- * fio encosta direto na borda dele.
+ * A PORTA: meio disco colado na borda de quem SAI (papel ou moldura do bloco),
+ * da cor do fio. É de onde a seta nasce; a chegada é só a ponta aberta.
  */
-const R = 7;
-const juncao = (x: number, y: number, lado: 1 | -1) =>
-  `M${x},${y - R} Q${x},${y - 0.75} ${x + R * lado},${y - 0.75} L${x + R * lado},${y + 0.75} Q${x},${y + 0.75} ${x},${y + R} Z`;
+const R = 6;
+const porta = (x: number, y: number) => `M${x},${y - R} A${R},${R} 0 0 1 ${x},${y + R} Z`;
 
-const Seta = memo(function Seta({ id, source, target, sourceX, sourceY, targetX, targetY, data }: EdgeProps<Edge<DadosDaSeta>>) {
-  const deBloco = source.startsWith("blc-");
-  const paraBloco = target.startsWith("blc-");
-  // A seta não flutua entre as peças: ela SAI da borda de uma (a junção alarga e
-  // cola na moldura) e ENTRA na borda da outra do mesmo jeito. A direção fica no
-  // chevron do meio e no fio, que acende no meio do caminho. Reta quando as peças
-  // estão alinhadas; dobra com suavidade quando uma delas anda.
-  const [caminho, meioX, meioY] = getBezierPath({ sourceX: sourceX + (deBloco ? R : 0), sourceY, sourcePosition: Position.Right, targetX: targetX - (paraBloco ? R : 1), targetY, targetPosition: Position.Left, curvature: 0.35 });
+const Seta = memo(function Seta({ sourceX, sourceY, targetX, targetY, data }: EdgeProps<Edge<DadosDaSeta>>) {
+  // Sai da porta, corre em curva suave e ENTRA na borda da outra peça com a
+  // ponta aberta (>). Reta quando as peças estão alinhadas; dobra quando uma
+  // delas anda. O fio para antes da ponta para não engrossar o vértice.
+  const fimX = targetX - 1;
+  const [caminho] = getBezierPath({ sourceX: sourceX + R - 1, sourceY, sourcePosition: Position.Right, targetX: fimX - 1, targetY, targetPosition: Position.Left, curvature: 0.35 });
   const cls = `mp-seta3${data?.acesa ? " mp-seta3--acesa" : ""}${data?.fraca ? " mp-seta3--fraca" : ""}`;
-  const grad = `mp-seta-${id.replace(/[^a-zA-Z0-9-]/g, "_")}`;
   return (
     <g className={cls}>
-      <defs>
-        <linearGradient id={grad} gradientUnits="userSpaceOnUse" x1={sourceX} y1={sourceY} x2={targetX} y2={targetY}>
-          <stop offset="0" className="mp-seta3-borda" />
-          <stop offset="0.5" className="mp-seta3-meio" />
-          <stop offset="1" className="mp-seta3-borda" />
-        </linearGradient>
-      </defs>
-      {deBloco && <path d={juncao(sourceX, sourceY, 1)} className="mp-seta3-juncao" />}
-      <path d={caminho} className="mp-seta3-linha" stroke={`url(#${grad})`} />
-      {paraBloco && <path d={juncao(targetX, targetY, -1)} className="mp-seta3-juncao" />}
-      <path d={`M${meioX - 2.5},${meioY - 4} L${meioX + 2},${meioY} L${meioX - 2.5},${meioY + 4}`} className="mp-seta3-rumo" />
+      <path d={caminho} className="mp-seta3-linha" />
+      <path d={porta(sourceX, sourceY)} className="mp-seta3-porta" />
+      <path d={`M${fimX - 7},${targetY - 6.5} L${fimX},${targetY} L${fimX - 7},${targetY + 6.5}`} className="mp-seta3-ponta" />
     </g>
   );
 });
