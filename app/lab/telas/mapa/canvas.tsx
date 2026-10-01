@@ -1,6 +1,6 @@
 "use client";
 
-import { Background, BackgroundVariant, Handle, MiniMap, Position, ReactFlow, useStore, type Edge, type EdgeProps, type Node, type NodeProps, type OnNodeDrag, type OnNodesChange } from "@xyflow/react";
+import { Background, BackgroundVariant, Handle, MiniMap, Position, ReactFlow, useInternalNode, useStore, type InternalNode, type Edge, type EdgeProps, type Node, type NodeProps, type OnNodeDrag, type OnNodesChange } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import "./cartoes.css";
 import { CircleMinus } from "lucide-react";
@@ -235,7 +235,26 @@ function balancar(f: Fio, agora: number) {
   desenharFio(f);
 }
 
-const Seta = memo(function Seta({ id, sourceX, sourceY, targetX, targetY, data }: EdgeProps<Edge<DadosDaSeta>>) {
+/**
+ * As pontas saem da POSIÇÃO da peça, não da alça medida no DOM: o lab aplica
+ * `zoom` em telas grandes (2K), e o React Flow mede a alça já ampliada; a da
+ * direita escorregava 25% da largura do papel para fora dele.
+ */
+function bordaDa(n: InternalNode | undefined, lado: "sai" | "chega"): Ponto | null {
+  if (!n) return null;
+  const { x, y } = n.internals.positionAbsolute;
+  if (n.type === "doc") return { x: lado === "sai" ? x + LARGURA_DO_PAPEL : x, y: y + ALTURA_DO_TITULO + ALTURA_DO_PAPEL / 2 };
+  if (n.type === "bloco") return { x: lado === "sai" ? x + (n.width ?? n.measured.width ?? 0) : x, y: y - TOPO_DO_BLOCO + ALTURA_DO_NO / 2 };
+  return null;
+}
+
+const Seta = memo(function Seta({ id, source, target, sourceX: sx, sourceY: sy, targetX: tx, targetY: ty, data }: EdgeProps<Edge<DadosDaSeta>>) {
+  const de = bordaDa(useInternalNode(source), "sai");
+  const para = bordaDa(useInternalNode(target), "chega");
+  const sourceX = de?.x ?? sx;
+  const sourceY = de?.y ?? sy;
+  const targetX = para?.x ?? tx;
+  const targetY = para?.y ?? ty;
   const chave = useStore((s) => s.rfId) + id;
   let f = FIOS.get(chave);
   if (!f) {
