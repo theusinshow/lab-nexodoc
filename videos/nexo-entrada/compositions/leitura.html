@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8">
+    <title>Leitura: o memorial auditado e o volume</title>
+  </head>
+  <body>
+    <template>
+      <style>
+        @font-face { font-family: "Geist"; src: url("assets/fonts/Geist.woff2") format("woff2"); font-weight: 100 900; }
+        @font-face { font-family: "Geist Mono"; src: url("assets/fonts/GeistMono.woff2") format("woff2"); font-weight: 100 900; }
+
+        #root { position: absolute; inset: 0; overflow: hidden; background: #08090b; color: #eeeff2; font-family: "Geist", system-ui, sans-serif; }
+        /* sem textura no chão: o escuro, um halo e a vinheta (o pontilhado saiu, a pedido) */
+        .halo { position: absolute; left: 50%; top: 50%; width: 1600px; height: 1200px; margin: -600px 0 0 -800px; background: radial-gradient(closest-side, rgb(124 128 245 / 0.12), rgb(124 128 245 / 0.035) 58%, transparent 100%); }
+        #cam { --s: 2.2; --fx: 620; --fy: 470; --rx: 0; --rz: 0; --dx: 0; --dy: 0; position: absolute; inset: 0; }
+        .palco { position: absolute; inset: 0; perspective: 1800px; perspective-origin: 720px 500px;
+          -webkit-mask-image: radial-gradient(ellipse 82% 78% at 50% 50%, #000 52%, rgb(0 0 0 / 0.1) 100%);
+          mask-image: radial-gradient(ellipse 82% 78% at 50% 50%, #000 52%, rgb(0 0 0 / 0.1) 100%); }
+        .plano { position: absolute; inset: 0; transform-origin: 720px 540px; transform: rotateX(calc(var(--rx) * 1deg)) rotateZ(calc(var(--rz) * 1deg)); }
+        .mundo { position: absolute; left: 0; top: 0; width: 2200px; height: 1700px; transform-origin: 0 0;
+          transform: translate(calc(720px - var(--s) * var(--fx) * 1px + var(--dx) * 1px), calc(540px - var(--s) * var(--fy) * 1px + var(--dy) * 1px)) scale(var(--s)); }
+
+        /* a página do memorial: grade de 14 px, então linha i mora em 46 + 14i */
+        .pg { position: absolute; width: 360px; height: 509px; padding: 20px 24px; border-radius: 2px; background: #eceef1; color: #1b1d22; transform-origin: 0 0; overflow: hidden;
+          font-size: 8.6px; line-height: 14px; box-shadow: 0 1px 2px rgb(0 0 0 / 0.5), 0 30px 60px -24px rgb(0 0 0 / 0.85); }
+        .pg-cab { display: flex; justify-content: space-between; height: 16px; margin-bottom: 10px; border-bottom: 0.6px solid rgb(0 0 0 / 0.25); font-family: "Geist Mono", monospace; font-size: 6.2px; line-height: 9px; letter-spacing: 0.06em; color: #4d515a; }
+        .l { position: relative; height: 14px; white-space: nowrap; }
+        .h { font-weight: 700; font-size: 9.2px; letter-spacing: 0.02em; }
+        .q { display: grid; grid-template-columns: 22px 1fr 22px 46px; font-size: 8px; border-bottom: 0.4px solid rgb(0 0 0 / 0.14); }
+        .q span:last-child { text-align: right; font-family: "Geist Mono", monospace; }
+        .qh { font-family: "Geist Mono", monospace; font-size: 6.4px; letter-spacing: 0.05em; color: #4d515a; }
+        .mc { padding: 0 1.5px; margin: 0 -1.5px; border-radius: 1.5px; background-image: linear-gradient(var(--c), var(--c)); background-repeat: no-repeat; background-size: 0% 100%; }
+        .pg-rod { position: absolute; left: 24px; right: 24px; bottom: 14px; display: flex; justify-content: space-between; font-family: "Geist Mono", monospace; font-size: 6.2px; color: #4d515a; }
+        .lido { position: absolute; left: 0; right: 0; top: 0; height: 0; background: rgb(124 128 245 / 0.08); border-bottom: 1.4px solid #8f92ff; box-shadow: 0 6px 14px -6px rgb(124 128 245 / 0.9); }
+
+        .tag { position: absolute; display: flex; align-items: center; gap: 10px; height: 42px; padding: 0 16px 0 13px; border-radius: 8px; white-space: nowrap; transform-origin: 10px 100%;
+          background: #1c1e24; box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.2), 0 12px 26px -10px rgb(0 0 0 / 0.95); font-family: "Geist Mono", monospace; font-size: 19px; }
+        .tag i { width: 13px; height: 13px; border-radius: 50%; display: block; flex: none; }
+        .tag b { font-weight: 500; }
+        .tag em { font-style: normal; color: #a4a8b3; font-size: 16.5px; }
+        .haste { position: absolute; width: 1.5px; transform-origin: 50% 0; opacity: 0.85; }
+
+        #feixe { position: absolute; left: 0; top: 250px; width: 2px; height: 600px; margin-left: -1px; background: #d4d5ff; box-shadow: 0 0 16px 3px rgb(124 128 245 / 0.7); opacity: 0; }
+        #feixe::before { content: ""; position: absolute; right: 2px; top: 0; width: 160px; height: 100%; background: radial-gradient(ellipse 100% 60% at 100% 50%, rgb(124 128 245 / 0.16), transparent 70%); }
+
+        svg.fios { position: absolute; left: 0; top: 0; overflow: visible; }
+        .fio-linha { fill: none; stroke: rgb(255 255 255 / 0.62); stroke-width: 2; stroke-linecap: round; }
+        .fio-porta { fill: rgb(255 255 255 / 0.62); }
+        .fio-ponta { fill: none; stroke: rgb(255 255 255 / 0.62); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+        .cruza { fill: none; stroke: #ff7d6e; stroke-width: 1.6; stroke-linecap: round; filter: drop-shadow(0 0 4px rgb(255 125 110 / 0.7)); }
+
+        /* a fileira do volume, a segunda função */
+        .peca { position: absolute; }
+        .rot { position: absolute; left: 0; bottom: calc(100% + 9px); white-space: nowrap; line-height: 1.2; }
+        .rot b { display: block; font-size: 14px; font-weight: 500; }
+        .rot i { display: block; font-style: normal; font-family: "Geist Mono", monospace; font-size: 11.5px; color: #a4a8b3; }
+        .papel { position: absolute; inset: 0; border-radius: 2px; background: #eceef1; color: #0a0b0d; padding: 10px 9px; display: flex; flex-direction: column; align-items: center; text-align: center; overflow: hidden;
+          box-shadow: 0 1px 2px rgb(0 0 0 / 0.5), 0 14px 30px -12px rgb(0 0 0 / 0.75); }
+        .p-mini { font-size: 4.8px; letter-spacing: 0.05em; color: #1f2126; text-transform: uppercase; }
+        .p-obra { font-size: 7.4px; font-weight: 700; line-height: 1.2; margin-top: 12px; }
+        .p-vol { font-size: 6.4px; font-weight: 700; margin-top: 14px; letter-spacing: 0.03em; }
+        .p-num { font-family: "Geist Mono", monospace; font-size: 22px; font-weight: 500; margin-top: 16px; font-variant-numeric: tabular-nums; }
+        .ld-l { width: 100%; height: 6px; margin-top: 3px; border-bottom: 0.5px solid rgb(10 11 13 / 0.18); }
+        .cart { position: absolute; width: 140px; height: 98px; border-radius: 2px; background: #181a1f; overflow: hidden; box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.2), 0 10px 24px -14px rgb(0 0 0 / 0.9);
+          display: grid; grid-template-columns: 52px 52px 36px; grid-template-rows: 32px 66px; }
+        .cel { padding: 4.5px 6px; box-shadow: inset -1px -1px 0 rgb(255 255 255 / 0.12); min-width: 0; }
+        .cel small { display: block; font-family: "Geist Mono", monospace; font-size: 6.4px; letter-spacing: 0.06em; text-transform: uppercase; color: #a4a8b3; }
+        .cel b { display: block; margin-top: 2px; font-weight: 450; font-size: 9.8px; line-height: 1.25; white-space: nowrap; font-family: "Geist Mono", monospace; }
+        .cel.t { grid-column: 1 / -1; } .cel.t b { white-space: normal; font-family: "Geist", sans-serif; font-size: 9.2px; }
+        .resto { position: absolute; width: 70px; height: 98px; border-radius: 2px; border: 1px dashed rgb(255 255 255 / 0.24); display: grid; place-items: center; font-family: "Geist Mono", monospace; font-size: 15px; color: #a4a8b3; }
+        .selo { position: absolute; left: 0; top: 0; display: flex; align-items: center; gap: 6px; height: 24px; padding: 0 9px; border-radius: 5px; background: #16241d; color: #7bd8a5; font-family: "Geist Mono", monospace; font-size: 11.5px; box-shadow: inset 0 0 0 1px rgb(123 216 165 / 0.35); white-space: nowrap; }
+      </style>
+
+      <div id="root" data-composition-id="leitura" data-width="1440" data-height="1080">
+        <div class="halo" id="halo" data-layout-ignore=""></div>
+        <div id="cam">
+          <div class="palco">
+            <div class="plano">
+              <div class="mundo" id="mundo">
+                <svg class="fios" id="fios" width="2200" height="1700" viewBox="0 0 2200 1700"></svg>
+                <div id="pecas"></div>
+                <div id="feixe"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <script>
+        /* =====================================================================
+         * A LEITURA: o memorial da 117-25 auditado, e o volume que ele integra.
+         * Mesmo relógio da legenda (compositions/legenda.html): os instantes
+         * compartilhados estão em R, com os mesmos valores lá.
+         * Os achados e os trechos são os da tela Resultado aprovada no lab.
+         * O último quadro é o primeiro: a câmera volta à p. 14, sem leitura.
+         * ===================================================================== */
+        (() => {
+          const D = 15;
+          const R = { marca: 1.55, cruza: 2.05, ach002: 2.9, recua: 3.4, varre: 4.3, varreDur: 2.6, corrige: 9.25, monta: 10.1, fecha: 13.35 };
+          const tl = gsap.timeline({ paused: true });
+          const pecas = document.getElementById("pecas");
+          const fios = document.getElementById("fios");
+          const NS = "http://www.w3.org/2000/svg";
+          const COR = { block: "#ff7d6e", decide: "#f0b45c", note: "#8e99ae", texto: "#86b6f0", ok: "#7bd8a5" };
+          const WASH = { block: "rgb(255 125 110 / 0.42)", decide: "rgb(240 180 92 / 0.45)", texto: "rgb(134 182 240 / 0.45)", ok: "rgb(123 216 165 / 0.45)" };
+          const NIVEL = { block: "Bloqueia", decide: "Decide", texto: "Gramática" };
+          const PY = 300, PW = 360, LH = 14, TOPO = 46, PAD = 24;
+          const OK = ' data-layout-allow-overlap="" data-layout-allow-occlusion=""';
+          const yLinha = (i) => PY + TOPO + i * LH;
+
+          /* ---------- as páginas: "#" título, "[[x]]" marca, "|" linha de quadro ---------- */
+          const PAGINAS = [
+            { n: 9, x: 0, nivel: "decide", id: "ACH-003", linhas: [
+              "#2. CARACTERIZAÇÃO DA OBRA", "", "#2.1 Localização",
+              "O terreno situa-se na Rua São Francisco de Assis, bairro São Luiz,", "município de Criciúma, com testada de 42,00 m e área de 3.150 m².", "",
+              "#2.2 Programa", "A Unidade Básica de Saúde atende ao programa de porte II, com",
+              "consultórios, sala de vacinas, farmácia e área administrativa.", "",
+              "#2.3 Áreas", "A edificação possui área coberta total de",
+              "[[1.240 m²]], distribuída em pavimento único, com acesso principal", "pela Rua São Francisco de Assis e acesso de serviço lateral.", "",
+              "#2.4 Implantação", "O afastamento frontal atende ao plano diretor, com recuo de 5,00 m", "e taxa de ocupação de 39%, abaixo do limite de 60% da zona." ] },
+            { n: 14, x: 440, nivel: "block", id: "ACH-002", linhas: [
+              "#5. ESTRUTURA", "", "#5.1 Fundações",
+              "As fundações serão do tipo blocos sobre estacas escavadas, conforme", "o projeto estrutural EST-02, com cota de assentamento definida a", "partir da sondagem SPT realizada no terreno.", "",
+              "#5.2 Concreto", "Os elementos de fundação e as vigas baldrame serão executados em",
+              "concreto usinado, com controle tecnológico por lote, totalizando",
+              "[[48,60 m³]] de concreto estrutural fck ≥ 25 MPa para blocos e vigas", "baldrame, lançado e adensado conforme a NBR 14931.", "",
+              "#5.3 Armaduras", "Aço CA-50 e CA-60, cortado e dobrado conforme os detalhamentos,", "com cobrimento nominal de 3,0 cm nos elementos em contato com o solo.", "",
+              "#5.4 Estrutura metálica da cobertura", "Treliças em perfis formados a frio, aço ASTM A36, ligações", "parafusadas, pintura de fundo e acabamento em esmalte sintético.", "",
+              "#5.5 Lajes", "Lajes pré-moldadas treliçadas, capa de 4 cm, escoradas até a cura." ] },
+            { n: 31, x: 880, linhas: [
+              "#QUADRO DE QUANTITATIVOS — ESTRUTURA", "", "|item|descrição|un.|quant.",
+              "|3.1|Escavação manual de valas|m³|38,40", "|3.2|Concreto fck 25 MPa (blocos e baldrames)|m³|[[46,20]]",
+              "|3.3|Aço CA-50|kg|2.860,00", "|3.4|Aço CA-60|kg|412,00", "|3.5|Fôrmas de madeira|m²|312,50",
+              "|3.6|Lastro de concreto magro|m³|6,80", "|3.7|Impermeabilização de baldrames|m²|96,00", "",
+              "#QUADRO DE QUANTITATIVOS — COBERTURA", "", "|item|descrição|un.|quant.",
+              "|4.1|Treliças metálicas|kg|4.180,00", "|4.2|Telha termoacústica 30 mm|m²|1.312,00", "|4.3|Calhas e rufos|m|186,40", "|4.4|Forro mineral|m²|1.044,00" ] },
+            { n: 19, x: 1320, nivel: "decide", id: "ACH-004", linhas: [
+              "#7. INSTALAÇÕES HIDROSSANITÁRIAS", "", "#7.1 Água fria",
+              "O abastecimento será feito pela rede pública, com reservação", "superior de 10.000 L em dois reservatórios de polietileno.", "",
+              "#7.2 Normas", "Os sistemas serão dimensionados e executados conforme prescrições da",
+              "[[NBR 5626:1998]] — Instalação predial de água fria e quente, e", "da NBR 8160 para os sistemas prediais de esgoto sanitário.", "",
+              "#7.3 Esgoto sanitário", "Tubulações em PVC série normal, caixas de inspeção em alvenaria", "a cada mudança de direção, ligadas à rede coletora municipal.", "",
+              "#7.4 Águas pluviais", "Calhas em chapa galvanizada e condutores em PVC de 100 mm." ] },
+            { n: 27, x: 1760, nivel: "texto", id: "ACH-007", linhas: [
+              "#8. INSTALAÇÕES ELÉTRICAS", "", "#8.1 Entrada de energia",
+              "Entrada em baixa tensão, padrão da concessionária, com medição", "indireta e transformador próprio em poste, conforme o projeto ELE-01.", "",
+              "#8.2 Quadros", "A distribuição parte do QGBT para os quadros setoriais, sendo que",
+              "[[os quadro]] de distribuição deverão ficar em local ventilado e", "de fácil acesso, com porta e identificação dos circuitos.", "",
+              "#8.3 Iluminação", "Luminárias LED de embutir, 4000 K, com acionamento por setor e", "sensores de presença nas circulações e sanitários.", "",
+              "#8.4 Tomadas", "Tomadas no padrão NBR 14136, circuitos independentes por ambiente." ] },
+          ];
+          const P = {};
+          for (const pg of PAGINAS) {
+            const e = document.createElement("div");
+            e.className = "pg";
+            e.style.left = pg.x + "px"; e.style.top = PY + "px";
+            const corpo = pg.linhas.map((txt) => {
+              const marca = (s) => s.replace(/\[\[(.+?)\]\]/, `<span class="mc"${OK}>$1</span>`);
+              if (txt.startsWith("#")) return `<div class="l h"${OK}>${txt.slice(1)}</div>`;
+              if (txt.startsWith("|")) {
+                const [, a, b, c, d] = txt.split("|");
+                return `<div class="l q${a === "item" ? " qh" : ""}"${OK}><span${OK}>${a}</span><span${OK}>${b}</span><span${OK}>${c}</span><span${OK}>${marca(d)}</span></div>`;
+              }
+              return `<div class="l"${OK}>${marca(txt) || "&nbsp;"}</div>`;
+            }).join("");
+            e.innerHTML = `<div class="pg-cab"><span${OK}>PROSUL · 117-25 · MEMORIAL DESCRITIVO GERAL</span><span class="rev"${OK}>REV. A</span></div>${corpo}<div class="pg-rod"><span${OK}>UBS da Rua São Francisco de Assis</span><span${OK}>${pg.n} / 42</span></div>`;
+            pecas.appendChild(e);
+            const i = pg.linhas.findIndex((t) => t.includes("[["));
+            P[pg.n] = { ...pg, e, mc: e.querySelector(".mc"), iMarca: i, yMarca: yLinha(i), rev: e.querySelector(".rev") };
+          }
+          const P14 = P[14], P31 = P[31];
+          const lido = document.createElement("div");
+          lido.className = "lido";
+          P14.e.appendChild(lido);
+
+          /* ---------- os achados: etiqueta presa ao trecho por uma haste ---------- */
+          const TEXTO = { "ACH-002": "48,60 m³ ≠ 46,20 no quadro", "ACH-003": "1.240 m² ≠ 1.180 m²", "ACH-004": "edição de 1998", "ACH-007": "“os quadro”" };
+          const tags = {};
+          for (const pg of Object.values(P)) {
+            if (!pg.id) continue;
+            const x = pg.x + PAD - 1, y = pg.yMarca;
+            const haste = document.createElement("i");
+            haste.className = "haste";
+            Object.assign(haste.style, { left: x + 6 + "px", top: PY - 18 + "px", height: y - PY + 20 + "px", background: COR[pg.nivel] });
+            const tag = document.createElement("div");
+            tag.className = "tag";
+            Object.assign(tag.style, { left: x + "px", top: PY - 62 + "px" });
+            tag.innerHTML = `<i style="background:${COR[pg.nivel]}"></i><b${OK}>${pg.id}</b><em${OK}>${NIVEL[pg.nivel]} · ${TEXTO[pg.id]}</em>`;
+            pecas.append(haste, tag);
+            tags[pg.id] = { tag, haste, pt: tag.querySelector("i"), pg };
+          }
+
+          /* ---------- o fio do cruzamento: o texto da p. 14 contra o quadro da p. 31 ---------- */
+          const svg = (tag, a, pai = fios) => { const e = document.createElementNS(NS, tag); for (const k in a) e.setAttribute(k, a[k]); pai.appendChild(e); return e; };
+          const yA = P14.yMarca + 7, yB = P31.yMarca + 7;
+          const cruza = svg("path", { d: `M${P14.x + 96},${yA} C${P14.x + 330},${yA - 40} ${P31.x + 120},${yB + 60} ${P31.x + PW - PAD - 40},${yB + 2}`, class: "cruza" });
+          const lenCruza = 700;
+          cruza.style.strokeDasharray = `${lenCruza}`;
+
+          /* ---------- a fileira do volume (y = 1350) ---------- */
+          const VY = 1350, CW = 140, CH = 98, PH = 170;
+          const peca = (x, y, w, h, rot, sub) => {
+            const p = document.createElement("div");
+            p.className = "peca";
+            Object.assign(p.style, { left: x + "px", top: y + "px", width: w + "px", height: h + "px" });
+            p.innerHTML = `<div class="rot"><b${OK}>${rot}</b><i${OK}>${sub}</i></div>`;
+            pecas.appendChild(p);
+            return p;
+          };
+          const capa = peca(150, VY - PH / 2, 120, PH, "Capa", "gerada");
+          capa.insertAdjacentHTML("beforeend", `<div class="papel"><div class="p-mini"${OK}>Prefeitura Municipal de Criciúma</div><div class="p-obra"${OK}>UBS DA RUA SÃO FRANCISCO DE ASSIS</div><div class="p-vol"${OK}>VOLUME 1</div><div class="p-mini"${OK} style="margin-top:auto">SETEMBRO 2026 · 117-25</div></div>`);
+          const ld = peca(330, VY - PH / 2, 120, PH, "Lista de documentos", "gerada");
+          ld.insertAdjacentHTML("beforeend", `<div class="papel"><div class="p-vol"${OK} style="margin-top:0">LISTA DE DOCUMENTOS</div>${'<div class="ld-l"></div>'.repeat(14)}</div>`);
+          const slot = { x: 510, y: VY - PH / 2 };
+          const memRot = peca(slot.x, slot.y, 120, PH, "Memorial geral", "rev. B · auditado");
+          const cartoes = [["ARQ-01", "B", "IMPLANTAÇÃO E SITUAÇÃO"], ["EST-02", "A", "FÔRMAS DA FUNDAÇÃO"], ["ELE-01", "A", "ENTRADA DE ENERGIA"]].map(([f, r, t], i) => {
+            const c = document.createElement("div");
+            c.className = "cart";
+            Object.assign(c.style, { left: 712 + i * (CW + 10) + "px", top: VY - CH / 2 + "px" });
+            c.innerHTML = `<div class="cel"><small${OK}>folha</small><b${OK}>${f}</b></div><div class="cel"><small${OK}>disc.</small><b${OK}>${f.slice(0, 3)}</b></div><div class="cel"><small${OK}>rev.</small><b${OK}>${r}</b></div><div class="cel t"><small${OK}>título</small><b${OK}>${t}</b></div>`;
+            pecas.appendChild(c);
+            return c;
+          });
+          const resto = document.createElement("div");
+          resto.className = "resto";
+          Object.assign(resto.style, { left: 712 + 3 * (CW + 10) + "px", top: VY - CH / 2 + "px" });
+          resto.textContent = "+30";
+          pecas.appendChild(resto);
+          const pranRot = peca(712, VY - CH / 2, 3 * (CW + 10) + 70, CH, "Pranchas", "33 folhas lidas pelo carimbo");
+          const vol = peca(1440, VY - PH / 2, 120, PH, "Volume 01", "gerado");
+          vol.insertAdjacentHTML("beforeend", `<div class="papel"><div class="p-mini"${OK}>117-25 · Tomo 01</div><div class="p-vol"${OK} style="margin-top:22px">VOLUME 01</div><div class="p-num"${OK} id="vnum">0</div><div class="p-mini"${OK}>páginas</div></div>`);
+          const vnum = vol.querySelector("#vnum");
+          const selo = document.createElement("div");
+          selo.className = "selo";
+          Object.assign(selo.style, { left: slot.x - 4 + "px", top: slot.y + PH + 12 + "px" });
+          selo.textContent = "✓ 0 bloqueios";
+          pecas.appendChild(selo);
+          const fio = (x1, x2, y) => {
+            const r = 6, g = svg("g", {});
+            const linha = svg("path", { d: `M${x1 + r - 1},${y} L${x2 - 2},${y}`, class: "fio-linha" }, g);
+            const porta = svg("path", { d: `M${x1},${y - r} A${r},${r} 0 0 1 ${x1},${y + r} Z`, class: "fio-porta" }, g);
+            const ponta = svg("path", { d: `M${x2 - 8},${y - 6.5} L${x2 - 1},${y} L${x2 - 8},${y + 6.5}`, class: "fio-ponta" }, g);
+            const len = x2 - 2 - (x1 + r - 1);
+            linha.style.strokeDasharray = `${len}`;
+            porta.style.transformBox = "fill-box"; porta.style.transformOrigin = "0% 50%";
+            return { linha, porta, ponta, len };
+          };
+          const FIOS = [fio(270, 330, VY), fio(450, 510, VY), fio(630, 712, VY), fio(712 + 3 * (CW + 10) + 70, 1440, VY)];
+          const fileira = [capa, ld, memRot, ...cartoes, resto, pranRot, vol, selo];
+
+          /* ---------- utilidades de texto, função do tempo ---------- */
+          const GLIFOS = "0123456789,m³";
+          const mistura = (de, para, p) => {
+            let out = "";
+            for (let i = 0; i < para.length; i++) {
+              const local = (p - (i / para.length) * 0.6) / 0.4;
+              out += local >= 1 ? para[i] : local <= 0 ? (de[i] ?? "") : GLIFOS[(i * 5 + Math.floor(p * 40) * 7) % GLIFOS.length];
+            }
+            return out;
+          };
+          const trocar = (alvo, de, para, ini, dur) => {
+            const pr = { p: 0 };
+            tl.fromTo(pr, { p: 0 }, { p: 1, duration: dur, ease: "none", immediateRender: false, onUpdate: () => (alvo.textContent = mistura(de, para, pr.p)) }, ini);
+          };
+          const contar = (alvo, de, ate, ini, dur) => {
+            const pr = { v: de };
+            tl.fromTo(pr, { v: de }, { v: ate, duration: dur, ease: "power2.out", immediateRender: false, onUpdate: () => (alvo.textContent = String(Math.round(pr.v))) }, ini);
+          };
+          // a cor entra num set: num fromTo, propriedade que só está no "de" não é aplicada
+          const lavar = (pg, cor, t, dur = 0.32) => {
+            tl.set(pg.mc, { "--c": cor }, t);
+            tl.fromTo(pg.mc, { backgroundSize: "0% 100%" }, { backgroundSize: "100% 100%", duration: dur, ease: "power2.out", immediateRender: false }, t);
+          };
+          const nasce = (id, t) => {
+            const { tag, haste } = tags[id];
+            // a haste sobe do trecho até a etiqueta: nasce no achado, não na legenda
+            tl.fromTo(haste, { scaleY: 0, transformOrigin: "50% 100%", opacity: 0.85 }, { scaleY: 1, duration: 0.3, ease: "power2.out", immediateRender: false }, t);
+            tl.fromTo(tag, { opacity: 0, y: 10, scale: 0.86 }, { opacity: 1, y: 0, scale: 1, duration: 0.38, ease: "back.out(2.2)", immediateRender: false }, t + 0.22);
+          };
+
+          /* ---------- o primeiro quadro, que é também o último ---------- */
+          for (const pg of Object.values(P)) if (pg.mc) gsap.set(pg.mc, { "--c": "transparent", backgroundSize: "0% 100%" });
+          gsap.set(lido, { height: 30, opacity: 1 });
+          for (const { tag, haste } of Object.values(tags)) gsap.set([tag, haste], { opacity: 0 });
+          gsap.set(cruza, { strokeDashoffset: lenCruza, opacity: 1 });
+          gsap.set(fileira, { opacity: 0 });
+          for (const f of FIOS) { gsap.set(f.linha, { strokeDashoffset: f.len }); gsap.set(f.porta, { scale: 0 }); gsap.set(f.ponta, { opacity: 0 }); }
+          gsap.set("#feixe", { opacity: 0, x: -40 });
+
+          /* ============================ O TEMPO ============================ */
+          tl.set("#cam", { "--s": 2.2, "--fx": 620, "--fy": 470, "--rx": 0, "--rz": 0 }, 0);
+          tl.fromTo("#cam", { "--dx": -5 }, { "--dx": 5, duration: D / 4, ease: "sine.inOut", yoyo: true, repeat: 3 }, 0);
+          tl.fromTo("#cam", { "--dy": -3 }, { "--dy": 3, duration: D / 6, ease: "sine.inOut", yoyo: true, repeat: 5 }, 0);
+          tl.fromTo("#halo", { scale: 1, opacity: 0.85 }, { scale: 1.07, opacity: 1, duration: D / 4, ease: "sine.inOut", yoyo: true, repeat: 3 }, 0);
+
+          /* 0–1.9 s · LÊ: a linha de leitura desce a p. 14 e para no número */
+          const ateMarca = P14.yMarca - PY + LH;
+          tl.fromTo(lido, { height: 30 }, { height: ateMarca, duration: R.marca - 0.25, ease: "power1.inOut", immediateRender: false }, 0.25);
+          tl.to("#cam", { "--fy": P14.yMarca - 10, duration: 1.4, ease: "sine.inOut" }, 0.3);
+          lavar(P14, WASH.block, R.marca, 0.36);
+
+          /* 1.9–3.4 s · CRUZA: o quadro da p. 31 entra no quadro, o fio liga os dois números */
+          tl.to("#cam", { "--s": 1.22, "--fx": 860, "--fy": 380, duration: 1.15, ease: "power3.inOut" }, 1.8);
+          tl.fromTo(cruza, { strokeDashoffset: lenCruza }, { strokeDashoffset: 0, duration: 0.6, ease: "power2.inOut", immediateRender: false }, R.cruza + 0.2);
+          lavar(P31, WASH.block, R.cruza + 0.72, 0.3);
+          nasce("ACH-002", R.ach002);
+
+          /* 3.4–7.5 s · ACHA: a câmera recua, o feixe varre as páginas e os achados nascem no trecho */
+          tl.to("#cam", { "--s": 0.56, "--fx": 1080, "--fy": 520, "--rx": 16, "--rz": -4, duration: 1.0, ease: "power3.inOut" }, R.recua);
+          tl.to(cruza, { opacity: 0.35, duration: 0.6 }, R.recua + 0.4);
+          const X0 = -40, X1 = 2160;
+          const passa = (x) => R.varre + ((x - X0) / (X1 - X0)) * R.varreDur;
+          tl.fromTo("#feixe", { x: X0, opacity: 0 }, { x: X1, opacity: 1, duration: R.varreDur, ease: "none", immediateRender: false }, R.varre);
+          tl.to("#feixe", { opacity: 0, duration: 0.3 }, R.varre + R.varreDur);
+          for (const n of [9, 19, 27]) {
+            const pg = P[n], t = passa(pg.x + 180);
+            lavar(pg, WASH[pg.nivel], t);
+            nasce(pg.id, t + 0.05);
+          }
+          tl.to("#cam", { "--s": 0.6, "--fx": 1100, duration: 2.8, ease: "sine.inOut" }, R.varre + 0.4);
+
+          /* 7.5–10.1 s · PARECER: a legenda dá o veredito; na revisão B o número da p. 14 é corrigido */
+          tl.to("#cam", { "--s": 0.7, "--fx": 720, "--fy": 500, "--rx": 10, "--rz": -2.5, duration: 1.6, ease: "power2.inOut" }, 7.6);
+          trocar(P14.mc, "48,60 m³", "46,20 m³", R.corrige, 0.42);
+          tl.to(P14.mc, { "--c": WASH.ok, duration: 0.3 }, R.corrige + 0.3);
+          tl.to(tags["ACH-002"].pt, { backgroundColor: COR.ok, duration: 0.25 }, R.corrige + 0.3);
+          tl.to(cruza, { opacity: 0, duration: 0.4 }, R.corrige + 0.2);
+          for (const pg of Object.values(P)) trocar(pg.rev, "REV. A", "REV. B", R.corrige + 0.1, 0.3);
+
+          /* 10.1–12.6 s · MONTA: a p. 14 vira o memorial da fileira, e o volume se monta */
+          const m = R.monta;
+          tl.to(Object.values(tags).flatMap((t) => [t.tag, t.haste]), { opacity: 0, duration: 0.3 }, m - 0.15);
+          for (const pg of Object.values(P)) if (pg !== P14) tl.to(pg.e, { opacity: 0, filter: "blur(6px)", duration: 0.5, ease: "power2.in" }, m + 0.05);
+          tl.to(lido, { opacity: 0, duration: 0.3 }, m);
+          tl.to("#cam", { "--s": 0.82, "--fx": 860, "--fy": VY - 70, "--rx": 13, "--rz": -3, duration: 1.3, ease: "power3.inOut" }, m);
+          tl.to(P14.e, { x: slot.x - P14.x, y: slot.y - PY, scale: 120 / PW, duration: 1.2, ease: "power3.inOut" }, m + 0.05);
+          const entra = (e, t) => tl.fromTo(e, { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out", immediateRender: false }, t);
+          const liga = (f, t) => {
+            tl.fromTo(f.porta, { scale: 0 }, { scale: 1, duration: 0.22, ease: "back.out(2)", immediateRender: false }, t);
+            tl.fromTo(f.linha, { strokeDashoffset: f.len }, { strokeDashoffset: 0, duration: 0.32, ease: "power2.out", immediateRender: false }, t + 0.05);
+            tl.fromTo(f.ponta, { opacity: 0, x: -6 }, { opacity: 1, x: 0, duration: 0.2, immediateRender: false }, t + 0.28);
+          };
+          entra(capa, m + 0.55); liga(FIOS[0], m + 0.8); entra(ld, m + 0.85);
+          liga(FIOS[1], m + 1.1); entra(memRot, m + 1.15); entra(selo, m + 1.3);
+          liga(FIOS[2], m + 1.35); cartoes.forEach((c, i) => entra(c, m + 1.45 + i * 0.08)); entra(resto, m + 1.7); entra(pranRot, m + 1.5);
+          liga(FIOS[3], m + 1.75); entra(vol, m + 1.9);
+          contar(vnum, 0, 238, m + 2.0, 0.55);
+
+          /* 13.35–15 s · FECHA: a p. 14 volta à mesa e a câmera mergulha nela */
+          const f = R.fecha;
+          tl.to(fileira, { opacity: 0, filter: "blur(6px)", duration: 0.45, ease: "power2.in", stagger: 0.03 }, f);
+          FIOS.forEach((fi, i) => { tl.to(fi.linha, { strokeDashoffset: fi.len, duration: 0.35, ease: "power2.in" }, f + i * 0.05); tl.to([fi.ponta], { opacity: 0, duration: 0.2 }, f); tl.to(fi.porta, { scale: 0, duration: 0.3 }, f + 0.2); });
+          tl.to(P14.e, { x: 0, y: 0, scale: 1, duration: 1.45, ease: "power3.inOut" }, f + 0.1);
+          tl.to("#cam", { "--s": 2.2, "--fx": 620, "--fy": 470, "--rx": 0, "--rz": 0, duration: 1.5, ease: "power3.inOut" }, f + 0.1);
+          // enquanto a página está pequena, ela volta a ser a de antes da leitura
+          trocar(P14.mc, "46,20 m³", "48,60 m³", f + 0.15, 0.2);
+          tl.to(P14.mc, { backgroundSize: "0% 100%", duration: 0.3 }, f + 0.2);
+          for (const pg of Object.values(P)) trocar(pg.rev, "REV. B", "REV. A", f + 0.15, 0.2);
+          tl.set(lido, { height: 30, opacity: 1 }, f + 0.5);
+          for (const pg of Object.values(P)) if (pg !== P14) {
+            tl.set(pg.mc ?? pg.e, { backgroundSize: "0% 100%" }, f + 0.5);
+            tl.to(pg.e, { opacity: 1, filter: "blur(0px)", duration: 0.5, ease: "power2.out" }, f + 0.95);
+          }
+          tl.set(tags["ACH-002"].pt, { backgroundColor: COR.block }, f + 0.5);
+          tl.set(cruza, { strokeDashoffset: lenCruza, opacity: 1 }, f + 0.5);
+          tl.set(vnum, { textContent: "0" }, f + 0.6);
+
+          window.__timelines["leitura"] = tl;
+        })();
+      </script>
+    </template>
+  </body>
+</html>

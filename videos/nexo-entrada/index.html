@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=1440, height=1080">
-    <title>Nexo, do carimbo ao volume</title>
+    <title>Nexo, o memorial auditado e o volume</title>
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
     <style>
       * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -13,13 +13,13 @@
   </head>
   <body>
     <!--
-      DO CARIMBO AO VOLUME. 15 s em loop para o painel da tela de entrada.
-      A mesa (o mapa do volume com a câmera) e o letreiro (marca, parecer e
+      O MEMORIAL AUDITADO, E O VOLUME. 15 s em loop para o painel da tela de entrada.
+      A leitura (as páginas do memorial e a câmera) e a legenda (marca, parecer e
       tipografia) correm no mesmo relógio. O último quadro é o primeiro.
     -->
     <div data-hf-id="hf-cfa3" id="root" data-composition-id="main" data-start="0" data-duration="15" data-width="1440" data-height="1080">
-      <div data-hf-id="hf-9j58" id="mesa" data-composition-id="mesa" data-composition-src="compositions/mesa.html" data-start="0" data-duration="15" data-track-index="0" data-width="1440" data-height="1080"></div>
-      <div data-hf-id="hf-qytn" id="letreiro" data-composition-id="letreiro" data-composition-src="compositions/letreiro.html" data-start="0" data-duration="15" data-track-index="1" data-width="1440" data-height="1080"></div>
+      <div data-hf-id="hf-9j58" id="leitura" data-composition-id="leitura" data-composition-src="compositions/leitura.html" data-start="0" data-duration="15" data-track-index="0" data-width="1440" data-height="1080"></div>
+      <div data-hf-id="hf-qytn" id="legenda" data-composition-id="legenda" data-composition-src="compositions/legenda.html" data-start="0" data-duration="15" data-track-index="1" data-width="1440" data-height="1080"></div>
     </div>
     <script>
       window.__timelines["main"] = gsap.timeline({ paused: true });

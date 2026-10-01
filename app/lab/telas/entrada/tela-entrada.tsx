@@ -11,7 +11,7 @@ import "./entrada.css";
 
 /*
  * A ENTRADA: login e sem acesso. À esquerda o login de sempre; à direita o
- * filme do Nexo (do carimbo ao volume). Os textos são os do app.
+ * filme do Nexo (o memorial auditado, e o volume). Os textos são os do app.
  */
 
 export type SituacaoEntrada =

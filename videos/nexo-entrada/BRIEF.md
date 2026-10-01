@@ -2,7 +2,7 @@
 workflow: general-video
 flow: automation
 storyboard: no
-message: "Do carimbo ao volume: o Nexo lê cada folha, monta o volume e confere antes da prefeitura"
+message: "O Nexo audita o memorial — lê, acha o que trava, dá o parecer — e monta o volume"
 destination: website
 aspect: 1440x1080
 language: pt-BR
@@ -13,23 +13,28 @@ length: 15s
 ## Intent
 
 Motion graphic de ~15 s em loop praticamente imperceptível, no painel direito da tela de
-login (esquerda: o login padrão). Premium, cinematográfico, tecnológico, sem SaaS genérico,
-sem partículas aleatórias nem gradientes clichê. O próprio produto é a matéria-prima:
-carimbo de prancha, mapa do volume com as setas aprovadas, LD, achados com níveis,
-faixa de veredito, orbe íris, sistema ds escuro e Geist. Complementa o formulário, não compete.
-Palavras do Matheus: "Go all out", "não seja conservador", "peça de topo de showreel".
+login (esquerda: o login padrão). A AUDITORIA DE MEMORIAL É A PROTAGONISTA (pedido do Matheus,
+01/10: "o principal do software é o audit de memorial"); o fechamento mostra as DUAS funções
+principais juntas: auditar o memorial e montar o volume. Premium, cinematográfico, sem SaaS
+genérico. Matéria-prima: o memorial da 117-25 e os achados reais da tela Resultado aprovada
+(ACH-002 48,60 m³ × 46,20 no quadro, ACH-003 1.240 m², ACH-004 NBR 5626:1998, ACH-007 "os quadro"),
+a faixa do parecer, a fileira do volume com as setas aprovadas, o orbe, Geist, ds escuro.
 
 ## Customizations
 
-- Estrutura: 0–3 s entrada (o carimbo lido), 3–10 s sequência principal (monta e confere),
-  10–15 s composição final que volta ao primeiro quadro (loop).
-- Tipografia em movimento, grids/linhas do sistema, máscaras e reveals, parallax e profundidade
-  sutis, microinterações (revisão A→B, marcador do veredito, contador de páginas).
-- prefers-reduced-motion: quadro parado (pôster) no lugar do vídeo.
+- 0–3,4 s: lê a p. 14 em close; a marca acende em "48,60 m³"; o fio cruza com o quadro da p. 31.
+- 3,4–7,5 s: recua sobre as páginas; o feixe varre e os achados nascem presos ao trecho.
+- 7,5–10,1 s: o parecer (não emitir → revisão B → com ressalvas); o número da p. 14 é corrigido.
+- 10,1–13,35 s: a própria p. 14 vira o memorial da fileira e o volume se monta; o cartão final
+  diz as duas funções ("Audita o memorial. Monta o volume.") sobre a fileira e o parecer.
+- 13,35–15 s: mergulho de volta à p. 14, sem leitura: o último quadro é o primeiro.
+- SEM FUNDO PONTILHADO (Matheus não gostou): escuro, halo e vinheta. Véus no topo e na base
+  para o HUD nunca ficar sobre o papel claro.
+- prefers-reduced-motion: pôster parado no quadro das duas funções (13,2 s).
 
 ## Notes
 
-- Inferido (não perguntado, regra do Matheus "decide e executa"): flow automation, storyboard no,
-  4:3 1440x1080 com zona segura central (~1240x980) para o recorte cover do painel em 1440 e 2560.
+- 1440x1080 4:3, zona segura central para o recorte cover do painel em 1440 e 2560.
 - Sem áudio: vai num login, mudo.
-- Dados são amostra plausível da obra 117-25 (os mesmos do lab), sem números de uso inventados.
+- Composições: compositions/leitura.html (mundo e câmera) e compositions/legenda.html (HUD e
+  tipografia), no mesmo relógio (objeto R nas duas).
