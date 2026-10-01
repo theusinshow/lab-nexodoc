@@ -12,7 +12,7 @@ import { useLab } from "./contexto";
  *  desligadas: o lab mostra o caminho inteiro desde o primeiro dia. */
 const FASES: { href: string; rotulo: string; fase: string; pronta: boolean; grupo?: string }[] = [
   { href: "/lab", rotulo: "Começar aqui", fase: "", pronta: true },
-  { href: "/lab/telas/orbe", rotulo: "Orbe novo (4 direções)", fase: "", pronta: true, grupo: "Em andamento" },
+  { href: "/lab/telas/orbe", rotulo: "Orbe: íris e expressão", fase: "", pronta: true, grupo: "Em andamento" },
   { href: "/lab/telas/admin", rotulo: "Administração", fase: "", pronta: true, grupo: "Telas para aprovar" },
   { href: "/lab/telas/ajuda", rotulo: "Ajuda", fase: "", pronta: true },
   { href: "/lab/telas/pecas", rotulo: "Peças de toda tela", fase: "", pronta: true },

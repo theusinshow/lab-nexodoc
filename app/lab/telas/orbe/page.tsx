@@ -6,10 +6,10 @@ export default function PaginaDoOrbe() {
   return (
     <>
       <header className="lab-cabeca" style={{ marginBottom: 8 }}>
-        <p className="lab-trilha">Orbe novo · rodada 1</p>
-        <h1>Quatro direções para o orbe</h1>
+        <p className="lab-trilha">Orbe · rodada 2</p>
+        <h1>O orbe de hoje, em íris e com expressão</h1>
         <p className="lab-lede">
-          Do zero, sem a esfera de vidro teal. As quatro leem os mesmos nove estados do agente do app e aparecem em todos os degraus, do herói ao favicon de 16px, e em uso na barra e na conversa. Escolha uma (ou o que misturar) e ela vira a família completa.
+          O mesmo orbe do app (vidro, alma e satélites), com a cor do sistema novo e uma assinatura de movimento por estado. À esquerda como está em produção; à direita o novo. Os controles disparam os eventos que o app dispara de verdade.
         </p>
       </header>
       <TelaOrbe />

@@ -29,9 +29,9 @@ import {
   type OrbVisualParams,
 } from "./agent-orb.types";
 
-// Identidade NexoDoc: TUDO teal (forma estilo Siri, mas monocromático teal →
-// luminoso, sem arco-íris). O miolo é branco-teal; as lâminas variam de teal
-// profundo (--primary) a teal claro (--ring), dando profundidade sem sair da marca.
+// Identidade NexoDoc: monocromático (forma estilo Siri, sem arco-íris). O miolo
+// é quase branco; as lâminas vão da íris profunda à clara. Desde 01/10/2026 a
+// família é íris (era teal); cor de sinal só em concluído, aguardando e erro.
 /**
  * As seis cores do orbe, num lugar só.
  *
@@ -55,13 +55,51 @@ export interface CoresDoOrbe {
   laminaClara: string;
 }
 
+/*
+ * A PALETA ÍRIS (01/10/2026): o orbe fica, a cor muda para a do sistema novo
+ * (app/ds.css, --ds-p-iris-*). A teal de antes segue exportada só para a
+ * comparação no laboratório (/lab/telas/orbe).
+ */
 export const CORES_DO_ORBE: CoresDoOrbe = {
+  corpo: "#0e0f1c",
+  aro: "#a3a6ff", // --ds-p-iris-9
+  almaProfunda: "#8a8ef6", // íris, e não azul elétrico: lavanda funda
+  miolo: "#f4f4ff",
+  almaClara: "#b8baff",
+  laminaClara: "#d4d5ff", // --ds-p-iris-12
+};
+
+export const CORES_DO_ORBE_TEAL: CoresDoOrbe = {
   corpo: "#0c1518",
   aro: "#5bdac6",
-  almaProfunda: "#00a693", // --primary
+  almaProfunda: "#00a693",
   miolo: "#eafffb",
-  almaClara: "#5bdac6", // --ring
+  almaClara: "#5bdac6",
   laminaClara: "#bff3ea",
+};
+
+/*
+ * COR SÓ PARA SINAL: três estados puxam o aro e os anéis para a cor do sinal
+ * (os mesmos tons do sistema, --ds-state-*); a alma continua íris. O resto é íris.
+ */
+const SINAL_DO_ESTADO: Partial<Record<AgentState, string>> = {
+  complete: "#7bd8a5",
+  waiting: "#f0b45c",
+  error: "#ff7d6e",
+};
+
+/*
+ * A EXPRESSÃO NOVA: cada estado ganha uma assinatura própria de movimento,
+ * somada ao que `paramsForState` já dá. Antes vários estados se distinguiam só
+ * por centésimos de brilho e giro.
+ */
+const AJUSTE_NOVO: Partial<Record<AgentState, Partial<OrbVisualParams>>> = {
+  dragging: { spin: 0.45, rim: 1, pulse: 0.5 },
+  analyzing: { spin: 0.62, pulse: 0.72, distortion: 0.2 },
+  auditing: { pulse: 0.3, rim: 0.95, spin: 0.22 },
+  complete: { pulse: 0.55, rim: 0.85, spin: 0.12 },
+  waiting: { breathRate: 0.55, pulse: 0.28, rim: 0.78 },
+  error: { spin: 0.03, rim: 0.82 },
 };
 
 /** O vidro: o quanto a casca é esfera, quanto reflete, e quão grossa parece. */
@@ -184,6 +222,8 @@ export function AgentOrbScene({
   cores,
   vidro,
   ajuste,
+  expressao = "nova",
+  achados = 0,
 }: {
   state: AgentState;
   activity: number;
@@ -208,6 +248,10 @@ export function AgentOrbScene({
    * quadro pelo amortecimento em direção ao alvo do estado.
    */
   ajuste?: Partial<OrbVisualParams>;
+  /** "hoje" reproduz o orbe de antes de 01/10/2026, só para comparar no laboratório. */
+  expressao?: "hoje" | "nova";
+  /** Achados encontrados até agora: cada um a mais dispara um anel âmbar (auditando). */
+  achados?: number;
 }) {
   const outerRef = useRef<THREE.Group>(null); // escala (hover + drag + press)
   const tiltRef = useRef<THREE.Group>(null); // inclinação que segue o ponteiro
@@ -243,10 +287,33 @@ export function AgentOrbScene({
   const aim = useRef({ x: 0, y: 0, perto: 0 });
   const cur = useRef<OrbVisualParams>(paramsForState("idle"));
   const target = useRef<OrbVisualParams>(paramsForState(state, activity));
+  const nova = expressao === "nova";
+  // cor de sinal corrente (0 = íris, 1 = cor do sinal) e a cor-alvo
+  const sinalRef = useRef(0);
+  const sinalCor = useRef(new THREE.Color("#a3a6ff"));
+  const baseRef = useRef({ aro: new THREE.Color(), almaA: new THREE.Color(), almaC: new THREE.Color() });
+  const mistura = useRef(new THREE.Color());
+  // o impulso da troca de estado e o ritmo da fala
+  const trocaRef = useRef(0);
+  const estadoAntes = useRef(state);
+  const achadosAntes = useRef(achados);
+  const corDoPulso = useRef(new THREE.Color("#a3a6ff"));
+  const ondaRef = useRef(0);
 
   useEffect(() => {
-    target.current = { ...paramsForState(state, activity), ...ajuste };
-  }, [state, activity, ajuste]);
+    target.current = { ...paramsForState(state, activity), ...(nova ? AJUSTE_NOVO[state] : undefined), ...ajuste };
+    if (nova && estadoAntes.current !== state) trocaRef.current = 1;
+    estadoAntes.current = state;
+  }, [state, activity, ajuste, nova]);
+
+  // cada achado novo dispara um anel âmbar (só na expressão nova)
+  useEffect(() => {
+    if (nova && achados > achadosAntes.current && !reduced) {
+      corDoPulso.current.set("#f0b45c");
+      pulsoRef01.current = 0.0001;
+    }
+    achadosAntes.current = achados;
+  }, [achados, nova, reduced]);
 
   // A marca de "já ligou nesta sessão" só é posta DEPOIS de montar, para que a
   // primeira instância ainda veja `false` no seu próprio `useRef` inicial.
@@ -262,7 +329,12 @@ export function AgentOrbScene({
    * No produto isto roda uma vez, com os valores padrão, e nunca mais.
    */
   useEffect(() => {
-    const c = { ...CORES_DO_ORBE, ...cores };
+    const c = { ...(nova ? CORES_DO_ORBE : CORES_DO_ORBE_TEAL), ...cores };
+    baseRef.current.aro.set(c.aro);
+    baseRef.current.almaA.set(c.almaProfunda);
+    baseRef.current.almaC.set(c.almaClara);
+    for (const m of [ringMatRef.current, progressoMatRef.current, pulsoMatRef.current]) m?.color.set(c.aro);
+    for (const s of satRefs.current) if (s) (s.material as THREE.MeshBasicMaterial).color.set(c.laminaClara);
     const sup = surfaceRef.current;
     const alma = coreRef.current;
     if (sup) {
@@ -276,7 +348,7 @@ export function AgentOrbScene({
       alma.uniforms.uColorD.value.set(c.laminaClara);
     }
     invalidate();
-  }, [cores, invalidate]);
+  }, [cores, nova, invalidate]);
 
   // Mesmo motivo das cores: uniform lido só na criação do material.
   useEffect(() => {
@@ -341,9 +413,11 @@ export function AgentOrbScene({
    */
   useEffect(() => {
     if (state !== "complete" || reduced) return;
+    // concluído: o anel sai na cor do sinal (verde) na expressão nova
+    corDoPulso.current.set(nova ? SINAL_DO_ESTADO.complete! : { ...CORES_DO_ORBE_TEAL, ...cores }.aro);
     pulsoRef01.current = 0.0001;
     invalidate();
-  }, [state, reduced, invalidate]);
+  }, [state, reduced, invalidate, nova, cores]);
 
   useFrame((s, delta) => {
     const surf = surfaceRef.current;
@@ -458,7 +532,34 @@ export function AgentOrbScene({
     const cu = core.uniforms;
     if (!reduced) cu.uTime.value += dt;
     cu.uActivity.value = ativ;
-    cu.uPulse.value = c.pulse * breath * pulsoDoErro * boot;
+    /*
+     * A FALA: respondendo, o pulso não é mais uma senoide lisa, e sim sílabas
+     * (duas frequências que se cortam), para a alma parecer falar.
+     */
+    const fala =
+      nova && state === "responding" && !reduced
+        ? 0.62 + 0.38 * Math.abs(Math.sin(time * 6.7) * Math.sin(time * 2.3 + 0.8))
+        : 1;
+    cu.uPulse.value = c.pulse * breath * pulsoDoErro * boot * fala;
+
+    /* PENSAR: analisando, a borda da alma ondula mais. */
+    ondaRef.current = d(ondaRef.current, nova && state === "analyzing" ? 0.09 : 0, 4);
+    cu.uOndaDaAlma.value = { ...VIDRO_DO_ORBE, ...vidro }.ondaDaAlma + ondaRef.current;
+
+    /* COR DE SINAL: concluído, aguardando e erro puxam aro e alma para o sinal. */
+    if (nova) {
+      const sinal = SINAL_DO_ESTADO[state];
+      if (sinal) sinalCor.current.set(sinal);
+      sinalRef.current = d(sinalRef.current, sinal ? 1 : 0, 3.5);
+      const k = sinalRef.current;
+      const b = baseRef.current;
+      su.uRimColor.value.copy(mistura.current.copy(b.aro).lerp(sinalCor.current, k * 0.85));
+      for (const m of [ringMatRef.current, progressoMatRef.current]) m?.color.copy(su.uRimColor.value);
+      // o sinal vive no aro e nos anéis; a alma continua íris, com um toque só
+      // (misturada de verdade, íris + verde vira teal e íris + âmbar vira rosa)
+      cu.uColorA.value.copy(b.almaA).lerp(sinalCor.current, k * 0.18);
+      cu.uColorC.value.copy(b.almaC).lerp(sinalCor.current, k * 0.28);
+    }
 
     // Drag: campo visual expande e o anel de drop-target aparece.
     dragRef.current = d(dragRef.current, state === "dragging" ? 1 : 0, 8);
@@ -507,11 +608,13 @@ export function AgentOrbScene({
       outerRef.current.scale.setScalar(
         d(
           outerRef.current.scale.x,
-          1 + h * 0.03 + dragRef.current * 0.05 - pressRef.current * 0.045,
+          1 + h * 0.03 + dragRef.current * (nova ? 0.085 : 0.05) - pressRef.current * 0.045 + trocaRef.current * 0.03,
           10,
         ),
       );
     }
+    // o impulso da troca de estado some em ~0,4 s
+    trocaRef.current = d(trocaRef.current, 0, 7);
     if (spinRef.current && !reduced) {
       // O giro nasce alto e assenta no alvo — volante grande parando.
       spinRef.current.rotation.y += dt * c.spin * (1 + (1 - boot) * 3);
@@ -539,6 +642,7 @@ export function AgentOrbScene({
       // Desacelera saindo (ease-out): o anel dispara e assenta.
       const eased = 1 - Math.pow(1 - p, 3);
       pulsoRef.current.visible = true;
+      pulsoMatRef.current.color.copy(corDoPulso.current);
       // Teto 1,30 → raio 1,38, dentro do quadro (±1,63). Um anel que termina
       // fora da moldura vira quatro arcos nos cantos, que foi o que aconteceu.
       pulsoRef.current.scale.setScalar(0.92 + eased * 0.38);
