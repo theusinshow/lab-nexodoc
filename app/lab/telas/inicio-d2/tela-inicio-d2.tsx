@@ -11,6 +11,7 @@ import { MarcaDaPrefeitura } from "@/modules/nexo/components/MarcaDaPrefeitura";
 
 import { BarraDeComando } from "../_comum/barra-de-comando";
 import { Topo } from "../_comum/topo";
+import { useIr, type IdTela } from "../_comum/prototipo";
 import { DEPOIS_DE_LER, TAREFAS, type IdTarefa } from "../inicio-d/tela-inicio-d";
 import "../inicio-d/inicio-d.css";
 import "./inicio-d2.css";
@@ -41,6 +42,16 @@ const PRECISA_CURTO: Record<IdTarefa, string> = {
 
 const ease = (c: readonly number[]) => [...c] as [number, number, number, number];
 
+/** Para onde cada tarefa leva depois do arquivo lido (no protótipo). */
+const SEGUE: Record<IdTarefa, [IdTela, string]> = {
+  auditar: ["auditoria", "enviando"],
+  volume: ["nexo", "soltou"],
+  ld: ["mapa", "lendo-selos"],
+  conferir: ["mapa", "lendo-selos"],
+};
+const RETOMA = (trabalho: string): [IdTela, string] =>
+  trabalho.startsWith("Auditoria") ? ["resultado", "nao-emitir"] : trabalho.startsWith("Volume") ? ["nexo", "montado"] : ["projeto", "com-registros"];
+
 /**
  * INÍCIO D, REVISTO. O D acertou o essencial (o que fazer, o que ter em mãos);
  * esta versão encolhe as tarefas para uma fileira, põe a barra de comando no
@@ -49,6 +60,7 @@ const ease = (c: readonly number[]) => [...c] as [number, number, number, number
  */
 export function TelaInicioD2({ situacao }: { situacao: SituacaoD2 }) {
   const { dur, mola } = useTempo();
+  const ir = useIr();
   const primeiro = situacao === "primeiro-acesso";
   const [escolhida, setEscolhida] = useState<IdTarefa | null>(situacao === "tarefa-escolhida" || situacao === "arquivo-recebido" ? "auditar" : null);
   const [arquivo, setArquivo] = useState(situacao === "arquivo-recebido");
@@ -189,7 +201,7 @@ export function TelaInicioD2({ situacao }: { situacao: SituacaoD2 }) {
                         <Botao variante="quiet" tamanho="sm">
                           É outro projeto
                         </Botao>
-                        <Botao variante="primary">
+                        <Botao variante="primary" onClick={() => ir(...SEGUE[tarefa.id])}>
                           <tarefa.Icone size={16} />
                           {lido.acao}
                         </Botao>
@@ -238,7 +250,7 @@ export function TelaInicioD2({ situacao }: { situacao: SituacaoD2 }) {
                 </thead>
                 <tbody>
                   {CONTINUAR.map((c) => (
-                    <tr key={c.obra + c.trabalho} tabIndex={0}>
+                    <tr key={c.obra + c.trabalho} tabIndex={0} onClick={() => ir(...RETOMA(c.trabalho))} onKeyDown={(e) => e.key === "Enter" && ir(...RETOMA(c.trabalho))}>
                       <td>
                         <span className="d2-obra">
                           <MarcaDaPrefeitura prefeitura={c.cidade} forma="sinal" />
@@ -268,7 +280,7 @@ export function TelaInicioD2({ situacao }: { situacao: SituacaoD2 }) {
               <>
                 <ul className="d2-achados">
                   {comVoce.map((a) => (
-                    <li key={a.titulo} tabIndex={0}>
+                    <li key={a.titulo} tabIndex={0} onClick={() => ir("resultado", "fila")} onKeyDown={(e) => e.key === "Enter" && ir("resultado", "fila")}>
                       <i className={`d2-grav d2-grav--${a.grav}`} aria-hidden />
                       <span className="d2-achado-texto">
                         <b>{a.titulo}</b>
@@ -280,7 +292,7 @@ export function TelaInicioD2({ situacao }: { situacao: SituacaoD2 }) {
                     </li>
                   ))}
                 </ul>
-                <button type="button" className="d2-todos">
+                <button type="button" className="d2-todos" onClick={() => ir("achados")}>
                   Ver todos os achados <ChevronRight size={13} />
                 </button>
               </>

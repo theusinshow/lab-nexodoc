@@ -3,7 +3,7 @@
 import { Vitrine } from "../../_lab/vitrine";
 import { TelaAuditoria, type SituacaoAud } from "./tela-auditoria";
 
-const SITUACOES: { id: SituacaoAud; nome: string; dica: string }[] = [
+export const SITUACOES: { id: SituacaoAud; nome: string; dica: string }[] = [
   { id: "em-curso", nome: "Em curso", dica: "Em cima, o que já se sabe do documento. A etapa atual diz na própria linha quantos blocos leu e quais está lendo. Passe o mouse num bloco, embaixo do mapa, para acender as páginas dele." },
   { id: "enviando", nome: "Enviando", dica: "Antes do primeiro marco do motor: todas as etapas ainda tracejadas, o marcador agora no zero." },
   { id: "passou", nome: "Passou do previsto", dica: "A etapa atual passou do previsto: a pílula e o restante ficam âmbar. Só isso, sem alarme." },

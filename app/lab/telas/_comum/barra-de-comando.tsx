@@ -10,6 +10,7 @@ import { CURVA } from "@/lib/ds/movimento";
 import { useTempo } from "@/lib/ds/tempo";
 import { MarcaDaPrefeitura } from "@/modules/nexo/components/MarcaDaPrefeitura";
 
+import { useIr, useNoPrototipo, type IdTela } from "./prototipo";
 import "../inicio-f/inicio-f.css";
 
 const ICONE_DA_TAREFA: Record<string, ComponentType<{ size?: number }>> = { auditar: FileSearch, ld: ListChecks, volume: Layers, conferir: ScanLine };
@@ -20,6 +21,18 @@ type Entrada =
   | { tipo: "item"; id: string; titulo: ReactNode; sub?: string; direita?: ReactNode; icone: ReactNode; recuo?: boolean; detalhe: Detalhe; obra?: ObraCmd; nexo?: boolean };
 
 const ARQUIVO = "117_25_md_geral_a.pdf";
+
+/** No protótipo, o item escolhido leva a uma tela depois do "começando…". */
+function destinoDoItem(id: string): [IdTela, string] {
+  if (id === "arq-auditar" || id === "arq-comparar") return ["auditoria", "enviando"];
+  if (id === "arq-guardar") return ["projeto", "com-registros"];
+  if (id === "nexo") return ["conversa", "respondendo"];
+  if (id === "tar-auditar") return ["inicio", "tarefa-escolhida"];
+  if (id === "tar-volume") return ["nexo", "soltou"];
+  if (id.startsWith("tar-")) return ["mapa", "lendo-selos"];
+  if (id.startsWith("rec-")) return ["resultado", "nao-emitir"];
+  return ["projeto", "com-registros"];
+}
 const ease = (c: readonly number[]) => [...c] as [number, number, number, number];
 
 function montar(q: string, arquivo: boolean, primeiro: boolean): Entrada[] {
@@ -224,6 +237,13 @@ export function BarraDeComando({
   const [aberta, setAberta] = useState(modo === "fixa" || abertaInicial);
   const entrada = useRef<HTMLInputElement>(null);
   const raiz = useRef<HTMLDivElement>(null);
+  const ir = useIr();
+  const proto = useNoPrototipo();
+  useEffect(() => {
+    if (!proto || !executando) return;
+    const id = setTimeout(() => ir(...destinoDoItem(executando)), 650);
+    return () => clearTimeout(id);
+  }, [proto, executando, ir]);
 
   const lista = useMemo(() => montar(q, arquivo, primeiro), [q, arquivo, primeiro]);
   const itens = lista.filter((e): e is Extract<Entrada, { tipo: "item" }> => e.tipo === "item");

@@ -10,6 +10,7 @@ import { useTempo } from "@/lib/ds/tempo";
 import { MarcaDaPrefeitura } from "@/modules/nexo/components/MarcaDaPrefeitura";
 
 import { Topo } from "../_comum/topo";
+import { useIr } from "../_comum/prototipo";
 import { Campo } from "../conversa/tela-conversa";
 import { DeVoce, Lacuna, Passo, PecaDeArquivo, RITMO, SUAVE, Saidas, Troca, type Arquivo } from "../conversa/turnos";
 import { ALTURA_DO_NO, LARGURA_DA_FOLHA, montarCanvas, ondeCai, ordemPadrao, Tela } from "../mapa/canvas";
@@ -42,6 +43,7 @@ const LIDAS_NA_LEITURA = 14;
 /* ------------------------------ as conversas ------------------------------ */
 
 function Conversas() {
+  const ir = useIr();
   const pastas = [
     {
       codigo: "117-25",
@@ -59,7 +61,7 @@ function Conversas() {
   ];
   return (
     <aside className="nw-conversas" aria-label="Conversas">
-      <Botao variante="ghost" tamanho="sm" className="nw-nova">
+      <Botao variante="ghost" tamanho="sm" className="nw-nova" onClick={() => ir("conversa", "nova")}>
         <MessageSquarePlus size={14} /> Nova conversa <Tecla>N</Tecla>
       </Botao>
       <label className="mp-busca nw-busca">
@@ -78,7 +80,7 @@ function Conversas() {
             {p.conversas && (
               <ul>
                 {p.conversas.map((c) => (
-                  <li key={c.titulo} className={c.ativa ? "nw-ativa" : undefined}>
+                  <li key={c.titulo} className={c.ativa ? "nw-ativa" : undefined} onClick={() => !c.ativa && ir("conversa", c.tipo === "auditoria" ? "auditoria-pronta" : "plano-de-geracao")}>
                     <span className="nw-conversa-titulo">{c.titulo}</span>
                     <span className="nw-conversa-meta">
                       <span>{c.tipo}</span>
@@ -436,7 +438,7 @@ export function TelaNexo({ situacao }: { situacao: SituacaoNexo }) {
   return (
     <CartaoAtual.Provider value="carimbo">
       <div className="mp nw">
-        <Topo atual="Painel" />
+        <Topo atual="Montar volumes" />
         <div className="nw-mesa">
           <Conversas />
 

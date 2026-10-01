@@ -9,6 +9,7 @@ import { useTempo } from "@/lib/ds/tempo";
 import { MarcaDaPrefeitura } from "@/modules/nexo/components/MarcaDaPrefeitura";
 
 import { Topo } from "../_comum/topo";
+import { useIr, type IdTela } from "../_comum/prototipo";
 import { RITMO, SUAVE } from "../conversa/turnos";
 import { ARQUIVOS, DOCUMENTOS, EVENTOS, GERADOS, TAREFAS, type Aba, type Item, type Tarefa } from "./dados";
 import "../mapa/mapa.css";
@@ -27,11 +28,20 @@ const ABAS: { id: Aba; nome: string; itens: Item[]; colunas: string[] }[] = [
 const semAcento = (t: string) => t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
 /** As quatro tarefas da obra, cada uma com o estado real e a ação que ela pede. */
+/** Onde cada tarefa da obra leva (no protótipo). */
+const LEVA: Record<string, (vazio: boolean) => [IdTela, string]> = {
+  auditoria: (vazio) => (vazio ? ["auditoria", "enviando"] : ["resultado", "nao-emitir"]),
+  ld: () => ["mapa", "lido"],
+  capas: () => ["conversa", "plano-de-geracao"],
+  volume: (vazio) => (vazio ? ["nexo", "soltou"] : ["nexo", "montado"]),
+};
+
 function Tarefas({ vazio, arquivado }: { vazio: boolean; arquivado: boolean }) {
+  const ir = useIr();
   return (
     <div className="mp-tiles pr-tarefas">
       {TAREFAS.map((t: Tarefa) => (
-        <button key={t.id} type="button" className="mp-tile pr-tarefa" disabled={arquivado}>
+        <button key={t.id} type="button" className="mp-tile pr-tarefa" disabled={arquivado} onClick={() => LEVA[t.id] && ir(...LEVA[t.id](vazio))}>
           <span className="mp-tile-rotulo">{t.nome}</span>
           <span className={`pr-tarefa-estado${!vazio && t.tom === "aviso" ? " mp-tom--aviso-texto" : ""}`}>{vazio ? "ainda não" : t.estado}</span>
           <span className="mp-tile-sub">{vazio ? { auditoria: "nenhum memorial auditado", ld: "nenhuma prancha lida", capas: "nenhuma capa gerada", volume: "nada para juntar" }[t.id] : t.detalhe}</span>
@@ -49,6 +59,7 @@ function Tarefas({ vazio, arquivado }: { vazio: boolean; arquivado: boolean }) {
 
 /** Sem item escolhido: o que fazer agora, derivado do estado da obra. */
 function Agora() {
+  const ir = useIr();
   return (
     <div className="mp-lado-bloco">
       <div className="mp-lista-cabeca">
@@ -61,7 +72,7 @@ function Agora() {
             <b>3 achados esperam por você</b>
             <span>Memorial geral, rev. A: 2 impedem a entrega.</span>
           </span>
-          <button type="button" className="mp-lista-ver">
+          <button type="button" className="mp-lista-ver" onClick={() => ir("resultado", "fila")}>
             Abrir
           </button>
         </li>
@@ -70,7 +81,7 @@ function Agora() {
             <b>O memorial elétrico não foi auditado</b>
             <span>Enviado por Carla em 22/09.</span>
           </span>
-          <button type="button" className="mp-lista-ver">
+          <button type="button" className="mp-lista-ver" onClick={() => ir("auditoria", "enviando")}>
             Auditar
           </button>
         </li>
@@ -79,13 +90,13 @@ function Agora() {
             <b>O volume ainda não foi montado</b>
             <span>LD, capas e separatrizes dos 2 tomos já existem.</span>
           </span>
-          <button type="button" className="mp-lista-ver">
+          <button type="button" className="mp-lista-ver" onClick={() => ir("nexo", "soltou")}>
             Montar
           </button>
         </li>
       </ul>
       <div className="mp-lado-pe">
-        <Botao variante="primary" className="mp-gerar">
+        <Botao variante="primary" className="mp-gerar" onClick={() => ir("conversa", "nova")}>
           <MessageSquare size={14} /> Abrir a conversa da obra
         </Botao>
       </div>
@@ -95,6 +106,7 @@ function Agora() {
 
 function DoItem({ it, aba }: { it: Item; aba: Aba }) {
   const evento = aba === "eventos";
+  const ir = useIr();
   return (
     <div className="mp-lado-bloco">
       <div className="pj-obra-cabeca">
@@ -133,7 +145,7 @@ function DoItem({ it, aba }: { it: Item; aba: Aba }) {
       <div className="mp-acoes">
         {!evento && (
           <>
-            <button type="button" className="mp-acao">
+            <button type="button" className="mp-acao" onClick={() => ir("resultado", "memorial")}>
               <ArrowUpRight size={14} /> Abrir <Tecla>O</Tecla>
             </button>
             <button type="button" className="mp-acao">
@@ -141,11 +153,11 @@ function DoItem({ it, aba }: { it: Item; aba: Aba }) {
             </button>
           </>
         )}
-        <button type="button" className="mp-acao">
+        <button type="button" className="mp-acao" onClick={() => ir("conversa", "nova")}>
           <MessageSquare size={14} /> Ver na conversa
         </button>
         {aba === "documentos" && it.situacao === "não auditado" && (
-          <button type="button" className="mp-acao">
+          <button type="button" className="mp-acao" onClick={() => ir("auditoria", "enviando")}>
             <Search size={14} /> Auditar este memorial
           </button>
         )}
@@ -226,6 +238,7 @@ function Configuracoes({ arquivado, onFechar }: { arquivado: boolean; onFechar: 
  */
 export function TelaProjeto({ situacao }: { situacao: SituacaoProjeto }) {
   const { k } = useTempo();
+  const ir = useIr();
   const vazio = situacao === "vazio";
   const arquivado = situacao === "arquivado";
   const [aba, setAba] = useState<Aba>(situacao === "eventos" ? "eventos" : "documentos");
@@ -286,7 +299,7 @@ export function TelaProjeto({ situacao }: { situacao: SituacaoProjeto }) {
               <ArchiveRestore size={14} /> Voltar para em andamento
             </Botao>
           ) : (
-            <Botao variante="ghost" tamanho="sm">
+            <Botao variante="ghost" tamanho="sm" onClick={() => ir("conversa", "nova")}>
               <MessageSquare size={14} /> Conversa da obra
             </Botao>
           )}
@@ -319,7 +332,7 @@ export function TelaProjeto({ situacao }: { situacao: SituacaoProjeto }) {
                 <p>A obra acabou de ser criada: ainda não tem {atual.nome.toLowerCase()}.</p>
                 <p className="mp-g-fraco">Os arquivos entram pela conversa do Nexo, quando você pede uma das quatro tarefas acima.</p>
                 <div className="pj-vazio-acoes">
-                  <Botao variante="primary" tamanho="sm">
+                  <Botao variante="primary" tamanho="sm" onClick={() => ir("conversa", "nova")}>
                     <MessageSquare size={14} /> Abrir a conversa da obra
                   </Botao>
                 </div>

@@ -1,0 +1,109 @@
+/* O PROTÓTIPO: a tela ocupa a janela inteira, como o app; o painel do
+   protótipo fica num canto, fora do caminho. */
+
+.ds .pt {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--ds-surface-page);
+  color: var(--ds-text-primary);
+}
+.ds .pt-tela { position: relative; flex: 1; min-height: 0; overflow: auto; }
+
+/* ---------- a pílula (fechado) ---------- */
+/* 64px: em dev, o botão do Next mora no canto de baixo à esquerda */
+.ds .pt-painel-raiz { position: fixed; left: 64px; bottom: 16px; z-index: 95; display: grid; justify-items: start; gap: 8px; }
+.ds .pt-pilula {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  padding: 0 10px 0 11px;
+  border: 0;
+  border-radius: var(--ds-radius-pill);
+  background: rgb(18 19 23 / 0.86);
+  backdrop-filter: blur(8px);
+  box-shadow: var(--ds-edge-strong), 0 8px 24px -8px rgb(0 0 0 / 0.7);
+  color: var(--ds-text-secondary);
+  font: inherit;
+  font-size: var(--ds-text-2xs);
+  cursor: pointer;
+  opacity: 0.72;
+  transition: opacity var(--ds-dur-state) var(--ds-ease-feedback);
+}
+.ds .pt-pilula:hover,
+.ds .pt-pilula:focus-visible,
+.ds .pt-pilula[aria-expanded="true"] { opacity: 1; }
+.ds .pt-pilula-tela { color: var(--ds-text-primary); }
+.ds .pt-pilula-sit::before { content: "·"; margin-right: 8px; color: var(--ds-text-tertiary); }
+.ds .pt-pilula-seta { transition: transform var(--ds-dur-state) var(--ds-ease-feedback); }
+.ds .pt-pilula[aria-expanded="true"] .pt-pilula-seta { transform: rotate(180deg); }
+
+/* ---------- o painel (aberto) ---------- */
+.ds .pt-painel {
+  width: min(560px, calc(100vw - 32px));
+  max-height: calc(100vh - 80px);
+  overflow: auto;
+  padding: 14px 16px 12px;
+  border-radius: var(--ds-radius-card);
+  background: var(--ds-surface-overlay);
+  box-shadow: var(--ds-edge-strong), 0 24px 60px -16px rgb(0 0 0 / 0.85);
+  font-size: var(--ds-text-sm);
+}
+.ds .pt-painel-cabeca { display: flex; align-items: baseline; gap: 10px; margin-bottom: 4px; }
+.ds .pt-painel-cabeca span { color: var(--ds-text-tertiary); font-size: var(--ds-text-2xs); }
+.ds .pt-x { margin-left: auto; display: grid; place-items: center; width: 26px; height: 26px; border: 0; border-radius: 7px; background: none; color: var(--ds-text-secondary); cursor: pointer; }
+.ds .pt-x:hover { background: var(--ds-surface-raised); color: var(--ds-text-primary); }
+
+.ds .pt-sec { padding: 12px 0; border-top: 1px solid var(--ds-line-subtle); }
+.ds .pt-sec:first-of-type { border-top: 0; }
+.ds .pt-sec h2 { margin: 0 0 8px; font-size: var(--ds-text-xs); font-weight: 600; }
+.ds .pt-sec h2 span { color: var(--ds-text-tertiary); font-weight: 400; }
+.ds .pt-dica { margin: 8px 0 0; color: var(--ds-text-secondary); font-size: var(--ds-text-2xs); line-height: 1.5; }
+
+.ds .pt-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.ds .pt-chips button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 7px;
+  background: var(--ds-surface-raised);
+  box-shadow: var(--ds-edge);
+  color: var(--ds-text-secondary);
+  font: inherit;
+  font-size: var(--ds-text-2xs);
+  cursor: pointer;
+}
+.ds .pt-chips button:hover { color: var(--ds-text-primary); box-shadow: var(--ds-edge-strong); }
+.ds .pt-chips button[aria-checked="true"] { background: var(--ds-action-bg); color: var(--ds-action-fg); box-shadow: none; }
+.ds .pt-chips button .ds-num { color: var(--ds-text-tertiary); }
+.ds .pt-chips button[aria-checked="true"] .ds-num { color: rgb(0 0 0 / 0.5); }
+.ds .pt-chips button[data-falha] { color: var(--ds-state-error); }
+
+.ds .pt-telas { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 14px; }
+.ds .pt-telas h3 { margin: 0 0 3px; font-size: var(--ds-text-2xs); font-weight: 400; color: var(--ds-text-tertiary); }
+.ds .pt-telas button {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 4px 6px;
+  margin-left: -6px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--ds-text-primary);
+  font: inherit;
+  font-size: var(--ds-text-2xs);
+  text-align: left;
+  cursor: pointer;
+}
+.ds .pt-telas button:hover { background: var(--ds-surface-raised); }
+.ds .pt-telas button[aria-current="page"] { background: var(--ds-nexo-wash); color: var(--ds-nexo-soft); }
+.ds .pt-telas button .ds-num { color: var(--ds-text-tertiary); }
+
+.ds .pt-painel-pe { display: flex; justify-content: space-between; gap: 12px; padding-top: 10px; border-top: 1px solid var(--ds-line-subtle); color: var(--ds-text-tertiary); font-size: var(--ds-text-2xs); }

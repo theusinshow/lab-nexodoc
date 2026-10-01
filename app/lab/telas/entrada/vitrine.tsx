@@ -3,7 +3,7 @@
 import { Vitrine } from "../../_lab/vitrine";
 import { TelaEntrada, type SituacaoEntrada } from "./tela-entrada";
 
-const SITUACOES: { id: SituacaoEntrada; nome: string; dica: string }[] = [
+export const SITUACOES: { id: SituacaoEntrada; nome: string; dica: string }[] = [
   { id: "padrao", nome: "Login", dica: "Quem chega sem sessão. Um botão: Entrar com Google. Clique nele para ver o estado seguinte." },
   { id: "indo", nome: "Indo para o Google", dica: "Clicou em Entrar: o botão gira e trava até o Google responder." },
   { id: "erro", nome: "Falha no Google", dica: "O Google recusou ou a sessão não nasceu (?error=): o aviso fica acima do botão e aponta para o contato." },

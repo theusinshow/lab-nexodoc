@@ -7,6 +7,8 @@ import { Children, createContext, useContext, useEffect, useRef, useState, type 
 import { Orbe, Tecla } from "@/components/ds/basicos";
 import { useTempo } from "@/lib/ds/tempo";
 
+import { useIr, type IdTela } from "../_comum/prototipo";
+
 /*
  * O MOVIMENTO DA CONVERSA. Cada gesto responde a uma pergunta só:
  * - a resposta do Nexo entra EM ORDEM de leitura, e não de uma vez;
@@ -230,8 +232,17 @@ export function Lacuna({ valor, opcoes, vazio, mono }: { valor: string | null; o
 }
 
 /** As saídas: entram em escada curta, afundam de leve ao clicar, cada uma com a sua tecla. */
+/** As saídas do chat que levam a outra tela (no protótipo). */
+const SAIDA_LEVA: Record<string, [IdTela, string]> = {
+  "Abrir o resultado": ["resultado", "nao-emitir"],
+  "Auditar de novo (nova rodada)": ["auditoria", "enviando"],
+  "Montar o volume": ["nexo", "soltou"],
+  "Abrir a ELE-04": ["mapa", "folha-aberta"],
+};
+
 export function Saidas({ itens }: { itens: { texto: string; principal?: boolean }[] }) {
   const { k } = useTempo();
+  const ir = useIr();
   return (
     <div className="cx-saidas">
       {itens.map((it, i) => (
@@ -239,6 +250,7 @@ export function Saidas({ itens }: { itens: { texto: string; principal?: boolean 
           key={it.texto}
           type="button"
           className={`cx-saida${it.principal ? " cx-saida--principal" : ""}`}
+          onClick={() => SAIDA_LEVA[it.texto] && ir(...SAIDA_LEVA[it.texto])}
           initial={{ opacity: 0, y: 4 }}
           animate={{ opacity: 1, y: 0 }}
           whileTap={{ scale: 0.98, transition: { duration: RITMO.toque * k } }}

@@ -9,6 +9,7 @@ import { useTempo } from "@/lib/ds/tempo";
 import { MarcaDaPrefeitura } from "@/modules/nexo/components/MarcaDaPrefeitura";
 
 import { Topo } from "../_comum/topo";
+import { useIr } from "../_comum/prototipo";
 import { RITMO, SUAVE } from "../conversa/turnos";
 import { IMPACTOS, type Impacto } from "../resultado-e/dados";
 import { SeloDaDisciplina } from "../resultado-e/disciplina";
@@ -86,6 +87,7 @@ function Resumo({ lado, lista }: { lado: Lado; lista: Parecer[] }) {
 
 /** O parecer escolhido: os achados que esperam nele, antes de abrir. */
 function DoParecer({ p, lado }: { p: Parecer; lado: Lado }) {
+  const ir = useIr();
   return (
     <div className="mp-lado-bloco">
       <div className="pj-obra-cabeca">
@@ -117,7 +119,7 @@ function DoParecer({ p, lado }: { p: Parecer; lado: Lado }) {
         ))}
       </ul>
       <div className="mp-lado-pe">
-        <Botao variante={lado === "com-voce" ? "primary" : "ghost"} className="mp-gerar">
+        <Botao variante={lado === "com-voce" ? "primary" : "ghost"} className="mp-gerar" onClick={() => ir("resultado", "fila")}>
           Abrir o parecer <Tecla>↵</Tecla>
         </Botao>
       </div>
@@ -133,6 +135,7 @@ function DoParecer({ p, lado }: { p: Parecer; lado: Lado }) {
  */
 export function TelaAchados({ situacao }: { situacao: SituacaoAchados }) {
   const { k } = useTempo();
+  const ir = useIr();
   const comVoce = situacao === "so-passados" || situacao === "nada" ? [] : COM_VOCE;
   const passou = situacao === "nada" ? [] : QUE_VOCE_PASSOU;
   const [lado, setLado] = useState<Lado>(situacao === "que-voce-passou" || situacao === "so-passados" ? "passou" : "com-voce");
@@ -188,7 +191,7 @@ export function TelaAchados({ situacao }: { situacao: SituacaoAchados }) {
           </p>
           <h1>Achados</h1>
         </div>
-        <Botao variante="ghost" tamanho="sm">
+        <Botao variante="ghost" tamanho="sm" onClick={() => ir("inicio", "tarefa-escolhida")}>
           <FileSearch size={14} /> Nova auditoria
         </Botao>
       </header>
@@ -199,7 +202,7 @@ export function TelaAchados({ situacao }: { situacao: SituacaoAchados }) {
             <p className="pj-vazio-titulo">Nada em aberto</p>
             <p className="mp-lado-sub">Nenhum achado está com você, e tudo o que você passou a alguém já foi tratado.</p>
             <div className="pj-vazio-acoes">
-              <Botao variante="ghost" tamanho="sm">
+              <Botao variante="ghost" tamanho="sm" onClick={() => ir("inicio", "tarefa-escolhida")}>
                 <FileSearch size={14} /> Nova auditoria
               </Botao>
             </div>

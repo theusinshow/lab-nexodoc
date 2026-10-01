@@ -82,3 +82,4 @@
   .ds .pn-menu, .ds .pn-sino-painel { width: min(320px, calc(100cqw - 32px)); }
   .ds .pn-sino-painel { right: -48px; }
 }
+.ds a.pn-marca { color: inherit; text-decoration: none; }

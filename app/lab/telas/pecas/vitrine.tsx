@@ -3,7 +3,7 @@
 import { Vitrine } from "../../_lab/vitrine";
 import { TelaPecas, type SituacaoPecas } from "./tela-pecas";
 
-const SITUACOES: { id: SituacaoPecas; nome: string; dica: string }[] = [
+export const SITUACOES: { id: SituacaoPecas; nome: string; dica: string }[] = [
   { id: "paleta", nome: "Buscar (Ctrl K)", dica: "A barra de comando por cima da tela de Projeto: obras, tarefas e o Nexo. Ctrl K abre e fecha em qualquer tela; Esc limpa e depois fecha; clique fora fecha." },
   { id: "atalhos", nome: "Atalhos (?)", dica: "Os atalhos do app: os de qualquer tela, os das listas (J/K) e os do parecer (J/K percorrem, C confirma, F marca falso positivo). As letras ficam caladas enquanto se digita." },
   { id: "aviso", nome: "Aviso passageiro", dica: "Frases do app, partidas em o que aconteceu (negrito) e o que fazer. Sucesso some em 6 s, mas o relógio para com o mouse ou o foco em cima; falha espera. Ação quando existe (Ver na fila, Tentar de novo), repetido vira 2×, no máximo três à vista. No canto, dispare os cinco tipos." },

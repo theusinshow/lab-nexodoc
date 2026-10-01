@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { Botao, Orbe, Tecla } from "@/components/ds/basicos";
 
 import { SUAVE } from "../conversa/turnos";
+import { useIr, useNoPrototipo } from "../_comum/prototipo";
 import "./entrada.css";
 
 /*
@@ -134,6 +135,7 @@ function Contato({ aberto, onAbrir, desfecho }: { aberto: boolean; onAbrir: (a: 
 }
 
 function Login({ situacao, indo, onIr }: { situacao: SituacaoEntrada; indo: boolean; onIr: () => void }) {
+  const ir = useIr();
   const [contato, setContato] = useState(situacao === "contato" || situacao.startsWith("recado"));
   const desfecho: Recado | undefined = situacao === "recado-enviado" ? "enviado" : situacao === "recado-nao-saiu" ? "nao-configurado" : undefined;
 
@@ -153,7 +155,7 @@ function Login({ situacao, indo, onIr }: { situacao: SituacaoEntrada; indo: bool
       </p>
 
       {situacao === "dev" && (
-        <form className="en-dev" onSubmit={(e) => e.preventDefault()}>
+        <form className="en-dev" onSubmit={(e) => (e.preventDefault(), ir("inicio"))}>
           <p className="en-dev-rotulo">
             <Terminal size={13} strokeWidth={1.75} aria-hidden />
             Acesso de desenvolvimento
@@ -175,6 +177,7 @@ function Login({ situacao, indo, onIr }: { situacao: SituacaoEntrada; indo: bool
 }
 
 function SemAcesso({ comResponsavel }: { comResponsavel: boolean }) {
+  const ir = useIr();
   const assunto = encodeURIComponent("Liberação de acesso ao Nexo");
   return (
     <>
@@ -204,7 +207,7 @@ function SemAcesso({ comResponsavel }: { comResponsavel: boolean }) {
 
       <div className="en-rodape en-rodape--linha">
         <p>Depois de liberada, é a mesma conta: entre de novo por aqui.</p>
-        <Botao variante="quiet" tamanho="sm">
+        <Botao variante="quiet" tamanho="sm" onClick={() => ir("entrada", "padrao")}>
           <LogOut size={14} strokeWidth={1.75} aria-hidden />
           Entrar com outra conta
         </Botao>
@@ -243,6 +246,14 @@ function Filme() {
 export function TelaEntrada({ situacao }: { situacao: SituacaoEntrada }) {
   const semAcesso = situacao === "sem-acesso" || situacao === "sem-responsavel";
   const [indo, setIndo] = useState(situacao === "indo");
+  const ir = useIr();
+  const proto = useNoPrototipo();
+  // No protótipo, o Google "responde" e a conta cai no Início.
+  useEffect(() => {
+    if (!proto || !indo) return;
+    const id = setTimeout(() => ir("inicio"), 1400);
+    return () => clearTimeout(id);
+  }, [proto, indo, ir]);
   return (
     <div className="en">
       <section className="en-porta">

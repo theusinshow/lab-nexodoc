@@ -3,7 +3,7 @@
 import { Vitrine } from "../../_lab/vitrine";
 import { TelaAjuda, type SituacaoAjuda } from "./tela-ajuda";
 
-const SITUACOES: { id: SituacaoAjuda; nome: string; dica: string }[] = [
+export const SITUACOES: { id: SituacaoAjuda; nome: string; dica: string }[] = [
   { id: "inicio", nome: "Ajuda", dica: "As tarefas, com Auditar um memorial marcada como o principal. À direita, o atalho para ela e como achar o resto (Ctrl K no Nexo, / aqui)." },
   { id: "tarefa", nome: "Tarefa escolhida", dica: "Auditar um memorial: o que precisa, os passos com o caminho até cada botão, a ação para começar e as palavras da tarefa (abrem o glossário)." },
   { id: "onde-fica", nome: "Onde fica", dica: "Parecer em PDF: o trajeto em degraus (Resultado › Levar adiante › Parecer em PDF), o que precisa antes e Ir para lá." },

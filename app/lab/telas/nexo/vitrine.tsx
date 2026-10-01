@@ -3,7 +3,7 @@
 import { Vitrine } from "../../_lab/vitrine";
 import { TelaNexo, type SituacaoNexo } from "./tela-nexo";
 
-const SITUACOES: { id: SituacaoNexo; nome: string; dica: string }[] = [
+export const SITUACOES: { id: SituacaoNexo; nome: string; dica: string }[] = [
   { id: "soltou", nome: "Lendo os selos", dica: "Os PDFs entraram pelo chat; 14 de 33 folhas já viraram carimbo no mapa, a da vez está marcada e as outras esperam em contorno." },
   { id: "lido", nome: "Leu as folhas", dica: "Tudo lido: o chat propõe a divisão na própria frase, e o mapa mostra onde cortaria (o traço antes da HID-01)." },
   { id: "dividido", nome: "Dividiu em 2 tomos", dica: "Duas fileiras; o que mudou de lugar (HID e ELE) fica contornado. Arraste uma folha para outro lugar ou outro tomo." },

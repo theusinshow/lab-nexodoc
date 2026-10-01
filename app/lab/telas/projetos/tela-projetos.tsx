@@ -9,6 +9,7 @@ import { useTempo } from "@/lib/ds/tempo";
 import { MarcaDaPrefeitura } from "@/modules/nexo/components/MarcaDaPrefeitura";
 
 import { Topo } from "../_comum/topo";
+import { useIr } from "../_comum/prototipo";
 import { RITMO, SUAVE } from "../conversa/turnos";
 import { OBRAS, resumo, type Obra } from "./dados";
 import "../mapa/mapa.css";
@@ -84,6 +85,7 @@ function PorOndeComecar({ obras, onAbrir }: { obras: Obra[]; onAbrir: (id: strin
 /** A obra escolhida: quem é, o que espera, o que aconteceu por último, e entrar. */
 function DaObra({ o }: { o: Obra }) {
   const arquivada = o.situacao === "ARCHIVED";
+  const ir = useIr();
   return (
     <div className="mp-lado-bloco">
       <div className="pj-obra-cabeca">
@@ -128,16 +130,16 @@ function DaObra({ o }: { o: Obra }) {
       </div>
 
       <div className="mp-lado-pe pj-acoes">
-        <Botao variante="primary" className="mp-gerar">
+        <Botao variante="primary" className="mp-gerar" onClick={() => ir("projeto", arquivada ? "arquivado" : "com-registros")}>
           {arquivada ? "Abrir" : "Retomar"} <Tecla>↵</Tecla>
         </Botao>
         <div className="mp-acoes">
           {!arquivada && (
             <>
-              <button type="button" className="mp-acao">
+              <button type="button" className="mp-acao" onClick={() => ir("auditoria", "enviando")}>
                 <FileSearch size={14} /> Auditar documentos
               </button>
-              <button type="button" className="mp-acao">
+              <button type="button" className="mp-acao" onClick={() => ir("nexo", "soltou")}>
                 <Layers size={14} /> Montar volume
               </button>
             </>
@@ -194,6 +196,7 @@ function NovoProjeto({ onFechar }: { onFechar: () => void }) {
  */
 export function TelaProjetos({ situacao }: { situacao: SituacaoProjetos }) {
   const { k } = useTempo();
+  const ir = useIr();
   const obras = situacao === "vazia" ? [] : OBRAS;
   const [recorte, setRecorte] = useState<Recorte>(situacao === "arquivados" ? "arquivados" : "ativos");
   const [busca, setBusca] = useState(situacao === "busca-vazia" ? "ginasio sao jose" : "");
@@ -263,7 +266,7 @@ export function TelaProjetos({ situacao }: { situacao: SituacaoProjetos }) {
               <Botao variante="primary" tamanho="sm">
                 <Plus size={14} /> Novo projeto <Tecla>N</Tecla>
               </Botao>
-              <Botao variante="ghost" tamanho="sm">
+              <Botao variante="ghost" tamanho="sm" onClick={() => ir("inicio", "tarefa-escolhida")}>
                 Auditar um memorial
               </Botao>
             </div>

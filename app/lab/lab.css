@@ -103,17 +103,6 @@
   box-shadow: var(--ds-edge);
 }
 
-/* ---------- seletor de destaque (comparação) ---------- */
-.lab-destaque { display: grid; gap: 6px; font-size: var(--ds-text-2xs); color: var(--ds-text-secondary); }
-.lab-destaque > div { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; padding: 2px; border-radius: var(--ds-radius-control); background: var(--ds-surface-sunken); box-shadow: var(--ds-edge); }
-.lab-destaque button { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 0 5px; border: 0; border-radius: calc(var(--ds-radius-control) - 2px); background: none; font: inherit; color: var(--ds-text-tertiary); cursor: pointer; }
-.lab-destaque button[aria-checked="true"] { background: var(--ds-surface-raised); color: var(--ds-text-primary); box-shadow: var(--ds-edge); }
-.lab-destaque i { width: 10px; height: 10px; border-radius: 50%; }
-.lab-destaque [data-cor="violeta"] i { background: #c3a3ff; }
-.lab-destaque [data-cor="grafite"] i { background: #e4e6eb; }
-.lab-destaque [data-cor="ciano"] i { background: #5cc8de; }
-.lab-destaque [data-cor="cad"] i { background: #d7e85a; }
-
 /* ---------- interruptor ---------- */
 .lab-chave {
   display: flex;
@@ -401,37 +390,3 @@
 .vt-cheia-tela { position: relative; z-index: 1; flex: 1; overflow: auto; }
 /* A barra fica acima do que a tela sobrepõe (paleta, atalhos): sair da tela cheia nunca fica coberto. */
 .vt-cheia-barra { position: relative; z-index: 2; }
-
-/* ---------- COMPARAÇÃO: a cor de destaque (01/10/2026) ----------
-   O Matheus achou o violeta espalhado pela interface com cara de "app de IA" e
-   pediu uma cor mais técnica. O seletor "Destaque" do rodapé da navegação troca
-   o --ds-nexo no lab inteiro. O orbe continua violeta → coral em todas: ele é
-   o personagem, e a cor dele não precisa ser a da interface. Fora do violeta,
-   some também o brilho azul borrado do topo do Painel.
-
-   Medido (contraste na página / no overlay; distância OKLab ×100 ao sinal mais
-   perto, onde abaixo de ~8 confunde):
-   - grafite #e4e6eb: 16 / 12,9; o mais perto é o verde de ok, a 16.
-   - ciano de prancha #5cc8de: 10,2 / 8,3; a 7 do azul de informação e do
-     azul de redação, então esses dois teriam de mudar se ele ficar.
-   - amarelo de CAD #d7e85a: 14,8 / 11,9; a 14 do âmbar e do verde, longe dos azuis.
-   (O azul-aço ficou de fora: a 5 da informação e do texto secundário.) */
-:root[data-destaque="grafite"] {
-  --ds-nexo: #e4e6eb;
-  --ds-nexo-strong: #5d6270;
-  --ds-nexo-soft: #ffffff;
-  --ds-focus-ring: #eeeff2;
-}
-:root[data-destaque="ciano"] {
-  --ds-nexo: #5cc8de;
-  --ds-nexo-strong: #1e7f93;
-  --ds-nexo-soft: #d2f2f8;
-  --ds-focus-ring: #5cc8de;
-}
-:root[data-destaque="cad"] {
-  --ds-nexo: #d7e85a;
-  --ds-nexo-strong: #7c8a1c;
-  --ds-nexo-soft: #f1f7c4;
-  --ds-focus-ring: #d7e85a;
-}
-:root[data-destaque] .ds .pn-brilho { display: none; }

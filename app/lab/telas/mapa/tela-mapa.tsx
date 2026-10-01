@@ -10,6 +10,7 @@ import { useTempo } from "@/lib/ds/tempo";
 import { MarcaDaPrefeitura } from "@/modules/nexo/components/MarcaDaPrefeitura";
 
 import { Topo } from "../_comum/topo";
+import { useIr } from "../_comum/prototipo";
 import { RITMO, SUAVE } from "../conversa/turnos";
 import { DISCIPLINA } from "../resultado-e/dados";
 import { CartaoAtual, ESTILOS, type EstiloDoCartao } from "./cartoes";
@@ -58,6 +59,7 @@ export function ControlesDoZoom({ onEnquadrar }: { onEnquadrar: () => void }) {
  */
 function Mapa({ situacao }: { situacao: SituacaoMapa }) {
   const { k } = useTempo();
+  const ir = useIr();
   const { setCenter, setViewport, fitView, zoomIn, zoomOut, getZoom } = useReactFlow();
   const inicial = situacao === "folha-aberta" ? "ARQ-03" : situacao === "corrigindo" ? "ELE-04" : null;
   const [sel, setSel] = useState<string | null>(inicial);
@@ -168,7 +170,7 @@ function Mapa({ situacao }: { situacao: SituacaoMapa }) {
 
   return (
     <div className="mp">
-      <Topo atual="Painel" />
+      <Topo atual="Montar volumes" />
       <header className="mp-cabeca">
         <div>
           <p className="mp-trilha">
@@ -178,7 +180,7 @@ function Mapa({ situacao }: { situacao: SituacaoMapa }) {
           </p>
           <h1>Mapa do volume</h1>
         </div>
-        <Botao variante="ghost" tamanho="sm">
+        <Botao variante="ghost" tamanho="sm" onClick={() => ir("nexo", "lido")}>
           Voltar à conversa
         </Botao>
       </header>

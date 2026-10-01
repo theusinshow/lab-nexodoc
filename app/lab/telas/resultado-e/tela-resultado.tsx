@@ -10,6 +10,7 @@ import { useTempo } from "@/lib/ds/tempo";
 import { MarcaDaPrefeitura } from "@/modules/nexo/components/MarcaDaPrefeitura";
 
 import { Topo } from "../_comum/topo";
+import { useIr } from "../_comum/prototipo";
 import { ACHADOS, type Achado, type Disciplina } from "./dados";
 import { Fila, type Filtro, type InicialDaFila } from "./fila";
 import { estadoDaEmissao, type EstadoEmissao } from "./resumo";
@@ -145,6 +146,7 @@ function partida(s: SituacaoRes) {
  */
 export function TelaResultado({ situacao }: { situacao: SituacaoRes }) {
   const { dur, mola } = useTempo();
+  const ir = useIr();
   const p = partida(situacao);
   const [achados, setAchados] = useState<Achado[]>(p.achados);
   const [aba, setAba] = useState<Aba>(p.aba);
@@ -192,16 +194,16 @@ export function TelaResultado({ situacao }: { situacao: SituacaoRes }) {
   if (situacao === "nao-abriu") {
     return (
       <div className="rs rd">
-        <Topo atual="Painel" />
+        <Topo atual={null} />
         <div className="rs-corpo rs-erro">
           <AlertTriangle size={20} />
           <h1>Não deu para abrir esta auditoria</h1>
           <p>O parecer não foi encontrado no servidor. Pode ter sido apagado junto com o projeto, ou o link veio de outra conta.</p>
           <div>
-            <Botao variante="primary">
+            <Botao variante="primary" onClick={() => ir("inicio")}>
               <ArrowLeft /> Voltar ao painel
             </Botao>
-            <Botao variante="ghost">Procurar em Projetos</Botao>
+            <Botao variante="ghost" onClick={() => ir("projetos")}>Procurar em Projetos</Botao>
           </div>
         </div>
       </div>
@@ -220,7 +222,7 @@ export function TelaResultado({ situacao }: { situacao: SituacaoRes }) {
 
   return (
     <div className="rs rd re">
-      <Topo atual="Painel" />
+      <Topo atual={null} />
       {/* o título fica fora da grade: a coluna da direita começa na mesma linha do conteúdo */}
       <div className="re-titulo">
         <header className="re-cabeca">

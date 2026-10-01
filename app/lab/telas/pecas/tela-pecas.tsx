@@ -1,11 +1,12 @@
 "use client";
 
 import { RotateCw, Search } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useContext, useEffect, useState } from "react";
 
 import { Botao, Tecla } from "@/components/ds/basicos";
 
 import { ControleDoTopo, Topo } from "../_comum/topo";
+import { useIr } from "../_comum/prototipo";
 import { TelaProjeto } from "../projeto/tela-projeto";
 import { Confirmacoes } from "./confirmacoes";
 import { AVISOS, PORTAO, type ModeloDeAviso } from "./dados";
@@ -72,7 +73,10 @@ export function TelaPecas({ situacao }: { situacao: SituacaoPecas }) {
       <Avisos avisos={avisos} onFechar={fecharAviso} onAcao={agir} />
     </>
   );
+  const pai = useContext(ControleDoTopo);
+  const ir = useIr();
   const controle = {
+    ...pai,
     onBusca: () => abrirPaleta(),
     onAtalhos: abrirAtalhos,
     aberto: situacao === "menu" ? ("menu" as const) : situacao === "sino" ? ("sino" as const) : null,
@@ -105,7 +109,7 @@ export function TelaPecas({ situacao }: { situacao: SituacaoPecas }) {
               <Botao variante="primary" onClick={() => abrirPaleta("117-26")}>
                 <Search size={15} /> Buscar “117-26” <Tecla>Ctrl K</Tecla>
               </Botao>
-              <Botao variante="ghost">Ir para Projetos</Botao>
+              <Botao variante="ghost" onClick={() => ir("projetos")}>Ir para Projetos</Botao>
             </div>
           </main>
           {sobre}
@@ -123,10 +127,10 @@ export function TelaPecas({ situacao }: { situacao: SituacaoPecas }) {
             <h1>Esta página não carregou.</h1>
             <p className="pc-404-texto">Sem conexão com o servidor. Nada foi alterado — tente de novo.</p>
             <div className="pc-404-acoes">
-              <Botao variante="primary">
+              <Botao variante="primary" onClick={() => ir("projeto", "com-registros")}>
                 <RotateCw size={15} /> Tentar de novo
               </Botao>
-              <Botao variante="ghost">Ir para o painel</Botao>
+              <Botao variante="ghost" onClick={() => ir("inicio")}>Ir para o painel</Botao>
             </div>
           </main>
           {sobre}

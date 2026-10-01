@@ -8,6 +8,8 @@ import { FaixaDeVeredito, MapaDasPaginas, NiveisEmFaixa, type GrupoDoMapa } from
 import { CURVA } from "@/lib/ds/movimento";
 import { useTempo } from "@/lib/ds/tempo";
 
+import { useIr } from "../_comum/prototipo";
+
 import { IMPACTOS, PAGINAS_DO_MEMORIAL, pontosPorPagina, type Achado } from "./dados";
 
 export type EstadoEmissao = "incompleto" | "nao_emitir" | "revisar" | "liberado_com_ressalvas" | "liberado";
@@ -51,6 +53,7 @@ export function Resumo({
   onAbrir: (id?: string) => void;
 }) {
   const { dur } = useTempo();
+  const ir = useIr();
   const estado = estadoDaEmissao(achados, parcial);
   const n = (i: string) => achados.filter((a) => a.impacto === i).length;
 
@@ -100,7 +103,7 @@ export function Resumo({
           <FaixaDeVeredito posicao={POSICAO[estado]} faixas={FAIXAS} valor={marcador} />
         </div>
         {estado === "incompleto" && (
-          <Botao variante="primary" tamanho="sm" className="rs-porque-acao">
+          <Botao variante="primary" tamanho="sm" className="rs-porque-acao" onClick={() => ir("auditoria", "enviando")}>
             <RotateCcw />
             Auditar de novo
           </Botao>

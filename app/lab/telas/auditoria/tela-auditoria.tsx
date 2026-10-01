@@ -11,6 +11,7 @@ import { useTempo } from "@/lib/ds/tempo";
 import { MarcaDaPrefeitura } from "@/modules/nexo/components/MarcaDaPrefeitura";
 
 import { Topo } from "../_comum/topo";
+import { useIr, useNoPrototipo } from "../_comum/prototipo";
 import "./auditoria.css";
 
 export type SituacaoAud = "enviando" | "em-curso" | "passou" | "retomada" | "cancelando" | "falhou" | "concluida";
@@ -163,6 +164,18 @@ export function TelaAuditoria({ situacao }: { situacao: SituacaoAud }) {
   const [blocoSobre, setBlocoSobre] = useState<number | null>(null);
   const [registroAberto, setRegistroAberto] = useState(false);
   const registroRef = useRef<HTMLOListElement>(null);
+  const ir = useIr();
+  const proto = useNoPrototipo();
+
+  // No protótipo a auditoria anda sozinha: o envio vira leitura, e a leitura
+  // termina num parecer. No lab, cada situação fica parada onde está.
+  useEffect(() => {
+    if (!proto) return;
+    const proxima = situacao === "enviando" ? ["em-curso", 2200] : situacao === "em-curso" ? ["concluida", 16000] : null;
+    if (!proxima) return;
+    const id = setTimeout(() => ir("auditoria", proxima[0] as string), (proxima[1] as number) * k);
+    return () => clearTimeout(id);
+  }, [proto, situacao, ir, k]);
 
   useEffect(() => {
     if (!rodando || confirmar || situacao === "enviando") return;
@@ -231,7 +244,7 @@ export function TelaAuditoria({ situacao }: { situacao: SituacaoAud }) {
 
   return (
     <div className="au">
-      <Topo atual="Painel" trabalhando={rodando} />
+      <Topo atual={null} trabalhando={rodando} />
 
       <div className="au-corpo">
         <header className={`au-painel au-painel--${estadoDoPainel}`}>
@@ -309,7 +322,7 @@ export function TelaAuditoria({ situacao }: { situacao: SituacaoAud }) {
                 <Botao variante="quiet" tamanho="sm" onClick={() => setConfirmar(false)}>
                   Continuar auditando
                 </Botao>
-                <Botao variante="ghost" tamanho="sm" className="au-perigo">
+                <Botao variante="ghost" tamanho="sm" className="au-perigo" onClick={() => ir("inicio")}>
                   Cancelar auditoria
                 </Botao>
               </div>
@@ -326,10 +339,10 @@ export function TelaAuditoria({ situacao }: { situacao: SituacaoAud }) {
               <span className="ds-num">2 bloqueios, 3 decisões técnicas, 4 de revisão de texto</span>
             </div>
             <div className="au-pronto-acoes">
-              <Botao variante="ghost" tamanho="sm">
+              <Botao variante="ghost" tamanho="sm" onClick={() => ir("resultado", "parecer-gerando")}>
                 Exportar parecer em PDF
               </Botao>
-              <Botao variante="primary">
+              <Botao variante="primary" onClick={() => ir("resultado", "nao-emitir")}>
                 <FileSearch />
                 Abrir o resultado
               </Botao>
@@ -342,10 +355,10 @@ export function TelaAuditoria({ situacao }: { situacao: SituacaoAud }) {
               <b>O modelo não respondeu na leitura capítulo a capítulo.</b>
               <span>Três tentativas no bloco 9, a última às 21:11:40. As três etapas anteriores terminaram e o que acharam está guardado.</span>
             </div>
-            <Botao variante="ghost" tamanho="sm">
+            <Botao variante="ghost" tamanho="sm" onClick={() => ir("inicio")}>
               Voltar ao início
             </Botao>
-            <Botao variante="primary" tamanho="sm">
+            <Botao variante="primary" tamanho="sm" onClick={() => ir("auditoria", "em-curso")}>
               <RotateCcw />
               Tentar de novo
             </Botao>

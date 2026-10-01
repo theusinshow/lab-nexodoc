@@ -3,7 +3,7 @@
 import { Vitrine } from "../../_lab/vitrine";
 import { TelaConversa, type SituacaoConversa } from "./tela-conversa";
 
-const SITUACOES: { id: SituacaoConversa; nome: string; dica: string }[] = [
+export const SITUACOES: { id: SituacaoConversa; nome: string; dica: string }[] = [
   { id: "nova", nome: "Conversa nova", dica: "Pergunta, campo e atalhos entram em três tempos. O campo acende a borda em violeta no foco." },
   { id: "anexando", nome: "Anexando", dica: "Os PDFs entram um depois do outro; o que está sendo lido tem uma barra fina correndo no pé. Tire um pelo X: os vizinhos escorregam para o lugar." },
   { id: "confirmar-auditoria", nome: "Confirmar auditoria", dica: "A resposta entra em ordem de leitura: o visto se desenha, depois o texto, a frase, as saídas em cascata. Troque [profunda]: o valor desliza e o sublinhado acende." },

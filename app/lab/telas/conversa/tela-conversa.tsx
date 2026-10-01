@@ -9,6 +9,7 @@ import { useTempo } from "@/lib/ds/tempo";
 import { MarcaDaPrefeitura } from "@/modules/nexo/components/MarcaDaPrefeitura";
 
 import { Topo } from "../_comum/topo";
+import { useIr } from "../_comum/prototipo";
 import { Conferencia, DeVoce, FimDaResposta, RITMO, SUAVE, Diferenca, DoNexo, Erro, Gerando, Lacuna, Passo, PecaDeArquivo, Plano, Respondendo, Saidas, Vazio, type Arquivo } from "./turnos";
 import "./conversa.css";
 
@@ -329,6 +330,7 @@ function useLongeDoFim(ref: React.RefObject<HTMLElement | null>) {
  */
 export function TelaConversa({ situacao }: { situacao: SituacaoConversa }) {
   const { k } = useTempo();
+  const ir = useIr();
   const ref = useRef<HTMLDivElement>(null);
   const { longe, descer } = useLongeDoFim(ref);
   const nova = situacao === "nova" || situacao === "anexando";
@@ -344,14 +346,14 @@ export function TelaConversa({ situacao }: { situacao: SituacaoConversa }) {
 
   return (
     <div className="cx" ref={ref}>
-      <Topo atual="Painel" />
+      <Topo atual={null} />
       <header className="cx-cabeca">
         <span className="cx-cabeca-obra">
           <MarcaDaPrefeitura prefeitura="Criciúma" forma="sinal" />
           <span className="cx-mono">{situacao === "escolher-projeto" ? "sem projeto" : "117-25"}</span>
         </span>
         <span className="cx-cabeca-titulo">{TITULO[situacao]}</span>
-        <Botao variante="quiet" tamanho="sm" className="cx-nova">
+        <Botao variante="quiet" tamanho="sm" className="cx-nova" onClick={() => ir("conversa", "nova")}>
           <MessageSquarePlus /> Nova conversa <Tecla>N</Tecla>
         </Botao>
       </header>

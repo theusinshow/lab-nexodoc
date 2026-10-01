@@ -10,6 +10,7 @@ import { CURVA } from "@/lib/ds/movimento";
 import { useTempo } from "@/lib/ds/tempo";
 
 import { COM_VOCE } from "../achados/dados";
+import { DESTINO_DA_BARRA, useIr } from "./prototipo";
 import "../painel/painel.css";
 import "./topo.css";
 
@@ -50,6 +51,7 @@ export function Topo({
   onAtalhos?: () => void;
 }) {
   const ctx = useContext(ControleDoTopo);
+  const ir = useIr();
   onBusca ??= ctx.onBusca;
   onAtalhos ??= ctx.onAtalhos;
   return (
@@ -59,13 +61,13 @@ export function Topo({
         <Tecla>↵</Tecla>
       </a>
       <header className="pn-topo">
-        <div className="pn-marca">
+        <a className="pn-marca" href="#inicio" onClick={(e) => (e.preventDefault(), ir("inicio"))}>
           <Orbe tamanho={22} estado={trabalhando ? "trabalhando" : "repouso"} />
           <span className="pn-marca-nome">Nexo</span>
-        </div>
+        </a>
         <nav className="pn-nav" aria-label="Principal">
           {DESTINOS.map((n) => (
-            <a key={n} aria-current={n === atual ? "page" : undefined}>
+            <a key={n} href={`#${DESTINO_DA_BARRA[n][0]}`} aria-current={n === atual ? "page" : undefined} onClick={(e) => (e.preventDefault(), ir(...DESTINO_DA_BARRA[n]))}>
               {n}
             </a>
           ))}
@@ -183,6 +185,7 @@ function Painel({ painel, andar, rotulo, classe, children }: { painel: RefObject
  */
 function Sino({ ponto, abertoInicial }: { ponto: boolean; abertoInicial: boolean }) {
   const p = usePainel(abertoInicial);
+  const ir = useIr();
   const total = COM_VOCE.reduce((n, c) => n + c.achados.length, 0);
   const temAlgo = ponto && total > 0;
   return (
@@ -202,7 +205,7 @@ function Sino({ ponto, abertoInicial }: { ponto: boolean; abertoInicial: boolean
               COM_VOCE.map((c) => {
                 const bloqueiam = c.achados.filter((a) => a.impacto === "block").length;
                 return (
-                  <button key={c.id} type="button" role="menuitem" className="pn-sino-item" onClick={() => p.fechar(false)}>
+                  <button key={c.id} type="button" role="menuitem" className="pn-sino-item" onClick={() => (p.fechar(false), ir("resultado", "fila"))}>
                     <span className="pn-sino-linha">
                       <span className="ds-code">{c.codigo}</span>
                       <b>{c.titulo}</b>
@@ -226,7 +229,7 @@ function Sino({ ponto, abertoInicial }: { ponto: boolean; abertoInicial: boolean
               <p className="pn-sino-vazio">Nada com você agora.</p>
             )}
             <div className="pn-painel-pe">
-              <button type="button" role="menuitem" onClick={() => p.fechar(false)}>
+              <button type="button" role="menuitem" onClick={() => (p.fechar(false), ir("achados"))}>
                 Abrir Achados <ArrowRight size={14} aria-hidden />
               </button>
             </div>
@@ -247,6 +250,7 @@ function Sino({ ponto, abertoInicial }: { ponto: boolean; abertoInicial: boolean
 function MenuDaConta({ atual, onAtalhos, abertoInicial }: { atual: Destino | null; onAtalhos?: () => void; abertoInicial: boolean }) {
   const { dur } = useTempo();
   const p = usePainel(abertoInicial);
+  const ir = useIr();
   return (
     <div ref={p.raiz} className="pn-conta">
       <button type="button" className="pn-quem" aria-haspopup="menu" {...p.gatilho}>
@@ -287,7 +291,7 @@ function MenuDaConta({ atual, onAtalhos, abertoInicial }: { atual: Destino | nul
             </dl>
             <div className="pn-menu-destinos" role="group" aria-label="Ir para">
               {DESTINOS.map((d) => (
-                <button key={d} type="button" role="menuitem" aria-current={d === atual ? "page" : undefined} onClick={() => p.fechar(false)}>
+                <button key={d} type="button" role="menuitem" aria-current={d === atual ? "page" : undefined} onClick={() => (p.fechar(false), ir(...DESTINO_DA_BARRA[d]))}>
                   {d}
                 </button>
               ))}
@@ -307,11 +311,11 @@ function MenuDaConta({ atual, onAtalhos, abertoInicial }: { atual: Destino | nul
               </button>
             </div>
             <div className="pn-menu-grupo">
-              <button type="button" role="menuitem" onClick={() => p.fechar(false)}>
+              <button type="button" role="menuitem" onClick={() => (p.fechar(false), ir("entrada", "padrao"))}>
                 <Repeat2 size={15} aria-hidden />
                 Entrar com outra conta
               </button>
-              <button type="button" role="menuitem" className="pn-menu-sair" onClick={() => p.fechar(false)}>
+              <button type="button" role="menuitem" className="pn-menu-sair" onClick={() => (p.fechar(false), ir("entrada", "padrao"))}>
                 <LogOut size={15} aria-hidden />
                 Sair
               </button>

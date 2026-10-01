@@ -8,6 +8,8 @@ import { Botao, Segmento, Tecla } from "@/components/ds/basicos";
 import { CURVA } from "@/lib/ds/movimento";
 import { useTempo } from "@/lib/ds/tempo";
 
+import { useIr } from "../_comum/prototipo";
+
 import { DESFECHO_NOME, DISCIPLINA, IMPACTOS, PAGINAS_DO_MEMORIAL, type Achado, type Impacto } from "./dados";
 import { larguraDaLinha, linhaDoTrecho } from "./visor";
 
@@ -95,6 +97,7 @@ export function NoDocumento({
   onMudar: (id: string, desfecho: Achado["desfecho"] | undefined) => void;
 }) {
   const { dur, k } = useTempo();
+  const ir = useIr();
   const [vista, setVista] = useState<"com" | "todas">(modo === "mudas" ? "todas" : "com");
   const [aceso, setAceso] = useState<string | null>(null);
   const [ativo, setAtivo] = useState<string | null>(null);
@@ -194,7 +197,7 @@ export function NoDocumento({
           <span>
             <b>5 páginas só com desenho não foram lidas</b> (38 a 42). A análise é do texto; transcrever lê o que está escrito nos desenhos e audita de novo.
           </span>
-          <Botao variante="ghost" tamanho="sm">
+          <Botao variante="ghost" tamanho="sm" onClick={() => ir("auditoria", "enviando")}>
             Transcrever e auditar
           </Botao>
         </div>

@@ -3,7 +3,6 @@
 import { motion } from "motion/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useSyncExternalStore } from "react";
 
 import { MOLA, escalarMola } from "@/lib/ds/movimento";
 
@@ -13,8 +12,8 @@ import { useLab } from "./contexto";
  *  desligadas: o lab mostra o caminho inteiro desde o primeiro dia. */
 const FASES: { href: string; rotulo: string; fase: string; pronta: boolean; grupo?: string }[] = [
   { href: "/lab", rotulo: "Começar aqui", fase: "", pronta: true },
+  { href: "/prototipo", rotulo: "Protótipo navegável (app inteiro)", fase: "", pronta: true, grupo: "Juntar tudo" },
   { href: "/lab/telas/orbe", rotulo: "Orbe: violeta → coral", fase: "", pronta: true, grupo: "Em andamento" },
-  { href: "/lab/telas/painel-oficio", rotulo: "Painel: o ofício (comparar)", fase: "", pronta: true },
   { href: "/lab/telas/admin", rotulo: "Administração", fase: "", pronta: true, grupo: "Telas para aprovar" },
   { href: "/lab/telas/ajuda", rotulo: "Ajuda", fase: "", pronta: true },
   { href: "/lab/telas/pecas", rotulo: "Peças de toda tela", fase: "", pronta: true },
@@ -43,53 +42,16 @@ const FASES: { href: string; rotulo: string; fase: string; pronta: boolean; grup
   { href: "/lab/telas/inicio-d", rotulo: "Início D (primeira versão)", fase: "", pronta: true },
   { href: "/lab/telas/inicio-e", rotulo: "Início E (a mesa)", fase: "", pronta: true },
   { href: "/lab/telas/painel", rotulo: "Painel A", fase: "", pronta: true },
+  { href: "/lab/telas/painel-oficio", rotulo: "Painel: o ofício (grafite)", fase: "", pronta: true },
   { href: "/lab/telas/painel-b", rotulo: "Painel B (mesa de trabalho)", fase: "", pronta: true },
   { href: "/lab/telas/projetos-c", rotulo: "Projetos C (linha de produção)", fase: "", pronta: true },
   { href: "/lab/fundamentos", rotulo: "Fundamentos", fase: "", pronta: true, grupo: "Bastidores" },
   { href: "/lab/inventario", rotulo: "Inventário", fase: "", pronta: true },
 ];
 
-/*
- * A COR DE DESTAQUE: uma comparação para o lab inteiro. Mora no `<html>`
- * (data-destaque), porque os tokens --ds-* moram no :root; a escolha fica no
- * localStorage para atravessar as telas. Ver lab.css.
- */
-const DESTAQUES = [
-  { id: "violeta", nome: "Violeta" },
-  { id: "grafite", nome: "Grafite" },
-  { id: "ciano", nome: "Ciano" },
-  { id: "cad", nome: "CAD" },
-] as const;
-type Destaque = (typeof DESTAQUES)[number]["id"];
-const CHAVE_COR = "lab-destaque";
-function assinarCor(cb: () => void) {
-  window.addEventListener(CHAVE_COR, cb);
-  return () => window.removeEventListener(CHAVE_COR, cb);
-}
-function trocarCor(d: Destaque) {
-  if (d === "violeta") delete document.documentElement.dataset.destaque;
-  else document.documentElement.dataset.destaque = d;
-  try {
-    localStorage.setItem(CHAVE_COR, d);
-  } catch {}
-  window.dispatchEvent(new Event(CHAVE_COR));
-}
-
 export function NavegacaoDoLab() {
   const caminho = usePathname();
   const { lento, setLento, reduzido, setReduzido, escala } = useLab();
-  const destaque = useSyncExternalStore(
-    assinarCor,
-    () => (document.documentElement.dataset.destaque ?? "violeta") as Destaque,
-    () => "violeta" as Destaque,
-  );
-  useEffect(() => {
-    let salvo: string | null = null;
-    try {
-      salvo = localStorage.getItem(CHAVE_COR);
-    } catch {}
-    if (salvo && DESTAQUES.some((d) => d.id === salvo)) trocarCor(salvo as Destaque);
-  }, []);
 
   return (
     <nav className="lab-nav" aria-label="Laboratório">
@@ -135,17 +97,6 @@ export function NavegacaoDoLab() {
       <div className="lab-nav-rodape">
         <Chave rotulo="Câmera lenta (4x)" ligada={lento} onTroca={setLento} />
         <Chave rotulo="Movimento reduzido" ligada={reduzido} onTroca={setReduzido} />
-        <div className="lab-destaque" role="radiogroup" aria-label="Cor de destaque">
-          <span>Destaque</span>
-          <div>
-            {DESTAQUES.map((d) => (
-              <button key={d.id} type="button" role="radio" aria-checked={destaque === d.id} data-cor={d.id} onClick={() => trocarCor(d.id)}>
-                <i aria-hidden />
-                {d.nome}
-              </button>
-            ))}
-          </div>
-        </div>
       </div>
     </nav>
   );

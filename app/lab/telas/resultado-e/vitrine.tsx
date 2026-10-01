@@ -3,7 +3,7 @@
 import { Vitrine } from "../../_lab/vitrine";
 import { TelaResultado, type SituacaoRes } from "./tela-resultado";
 
-const SITUACOES: { id: SituacaoRes; nome: string; dica: string }[] = [
+export const SITUACOES: { id: SituacaoRes; nome: string; dica: string }[] = [
   { id: "nao-emitir", nome: "Não emitir", dica: "Versão E: o conteúdo à esquerda e uma coluna fixa à direita com tudo o que não é conteúdo — o estado (selo, porquê, anel de tratados), a navegação entre as quatro visões (teclas 1 a 4) e as ações (PDF, matriz, erro ausente). Na fila e no documento a coluna vira só ícones e devolve a largura." },
   { id: "revisar", nome: "Revisar antes", dica: "Revisão B, sem bloqueios: sobram decisões técnicas. O losango para na faixa âmbar." },
   { id: "liberado", nome: "Com ressalvas", dica: "Só revisão de texto: liberado, e a tela diz o escopo do que foi lido." },
