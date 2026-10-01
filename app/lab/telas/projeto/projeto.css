@@ -31,3 +31,17 @@
 .ds .pr-confirma p { margin: 0; font-size: 12.5px; line-height: 1.5; color: var(--ds-text-secondary); }
 .ds .pr-excluir { color: var(--ds-sev-block) !important; }
 .ds .pr .mp-miolo { min-height: 460px; }
+
+/* LARGURA: a coluna da tabela se mede pela própria caixa (1100px com o lado
+   aberto deixa ~670px). Nada quebra linha dentro de uma linha de 40px: o
+   texto longo vira reticência e o # sai antes de qualquer coluna que decide. */
+.ds .pr .mp-principal { container-type: inline-size; container-name: principal; }
+.ds .pr .mp-abas button { white-space: nowrap; }
+.ds .pr .mp-busca { flex: 0 1 260px; min-width: 150px; width: auto; }
+.ds .pr .mp-g-linha > :not(.mp-g-sel) { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+@container principal (max-width: 760px) {
+  .ds .pr .mp-ferramentas { gap: 12px; padding-left: 16px; }
+  .ds .pr .mp-abas { gap: 14px; }
+  .ds .pr-grade { --mp-colunas: minmax(0, 1.5fr) 128px minmax(0, 1fr) 64px 76px; }
+  .ds .pr-grade .mp-g-cab > :first-child, .ds .pr-grade .mp-g-linha > .mp-g-n { display: none; }
+}
