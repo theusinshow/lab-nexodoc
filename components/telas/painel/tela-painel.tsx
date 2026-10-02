@@ -1,14 +1,13 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
-import { ChevronRight, FileSearch, FileUp, Layers, ListChecks, ScanLine, type LucideIcon } from "lucide-react";
+import { ChevronRight, FileSearch, Layers, ListChecks, ScanLine, type LucideIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useState } from "react";
 
 import { Orbe } from "@/components/ds/basicos";
 import { BarraDeComando } from "@/components/moldura/barra-de-comando";
 import { linkDoNexo, type IntencaoDeLink } from "@/lib/contexto-da-url";
-import { CURVA } from "@/lib/ds/movimento";
 import { useTempo } from "@/lib/ds/tempo";
 import { entregarAoNexo } from "@/lib/entrega-ao-nexo";
 import type { ObraNaMoldura, RecenteNaMoldura } from "@/lib/moldura";
@@ -48,7 +47,6 @@ export type TrabalhoParaContinuar = {
 
 export type AchadoComVoce = { auditId: string; chave: string; titulo: string; codigo: string; nivel: Nivel | null; pagina: string | null; de: string | null };
 
-const ease = (c: readonly number[]) => [...c] as [number, number, number, number];
 
 /**
  * O PAINEL (veio do lab: app/lab/telas/inicio-d2). O que fazer e o que ter em
@@ -88,9 +86,20 @@ export function TelaPainel({
   const [arrastando, setArrastando] = useState(false);
   const [alvo, setAlvo] = useState<IdTarefa | null>(null);
   const [indo, setIndo] = useState(false);
-  const seletor = useRef<HTMLInputElement>(null);
-  const tarefa = TAREFAS.find((t) => t.id === escolhida) ?? null;
   const primeiro = continuar.length === 0 && totalComVoce === 0 && resumo.length === 0;
+
+  /*
+   * O CLIQUE ABRE O CHAT PREPARADO (02/10/2026, decisão do Matheus). Antes ele
+   * abria aqui uma área de soltar — um passo a mais, e uma segunda zona de
+   * soltar além da do Nexo. Agora a conversa nova já chega dizendo o que
+   * precisa (partidas.ts → tela); arrastar o arquivo para cima da tarefa
+   * continua sendo o atalho (`receber`).
+   */
+  function abrir(id: IdTarefa) {
+    setEscolhida(id);
+    setIndo(true);
+    router.push(linkDoNexo({ intencao: TAREFAS.find((t) => t.id === id)!.intencao }));
+  }
 
   function receber(id: IdTarefa, arquivos: File[]) {
     setArrastando(false);
@@ -122,17 +131,6 @@ export function TelaPainel({
         receber(alvo ?? escolhida ?? "auditar", Array.from(e.dataTransfer.files));
       }}
     >
-      <input
-        ref={seletor}
-        type="file"
-        multiple
-        accept=".pdf,application/pdf,image/*"
-        hidden
-        onChange={(e) => {
-          if (tarefa) receber(tarefa.id, Array.from(e.target.files ?? []));
-          e.target.value = "";
-        }}
-      />
       <div className="d2-centro">
         <div className="d2-cabeca">
           <Orbe tamanho={26} estado={indo ? "trabalhando" : "repouso"} />
@@ -152,7 +150,7 @@ export function TelaPainel({
                 data-tarefa={t.id}
                 className={`d2-tarefa${ativa ? " d2-tarefa--ativa" : ""}${arrastando ? " d2-tarefa--alvo" : ""}${alvo === t.id ? " d2-tarefa--sobre" : ""}`}
                 aria-pressed={ativa}
-                onClick={() => setEscolhida((e) => (e === t.id ? null : t.id))}
+                onClick={() => abrir(t.id)}
                 onDragEnter={() => setAlvo(t.id)}
                 onDragOver={(e) => {
                   e.preventDefault();
@@ -180,39 +178,6 @@ export function TelaPainel({
             );
           })}
         </div>
-
-        {/* ---------- a tarefa aberta, logo abaixo da fileira ---------- */}
-        <AnimatePresence initial={false}>
-          {tarefa && (
-            <motion.section
-              key="tarefa"
-              className="d2-painel"
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: dur("layout"), ease: ease(CURVA.out) }}
-            >
-              <div className="d2-painel-dentro">
-                <motion.button
-                  key={`s-${tarefa.id}`}
-                  type="button"
-                  className="d2-soltar"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: dur("state") }}
-                  onClick={() => seletor.current?.click()}
-                  disabled={indo}
-                >
-                  <FileUp size={18} />
-                  <span>
-                    <b>{tarefa.soltar}</b> ou <u>escolha no computador</u>
-                  </span>
-                  <span className="d2-nota">{indo ? "Levando ao Nexo…" : `${tarefa.precisa} O Nexo lê e diz o que vai fazer antes de começar.`}</span>
-                </motion.button>
-              </div>
-            </motion.section>
-          )}
-        </AnimatePresence>
 
         {/* ---------- retomar e com você ---------- */}
         <motion.div layout="position" transition={mola("smooth")} className="d2-colunas">

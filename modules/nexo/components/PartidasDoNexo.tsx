@@ -25,11 +25,17 @@ export function PartidasDoNexo({
   temPranchas,
   temMemorial,
   onAnexar,
+  ativa = null,
+  onEscolher,
 }: {
   temPranchas: boolean;
   temMemorial: boolean;
   /** Abre o seletor de arquivos — chamado só quando falta o insumo da partida. */
   onAnexar?: () => void;
+  /** A tarefa da tela, marcada. */
+  ativa?: string | null;
+  /** Escolher um atalho prepara a tela para ele. */
+  onEscolher?: (id: string) => void;
 }) {
   const composer = useComposer();
 
@@ -43,13 +49,16 @@ export function PartidasDoNexo({
             key={partida.id}
             type="button"
             data-partida={partida.id}
+            aria-pressed={ativa === partida.id}
             title={
               falta
                 ? `Escreve o pedido e abre o seletor — falta ${partida.precisa === "pranchas" ? "anexar as pranchas" : "anexar o memorial"}.`
                 : "Escreve o pedido no campo abaixo. Enter envia."
             }
             onClick={() => {
-              composer.fill(partida.frase);
+              // Sem o memorial ainda, a leitura dele já trará "Auditar o memorial": só abre o seletor.
+              if (!(falta && partida.precisa === "memorial")) composer.fill(partida.frase);
+              onEscolher?.(partida.id);
               if (falta) onAnexar?.();
             }}
           >

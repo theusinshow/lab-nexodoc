@@ -19,13 +19,17 @@ import { useEffect, useState } from "react";
 
 import { montarSaudacao } from "../lib/saudacao";
 
-export function SaudacaoDoNexo({ nome }: { nome?: string | null; onDigitando?: (digitando: boolean) => void }) {
+export function SaudacaoDoNexo({ nome, convite }: { nome?: string | null; convite?: string | null; onDigitando?: (digitando: boolean) => void }) {
   const [frase, setFrase] = useState<string | null>(null);
 
   useEffect(() => {
-    const raf = requestAnimationFrame(() => setFrase(montarSaudacao(partesEmBrasilia(new Date()).hora, nome)));
+    const raf = requestAnimationFrame(() => {
+      const base = montarSaudacao(partesEmBrasilia(new Date()).hora, nome);
+      // Com uma tarefa escolhida (Painel), a segunda linha é o convite dela.
+      setFrase(convite ? `${base.split("\n")[0]}\n${convite}` : base);
+    });
     return () => cancelAnimationFrame(raf);
-  }, [nome]);
+  }, [nome, convite]);
 
   return <h2 className="nx-saudacao">{frase ?? ""}</h2>;
 }

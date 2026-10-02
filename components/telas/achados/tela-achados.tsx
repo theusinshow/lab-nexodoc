@@ -162,7 +162,7 @@ export function TelaAchados({ comVoce, passou, semBanco }: { comVoce: ParecerEmA
     [lista, filtro, busca],
   );
   const parecer = lista.find((p) => p.chave === sel) ?? null;
-  const novaAuditoria = () => router.push("/?tarefa=auditar");
+  const novaAuditoria = () => router.push("/nexo?intencao=auditar");
 
   const trocarLado = (l: Lado) => (setLado(l), setSel(null), setFiltro("todos"));
   const andar = (d: number) => {

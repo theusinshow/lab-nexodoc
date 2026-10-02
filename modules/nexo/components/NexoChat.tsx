@@ -86,6 +86,7 @@ export function NexoChat({
   onSend,
   onAttach,
   arrastando = false,
+  tarefa = null,
   readStatus,
   pranchaFiles,
   memorialFile,
@@ -101,6 +102,8 @@ export function NexoChat({
   onAttach?: () => void;
   /** Arrasto em curso: a zona de solta sai do caminho do overlay de tela cheia. */
   arrastando?: boolean;
+  /** A tela da tarefa escolhida — a zona de soltar fala dela. */
+  tarefa?: { pede: string; faz: string; botao: string } | null;
   readStatus?: ReadStatus | null;
   /** Pranchas originais retidas (bytes p/ montar o volume). */
   pranchaFiles: File[];
@@ -573,7 +576,7 @@ export function NexoChat({
          */}
         {messages.length === 0 && (
           <div className="mx-auto h-full max-w-[46rem] px-4 py-6">
-            <ZonaDeSolta onAnexar={onAttach} arrastando={arrastando} />
+            <ZonaDeSolta onAnexar={onAttach} arrastando={arrastando} tarefa={tarefa} />
           </div>
         )}
         {/*

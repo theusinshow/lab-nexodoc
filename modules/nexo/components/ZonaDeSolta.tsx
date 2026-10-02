@@ -28,9 +28,12 @@ export function ZonaDeSolta({
   /** O arrasto já está acontecendo: o overlay de tela cheia assume, e esta
    *  zona sai do caminho em vez de competir com ele por atenção. */
   arrastando = false,
+  tarefa = null,
 }: {
   onAnexar?: () => void;
   arrastando?: boolean;
+  /** A tela da tarefa escolhida (partidas.ts): o que soltar e o que o Nexo faz. */
+  tarefa?: { pede: string; faz: string; botao: string } | null;
 }) {
   return (
     <div className={`nx-zona${arrastando ? " nx-zona--arrastando" : ""}`}>
@@ -40,10 +43,10 @@ export function ZonaDeSolta({
         memorial precisa saber que a auditoria mora aqui, e quem chega com
         pranchas, que não vai preencher formulário.
       */}
-      <p className="nx-zona-titulo">Solte os arquivos aqui</p>
-      <p className="nx-zona-texto">Pranchas em PDF viram LD, capa, separatriz e volume. O memorial vira auditoria contra a obra declarada.</p>
-      <Botao variante="ghost" tamanho="sm" onClick={onAnexar}>
-        Anexar arquivos
+      <p className="nx-zona-titulo">{tarefa ? `${tarefa.pede} aqui` : "Solte os arquivos aqui"}</p>
+      <p className="nx-zona-texto">{tarefa ? tarefa.faz : "Pranchas em PDF viram LD, capa, separatriz e volume. O memorial vira auditoria contra a obra declarada."}</p>
+      <Botao variante={tarefa ? "primary" : "ghost"} tamanho="sm" onClick={onAnexar}>
+        {tarefa ? tarefa.botao : "Anexar arquivos"}
       </Botao>
     </div>
   );
