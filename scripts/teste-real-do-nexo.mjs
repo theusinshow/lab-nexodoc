@@ -178,6 +178,12 @@ if (QUAL === "auditoria" || QUAL === "tudo") {
   await anexar(["tests/117_25_md_geral_a.pdf"]);
   ok(await esperar(async () => (await p.getByText(/Li as primeiras páginas/).count()) > 0, 240_000, 2000), "o Nexo leu as primeiras páginas do memorial");
   await foto("auditoria-ficha");
+  // A saída "Auditar o memorial" pede a auditoria; o cartão com o botão Auditar vem na resposta.
+  const pedir = p.getByRole("button", { name: /Auditar o memorial$/ });
+  if (await esperar(async () => (await pedir.count()) > 0, 30_000)) {
+    await pedir.first().click();
+    log("  pedi pela saída \"Auditar o memorial\"");
+  }
   const auditar = p.getByRole("button", { name: /^(Auditar sem transcrever|Auditar)$/ });
   ok(await esperar(async () => (await auditar.count()) > 0 && (await auditar.first().isEnabled()), 180_000, 2000), "Auditar está disponível");
   const inicio = Date.now();
@@ -205,8 +211,18 @@ if (QUAL === "auditoria" || QUAL === "tudo") {
     const [aba] = await Promise.all([ctx.waitForEvent("page", { timeout: 60_000 }).catch(() => null), p.locator(".re-acao--principal").click()]);
     ok(Boolean(aba), "Parecer em PDF abre numa aba nova");
     if (aba) await aba.close();
+    const antes = await p.locator(".cx-nexo .nx-texto").count();
     await escrever("por que o primeiro achado que bloqueia a emissão bloqueia?");
-    const respondeu = await esperar(async () => (await p.locator(".cx-nexo .nx-texto").count()) >= 2 && (await p.locator('[aria-label="Nexo está pensando"]').count()) === 0, 180_000, 2000);
+    // um turno NOVO do Nexo, e ele já parado de pensar
+    const respondeu = await esperar(
+      async () =>
+        (await p.locator(".cx-nexo .nx-texto").count()) > antes &&
+        (await p.locator(".cx-nexo .nx-texto").last().innerText()).replace("Nexo:", "").trim().length > 20 &&
+        (await p.locator('[aria-label="Nexo está respondendo"], [aria-label="Nexo está pensando"]').count()) === 0,
+      180_000,
+      2000,
+    );
+    if (respondeu) log(`  resposta: ${(await p.locator(".cx-nexo .nx-texto").last().innerText()).replace(/\s+/g, " ").slice(0, 300)}`);
     await p.waitForTimeout(2000);
     await foto("auditoria-pergunta");
     ok(respondeu, "o chat responde sobre a auditoria ao lado do resultado");

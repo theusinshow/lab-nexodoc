@@ -1071,6 +1071,30 @@ function reportFindingToStructured(finding: AuditFinding): StructuredFinding {
  * banco chama aquilo de `conflito`; precisa saber que pergunta aquele parágrafo
  * responde. Ver `docs/superpowers/specs/2026-08-14-tela-de-achados-design.md`.
  */
+/**
+ * O TEXTO DOS ACHADOS NA VISTA PARECER. Ele é o mesmo de "Copiar achados", e lá
+ * as seções vêm marcadas com `## ` para quem cola num e-mail ou num editor. Na
+ * tela, o `## ` aparecia cru ("## BLOQUEIA A EMISSÃO (7)" — achado no teste
+ * real de 02/10/2026): aqui a linha marcada vira título, e o resto fica texto.
+ */
+function TextoDoRelatorio({ texto }: { texto: string }) {
+  return (
+    <div className="nx-relatorio mt-1 break-words text-sm leading-6">
+      {texto.split("\n").map((linha, i) =>
+        linha.startsWith("## ") ? (
+          <h3 key={i} className="nx-relatorio-secao">
+            {linha.slice(3)}
+          </h3>
+        ) : (
+          <p key={i} className={linha.trim() ? "nx-relatorio-linha" : "nx-relatorio-vazia"}>
+            {linha}
+          </p>
+        ),
+      )}
+    </div>
+  );
+}
+
 function BlocoDeTexto({
   titulo,
   children,
@@ -5896,17 +5920,13 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
                 <p className="font-mono text-xs font-medium uppercase text-muted-foreground">
                   Achados
                 </p>
-                <pre className="mt-1 whitespace-pre-wrap break-words font-sans text-sm leading-6">
-                  {findingsText}
-                </pre>
+                <TextoDoRelatorio texto={findingsText} />
               </div>
               <div>
                 <p className="font-mono text-xs font-medium uppercase text-muted-foreground">
                   Ações recomendadas
                 </p>
-                <pre className="mt-1 whitespace-pre-wrap break-words font-sans text-sm leading-6">
-                  {actionsText}
-                </pre>
+                <TextoDoRelatorio texto={actionsText} />
               </div>
               <div>
                 <p className="font-mono text-xs font-medium uppercase text-muted-foreground">

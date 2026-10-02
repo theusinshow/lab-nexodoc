@@ -609,7 +609,14 @@ export function NexoChat({
                     </span>
                   )}
                   {/* Resposta antiga do Nexo cita INC-014; a sigla que se lê é ACH (lib/rotulo-do-achado.ts). */}
-                  <MessageBubble role="assistant" content={textoComRotulos(m.content)} reveal={m.id === revealId} />
+                  {/* A resposta já nasceu e a primeira palavra ainda não chegou: o turno não fica mudo. */}
+                  {busy && idx === messages.length - 1 && !m.content.trim() ? (
+                    <span className="cx-pensando" role="status" aria-label="Nexo está respondendo">
+                      pensando…
+                    </span>
+                  ) : (
+                    <MessageBubble role="assistant" content={textoComRotulos(m.content)} reveal={m.id === revealId} />
+                  )}
                   {m.interrupted && <span className="nx-turno-nota">interrompido</span>}
                   {/* A ficha do anexo: de que projeto são as folhas que entraram.
                       Abaixo do texto e acima dos botões — a ordem em que se
@@ -1058,6 +1065,25 @@ function AttachmentChip({
 }
 
 /**
+ * O NEGRITO DO MODELO. A resposta vem em markdown leve, e o `**destaque**`
+ * aparecia com os asteriscos na tela (teste real de 02/10/2026). Só o negrito
+ * vira marcação: o resto continua texto, quebra de linha incluída — um
+ * renderizador de markdown inteiro aqui seria superfície demais para um campo
+ * que mostra o que um modelo escreveu. Par de asteriscos sem fechar fica como
+ * veio (durante o streaming, o fechamento ainda não chegou).
+ */
+function TextoComNegrito({ texto }: { texto: string }) {
+  const partes = texto.split(/(\*\*[^*\n]+\*\*)/g);
+  return (
+    <>
+      {partes.map((parte, i) =>
+        parte.length > 4 && parte.startsWith("**") && parte.endsWith("**") ? <b key={i}>{parte.slice(2, -2)}</b> : parte,
+      )}
+    </>
+  );
+}
+
+/**
  * Bolha da mensagem. Assistente = vidro fraco (chrome do agente); usuário =
  * recessed matte (dado). Cantos assimétricos discretos, sem borda gritante.
  * A resposta do Nexo ganha "copiar" no hover — o engenheiro cola no e-mail.
@@ -1102,7 +1128,7 @@ function MessageBubble({
     <div className="nx-resposta">
       <p className="cx-texto nx-texto">
         <span className="sr-only">Nexo: </span>
-        {shown}
+        <TextoComNegrito texto={shown} />
       </p>
       {content.trim() !== "" && (
         <div className="cx-nexo-acoes">

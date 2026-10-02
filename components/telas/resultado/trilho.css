@@ -91,3 +91,9 @@
 .ds .re-acao:disabled { cursor: progress; opacity: 0.7; }
 .ds .nx-notas-do-parecer { display: flex; flex: none; align-items: center; gap: 12px; padding: 6px 6px 2px; }
 .ds .nx-trilho .rs-selo { --rs-tom: var(--re-tom); justify-self: start; }
+/* a vista Parecer: as seções marcadas com "## " viram título */
+.ds .nx-relatorio { display: grid; }
+.ds .nx-relatorio-secao { margin: 18px 0 4px; font-size: 13px; font-weight: 500; letter-spacing: 0.01em; color: var(--ds-text-primary); }
+.ds .nx-relatorio-secao:first-child { margin-top: 4px; }
+.ds .nx-relatorio-linha { margin: 0; white-space: pre-wrap; color: var(--ds-text-primary); }
+.ds .nx-relatorio-vazia { height: 10px; margin: 0; }

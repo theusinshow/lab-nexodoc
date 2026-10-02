@@ -78,8 +78,16 @@ export function TrilhoDoResultado({
   const { estado, veredito } = avaliarEmissao(report);
   const selo = SELO[estado];
   const incompleta = incompletudeDoParecer(report).incompleta;
-  // Na análise que não terminou, o rótulo inteiro do veredito é a notícia: ele vai na frase.
-  const porque = estado === "incompleto" ? `${veredito.label}. ${veredito.detail}` : veredito.detail;
+  /*
+   * O PORQUÊ NUMA FRASE. Na análise que não terminou, o aviso inteiro (em
+   * caixa-alta, com o que não foi lido) já abre o conteúdo à esquerda;
+   * repeti-lo aqui era a mesma notícia duas vezes. O trilho diz o que ela
+   * significa para a emissão, como no lab.
+   */
+  const porque =
+    estado === "incompleto"
+      ? "Parte do documento não foi lida: os achados valem, mas não dá para liberar. O aviso ao lado diz o que faltou."
+      : veredito.detail;
 
   const NAV: { id: VistaDoResultado; rotulo: string; Icone: typeof FileText; conta?: number }[] = [
     { id: "summary", rotulo: "Resumo", Icone: SquareStack },

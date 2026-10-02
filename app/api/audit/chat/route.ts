@@ -289,7 +289,9 @@ export async function POST(request: Request) {
           model,
           error,
         );
-        console.error(`[audit-chat] falha (${failure.category})`);
+        // A mensagem junto da categoria: "unknown" sozinho não diz onde quebrou
+        // (achado no teste real de 02/10/2026, com a resposta sumindo na tela).
+        console.error(`[audit-chat] falha (${failure.category}): ${error instanceof Error ? error.message : String(error)}`);
         /*
          * O erro viaja DENTRO do SSE, com status 200: o fluxo já começou, e
          * trocar o status a essa altura não chega ao cliente.
