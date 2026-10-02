@@ -1,140 +1,120 @@
 "use client";
 
-import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
+import {
+  useEffect,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 
 /**
  * AS PEÇAS COMPARTILHADAS DAS APRESENTAÇÕES.
  *
- * POR QUE EXISTE. `/apresentacao` e `/apresentacao/valores` são dois decks
- * distintos que precisam parecer o MESMO documento — a página de valores entra
- * na projeção logo depois do deck, e uma diferença de dois pixels no rótulo ou
- * um cinza um passo mais claro a denunciariam como outro arquivo. Uma segunda
- * redação das mesmas escalas divergiria na primeira correção.
+ * `/apresentacao` e `/apresentacao/valores` são dois decks que precisam parecer
+ * o MESMO documento — a página de valores entra na projeção logo depois do
+ * deck. Uma segunda redação das mesmas peças divergiria na primeira correção.
  *
- * O QUE MORA AQUI: a entrada escalonada, a máscara de linha, o número que corre
- * e os ARQUÉTIPOS do instrumento (escala horizontal, escala vertical, confronto,
- * leitura, mostrador). O que é específico de uma folha — o diagrama do motor, o
- * mapa do memorial, o botão dos valores — continua em `folhas/`, junto de quem
- * o usa. Ver `2026-09-10-deck-instrumento-design.md`.
+ * O QUE MORA AQUI (segunda versão, 02/10/2026): o movimento (entrada, máscara
+ * de linha, número que corre), o vocabulário do app na escala do palco (selo,
+ * mostrador, papel com grifo, checklist) e o DIAGRAMA — uma caixa de pixels
+ * fixos onde fios em SVG e nós em HTML se encontram por conta.
  */
 
-export const MONO = "'IBM Plex Mono', ui-monospace, monospace";
+/** A família de código do sistema novo (Geist Mono), para página, obra e arquivo. */
+export const MONO = "var(--ds-font-mono)";
+
+/* ───────────────────────────────────────────────────────────── movimento */
 
 /**
- * Entrada escalonada. O atraso é a ORDEM DE LEITURA tornada visível: o olho
- * chega em cada peça no instante em que a anterior terminou de ser lida.
+ * Entrada. O atraso é a ORDEM DE LEITURA tornada visível: o olho chega em cada
+ * peça no instante em que a anterior terminou de ser lida.
  */
 export function Entra({
   atraso = 0,
   children,
   style,
+  className = "ap-entra",
 }: {
   atraso?: number;
   children: ReactNode;
   style?: CSSProperties;
+  /** `ap-entra` (sobe), `ap-assenta` (cresce um passo) ou `ap-surge` (só aparece). */
+  className?: string;
 }) {
   return (
-    <div
-      className="ap-entra"
-      style={{ animationDelay: `${atraso}ms`, ...style }}
-    >
+    <div className={className} style={{ animationDelay: `${atraso}ms`, ...style }}>
       {children}
     </div>
   );
 }
 
-/* ───────────────────────────────────────────────────────── peças de movimento */
-
 /**
- * O número corre até o valor. Não é enfeite: o valor É o argumento, e vê-lo
- * chegar prende o olho nele por um segundo a mais do que vê-lo já parado.
- *
- * Respeita movimento reduzido — quem pediu para nada se mexer recebe o número
- * final, e não uma contagem congelada no zero.
+ * O número corre até o valor. O valor É o argumento, e vê-lo chegar prende o
+ * olho nele por um segundo a mais. Movimento reduzido recebe o número final na
+ * hora — um zero no lugar de um número é pior do que a animação indesejada.
  */
 export function Contador({
   ate,
   duracao = 900,
   atraso = 0,
-  style,
+  formato = (n) => String(n),
 }: {
   ate: number;
   duracao?: number;
   atraso?: number;
-  style?: CSSProperties;
+  formato?: (n: number) => string;
 }) {
   const [valor, setValor] = useState(0);
 
   useEffect(() => {
     let quadro = 0;
     let inicio = 0;
-
-    /*
-     * A decisão sobre movimento reduzido mora DENTRO do temporizador, e não no
-     * corpo do efeito. Não é preciosismo: `setState` síncrono num efeito dispara
-     * renderização em cascata, e o lint do projeto recusa — com razão. Aqui a
-     * chamada já nasce assíncrona, que é o contrato que a regra pede.
-     *
-     * E O ATRASO NÃO VALE em movimento reduzido. Sem isto o "56 achados" da
-     * folha 05 ficava escrito "0" por 2,7 segundos — o tempo que a contagem
-     * levaria para começar — e um zero no lugar de um número é o único estado
-     * pior do que uma animação indesejada. Visto na captura reduzida.
-     */
+    /* A decisão mora DENTRO do temporizador: setState síncrono no efeito o lint recusa. */
     const reduzido = !!window.matchMedia?.("(prefers-reduced-motion: reduce)")
       .matches;
-    const espera = reduzido ? 0 : atraso;
-    const relogio = setTimeout(() => {
-      if (reduzido) {
-        setValor(ate);
-        return;
-      }
-
-      const passo = (agora: number) => {
-        if (!inicio) inicio = agora;
-        const t = Math.min(1, (agora - inicio) / duracao);
-        // Desaceleração cúbica: chega devagar, como um ponteiro assentando.
-        setValor(Math.round(ate * (1 - Math.pow(1 - t, 3))));
-        if (t < 1) quadro = requestAnimationFrame(passo);
-      };
-      quadro = requestAnimationFrame(passo);
-    }, espera);
-
+    const relogio = setTimeout(
+      () => {
+        if (reduzido) {
+          setValor(ate);
+          return;
+        }
+        const passo = (agora: number) => {
+          if (!inicio) inicio = agora;
+          const t = Math.min(1, (agora - inicio) / duracao);
+          // Desaceleração cúbica: chega devagar, como um ponteiro assentando.
+          setValor(Math.round(ate * (1 - Math.pow(1 - t, 3))));
+          if (t < 1) quadro = requestAnimationFrame(passo);
+        };
+        quadro = requestAnimationFrame(passo);
+      },
+      reduzido ? 0 : atraso,
+    );
     return () => {
       clearTimeout(relogio);
       cancelAnimationFrame(quadro);
     };
   }, [ate, atraso, duracao]);
 
-  return <span style={style}>{valor}</span>;
+  return <>{formato(valor)}</>;
 }
 
-/* ───────────────────────────────────────────────────── revelação por máscara */
-
 /**
- * LINHAS REVELADAS POR MÁSCARA, uma de cada vez. É a entrada de título e de
- * fecho: o texto nasce na própria linha de base, em vez de flutuar até ela.
- *
- * As quebras são DELIBERADAS — cada item do array é uma linha, e a quebra é
- * decisão editorial, não acidente de largura. O palco tem 1920px fixos, então
- * o que se ensaia é o que se projeta. Uma linha que ainda assim quebrar por
- * conta própria é defeito de quem a escreveu, e a prova de tela pega.
+ * LINHAS REVELADAS POR MÁSCARA, uma de cada vez: o texto nasce na própria linha
+ * de base. Cada item é uma linha deliberada — o palco tem largura fixa.
  */
 export function Linhas({
   linhas,
   atraso = 0,
   passo = 110,
-  style,
 }: {
   linhas: readonly string[];
   atraso?: number;
-  /** Intervalo entre uma linha e a seguinte. */
   passo?: number;
-  style?: CSSProperties;
 }) {
   return (
     <>
       {linhas.map((linha, i) => (
-        <span key={linha} className="ap-mascara" style={style}>
+        <span key={linha} className="ap-mascara">
           <span
             className="ap-linha"
             style={{ animationDelay: `${atraso + i * passo}ms` }}
@@ -147,289 +127,385 @@ export function Linhas({
   );
 }
 
-/* ═══════════════════════════════════════════════════════ os arquétipos (10/09) */
+/* ─────────────────────────────────────────────────── vocabulário do app */
 
-export type LinhaDeLeitura = { texto: string; chave?: boolean };
+export type TomDoSelo = "neutro" | "linha" | "ok" | "block" | "decide" | "nexo";
 
-/**
- * A LEITURA — a conclusão da folha, na base, como a leitura de um instrumento.
- * Linha fina, rótulo LEITURA e a frase em Sans 600 48, linha a linha por
- * máscara. Qual linha é a CHAVE (em teal) é decisão editorial por folha.
- */
-export function Leitura({
-  linhas,
-  atraso = 900,
-  rotuloDo = "Leitura",
+/** O SELO do app: diz ESTADO — medido, em aberto, impede emitir. */
+export function Selo({
+  tom = "neutro",
+  ponto = true,
+  children,
 }: {
-  linhas: readonly LinhaDeLeitura[];
-  atraso?: number;
-  rotuloDo?: string;
+  tom?: TomDoSelo;
+  ponto?: boolean;
+  children: ReactNode;
 }) {
   return (
-    <div className="ap-leitura">
-      <Entra atraso={atraso}>
-        <span className="ap-mono-rotulo">{rotuloDo}</span>
-      </Entra>
-      <p className="ap-leitura__frase">
-        {linhas.map((l, i) => (
-          <span
-            key={l.texto}
-            className={
-              l.chave ? "ap-mascara ap-leitura__linha--chave" : "ap-mascara"
-            }
-          >
-            <span
-              className="ap-linha"
-              style={{ animationDelay: `${atraso + 160 + i * 140}ms` }}
-            >
-              {l.texto}
-            </span>
-          </span>
-        ))}
-      </p>
-    </div>
+    <span className={tom === "neutro" ? "ap-selo" : `ap-selo ap-selo--${tom}`}>
+      {ponto ? <i aria-hidden="true" /> : null}
+      {children}
+    </span>
   );
 }
 
-export type Fato = {
-  /** Título em linhas deliberadas. */
-  titulo: readonly string[];
-  texto?: ReactNode;
-  /** Cor do título (padrão: foreground). */
-  cor?: string;
-  /** O que vem depois do texto: uma frase colorida, uma lista Mono. */
-  extra?: ReactNode;
-};
-
-/**
- * ESCALA HORIZONTAL — fatos em linha, ticks embaixo. A linha se desenha, os
- * ticks aparecem, e só então os fatos assentam, em cascata da esquerda para a
- * direita.
- */
-export function EscalaHorizontal({
-  fatos,
-  atraso = 200,
-  tracejada = false,
-  compacta = false,
-  style,
+/** O MOSTRADOR — o número grande do app sobre o rótulo. Vários vão numa `.ap-regua-num`. */
+export function Mostrador({
+  valor,
+  rotulo,
+  atraso,
 }: {
-  fatos: readonly Fato[];
-  atraso?: number;
-  tracejada?: boolean;
-  compacta?: boolean;
-  style?: CSSProperties;
+  valor: ReactNode;
+  rotulo: string;
+  atraso: number;
 }) {
-  const classes = [
-    "ap-escala-h",
-    tracejada ? "ap-escala-h--tracejada" : "",
-    compacta ? "ap-escala-h--compacta" : "",
-  ]
-    .filter(Boolean)
-    .join(" ");
   return (
-    <div className={classes} style={style}>
-      {fatos.map((f, i) => (
-        <div key={f.titulo.join(" ")} className="ap-escala-h__fato">
-          <p
-            className="ap-escala-h__titulo"
-            style={f.cor ? { color: f.cor } : undefined}
-          >
-            <Linhas linhas={f.titulo} atraso={atraso + 320 + i * 160} />
-          </p>
-          {f.texto ? (
-            <Entra atraso={atraso + 440 + i * 160}>
-              <p className="ap-escala-h__texto">{f.texto}</p>
-            </Entra>
-          ) : null}
-          {f.extra ? (
-            <Entra atraso={atraso + 560 + i * 160}>{f.extra}</Entra>
-          ) : null}
-          <span
-            aria-hidden="true"
-            className="ap-escala-h__tick ap-escala-h__tick--inicio ap-surge"
-            style={{ animationDelay: `${atraso + 200}ms` }}
-          />
-          {i === fatos.length - 1 ? (
-            <span
-              aria-hidden="true"
-              className="ap-escala-h__tick ap-escala-h__tick--fim ap-surge"
-              style={{ animationDelay: `${atraso + 200}ms` }}
-            />
-          ) : null}
-        </div>
-      ))}
+    <div>
+      <span className="ap-mascara">
+        <span
+          className="ap-linha ap-mostrador__valor"
+          style={{ animationDelay: `${atraso}ms` }}
+        >
+          {valor}
+        </span>
+      </span>
       <span
-        aria-hidden="true"
-        className="ap-escala-h__linha ap-risca"
-        style={{ animationDelay: `${atraso}ms` }}
-      />
+        className="ap-mostrador__rotulo ap-entra"
+        style={{ animationDelay: `${atraso + 120}ms` }}
+      >
+        {rotulo}
+      </span>
     </div>
   );
 }
 
-export type ItemDaEscala = { titulo: string; texto?: string; cor?: string };
-
 /**
- * ESCALA VERTICAL — leituras numeradas de altura igual. A linha desce
- * (`ap-desce`), os ticks aparecem, e as leituras assentam de cima para baixo.
+ * O PAPEL — uma página do memorial, como o "Ver no memorial" a abre. O nome do
+ * arquivo e a página no cabeçalho; o conteúdo é o que foi conferido.
  */
-export function EscalaVertical({
-  itens,
-  atraso = 200,
-  inicio = 1,
-  numerada = true,
+export function Papel({
+  arquivo,
+  pagina,
+  atraso = 0,
+  children,
   style,
 }: {
-  itens: readonly ItemDaEscala[];
+  arquivo: string;
+  pagina?: string;
   atraso?: number;
-  inicio?: number;
-  numerada?: boolean;
+  children: ReactNode;
   style?: CSSProperties;
 }) {
   return (
-    <div className="ap-escala-v" style={style}>
-      <span
-        aria-hidden="true"
-        className="ap-escala-v__linha ap-desce"
-        style={{ animationDelay: `${atraso}ms` }}
-      />
-      {itens.map((item, i) => (
-        <div key={item.titulo} className="ap-escala-v__item">
-          <span
-            className="ap-escala-v__numero ap-surge"
-            style={{ animationDelay: `${atraso + 200}ms`, color: item.cor }}
-          >
-            {numerada ? String(inicio + i).padStart(2, "0") : ""}
-          </span>
-          <span
-            aria-hidden="true"
-            className="ap-escala-v__tick ap-surge"
-            style={{
-              animationDelay: `${atraso + 200}ms`,
-              background: item.cor,
-            }}
-          />
-          <div className="ap-escala-v__corpo">
-            <p
-              className="ap-escala-v__titulo"
-              style={item.cor ? { color: item.cor } : undefined}
-            >
-              <Linhas linhas={[item.titulo]} atraso={atraso + 320 + i * 160} />
-            </p>
-            {item.texto ? (
-              <Entra atraso={atraso + 440 + i * 160}>
-                <p className="ap-escala-v__texto">{item.texto}</p>
-              </Entra>
-            ) : null}
-          </div>
-        </div>
-      ))}
+    <div
+      className="ap-papel ap-entra"
+      style={{ animationDelay: `${atraso}ms`, ...style }}
+    >
+      <div className="ap-papel__cabeca">
+        <span>{arquivo}</span>
+        {pagina ? <span>{pagina}</span> : null}
+      </div>
+      {children}
     </div>
   );
 }
 
 /**
- * O CONFRONTO — a folha de objeção. A pergunta, com as palavras do comprador,
- * em Mono à esquerda (mono é o que os OUTROS dizem); as respostas como leituras
- * numeradas à direita; a leitura final na base. Sem `pergunta`, a esquerda traz
- * o título e a linha fina (a folha 16 afirma em vez de responder).
+ * Uma linha da página que NÃO é transcrição: o deck só escreve o que conferiu,
+ * e o resto da página aparece como traço cinza.
  */
-export function Confronto({
-  pergunta,
-  titulo,
-  linhaFina,
-  respostas,
-  leitura,
+export function LinhaDePapel({ largura }: { largura: string }) {
+  return (
+    <span
+      aria-hidden="true"
+      className="ap-papel__linha"
+      style={{ width: largura }}
+    />
+  );
+}
+
+/** O GRIFO: a cor do nível sob o trecho, acendendo depois que o texto chegou. */
+export function Grifo({
+  tom = "block",
+  atraso,
+  children,
 }: {
-  pergunta?: string;
-  /** Alternativa à pergunta: a afirmação da folha, em linhas deliberadas. */
-  titulo?: readonly string[];
-  linhaFina?: string;
-  respostas: readonly (readonly [string, string])[];
-  leitura: readonly LinhaDeLeitura[];
+  tom?: "block" | "decide" | "note";
+  atraso: number;
+  children: ReactNode;
 }) {
-  const longa = (pergunta?.length ?? 0) > 160;
+  return (
+    <mark
+      className={tom === "block" ? "ap-grifo" : `ap-grifo ap-grifo--${tom}`}
+      style={{ animationDelay: `${atraso}ms` }}
+    >
+      {children}
+    </mark>
+  );
+}
+
+/* ──────────────────────────────────────────────────────────── diagrama */
+
+/**
+ * A CAIXA DO DIAGRAMA: largura e altura em pixels do palco. `fios` é o SVG
+ * (no mesmo sistema de coordenadas), `children` são os nós e as partículas.
+ */
+export function Diagrama({
+  largura,
+  altura,
+  fios,
+  children,
+  style,
+}: {
+  largura: number;
+  altura: number;
+  fios?: ReactNode;
+  children: ReactNode;
+  style?: CSSProperties;
+}) {
+  return (
+    <div
+      className="ap-diagrama"
+      style={{ width: largura, height: altura, ...style }}
+    >
+      <svg
+        width={largura}
+        height={altura}
+        viewBox={`0 0 ${largura} ${altura}`}
+        aria-hidden="true"
+      >
+        {fios}
+      </svg>
+      {children}
+    </div>
+  );
+}
+
+export type TomDoFio = "neutro" | "nexo" | "block" | "ok";
+
+/**
+ * UM FIO, que se desenha do começo ao fim. `seta` põe a ponta aberta no fim,
+ * apontando para `dir` — a mesma seta aprovada no Mapa do volume.
+ */
+export function Fio({
+  d,
+  atraso,
+  tom = "neutro",
+  seta,
+}: {
+  d: string;
+  atraso: number;
+  tom?: TomDoFio;
+  seta?: { x: number; y: number; dir: "direita" | "baixo" | "cima" | "esquerda" };
+}) {
+  const classe = `ap-fio ap-traco${tom === "neutro" ? "" : ` ap-fio--${tom}`}`;
+  const giro = { direita: 0, baixo: 90, esquerda: 180, cima: 270 } as const;
   return (
     <>
-      <div className="ap-confronto">
-        <div className="ap-confronto__esquerda">
-          {pergunta ? (
-            <>
-              <Entra atraso={0}>
-                <span className="ap-mono-rotulo">A pergunta</span>
-              </Entra>
-              <Entra atraso={120}>
-                <p
-                  className={
-                    longa
-                      ? "ap-confronto__pergunta ap-confronto__pergunta--longa"
-                      : "ap-confronto__pergunta"
-                  }
-                >
-                  {`“${pergunta}”`}
-                </p>
-              </Entra>
-            </>
-          ) : (
-            <>
-              <p className="ap-titulo-de-fato">
-                <Linhas linhas={titulo ?? []} atraso={0} />
-              </p>
-              {linhaFina ? (
-                <Entra atraso={140}>
-                  <p className="ap-texto" style={{ marginTop: 16 }}>
-                    {linhaFina}
-                  </p>
-                </Entra>
-              ) : null}
-            </>
-          )}
-        </div>
-        <div className="ap-confronto__direita">
-          <EscalaVertical
-            atraso={300}
-            itens={respostas.map(([t, x]) => ({ titulo: t, texto: x }))}
-          />
-        </div>
-      </div>
-      <Leitura
-        linhas={leitura}
-        atraso={300 + 320 + respostas.length * 160 + 200}
+      <path
+        d={d}
+        pathLength={1}
+        className={classe}
+        style={{ animationDelay: `${atraso}ms` }}
       />
+      {seta ? (
+        /* O giro mora no <g>: no movimento reduzido o CSS zera `transform` da
+           classe animada, e a ponta caía no canto do diagrama. */
+        <g transform={`translate(${seta.x} ${seta.y}) rotate(${giro[seta.dir]})`}>
+          <path
+            d="M -9 -7 L 0 0 L -9 7"
+            className={`ap-fio ap-surge${tom === "neutro" ? "" : ` ap-fio--${tom}`}`}
+            style={{ animationDelay: `${atraso + 560}ms` }}
+          />
+        </g>
+      ) : null}
     </>
   );
 }
 
-/** O MOSTRADOR — um valor em Mono 80 sobre o rótulo, com a régua de 1 px à esquerda. */
-export function Mostrador({
-  valor,
-  rotuloDo,
-  cor,
+/** O que atravessa um fio: um ponto que segue o mesmo caminho, uma vez. */
+export function Particula({
+  d,
+  atraso,
+  tom = "nexo",
+  duracao = 1500,
+}: {
+  d: string;
+  atraso: number;
+  tom?: "nexo" | "block" | "ok";
+  duracao?: number;
+}) {
+  return (
+    <span
+      aria-hidden="true"
+      className={tom === "nexo" ? "ap-particula" : `ap-particula ap-particula--${tom}`}
+      style={{
+        offsetPath: `path("${d}")`,
+        animationDelay: `${atraso}ms`,
+        animationDuration: `${duracao}ms`,
+      }}
+    />
+  );
+}
+
+/** UM NÓ do diagrama, posicionado em pixels. */
+export function No({
+  x,
+  y,
+  largura,
+  altura,
+  titulo,
+  texto,
+  icone,
+  variante,
+  atraso,
+  children,
+}: {
+  x: number;
+  y: number;
+  largura: number;
+  altura?: number;
+  titulo?: ReactNode;
+  texto?: ReactNode;
+  icone?: ReactNode;
+  variante?: "vazio" | "nexo" | "claro";
+  atraso: number;
+  children?: ReactNode;
+}) {
+  return (
+    <div
+      className={`ap-no ap-assenta${variante ? ` ap-no--${variante}` : ""}`}
+      style={{
+        left: x,
+        top: y,
+        width: largura,
+        height: altura,
+        animationDelay: `${atraso}ms`,
+      }}
+    >
+      {titulo ? (
+        <p className="ap-no__titulo">
+          {icone}
+          {titulo}
+        </p>
+      ) : null}
+      {texto ? <p className="ap-no__texto">{texto}</p> : null}
+      {children}
+    </div>
+  );
+}
+
+/* ──────────────────────────────────────────────────────────── checklist */
+
+export type ItemDoChecklist = {
+  titulo: string;
+  texto: string;
+  /** Campos a preencher na sala (dono, prazo): ficam tracejados, vazios. */
+  campos?: readonly string[];
+};
+
+/**
+ * O CHECKLIST do app — o "Antes de gerar" do Mapa —, na escala do palco: o que
+ * precisa estar feito para a ação final valer. Começa vazio de propósito: quem
+ * marca é a sala.
+ */
+export function Checklist({
+  titulo,
+  itens,
+  acao,
   atraso,
 }: {
-  valor: ReactNode;
-  rotuloDo: string;
-  cor?: string;
+  titulo: string;
+  itens: readonly ItemDoChecklist[];
+  acao?: string;
   atraso: number;
 }) {
   return (
-    <div className="ap-mostrador">
-      <span
-        className="ap-mascara ap-mostrador__valor"
-        style={cor ? { color: cor } : undefined}
-      >
-        <span className="ap-linha" style={{ animationDelay: `${atraso}ms` }}>
-          {valor}
-        </span>
-      </span>
-      <Entra atraso={atraso + 120}>
+    <div
+      className="ap-painel ap-check ap-entra"
+      style={{ animationDelay: `${atraso}ms` }}
+    >
+      <div className="ap-check__topo">
         <span
-          className="ap-mono-rotulo"
-          style={{ display: "block", marginTop: 16 }}
+          style={{ fontSize: 24, fontWeight: 500, color: "var(--ds-text-primary)" }}
         >
-          {rotuloDo}
+          {titulo}
         </span>
-      </Entra>
+        <span
+          style={{
+            fontFamily: MONO,
+            fontSize: 17,
+            color: "var(--ds-text-tertiary)",
+          }}
+        >
+          0 de {itens.length}
+        </span>
+      </div>
+      <div className="ap-check__barra" aria-hidden="true" />
+      {itens.map((item, i) => (
+        <div
+          key={item.titulo}
+          className="ap-check__item ap-entra"
+          style={{ animationDelay: `${atraso + 200 + i * 160}ms` }}
+        >
+          <span className="ap-check__caixa" aria-hidden="true" />
+          <div>
+            <p
+              style={{
+                margin: 0,
+                fontSize: 26,
+                fontWeight: 500,
+                letterSpacing: "-0.012em",
+                color: "var(--ds-text-primary)",
+              }}
+            >
+              {item.titulo}
+            </p>
+            <p className="ap-texto" style={{ marginTop: 4, fontSize: 21 }}>
+              {item.texto}
+            </p>
+          </div>
+          {item.campos ? (
+            <div className="ap-check__campos">
+              {item.campos.map((c) => (
+                <span key={c} className="ap-check__campo">
+                  {c}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <span />
+          )}
+        </div>
+      ))}
+      {acao ? (
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "flex-end",
+            paddingTop: 22,
+            boxShadow: "inset 0 1px 0 var(--ds-line-subtle)",
+          }}
+        >
+          <span
+            aria-disabled="true"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              height: 54,
+              padding: "0 28px",
+              borderRadius: 999,
+              background: "var(--ds-action-bg)",
+              color: "var(--ds-action-fg)",
+              opacity: 0.4,
+              fontSize: 21,
+              fontWeight: 500,
+            }}
+          >
+            {acao}
+          </span>
+        </div>
+      ) : null}
     </div>
   );
 }
