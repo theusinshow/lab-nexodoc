@@ -2361,7 +2361,8 @@ textarea {
   inset: 0 0 auto 0;
   z-index: 60;
   height: 2px;
-  background: var(--primary);
+  /* O violeta do aro do orbe (ds), nao o teal do tema antigo -- 02/10/2026. */
+  background: var(--ds-p-violeta-9, var(--primary));
   transform-origin: 0 50%;
   transform: scaleX(0);
   opacity: 0;

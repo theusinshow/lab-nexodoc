@@ -11,6 +11,7 @@
 import type { CaracterizacaoDaObra } from "@/lib/caracterizacao-obra";
 import type { LeituraDaCapa } from "@/lib/leitura-da-capa";
 import type { FichaDoDrop } from "./lib/ficha-do-drop";
+import type { FichaDoMemorial } from "./lib/ficha-do-memorial";
 
 /** Arquivo enviado pelo usuario, antes/depois de classificado. */
 export interface NexoInputFile {
@@ -371,6 +372,11 @@ export interface NexoChatMessage {
    * é recibo de anexo.
    */
   ficha?: FichaDoDrop;
+  /**
+   * A FICHA DO MEMORIAL — o que a capa trouxe, linha a linha, cada uma
+   * corrigível na própria ficha. Ver `lib/ficha-do-memorial.ts`.
+   */
+  fichaDoMemorial?: FichaDoMemorial;
   /**
    * O BASTIDOR DO TURNO em uma linha ("leu 23 selos · propôs LD · 8,4s").
    *

@@ -20,7 +20,9 @@
 
 import { useEffect } from "react";
 
-const TRABALHANDO = "/marca/orbe-trabalhando-32.png";
+import { VERSAO_DA_MARCA } from "./versao-da-marca";
+
+const TRABALHANDO = `/marca/orbe-trabalhando-32.png?v=${VERSAO_DA_MARCA}`;
 
 export function FaviconVivo({ trabalhando }: { trabalhando: boolean }) {
   useEffect(() => {

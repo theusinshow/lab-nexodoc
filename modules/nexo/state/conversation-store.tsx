@@ -219,6 +219,11 @@ interface ConversationStoreValue {
   /** Resultados gerados (com URLs vivas) — reidratados do IndexedDB no restore. */
   results: SavedResult[];
   appendMessage: (m: NexoChatMessage) => void;
+  /**
+   * Troca campos de uma mensagem já gravada (ex.: a ficha do memorial depois de
+   * uma correção). Persiste como o `appendMessage`.
+   */
+  atualizarMensagem: (id: string, patch: Partial<Omit<NexoChatMessage, "id" | "role">>) => void;
   /** Faz a última mensagem crescer (streaming). NÃO persiste — só memória. */
   appendDelta: (id: string, text: string) => void;
   /** Fecha o turno transmitido e persiste de uma vez. */
@@ -1053,6 +1058,14 @@ export function ConversationStoreProvider({ children }: { children: ReactNode })
         setTitle((t) => deriveTitle(t, next, snapshotRef.current.seloResults, snapshotRef.current.memorialMeta?.dossie));
         return next;
       });
+      schedulePersist();
+    },
+    [schedulePersist],
+  );
+
+  const atualizarMensagem = useCallback(
+    (id: string, patch: Partial<Omit<NexoChatMessage, "id" | "role">>) => {
+      setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, ...patch } : m)));
       schedulePersist();
     },
     [schedulePersist],
@@ -2140,6 +2153,7 @@ export function ConversationStoreProvider({ children }: { children: ReactNode })
       gravacaoLocal,
       results,
       appendMessage,
+      atualizarMensagem,
       appendDelta,
       finalizeMessage,
       setSeloResults,
@@ -2196,6 +2210,7 @@ export function ConversationStoreProvider({ children }: { children: ReactNode })
       gravacaoLocal,
       results,
       appendMessage,
+      atualizarMensagem,
       appendDelta,
       finalizeMessage,
       setSeloResults,

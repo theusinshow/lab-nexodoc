@@ -138,3 +138,9 @@
 .ds .nx-vistas-nota { padding-left: 8px; font-size: 12px; color: var(--ds-text-tertiary); }
 .ds .nx-vistas-diff { margin-left: auto; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-family: var(--ds-font-mono); font-size: 11px; color: var(--ds-text-tertiary); }
 .ds .nx-palco-cabeca .nw-vistas { flex: none; } .ds .nx-palco-cabeca .nw-vistas button { white-space: nowrap; }
+
+/* O palco vazio de uma conversa de memorial: fala da auditoria, não do volume (02/10/2026). */
+.ds .nx-palco-vazio { display: grid; place-items: center; align-content: center; gap: 12px; height: 100%; min-height: 240px; padding: 24px; border-radius: var(--ds-radius-panel); box-shadow: inset 0 0 0 1px var(--ds-line-subtle); text-align: center; }
+.ds .nx-palco-vazio svg { width: 22px; height: 22px; color: var(--ds-text-tertiary); }
+.ds .nx-palco-vazio p { display: grid; gap: 6px; max-width: 36ch; margin: 0; font-size: var(--ds-text-sm); line-height: 1.55; color: var(--ds-text-secondary); }
+.ds .nx-palco-vazio b { font-family: var(--ds-font-mono); font-size: 12px; font-weight: 400; color: var(--ds-text-primary); overflow-wrap: anywhere; }
