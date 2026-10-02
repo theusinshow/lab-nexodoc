@@ -1,11 +1,14 @@
 import { redirect } from "next/navigation";
 
+import { Moldura } from "@/components/moldura/moldura";
+
 import { auth } from "@/auth";
 import { getUserAccess } from "@/lib/access-control";
 import { buildCallbackPath, redirectToLogin } from "@/lib/auth-redirect";
 import { lerContextoDaUrl } from "@/lib/contexto-da-url";
 import { isDatabaseConfigured } from "@/lib/db";
 import { isNexoEnabled } from "@/lib/feature-flags";
+import { carregarMoldura } from "@/lib/moldura";
 import { assertProjectAccess, getUserActor, normalizeEmail } from "@/lib/project-store";
 import type { ProjetoPedido } from "@/modules/nexo/lib/projeto-pedido";
 import { NexoWorkspace } from "@/modules/nexo";
@@ -49,9 +52,8 @@ export default async function NexoPage({
     redirect("/sem-acesso");
   }
 
-  // Full-bleed: o NexoWorkspace gerencia o próprio layout de 3 colunas full-height
-  // (sidebar | stage | copiloto). O resto do software (Projetos, admin,
-  // ferramentas antigas) mora no rodapé da sidebar — esta é a entrada.
+  // O NexoWorkspace gerencia o próprio layout de 3 colunas (sidebar | stage |
+  // copiloto) na altura que a moldura deixa embaixo do Topo.
   // O nome vem da SESSÃO (servidor): a saudação da entrada usa o primeiro, e o
   // bloco da conta (rodapé da barra lateral) usa nome + e-mail.
   const projetoPedido = await resolverProjetoPedido(params, session.user.email, session.user.name);
@@ -62,14 +64,27 @@ export default async function NexoPage({
     },
   });
 
+  const dados = await carregarMoldura(buildCallbackPath("/nexo", params));
+
+  /*
+   * A MOLDURA DO SISTEMA NOVO (migração, passo 5): o Topo em cima, o Nexo
+   * embaixo na altura que sobra (`.nx-mesa`).
+   *
+   * `buscaPropria`: no Nexo o Ctrl K ainda é da paleta dele (as ações dentro
+   * da conversa, "onde fica"). Duas paletas no mesmo atalho abririam juntas.
+   */
   return (
-    <NexoWorkspace
-      projetoPedido={projetoPedido}
-      contexto={contexto}
-      isAdmin={access.isAdmin}
-      nome={session.user.name}
-      email={session.user.email}
-    />
+    <Moldura dados={dados} atual="Nexo" buscaPropria>
+      <div className="nx-mesa">
+        <NexoWorkspace
+          projetoPedido={projetoPedido}
+          contexto={contexto}
+          isAdmin={access.isAdmin}
+          nome={session.user.name}
+          email={session.user.email}
+        />
+      </div>
+    </Moldura>
   );
 }
 

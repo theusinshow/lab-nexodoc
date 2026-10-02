@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
+
+import { FONTES_DS } from "@/lib/ds/fontes";
 import "./globals.css";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Suspense } from "react";
@@ -62,7 +64,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR" className={`${plexSans.variable} ${plexMono.variable}`}>
+    <html lang="pt-BR" className={`${plexSans.variable} ${plexMono.variable} ${FONTES_DS}`}>
       <body className="font-sans antialiased" suppressHydrationWarning>
         <a
           href="#main-content"

@@ -1,20 +1,19 @@
 import type { Metadata } from "next";
-import { AppShell } from "@/components/layout/app-shell";
+
+import "@/components/telas/nexo/pele-do-nexo.css";
 
 export const metadata: Metadata = {
   title: "Nexo",
   description: "Assistente que produz LD, capas, separatrizes, volume e auditoria",
 };
 
-export default function NexoLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  /*
-   * O `AppShell` é só a moldura: fundo, cor e altura da janela. O cabeçalho que
-   * ele tinha saiu — o topo do Nexo é a `BarraDoNexo`, que vive dentro dos
-   * providers e por isso sabe de qual obra é a conversa aberta.
-   */
-  return <AppShell>{children}</AppShell>;
+/*
+ * O NEXO NO SISTEMA NOVO (migração, passo 5). A moldura (Topo, avisos, aviso
+ * de tela pequena) vem da página, que é quem carrega os dados dela; aqui fica
+ * só a pele: o tema antigo remapeado para o ds enquanto as peças internas
+ * não são redesenhadas uma a uma. O `AppShell` saiu — era fundo, cor e altura,
+ * e a moldura faz os três.
+ */
+export default function NexoLayout({ children }: { children: React.ReactNode }) {
+  return children;
 }
