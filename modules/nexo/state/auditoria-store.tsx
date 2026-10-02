@@ -91,9 +91,15 @@ export function AuditoriaStoreProvider({ children }: { children: ReactNode }) {
       const i = atual.marcos.findIndex(
         (m) => m.passada === marco.passada && m.estado === marco.estado,
       );
+      /*
+       * Ao substituir, o HORÁRIO do primeiro marco fica (02/10/2026): os blocos
+       * mandam um "início" a cada bloco concluído, e trocar o `emMs` fazia a
+       * etapa parecer ter começado no último bloco — a barra da linha do tempo
+       * encolhia. A hora da atualização vai em `ultimoMs`, para o registro.
+       */
       const marcos =
         i >= 0
-          ? atual.marcos.map((m, j) => (j === i ? marco : m))
+          ? atual.marcos.map((m, j) => (j === i ? { ...marco, emMs: m.emMs, ultimoMs: marco.emMs } : m))
           : [...atual.marcos, marco];
       return { ...atual, marcos };
     });

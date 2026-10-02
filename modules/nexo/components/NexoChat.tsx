@@ -1,6 +1,7 @@
 "use client";
 
 import { Orbe } from "@/components/ds/basicos";
+import { Cronometro, Trelica } from "@/components/ds/micro";
 import { textoComRotulos } from "@/lib/rotulo-do-achado";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Loader2, FileText, X, Copy, Check, ArrowDown } from "lucide-react";
@@ -612,9 +613,7 @@ export function NexoChat({
                   {/* Resposta antiga do Nexo cita INC-014; a sigla que se lê é ACH (lib/rotulo-do-achado.ts). */}
                   {/* A resposta já nasceu e a primeira palavra ainda não chegou: o turno não fica mudo. */}
                   {busy && idx === messages.length - 1 && !m.content.trim() ? (
-                    <span className="cx-pensando" role="status" aria-label="Nexo está respondendo">
-                      pensando…
-                    </span>
+                    <Pensando />
                   ) : (
                     <MessageBubble role="assistant" content={textoComRotulos(m.content)} reveal={m.id === revealId} />
                   )}
@@ -1076,6 +1075,22 @@ function AttachmentChip({
         </button>
       )}
     </div>
+  );
+}
+
+/**
+ * O NEXO PENSANDO (desenho do lab, ref. Lattice Loader do React Bits): a
+ * treliça varrendo, a palavra e o tempo correndo desde que o turno começou.
+ * Some quando a primeira palavra chega — é o mesmo lugar onde ela vai entrar.
+ */
+function Pensando() {
+  const [desde] = useState(() => Date.now());
+  return (
+    <span className="cx-pensando" role="status" aria-label="Nexo está respondendo">
+      <Trelica />
+      <span>Pensando</span>
+      <Cronometro desde={desde} />
+    </span>
   );
 }
 

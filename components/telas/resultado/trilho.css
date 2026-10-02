@@ -70,7 +70,8 @@
 .ds .re-trilho > section, .ds .re-trilho > .re-nav { border-radius: 0; background: none; box-shadow: none; }
 .ds .re-trilho > * + * { border-top: 1px solid var(--ds-line-subtle); }
 .ds .re-trilho .re-estado::before { display: none; }
-.ds .re-trilho { box-shadow: var(--ds-edge), inset 0 1px 0 color-mix(in srgb, var(--re-tom) 60%, transparent); }
+/* Sem a linha colorida no topo (02/10/2026: lia como "borda de IA"). O veredito fica no selo. */
+.ds .re-trilho { box-shadow: var(--ds-edge); }
 .ds .re-corpo--compacto .re-estado { gap: 8px; padding: 12px 6px 10px; }
 .ds .re-corpo--compacto .re-nav, .ds .re-corpo--compacto .re-acoes { padding: 6px; }
 .ds .re-nav > .ds-dica-ancora { display: flex; }

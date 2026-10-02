@@ -83,6 +83,7 @@ export function usarLarguraDoCopiloto() {
   /** O usuário decidiu a largura: vale, é gravada, e cancela o modo documento. */
   const definir = useCallback((px: number) => {
     larguraGuardada = null;
+    compactadaDe = null;
     aplicar(px);
     gravar();
   }, []);
@@ -112,6 +113,29 @@ export function usarLarguraDoCopiloto() {
  * existe `localStorage`, e ler no primeiro render faria o HTML do servidor
  * divergir do cliente.
  */
+/*
+ * O CHAT CEDE ESPAÇO AO RESULTADO (02/10/2026, Matheus: "o chat não diminui
+ * para dar espaço à UI"). Com o parecer no palco, o chat cai para a largura
+ * compacta; quando o parecer sai, volta à de antes. Arrastar o divisor no
+ * meio-tempo é escolha da pessoa: a largura dela fica (ver `definir`).
+ */
+export const COMPACTA = 360;
+let compactadaDe: number | null = null;
+
+export function compactarParaOPalco() {
+  if (compactadaDe !== null || larguraGuardada !== null) return;
+  if (larguraAtual <= COMPACTA) return;
+  compactadaDe = larguraAtual;
+  aplicar(COMPACTA);
+}
+
+export function soltarDoPalco() {
+  if (compactadaDe === null) return;
+  const volta = compactadaDe;
+  compactadaDe = null;
+  aplicar(volta);
+}
+
 export function restaurarPreferencia() {
   const salvo = Number(window.localStorage.getItem(CHAVE));
   aplicar(Number.isFinite(salvo) && salvo > 0 ? salvo : PADRAO);
