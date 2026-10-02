@@ -1,140 +1,79 @@
-import { redirect } from "next/navigation";
-
-import { auth } from "@/auth";
-import { FundoDoAmbiente } from "@/components/ambiente/fundo-do-ambiente";
-import { PageHeader } from "@/components/layout/page-header";
-import { ProjectConsole, type ProjectConsoleItem } from "@/components/projects/project-console";
-import { getUserAccess } from "@/lib/access-control";
-import { redirectToLogin } from "@/lib/auth-redirect";
-import { getPrisma, isDatabaseConfigured } from "@/lib/db";
+import { Moldura } from "@/components/moldura/moldura";
+import { TelaProjetos, type ObraDaLista } from "@/components/telas/projetos/tela-projetos";
+import { cidadeDoCliente } from "@/lib/cliente-do-projeto";
+import { getPrisma } from "@/lib/db";
+import { carregarMoldura } from "@/lib/moldura";
 import { getUserActor, normalizeEmail } from "@/lib/project-store";
 
+/**
+ * PROJETOS no sistema novo: achar a obra e entrar nela. A consulta é a de
+ * antes (os projetos de quem lê, ou do escritório dele, atualizados primeiro),
+ * mais o que a tela nova mostra: a cidade, os três últimos eventos da obra e
+ * o que espera nela (achados abertos, e quantos com quem lê).
+ */
 export default async function ProjectsPage() {
-  const session = await auth();
-
-  if (!session?.user) {
-    redirectToLogin("/projetos");
-  }
-
-  const access = await getUserAccess(session.user.email, session.user.name);
-
-  if (!access.isActive) {
-    redirect("/sem-acesso");
-  }
-
-  if (!isDatabaseConfigured()) {
+  const dados = await carregarMoldura("/projetos");
+  if (dados.semBanco) {
     return (
-      <main className="mx-auto max-w-7xl space-y-6 px-5 py-6 sm:px-7">
-        <PageHeader
-          navegacao={{ ehAdmin: access.isAdmin }}
-          title="Projetos"
-          description="DATABASE_URL não está configurada. Configure o banco para consultar projetos."
-        />
-      </main>
+      <Moldura dados={dados} atual="Projetos">
+        <TelaProjetos obras={[]} semBanco podeCriar={false} />
+      </Moldura>
     );
   }
 
-  const actor = await getUserActor(normalizeEmail(session.user.email ?? ""), session.user.name);
-  const projects = await getPrisma().project.findMany({
+  const actor = await getUserActor(normalizeEmail(dados.usuario.email), dados.usuario.nome);
+  const projetos = await getPrisma().project.findMany({
     where: {
       deletedAt: null,
-      OR: [
-        { ownerEmail: actor.email },
-        {
-          organization: {
-            members: {
-              some: {
-                email: actor.email,
-                status: "ACTIVE",
-              },
-            },
-          },
-        },
-      ],
+      OR: [{ ownerEmail: actor.email }, { organization: { members: { some: { email: actor.email, status: "ACTIVE" } } } }],
     },
     include: {
-      _count: {
-        select: {
-          documents: true,
-          uploads: true,
-          artifacts: true,
-          events: true,
-        },
-      },
+      _count: { select: { documents: true, uploads: true, artifacts: true, events: true } },
+      events: { orderBy: { createdAt: "desc" }, take: 3, select: { title: true, createdAt: true } },
     },
     orderBy: { updatedAt: "desc" },
   });
 
   /*
-   * O QUE ESPERA EM CADA PROJETO (P01): achados atribuídos e abertos, e quantos
-   * estão com quem lê. Uma consulta para a página inteira, não uma por cartão.
+   * O QUE ESPERA EM CADA OBRA: achados atribuídos e abertos, e quantos estão
+   * com quem lê. Uma consulta para a página inteira, não uma por linha.
    */
   const abertos = await getPrisma().auditFeedback.findMany({
-    where: {
-      resolvedAt: null,
-      assigneeEmail: { not: null },
-      audit: { projectId: { in: projects.map((p) => p.id) } },
-    },
+    where: { resolvedAt: null, assigneeEmail: { not: null }, audit: { projectId: { in: projetos.map((p) => p.id) } } },
     select: { assigneeEmail: true, audit: { select: { projectId: true } } },
   });
-  const pendencias = new Map<string, { pendentes: number; comVoce: number }>();
+  const espera = new Map<string, { pendentes: number; comVoce: number }>();
   for (const a of abertos) {
     const id = a.audit.projectId;
     if (!id) continue;
-    const atual = pendencias.get(id) ?? { pendentes: 0, comVoce: 0 };
+    const atual = espera.get(id) ?? { pendentes: 0, comVoce: 0 };
     atual.pendentes += 1;
     if (a.assigneeEmail?.toLowerCase() === actor.email.toLowerCase()) atual.comVoce += 1;
-    pendencias.set(id, atual);
+    espera.set(id, atual);
   }
 
+  const obras: ObraDaLista[] = projetos.map((p) => ({
+    id: p.id,
+    codigo: p.code,
+    nome: p.name,
+    cliente: p.client,
+    cidade: cidadeDoCliente(p.client),
+    observacoes: p.description,
+    arquivada: p.status === "ARCHIVED",
+    atualizadoEm: p.updatedAt.toISOString(),
+    contagens: { documentos: p._count.documents, arquivos: p._count.uploads, gerados: p._count.artifacts, eventos: p._count.events },
+    pendentes: espera.get(p.id)?.pendentes ?? 0,
+    comVoce: espera.get(p.id)?.comVoce ?? 0,
+    ultimos: p.events.map((e) => ({ quando: e.createdAt.toISOString(), oque: e.title })),
+  }));
+
+  // Cadastrar projeto é ato de coordenação (a API recusa MEMBER): o botão não promete o que não vai fazer.
+  const papel = dados.usuario.papelNoEscritorio;
+  const podeCriar = dados.usuario.ehAdmin || papel === "OWNER" || papel === "ADMIN";
+
   return (
-    <main className="mx-auto max-w-7xl space-y-6 px-5 py-6 sm:px-7">
-      {/* Atmosfera: esta tela nao tem orbe vivo, que e a condicao para o campo
-          existir. Ver a regra em `campo-neural.tsx`. */}
-      <FundoDoAmbiente />
-      <PageHeader
-        navegacao={{ ehAdmin: access.isAdmin }}
-        title="Projetos"
-        description="Os projetos do escritório, com o que está esperando em cada um. Arquivados ficam no filtro Arquivados; criar um projeto é em “Novo projeto”."
-      />
-
-      {/* Sem portão de tela larga desde a P01: com a lista primeiro e o cadastro
-          sob demanda, a tela cabe numa coluna. */}
-      <ProjectConsole
-        initialProjects={projects.map((p) => ({ ...serializeProject(p), ...(pendencias.get(p.id) ?? {}) }))}
-      />
-    </main>
+    <Moldura dados={dados} atual="Projetos">
+      <TelaProjetos obras={obras} semBanco={false} podeCriar={podeCriar} />
+    </Moldura>
   );
-}
-
-function serializeProject(project: {
-  id: string;
-  code: string;
-  name: string;
-  client: string;
-  description: string;
-  status: string;
-  updatedAt: Date;
-  _count: {
-    documents: number;
-    uploads: number;
-    artifacts: number;
-    events: number;
-  };
-}): ProjectConsoleItem {
-  return {
-    id: project.id,
-    code: project.code,
-    name: project.name,
-    client: project.client,
-    description: project.description,
-    status: project.status,
-    updatedAt: project.updatedAt.toISOString(),
-    counts: {
-      documents: project._count.documents,
-      uploads: project._count.uploads,
-      artifacts: project._count.artifacts,
-      events: project._count.events,
-    },
-  };
 }

@@ -87,6 +87,51 @@ const telas = [
     await p.waitForTimeout(2500);
     ok(/\/nexo\?auditoria=/.test(p.url()), "achados: Enter abre o parecer no Nexo", p.url().replace(BASE, ""));
   }],
+  ["projetos", async () => {
+    await abrir("/projetos");
+    ok((await p.locator(".md-raiz .mp.pj").count()) === 1, "projetos: a tela nova dentro da moldura");
+    const linhas = await p.locator(".pj-grade .mp-g-linha").count();
+    ok(linhas >= 1, "projetos: as obras em andamento na tabela", String(linhas));
+    ok((await p.locator(".mp-lado-titulo", { hasText: "Por onde começar" }).count()) === 1, "projetos: sem obra escolhida, 'por onde começar'");
+    await p.mouse.click(5, LARGURA * 0.5);
+    await tecla("j");
+    ok((await p.locator(".pj-obra-nome").count()) === 1, "projetos: J escolhe a obra e mostra o lado dela");
+    await p.screenshot({ path: `${OUT}/projetos-escolhida-${LARGURA}.png` });
+    // arquivar e voltar: a mesma obra, de ida e volta, pela API de verdade
+    const codigo = await p.locator(".pj-obra-cabeca .mp-mono").innerText();
+    await p.locator(".mp-acao", { hasText: "Arquivar" }).click();
+    await p.waitForTimeout(3000);
+    ok((await p.locator(".pc-aviso", { hasText: "arquivado" }).count()) >= 1, "projetos: arquivar avisa", codigo);
+    await p.locator('.mp-abas [role=tab]', { hasText: "Arquivados" }).click();
+    await p.waitForTimeout(500);
+    await p.locator(".pj-grade .mp-g-linha", { hasText: codigo }).first().click();
+    await p.waitForTimeout(500);
+    await p.locator(".mp-acao", { hasText: "Voltar para em andamento" }).click();
+    await p.waitForTimeout(3000);
+    ok((await p.locator(".pc-aviso", { hasText: "voltou para em andamento" }).count()) >= 1, "projetos: voltar para em andamento avisa", codigo);
+    await p.locator('.mp-abas [role=tab]', { hasText: "Em andamento" }).click();
+    await p.waitForTimeout(500);
+    await tecla("/");
+    await p.keyboard.type("zzzz obra que nao existe");
+    await p.waitForTimeout(400);
+    ok((await p.locator(".pj-sem").count()) === 1, "projetos: busca sem resultado tem a saída");
+    await p.keyboard.press("Escape");
+    await p.locator(".pj-busca input").fill("");
+    if ((await p.locator("button", { hasText: "Novo projeto" }).count()) > 0) {
+      await p.mouse.click(5, LARGURA * 0.5);
+      await tecla("n");
+      ok((await p.locator(".mp-form", { hasText: "Novo projeto" }).count()) === 1, "projetos: N abre o cadastro no lado");
+      await p.locator(".mp-form button[type=submit]").click();
+      await p.waitForTimeout(400);
+      ok(/Informe código e nome/.test(await p.locator(".mp-form").innerText()), "projetos: cadastro vazio diz o que falta");
+      await tecla("Escape");
+    }
+    await p.mouse.click(5, LARGURA * 0.5);
+    await tecla("j");
+    await tecla("Enter");
+    await p.waitForTimeout(3000);
+    ok(/\/projetos\/[^/]+$/.test(new URL(p.url()).pathname), "projetos: Enter entra na obra", new URL(p.url()).pathname);
+  }],
 ];
 
 for (const [nome, rodar] of telas) {
