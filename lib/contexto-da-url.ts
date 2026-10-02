@@ -33,7 +33,13 @@ export interface ContextoDaUrl {
   /** Só existe com `auditoria` — achado solto não diz de qual parecer é. */
   achado: string | null;
   intencao: IntencaoDeLink | null;
+  /** Uma mensagem em texto livre (a busca do topo, "Perguntar ao Nexo"): chega
+   *  ESCRITO no composer, sem enviar — a pessoa ainda confirma com Enter. */
+  mensagem: string | null;
 }
+
+/** Teto da mensagem: é uma frase, não um documento colado na URL. */
+const MENSAGEM_MAX = 500;
 
 type Leitor = { get(nome: string): string | null };
 
@@ -57,6 +63,7 @@ export function lerContextoDaUrl(query: string | Leitor): ContextoDaUrl {
     auditoria,
     achado: auditoria ? id(p.get("achado")) : null,
     intencao,
+    mensagem: (p.get("mensagem") ?? "").trim().slice(0, MENSAGEM_MAX) || null,
   };
 }
 
@@ -72,6 +79,7 @@ export function linkDoNexo(ctx: Partial<ContextoDaUrl>): string {
   if (ctx.auditoria) q.set("auditoria", ctx.auditoria);
   if (ctx.auditoria && ctx.achado) q.set("achado", ctx.achado);
   if (ctx.intencao) q.set("intencao", ctx.intencao);
+  if (ctx.mensagem) q.set("mensagem", ctx.mensagem.trim().slice(0, MENSAGEM_MAX));
   const s = q.toString();
   return s ? `/nexo?${s}` : "/nexo";
 }
@@ -84,7 +92,7 @@ export function linkDoNexo(ctx: Partial<ContextoDaUrl>): string {
  * por cima trocaria silenciosamente o projeto B pelo A.
  */
 export function urlMandaNoDestino(ctx: ContextoDaUrl): boolean {
-  return Boolean(ctx.conversa || ctx.auditoria || ctx.projeto || ctx.intencao);
+  return Boolean(ctx.conversa || ctx.auditoria || ctx.projeto || ctx.intencao || ctx.mensagem);
 }
 
 export type DecisaoDeProjeto =

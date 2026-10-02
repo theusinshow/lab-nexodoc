@@ -96,8 +96,10 @@ export default {
     // ACONTECEU — sem ele, "0 leituras" passa igual quando o reanexo nunca
     // rodou. E "sem reler" só prova algo se as DUAS pranchas certas — pelo
     // nome, não pela contagem — estiverem de volta na conversa.
+    // Desde 8143762 (30/09) o reanexo não passa mais pelo lote novo ("Anexei N
+    // folhas" + ficha): guarda os bytes de volta e diz isso numa linha.
     const reanexou = await ctx.esperar(
-      async () => (await page.getByText(/Anexei 2 folhas/).count()) >= 2,
+      async () => (await page.getByText(/Recebi de volta os 2 arquivos das pranchas/).count()) >= 1,
       60_000,
     );
     await page.waitForTimeout(1500);

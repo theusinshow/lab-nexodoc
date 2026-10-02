@@ -60,6 +60,7 @@ const CONTEXTO_VAZIO: ContextoDaUrl = {
   auditoria: null,
   achado: null,
   intencao: null,
+  mensagem: null,
 };
 import {
   ultimaConversaLembrada,
@@ -1734,8 +1735,9 @@ function NexoWorkspaceInner({
   const intencaoAplicada = useRef(false);
   useEffect(() => {
     if (intencaoAplicada.current || typeof window === "undefined") return;
-    const partida = partidaPorId(contexto.intencao);
-    if (!partida) return;
+    // A mensagem escrita na busca do topo ganha da intenção: é o mais específico.
+    const frase = contexto.mensagem ?? partidaPorId(contexto.intencao)?.frase;
+    if (!frase) return;
     /*
      * `requestAnimationFrame` porque o composer só se registra depois de o
      * NexoChat montar — sem a espera, `fill` cairia no controle de mentira que
@@ -1748,10 +1750,10 @@ function NexoWorkspaceInner({
      */
     const raf = requestAnimationFrame(() => {
       intencaoAplicada.current = true;
-      composer.fill(partida.frase);
+      composer.fill(frase);
     });
     return () => cancelAnimationFrame(raf);
-  }, [composer, contexto.intencao]);
+  }, [composer, contexto.intencao, contexto.mensagem]);
 
   const [started, setStarted] = useState(false);
   const start = () => {

@@ -57,6 +57,15 @@ test("link canonico escreve `projeto`, nunca `project`, e ida e volta fecha", ()
   assert.equal(linkDoNexo({ achado: "INC-1" }), "/nexo");
 });
 
+test("mensagem livre ida e volta, aparada e com teto", () => {
+  const url = linkDoNexo({ mensagem: "  refaz a LD da 063-26 " });
+  const lido = lerContextoDaUrl(url.split("?")[1]);
+  assert.equal(lido.mensagem, "refaz a LD da 063-26");
+  assert.equal(lerContextoDaUrl("?mensagem=").mensagem, null);
+  assert.equal(lerContextoDaUrl(`?mensagem=${"a".repeat(900)}`).mensagem?.length, 500);
+  assert.equal(urlMandaNoDestino(lido), true);
+});
+
 test("destino explicito suprime a restauracao da ultima conversa", () => {
   assert.equal(urlMandaNoDestino(lerContextoDaUrl("")), false);
   for (const q of ["?projeto=b", "?project=b", "?conversa=c", "?auditoria=a", "?intencao=auditar"]) {

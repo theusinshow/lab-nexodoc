@@ -25,16 +25,20 @@
   --ds-p-gray-3: #181a1f;
   --ds-p-gray-4: #1f2127;
   --ds-p-gray-5: #2a2d35;
-  --ds-p-gray-7: #80858f;
+  --ds-p-gray-7: #8a8f99;
   --ds-p-gray-9: #a4a8b3;
   --ds-p-gray-12: #eeeff2;
   --ds-p-paper: #f2f3f5;
   --ds-p-ink: #0a0b0d;
 
-  /* ---------- primitivos: íris (a cor do Nexo) ---------- */
-  --ds-p-iris-9: #a3a6ff;
-  --ds-p-iris-10: #7c80f5;
-  --ds-p-iris-12: #d4d5ff;
+  /* ---------- primitivos: violeta (a cor do Nexo, a do aro do orbe) ----------
+     Desde 01/10/2026 a cor viva da interface é a do próprio orbe: 9 é o aro
+     (CORES_DO_ORBE.aro), 10 é a alma profunda, 12 a lâmina clara. Substitui a
+     íris (#a3a6ff), com mais contraste em todo plano: 9 dá 9,5:1 na página e
+     7,7:1 no overlay; 10 dá 4,4:1 no overlay e 3,6:1 com branco por cima. */
+  --ds-p-violeta-9: #c3a3ff;
+  --ds-p-violeta-10: #9a6cf0;
+  --ds-p-violeta-12: #e2d4ff;
 
   /* ---------- primitivos: sinais ---------- */
   --ds-p-coral: #ff7d6e;
@@ -55,12 +59,16 @@
   --ds-surface-overlay: var(--ds-p-gray-4);
 
   /* Texto. O terciário era #6C717C na proposta v1 e REPROVAVA para texto
-     pequeno (4,07:1 no melhor fundo). #80858F dá 5,4:1 na página e 4,7:1 na
-     superfície erguida — o piso de 4,5:1 vale em todos os planos de uso. */
+     pequeno (4,07:1 no melhor fundo). #80858F passava na página, mas a
+     auditoria de 01/10 mediu 4,2–4,4:1 nas superfícies de cima (overlay,
+     linha escolhida, aviso). #8A8F99 dá 6,1:1 na página e 4,8:1 no overlay:
+     o piso de 4,5:1 vale em todos os planos de uso. Em papel (botão claro),
+     o texto fraco é o --ds-text-on-paper-muted. */
   --ds-text-primary: var(--ds-p-gray-12);
   --ds-text-secondary: var(--ds-p-gray-9);
   --ds-text-tertiary: var(--ds-p-gray-7);
   --ds-text-on-paper: var(--ds-p-ink);
+  --ds-text-on-paper-muted: #575c66;
 
   /* Linhas. Borda é luz, não cor: branco em alfa baixo, desenhado como sombra
      interna (não ocupa pixel de layout e não desalinha ícone com texto). */
@@ -70,13 +78,13 @@
 
   /* O Nexo. ÚNICA cor viva da interface, e só com quatro sentidos: o Nexo está
      presente, o Nexo está trabalhando, isto está selecionado, isto tem foco.
-     Usar íris para decorar gasta o único sinal que a tela tem. */
-  --ds-nexo: var(--ds-p-iris-9);
-  --ds-nexo-strong: var(--ds-p-iris-10);
-  --ds-nexo-soft: var(--ds-p-iris-12);
-  --ds-nexo-wash: rgb(163 166 255 / 0.1);
-  --ds-nexo-line: rgb(163 166 255 / 0.35);
-  --ds-focus-ring: var(--ds-p-iris-9);
+     Usar o violeta para decorar gasta o único sinal que a tela tem. */
+  --ds-nexo: var(--ds-p-violeta-9);
+  --ds-nexo-strong: var(--ds-p-violeta-10);
+  --ds-nexo-soft: var(--ds-p-violeta-12);
+  --ds-nexo-wash: color-mix(in srgb, var(--ds-nexo) 10%, transparent);
+  --ds-nexo-line: color-mix(in srgb, var(--ds-nexo) 35%, transparent);
+  --ds-focus-ring: var(--ds-p-violeta-9);
 
   /* A ação principal é CLARA, não colorida: uma pílula de papel por tela. A
      cor do Nexo continua livre para dizer que ele está vivo. */
@@ -196,7 +204,7 @@
 /* FOCO. O globals.css antigo pinta um anel teal em todo a/button/input/
    textarea com especificidade (0,3,1), e ele vazava para dentro do sistema
    novo. O `:focus-visible` repetido empata a especificidade e, vindo depois,
-   vence: o anel daqui é íris, afastado 2 px do elemento pelo fundo da página. */
+   vence: o anel daqui é violeta, afastado 2 px do elemento pelo fundo da página. */
 .ds :focus-visible {
   outline: none;
 }
@@ -206,7 +214,7 @@
   box-shadow: 0 0 0 2px var(--ds-surface-page), 0 0 0 4px var(--ds-focus-ring);
 }
 .ds ::selection {
-  background: rgb(163 166 255 / 0.3);
+  background: color-mix(in srgb, var(--ds-nexo) 30%, transparent);
 }
 .ds .ds-num {
   font-variant-numeric: tabular-nums;
@@ -386,6 +394,8 @@
   box-shadow: inset 0 0 0 1px var(--ds-line-default);
   white-space: nowrap;
 }
+/* tecla dentro do botão claro: cinza de papel, não o terciário do escuro */
+.ds .ds-btn--primary .ds-kbd { color: var(--ds-text-on-paper-muted); box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.14); }
 .ds .ds-avatar {
   width: 28px;
   height: 28px;
@@ -436,45 +446,79 @@
 .ds .ds-menu-texto small { font-size: 11.5px; color: var(--ds-text-tertiary); }
 
 /* ---------- esqueleto ---------- */
+/* ---------- esqueleto: a forma do que vem, enquanto o servidor responde ----------
+   - só aparece depois de 120 ms: carga rápida não pisca bloco cinza na tela;
+   - a luz que passa é UMA para a tela inteira (fundo preso à janela), e não
+     uma por bloco correndo fora de compasso: os blocos acendem em fila, como
+     uma linha só varrendo a página, e descansam entre uma passada e outra;
+   - movimento reduzido: o bloco fica parado. */
 .ds .ds-skel {
   border-radius: 6px;
-  background: linear-gradient(100deg, rgb(255 255 255 / 0.035) 30%, rgb(255 255 255 / 0.08) 50%, rgb(255 255 255 / 0.035) 70%);
-  background-size: 220% 100%;
-  animation: ds-varrer 1.6s linear infinite;
+  background-color: rgb(255 255 255 / 0.045);
+  background-image: linear-gradient(100deg, transparent 0 44%, rgb(255 255 255 / 0.055) 50%, transparent 56% 100%);
+  background-size: 300vw 100vh;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  background-position: 100vw 0;
+  animation: ds-skel-entra 0.24s 0.12s both, ds-skel-varre 2.2s 0.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+@keyframes ds-skel-entra { from { opacity: 0; } }
+@keyframes ds-skel-varre {
+  from { background-position: 100vw 0; }
+  70%, to { background-position: -200vw 0; }
+}
+
+/* ---------- girando: ação curta esperando o servidor (Girando em basicos.tsx) ----------
+   Um anel fino com um quarto aceso, na cor do texto em volta: dentro de um
+   botão ele toma o lugar do ícone e o botão não muda de largura. O Nexo
+   trabalhando nunca usa isto (usa o orbe), nem progresso que tem conta. */
+.ds .ds-gira {
+  --t: 14px;
+  display: inline-block;
+  flex: none;
+  width: var(--t);
+  height: var(--t);
+  border-radius: 50%;
+  border: 1.5px solid color-mix(in srgb, currentColor 22%, transparent);
+  border-top-color: currentColor;
+  animation: ds-gira 0.75s linear infinite;
+}
+@keyframes ds-gira { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .ds .ds-skel { animation: ds-skel-entra 0.24s 0.12s both; }
+  .ds .ds-gira { animation-duration: 1.8s; }
 }
 @keyframes ds-varrer {
   from { background-position: 100% 0; }
   to { background-position: -100% 0; }
 }
 
-/* ---------- esfera (provisória: a definitiva é assunto à parte) ---------- */
+/* ---------- orbe pequeno: o quadro capturado do orbe vivo (Orbe em basicos.tsx) ----------
+   `--s` é o diâmetro da esfera; o PNG tem 8% de margem em volta (34 / 0,84),
+   então a imagem transborda a caixa por igual e o layout mede só a esfera.
+   Em repouso, parado. Trabalhando, a tira de 18 quadros roda por cima. */
 .ds .ds-orbe {
   --s: 120px;
   display: block;
   position: relative;
   width: var(--s);
   height: var(--s);
-  border-radius: 50%;
   flex: none;
-  background:
-    radial-gradient(circle at 32% 28%, rgb(255 255 255 / 0.85) 0 4%, transparent 22%),
-    conic-gradient(from 0deg, #8c8fff, #6fc3ff, #e8b7ff, #ffc98a, #9ea2ff, #8c8fff);
-  box-shadow: inset 0 0 calc(var(--s) * 0.18) rgb(8 9 11 / 0.55), 0 0 calc(var(--s) * 0.5) rgb(140 143 255 / 0.28);
-  animation: ds-girar 14s linear infinite;
 }
+.ds .ds-orbe::before,
 .ds .ds-orbe::after {
   content: "";
   position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  background:
-    radial-gradient(circle at 70% 78%, rgb(8 9 11 / 0.55), transparent 55%),
-    radial-gradient(circle at 50% 50%, transparent 58%, rgb(255 255 255 / 0.18) 70%, transparent 72%);
-  animation: ds-girar 14s linear infinite reverse;
+  inset: calc(var(--s) * -0.0952);
+  background-repeat: no-repeat;
 }
-.ds .ds-orbe[data-estado="trabalhando"],
-.ds .ds-orbe[data-estado="trabalhando"]::after { animation-duration: 4s; }
-@keyframes ds-girar { to { transform: rotate(360deg); } }
+.ds .ds-orbe::before { background-image: var(--ds-orbe-parado); background-size: 100% 100%; }
+.ds .ds-orbe::after { opacity: 0; background-image: var(--ds-orbe-tira, none); background-size: 1800% 100%; }
+.ds .ds-orbe[data-estado="trabalhando"]::after { opacity: 1; animation: ds-orbe-vive 1.5s steps(18, jump-none) infinite; }
+@keyframes ds-orbe-vive { from { background-position-x: 0%; } to { background-position-x: 100%; } }
+@media (prefers-reduced-motion: reduce) {
+  .ds .ds-orbe::after { content: none; }
+}
 
 /* =====================================================================
  * GRÁFICOS (components/ds/graficos.tsx) — monocromáticos, no idioma da
@@ -529,6 +573,7 @@
 .ds .gr-pilula--passou { background: var(--ds-sev-decide) !important; }
 .ds .gr-passo--futuro .gr-pilula { background: none; box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.18); border: 0; background-image: repeating-linear-gradient(90deg, rgb(255 255 255 / 0.12) 0 4px, transparent 4px 8px); background-size: 100% 1px; background-repeat: no-repeat; background-position: 0 50%; }
 .ds .gr-passo--erro .gr-pilula { background: var(--ds-state-error); }
+.ds .gr-passo--erro .gr-pilula-valor { color: var(--ds-p-ink); }
 .ds .gr-previsto { position: absolute; top: -2px; bottom: -2px; border-radius: 999px; box-shadow: inset 0 0 0 1px var(--ds-nexo-line); pointer-events: none; }
 @keyframes gr-correr { to { transform: translateX(100%); } }
 .ds .gr-passo-tempo { font-family: var(--ds-font-mono); font-size: 11.5px; color: var(--ds-text-secondary); text-align: right; font-variant-numeric: tabular-nums; }
@@ -555,7 +600,7 @@
 }
 .ds .gr-pagina--lida { box-shadow: none; background: rgb(255 255 255 / calc(0.06 + var(--tom))); }
 .ds .gr-pagina--atual { box-shadow: inset 0 0 0 1.5px var(--ds-nexo); background: var(--ds-nexo-wash); animation: gr-ler 1.4s ease-in-out infinite; }
-@keyframes gr-ler { 50% { background: rgb(163 166 255 / 0.28); } }
+@keyframes gr-ler { 50% { background: color-mix(in srgb, var(--ds-nexo) 28%, transparent); } }
 /* filter, não opacity: a opacidade é do motion (entrada), e o estilo em linha dele venceria */
 .ds .gr-pagina { transition: background var(--ds-dur-state), filter var(--ds-dur-feedback); }
 .ds .gr-pagina--recua { filter: opacity(0.22); }
@@ -626,7 +671,7 @@
 .ds .gr-acumulada svg { display: block; width: 100%; overflow: visible; }
 .ds .gr-acumulada-linha { fill: none; stroke: #c9ccd4; stroke-width: 1.5; stroke-linejoin: round; }
 .ds .gr-acumulada-area { stroke: none; }
-.ds .gr-acumulada-ponto { position: absolute; right: -3px; width: 6px; height: 6px; margin-top: -3px; border-radius: 50%; background: var(--ds-nexo); box-shadow: 0 0 0 3px rgb(163 166 255 / 0.18); }
+.ds .gr-acumulada-ponto { position: absolute; right: -3px; width: 6px; height: 6px; margin-top: -3px; border-radius: 50%; background: var(--ds-nexo); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ds-nexo) 18%, transparent); }
 
 /* ---------- barras por mês ---------- */
 .ds .gr-meses { display: flex; align-items: flex-end; gap: 8px; }

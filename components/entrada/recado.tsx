@@ -1,10 +1,10 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
-import { LoaderCircle, Mail } from "lucide-react";
+import { Mail } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
-import { Botao, Tecla } from "@/components/ds/basicos";
+import { Botao, Girando, Tecla } from "@/components/ds/basicos";
 import { LIMITE_DE_MENSAGEM } from "@/lib/contato-limites";
 
 import { Aviso, type TomDoAviso } from "./aviso";
@@ -108,7 +108,7 @@ export function Recado({ enviarRecado }: { enviarRecado: (dados: FormData) => Pr
             {desfecho && <Aviso tom={desfecho.tom}>{desfecho.texto}</Aviso>}
             <div className="en-form-acoes">
               <Botao variante="ghost" tamanho="sm" type="submit" disabled={enviando}>
-                {enviando && <LoaderCircle size={14} className="en-gira" aria-hidden />}
+                {enviando && <Girando tamanho={13} />}
                 {enviando ? "Enviando" : "Enviar recado"}
               </Botao>
               <Botao variante="quiet" tamanho="sm" onClick={() => setAberto(false)}>

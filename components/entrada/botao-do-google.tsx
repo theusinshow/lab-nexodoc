@@ -1,7 +1,8 @@
 "use client";
 
-import { LoaderCircle } from "lucide-react";
 import { useFormStatus } from "react-dom";
+
+import { Girando } from "@/components/ds/basicos";
 
 /** O "G" do Google fica colorido: é a única cor de fora na tela (marca de terceiro, sinal de confiança). */
 function MarcaDoGoogle() {
@@ -23,7 +24,7 @@ export function BotaoDoGoogle({ descritoPor }: { descritoPor: string }) {
   const { pending } = useFormStatus();
   return (
     <button type="submit" className="en-google" disabled={pending} aria-describedby={descritoPor}>
-      {pending ? <LoaderCircle size={16} className="en-gira" aria-hidden /> : <MarcaDoGoogle />}
+      {pending ? <Girando tamanho={15} /> : <MarcaDoGoogle />}
       {pending ? "Indo para o Google" : "Entrar com Google"}
     </button>
   );

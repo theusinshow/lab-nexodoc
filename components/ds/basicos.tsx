@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion } from "motion/react";
 import { Check, ChevronDown } from "lucide-react";
-import { useEffect, useId, useRef, useState, type ButtonHTMLAttributes, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ComponentPropsWithRef, type ReactNode } from "react";
 
 import { CURVA } from "@/lib/ds/movimento";
 import { useTempo } from "@/lib/ds/tempo";
@@ -21,7 +21,7 @@ export function Botao({
   className = "",
   children,
   ...resto
-}: ButtonHTMLAttributes<HTMLButtonElement> & { variante?: Variante; tamanho?: "sm"; icone?: boolean }) {
+}: ComponentPropsWithRef<"button"> & { variante?: Variante; tamanho?: "sm"; icone?: boolean }) {
   const cls = ["ds-btn", `ds-btn--${variante}`, tamanho === "sm" && "ds-btn--sm", icone && "ds-btn--icon", className]
     .filter(Boolean)
     .join(" ");
@@ -155,8 +155,31 @@ export function Seletor<T extends string>({
   );
 }
 
+/**
+ * O ORBE PEQUENO: o quadro capturado do orbe vivo (public/marca, violeta → coral),
+ * e não um desenho à parte. `tamanho` é o diâmetro da esfera; o PNG tem 8% de
+ * margem em volta, que a caixa absorve sem mexer no layout.
+ *
+ * Em repouso é a marca parada. Trabalhando, a tira de 18 quadros roda: o orbe é
+ * a única coisa que vive sozinha na tela, e só enquanto há trabalho.
+ * O arquivo sai pelo tamanho na tela em 2× (um PNG grande reduzido fica mole).
+ */
 export function Orbe({ tamanho, estado = "repouso" }: { tamanho: number; estado?: "repouso" | "trabalhando" }) {
-  return <span className="ds-orbe" data-estado={estado} style={{ ["--s" as string]: `${tamanho}px` }} aria-hidden />;
+  const px = (tamanho / 0.84) * 2;
+  const parado = px <= 64 ? "/marca/orbe-64.png" : px <= 180 ? "/marca/orbe-180.png" : "/marca/orbe-512.png";
+  const tira = px <= 96 ? "/marca/orbe-tira.png" : "/marca/orbe-tira-192.png";
+  return (
+    <span
+      className="ds-orbe"
+      data-estado={estado}
+      style={{
+        ["--s" as string]: `${tamanho}px`,
+        ["--ds-orbe-parado" as string]: `url("${parado}")`,
+        ...(estado === "trabalhando" ? { ["--ds-orbe-tira" as string]: `url("${tira}")` } : {}),
+      }}
+      aria-hidden
+    />
+  );
 }
 
 export function Tecla({ children }: { children: ReactNode }) {
@@ -169,6 +192,11 @@ export function Avatar({ iniciais, pequeno }: { iniciais: string; pequeno?: bool
       {iniciais}
     </span>
   );
+}
+
+/** Ação curta esperando o servidor: o anel fino, na cor do texto em volta. */
+export function Girando({ tamanho = 14, rotulo }: { tamanho?: number; rotulo?: string }) {
+  return <span className="ds-gira" style={{ ["--t" as string]: `${tamanho}px` }} role={rotulo ? "status" : undefined} aria-label={rotulo} aria-hidden={rotulo ? undefined : true} />;
 }
 
 export function Esqueleto({ largura, altura = 12, raio }: { largura: number | string; altura?: number; raio?: number }) {

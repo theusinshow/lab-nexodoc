@@ -277,7 +277,7 @@ export function BotaoDoOrbe({
         )}
         style={{
           inset: -Math.round(tamanho * 0.16),
-          background: "radial-gradient(circle, rgb(0 166 147 / 0.34), transparent 70%)",
+          background: "radial-gradient(circle, rgb(154 108 240 / 0.34), transparent 70%)", // violeta da alma (CORES_DO_ORBE.almaProfunda)
           filter: `blur(${Math.max(10, Math.round(tamanho * 0.13))}px)`,
           /*
              NA PARTIDA O HALO FICA ACESO, e sem `--motion-gain`. Ele deixa de

@@ -40,8 +40,6 @@
 .ds .en-google:focus-visible { outline: 2px solid var(--ds-focus-ring); outline-offset: 3px; }
 .ds .en-nota { margin: 12px 0 0; font-size: 13px; line-height: 1.55; color: var(--ds-text-tertiary); text-wrap: pretty; }
 
-.ds .en-gira { animation: en-gira 0.9s linear infinite; }
-@keyframes en-gira { to { transform: rotate(360deg); } }
 
 /* Avisos: a cor fica no ícone, o texto lê em neutro. */
 .ds .en-aviso { display: flex; gap: 9px; align-items: flex-start; margin: 20px 0 0; font-size: 13.5px; line-height: 1.5; color: var(--ds-text-secondary); }
