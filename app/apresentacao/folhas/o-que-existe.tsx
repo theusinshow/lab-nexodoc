@@ -1,26 +1,40 @@
 "use client";
 
+import { Check } from "lucide-react";
+
 import type { Slide } from "../palco";
-import { EscalaHorizontal, EscalaVertical, MONO } from "../pecas";
+import { EscalaHorizontal, EscalaVertical } from "../pecas";
 
 /** BLOCO 3 — O QUE EXISTE (folhas 10 a 12). */
 
-/** As quatro linhas de cada bloco da folha 12, sobre linhas finas. */
+/**
+ * As quatro linhas de cada bloco da folha 12: o checklist do app, um visto e a
+ * frase, sobre fios finos. O visto é cinza — o que já existe não é alarme.
+ */
 function LinhasDoBloco({ linhas }: { linhas: readonly string[] }) {
   return (
-    <ul style={{ margin: "8px 0 0", padding: 0, listStyle: "none" }}>
+    <ul style={{ margin: "12px 0 0", padding: 0, listStyle: "none" }}>
       {linhas.map((l) => (
         <li
           key={l}
           style={{
-            padding: "12px 0",
-            borderTop: "1px solid var(--border)",
-            fontSize: 26,
+            display: "grid",
+            gridTemplateColumns: "40px 1fr",
+            alignItems: "baseline",
+            padding: "14px 0",
+            boxShadow: "inset 0 1px 0 var(--ds-line-subtle)",
+            fontSize: 25,
             lineHeight: 1.4,
-            color: "var(--muted-foreground)",
+            color: "var(--ds-text-secondary)",
             textWrap: "pretty",
           }}
         >
+          <Check
+            aria-hidden="true"
+            size={22}
+            strokeWidth={2}
+            style={{ color: "var(--ds-text-tertiary)", transform: "translateY(3px)" }}
+          />
           {l}
         </li>
       ))}
@@ -44,7 +58,7 @@ export const O_QUE_EXISTE: readonly Slide[] = [
             titulo: "Peca pelo excesso.",
             texto:
               "Prefere apontar demais a deixar passar, e parte do que levanta você vai descartar. É assim de propósito: achado a mais custa um minuto de leitura, achado a menos custa o que custou naquele projeto.",
-            cor: "var(--status-warning)",
+            cor: "var(--ds-sev-decide)",
           },
           {
             titulo: "A lista varia entre execuções.",
@@ -142,7 +156,7 @@ export const O_QUE_EXISTE: readonly Slide[] = [
     bloco: "O que existe",
     titulo: "O que já existe e funciona",
     notas:
-      "DOIS CAMINHOS, DUAS PROVAS. A conferência já foi medida num memorial real; a montagem já prova o fluxo operacional, mas ainda precisa de uso real para medir tempo, estabilidade e aceitação. Não nivelar as duas maturidades — dizer a diferença aumenta a credibilidade.\n\nAs cores são as dos dois ramos do motor: teal confere, âmbar monta. A folha seguinte abre a prova operacional da montagem sem repetir a demonstração da conferência.",
+      "DOIS CAMINHOS, DUAS PROVAS. A conferência já foi medida num memorial real; a montagem já prova o fluxo operacional, mas ainda precisa de uso real para medir tempo, estabilidade e aceitação. Não nivelar as duas maturidades — dizer a diferença aumenta a credibilidade.\n\nOs selos dizem a maturidade com as cores do produto: verde é medido, o contorno é o que ainda espera medida. A folha seguinte abre a prova operacional da montagem sem repetir a demonstração da conferência.",
     corpo: (
       <EscalaHorizontal
         atraso={200}
@@ -150,22 +164,7 @@ export const O_QUE_EXISTE: readonly Slide[] = [
         fatos={[
           {
             titulo: ["Conferência de", "memorial descritivo"],
-            cor: "var(--nexodoc-accent)",
-            texto: (
-              <span
-                style={{
-                  display: "inline-block",
-                  padding: "8px 14px",
-                  background: "var(--status-ok-bg)",
-                  fontFamily: MONO,
-                  fontSize: 20,
-                  letterSpacing: "0.05em",
-                  color: "var(--status-ok)",
-                }}
-              >
-                Medido em projeto real
-              </span>
-            ),
+            selo: { tom: "ok", texto: "Medido em projeto real" },
             extra: (
               <LinhasDoBloco
                 linhas={[
@@ -179,22 +178,7 @@ export const O_QUE_EXISTE: readonly Slide[] = [
           },
           {
             titulo: ["Montagem de LDs,", "capas e volumes"],
-            cor: "var(--status-warning)",
-            texto: (
-              <span
-                style={{
-                  display: "inline-block",
-                  padding: "8px 14px",
-                  background: "var(--nexodoc-raised)",
-                  fontFamily: MONO,
-                  fontSize: 20,
-                  letterSpacing: "0.05em",
-                  color: "var(--muted-foreground)",
-                }}
-              >
-                Prova operacional
-              </span>
-            ),
+            selo: { tom: "linha", texto: "Prova operacional" },
             extra: (
               <LinhasDoBloco
                 linhas={[

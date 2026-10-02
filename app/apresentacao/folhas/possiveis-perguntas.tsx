@@ -12,17 +12,19 @@ import {
 
 /** Quatro folhas de credibilidade: medida, diferenciação, continuidade e método. */
 
+/** O que cada prova já tem, em código do app: números e saídas, sem adjetivo. */
 function ListaDeProva({ children }: { children: ReactNode }) {
   return (
     <div
       style={{
         marginTop: 20,
         paddingTop: 20,
-        borderTop: "1px solid var(--border)",
+        boxShadow: "inset 0 1px 0 var(--ds-line-subtle)",
         fontFamily: MONO,
-        fontSize: 22,
-        lineHeight: 1.55,
-        color: "var(--muted-foreground)",
+        fontSize: 21,
+        lineHeight: 1.6,
+        color: "var(--ds-text-secondary)",
+        fontVariantNumeric: "tabular-nums",
       }}
     >
       {children}
@@ -45,8 +47,8 @@ export const POSSIVEIS_PERGUNTAS: readonly Slide[] = [
           style={{ marginTop: 36 }}
           fatos={[
             {
-              titulo: ["Conferência", "prova de campo"],
-              cor: "var(--nexodoc-accent)",
+              titulo: ["Conferência"],
+              selo: { tom: "ok", texto: "Prova de campo" },
               texto:
                 "Um memorial real, com página, transcrição, gravidade, tempo e custo registrados na mesma execução.",
               extra: (
@@ -58,8 +60,8 @@ export const POSSIVEIS_PERGUNTAS: readonly Slide[] = [
               ),
             },
             {
-              titulo: ["Montagem", "prova operacional"],
-              cor: "var(--status-warning)",
+              titulo: ["Montagem"],
+              selo: { tom: "linha", texto: "Prova operacional" },
               texto:
                 "Leitura de selos, freios de consistência, rascunho rastreável e arquivos finais já existem no produto.",
               extra: (

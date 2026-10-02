@@ -1,13 +1,15 @@
 "use client";
 
 import type { Slide } from "../palco";
+import { BarraEmbutida } from "@/components/ds/medidas";
+
 import {
   Entra,
   EscalaHorizontal,
   EscalaVertical,
   Leitura,
   Linhas,
-  MONO,
+  Selo,
 } from "../pecas";
 
 /**
@@ -17,16 +19,24 @@ import {
  * preço: ele explica o esforço do vendedor, não o valor recebido pelo comprador.
  */
 
+/**
+ * Uma linha de custo, como os "Itens de custo" do Dinheiro no admin: o item, a
+ * base em cinza, o valor à direita — e, quando a linha tem `parte`, a BARRA
+ * EMBUTIDA do app, no trilho cujo fim é o maior item da tabela.
+ */
 function LinhaDeCusto({
   item,
   base,
   valor,
   atraso,
+  parte,
 }: {
   item: string;
   base: string;
   valor: string;
   atraso: number;
+  /** [este valor, o maior da tabela], em dólar, para a barra. */
+  parte?: readonly [number, number];
 }) {
   return (
     <Entra
@@ -36,20 +46,19 @@ function LinhaDeCusto({
         gridTemplateColumns: "1fr auto",
         alignItems: "baseline",
         gap: "0 24px",
-        padding: "16px 0",
-        borderTop: "1px solid var(--border)",
+        padding: "13px 0",
+        boxShadow: "inset 0 1px 0 var(--ds-line-subtle)",
       }}
     >
       <div>
-        <p style={{ margin: 0, fontSize: 26, color: "var(--foreground)" }}>
+        <p style={{ margin: 0, fontSize: 26, color: "var(--ds-text-primary)" }}>
           {item}
         </p>
         <p
           style={{
             margin: "4px 0 0",
-            fontFamily: MONO,
-            fontSize: 20,
-            color: "var(--muted-foreground)",
+            fontSize: 19,
+            color: "var(--ds-text-tertiary)",
           }}
         >
           {base}
@@ -57,14 +66,19 @@ function LinhaDeCusto({
       </div>
       <span
         style={{
-          fontFamily: MONO,
           fontSize: 32,
-          color: "var(--foreground)",
+          letterSpacing: "-0.02em",
+          color: "var(--ds-text-primary)",
           fontVariantNumeric: "tabular-nums",
         }}
       >
         {valor}
       </span>
+      {parte ? (
+        <div style={{ gridColumn: "1 / -1", marginTop: 8, zoom: 1.5 }}>
+          <BarraEmbutida valor={parte[0]} maximo={parte[1]} />
+        </div>
+      ) : null}
     </Entra>
   );
 }
@@ -83,22 +97,26 @@ function Total({
       atraso={atraso}
       style={{
         marginTop: "auto",
-        paddingTop: 20,
-        borderTop: "1px solid var(--nexodoc-accent)",
+        padding: "16px 28px",
+        borderRadius: 20,
+        background: "var(--ds-surface-card)",
+        boxShadow: "var(--ds-edge)",
         display: "flex",
         justifyContent: "space-between",
-        alignItems: "baseline",
+        alignItems: "center",
         gap: 20,
       }}
     >
-      <span className="ap-mono-rotulo">{rotuloDo}</span>
+      <span style={{ display: "flex", alignItems: "center", gap: 16 }}>
+        <span className="ap-mono-rotulo">{rotuloDo}</span>
+        <Selo tom="decide">estimativa</Selo>
+      </span>
       <span
         style={{
-          fontFamily: MONO,
-          fontSize: 44,
-          fontWeight: 500,
-          letterSpacing: "-0.02em",
-          color: "var(--nexodoc-accent)",
+          fontSize: 48,
+          fontWeight: 400,
+          letterSpacing: "-0.035em",
+          color: "var(--ds-text-primary)",
           whiteSpace: "nowrap",
           fontVariantNumeric: "tabular-nums",
         }}
@@ -125,13 +143,11 @@ export const VALORES: readonly Slide[] = [
           fatos={[
             {
               titulo: ["Conferência", "documental"],
-              cor: "var(--nexodoc-accent)",
               texto:
                 "Achados julgados como verdadeiros, duvidosos ou falsos, separados por disciplina e sempre ligados à página e ao trecho.",
             },
             {
               titulo: ["Montagem", "de entregáveis"],
-              cor: "var(--status-warning)",
               texto:
                 "LDs, capas e volumes reais medidos por tempo, retrabalho, estabilidade do rascunho e aceitação dos arquivos finais.",
             },
@@ -206,24 +222,28 @@ export const VALORES: readonly Slide[] = [
                 item="Conferência de memoriais"
                 base="cerca de 16 por mês, pela corrida mais cara"
                 valor="US$ 26"
+                parte={[26, 26]}
                 atraso={720}
               />
               <LinhaDeCusto
                 item="Montagem de listas e volumes"
                 base="uso corrente"
                 valor="menos de US$ 1"
+                parte={[1, 26]}
                 atraso={840}
               />
               <LinhaDeCusto
                 item="Servidor"
                 base="infraestrutura"
                 valor="US$ 25"
+                parte={[25, 26]}
                 atraso={960}
               />
               <LinhaDeCusto
                 item="Banco de dados"
                 base="infraestrutura"
                 valor="US$ 5"
+                parte={[5, 26]}
                 atraso={1080}
               />
             </div>
@@ -302,11 +322,7 @@ export const VALORES: readonly Slide[] = [
           itens={[
             { titulo: "Modalidade", texto: "Licença de uso durante o piloto" },
             { titulo: "Prazo", texto: "6 meses" },
-            {
-              titulo: "Valor",
-              texto: "R$ 10.000",
-              cor: "var(--nexodoc-accent)",
-            },
+            { titulo: "Valor", texto: "R$ 10.000" },
             {
               titulo: "Inclui",
               texto:
@@ -348,13 +364,11 @@ export const VALORES: readonly Slide[] = [
           fatos={[
             {
               titulo: ["Conferência", "medida"],
-              cor: "var(--nexodoc-accent)",
               texto:
                 "Julgamento por disciplina, verdadeiros, duvidosos, falsos, padrões recorrentes e correções do texto-base.",
             },
             {
               titulo: ["Montagem", "medida"],
-              cor: "var(--status-warning)",
               texto:
                 "Tempo antes e depois, estabilidade, retrabalho, arquivos gerados e aceitação por quem entrega.",
             },

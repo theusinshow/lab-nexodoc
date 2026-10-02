@@ -123,6 +123,9 @@ uniform float uTime;
 uniform float uBrilho;    // força do reflexo especular (0 = sem vidro)
 uniform float uEspessura;   // parede da casca (0 = disco com aro · 1 = vidro grosso)
 uniform float uTranslucidez; // 0 = como era · 1 = corpo quase invisível
+uniform float uLuz;   // luz por dentro do vidro (0 = como era)
+uniform float uIrid;  // iridescência do aro: o tom anda ao longo da volta (0 = cor única)
+uniform vec3 uIris2;  // o segundo tom da película
 varying vec3 vNormalW;
 varying vec3 vWorldPos;
 
@@ -130,14 +133,23 @@ void main() {
   vec3 viewDir = normalize(cameraPosition - vWorldPos);
   float ndv = max(dot(viewDir, vNormalW), 0.0);
 
+  /*
+   * IRIDESCÊNCIA: numa película fina o tom muda com o ângulo. O aro deixa de
+   * ser um anel de cor única e passa a andar entre a íris e o segundo tom,
+   * devagar, ao longo da volta. Com uIrid = 0 é o aro de antes.
+   */
+  float az = atan(vNormalW.y, vNormalW.x);
+  float pelicula = 0.5 + 0.5 * sin(az * 1.0 + uTime * 0.35 + (1.0 - ndv) * 2.2);
+  vec3 tomDoAro = mix(uRimColor, uIris2, uIrid * pelicula);
+
   // Fresnel amplo (corpo do vidro).
   float fres = pow(1.0 - ndv, 2.2);
-  vec3 rim = uRimColor * fres * uRim;
+  vec3 rim = tomDoAro * fres * uRim;
 
   // Aro DEFINIDO na silhueta — o contorno "inteiro" da bola de vidro.
   // Expoente menor = anel mais ESPESSO.
   float edgeRing = pow(1.0 - ndv, 4.5);
-  vec3 edge = mix(uRimColor, vec3(1.0), 0.35) * edgeRing;
+  vec3 edge = mix(tomDoAro, vec3(1.0), 0.35) * edgeRing;
 
   /*
    * A PAREDE — o que faz a esfera ter CASCA, e não ser um disco com aro.
@@ -192,6 +204,8 @@ void main() {
    */
   float opacidade = 1.0 - uTranslucidez * 0.78;
   vec3 body = uColor * 0.18 * opacidade;
+  // LUZ POR DENTRO: o centro do vidro acende, como se a alma iluminasse a casca.
+  vec3 brilhoInterno = mix(tomDoAro, vec3(1.0), 0.3) * pow(ndv, 4.0) * uLuz * 0.42;
 
   /*
    * Scanner técnico (leitura): banda horizontal atravessando o vidro.
@@ -229,9 +243,10 @@ void main() {
     + edgeRing * 0.85
     + (sheen * 0.28 + ponto * 0.7) * uBrilho
     + (band * 0.45 + nucleo * 0.5) * uScan
-    + (aroInterno * 0.5 + absorcao * 0.65);
+    + (aroInterno * 0.5 + absorcao * 0.65)
+    + pow(ndv, 4.0) * uLuz * 0.2;
 
-  vec3 cor = body + rim + edge + glint + scan + parede;
+  vec3 cor = body + rim + edge + glint + scan + parede + brilhoInterno;
   // A absorção tira luz do que está ATRÁS do vão, sem apagar as duas bordas.
   cor *= (1.0 - absorcao * 0.8);
   gl_FragColor = vec4(cor + parede * 0.4, alpha);
@@ -264,13 +279,18 @@ uniform vec3 uColorB; // branco luminoso (miolo)
 uniform vec3 uColorC; // teal claro
 uniform vec3 uColorD; // teal quase branco (2a camada)
 uniform float uOndaDaAlma; // irregularidade da borda da alma (0 = recorte exato)
+uniform float uVigor; // 0 = como era · 1 = lâminas cheias até o centro, pulso visível
+uniform float uNasce; // o nascer: 0 = ainda não existe · 1 = no tamanho (passa de 1 no impulso)
+uniform float uIrid;  // o tom da alma anda entre a íris e o segundo tom
+uniform vec3 uIris2;
 varying vec2 vUv;
 
 ${SNOISE}
 
 void main() {
-  vec2 uv = (vUv - 0.5) * 2.0; // -1..1
-  float t = uTime * (0.5 + uActivity * 0.4);
+  // NASCER: a alma cresce do centro (dividir o uv pelo tamanho é ampliá-la)
+  vec2 uv = (vUv - 0.5) * 2.0 / max(uNasce, 0.04); // -1..1
+  float t = uTime * (0.5 + uActivity * 0.4) * (1.0 + uVigor * 0.6);
 
   // Warp orgânico sutil (fluxo sedoso, sem grão de fumaça).
   vec2 warp = vec2(
@@ -283,11 +303,14 @@ void main() {
 
   // Camada 1 — braços curvos (o twist +k*r encurva em pinwheel).
   float a1 = ang + 2.1 * r + t * 0.55;
-  float blade1 = pow(max(cos(a1 * 2.5), 0.0), 2.2); // ~5 lâminas
+  // com vigor, a lâmina engorda (expoente menor) e deixa menos vão escuro
+  // 3 e não 2,5: com multiplicador fracionário o cosseno não fecha quando o
+  // ângulo dá a volta (atan pula de π para −π), e ficava um risco à esquerda.
+  float blade1 = pow(max(cos(a1 * 3.0), 0.0), mix(2.2, 0.95, uVigor));
 
   // Camada 2 — contramão, defasada (overlap sedoso).
   float a2 = ang - 2.6 * r - t * 0.45 + 1.3;
-  float blade2 = pow(max(cos(a2 * 2.0), 0.0), 2.6); // ~4 lâminas
+  float blade2 = pow(max(cos(a2 * 2.0), 0.0), mix(2.6, 1.2, uVigor)); // ~4 lâminas
 
   /*
    * A BORDA IRREGULAR VOLTOU — agora aqui, que é o lugar dela.
@@ -304,20 +327,46 @@ void main() {
    */
   float ondaDaBorda = snoise(vec3(cos(ang) * 1.6, sin(ang) * 1.6, t * 0.22));
   float raioDaAlma = 0.92 + ondaDaBorda * uOndaDaAlma;
-  float env = smoothstep(raioDaAlma, 0.3, r);
+  // com vigor, as lâminas chegam mais perto do centro e enchem o vidro
+  float env = smoothstep(raioDaAlma, mix(0.3, 0.02, uVigor), r);
   blade1 *= env;
   blade2 *= env;
 
   // Miolo branco brilhante (pequeno e definido).
-  float core = smoothstep(0.34, 0.0, r);
-  float coreGlow = pow(core, 1.5) * (0.8 + 0.2 * uPulse);
+  // O PULSO APARECE: antes ele só mexia 20% do brilho de um miolo pequeno.
+  float core = smoothstep(0.34 * (1.0 + uVigor * (uPulse - 0.4) * 0.6), 0.0, r);
+  float coreGlow = pow(core, 1.5) * (0.8 + 0.2 * uPulse) * (1.0 + uVigor * 0.35);
+  // o clarão de quando a alma assenta, no passo além do tamanho
+  coreGlow *= 1.0 + 1.6 * exp(-pow((uNasce - 1.06) * 9.0, 2.0));
+  float forca = 1.0 + uVigor * (0.45 + 0.8 * uPulse);
 
   // Cor mono-teal: lâmina 1 teal→teal-claro pra fora; lâmina 2 teal-branco; miolo branco.
   vec3 c1 = mix(uColorA, uColorC, smoothstep(0.15, 0.9, r));
-  vec3 col = c1 * blade1 + uColorD * blade2 * 0.85 + uColorB * coreGlow;
+  // a alma também anda de tom, devagar, junto com o aro
+  c1 = mix(c1, uIris2, uIrid * 0.45 * (0.5 + 0.5 * sin(ang + t * 0.5)));
+  vec3 col = (c1 * blade1 + uColorD * blade2 * 0.85) * forca + uColorB * coreGlow;
 
   float mask = smoothstep(0.95, 0.78, r);
-  float alpha = clamp(blade1 + blade2 * 0.85 + coreGlow, 0.0, 1.0) * mask;
-  gl_FragColor = vec4(col, alpha * (0.92 + uActivity * 0.08));
+  float alpha = clamp((blade1 + blade2 * 0.85) * forca + coreGlow, 0.0, 1.0) * mask;
+  gl_FragColor = vec4(col, alpha * (0.92 + uActivity * 0.08) * smoothstep(0.0, 0.3, uNasce));
+}
+`;
+
+/* ----------------------------------------------------------------- AURA ---- */
+
+/**
+ * A AURA: a luz que sai da esfera e acende o fundo em volta. Um plano atrás de
+ * tudo, com queda suave a partir da borda do vidro (raio 1 no espaço do orbe).
+ * Sem ela o orbe é um objeto apagado no escuro; com ela, uma fonte de luz.
+ */
+export const auraFragmentShader = /* glsl */ `
+uniform vec3 uCor;
+uniform float uForca;
+varying vec2 vUv;
+void main() {
+  vec2 p = (vUv - 0.5) * 3.4; // o plano tem 3,4 de lado: p é o espaço do orbe
+  float r = length(p);
+  float queda = exp(-max(0.0, r - 0.9) * 2.1) * smoothstep(1.7, 1.0, r);
+  gl_FragColor = vec4(uCor * queda, min(1.0, queda * 1.15 * uForca));
 }
 `;

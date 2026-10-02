@@ -1,7 +1,9 @@
 "use client";
 
 import type { Slide } from "../palco";
-import { Entra, EscalaHorizontal, Leitura, Linhas, MONO } from "../pecas";
+import { ArrowUpRight } from "lucide-react";
+
+import { Entra, EscalaHorizontal, Leitura, Linhas } from "../pecas";
 
 /**
  * A PROVA DA MONTAGEM E A PONTE PARA A PROPOSTA (folhas 13 e 18).
@@ -11,7 +13,8 @@ import { Entra, EscalaHorizontal, Leitura, Linhas, MONO } from "../pecas";
  */
 
 /**
- * O único elemento clicável do deck abre a proposta em outra aba. O atributo
+ * O único elemento clicável do deck abre a proposta em outra aba. É a ação
+ * principal do app — a pílula de papel —, com a seta de "abre fora". O atributo
  * `data-abre-valores` é consumido pelo gerador da cópia offline.
  */
 function BotaoDosValores() {
@@ -21,25 +24,10 @@ function BotaoDosValores() {
       target="_blank"
       rel="noreferrer"
       data-abre-valores=""
-      className="ap-botao-valores nx-cut-6"
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 18,
-        padding: "24px 40px",
-        border: "1px solid var(--nexodoc-accent)",
-        background: "rgb(0 166 147 / 0.10)",
-        fontSize: 32,
-        fontWeight: 500,
-        letterSpacing: "-0.018em",
-        color: "var(--nexodoc-accent)",
-        textDecoration: "none",
-      }}
+      className="ap-botao-valores"
     >
       Ver proposta e valor
-      <span style={{ fontFamily: MONO, fontSize: 30 }} aria-hidden="true">
-        →
-      </span>
+      <ArrowUpRight aria-hidden="true" size={30} strokeWidth={2} />
     </a>
   );
 }

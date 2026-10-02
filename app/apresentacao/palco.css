@@ -6,16 +6,37 @@
  * apresentador viu ao preparar não seria a que o projetor mostra. Então o palco
  * desenha em 1920x1080 e a tela só o AMPLIA ou REDUZ inteiro, com
  * `transform: scale()`. O que se ensaia é o que se projeta.
+ *
+ * A LÍNGUA É A DO SISTEMA NOVO (02/10/2026): tokens `--ds-*` de app/ds.css,
+ * Geist, um painel emoldurado por assunto, cinza para tudo e cor só para sinal
+ * — coral impede, âmbar pede decisão ou é estimativa, verde é medido, violeta é
+ * o Nexo. O teal, o Plex e a caixa alta de instrumento eram do sistema antigo.
+ *
+ * ESCALA. As peças do app nascem para um notebook (corpo 14). O palco é lido
+ * de longe, então o deck usa a mesma forma em quase o dobro do tamanho — e
+ * onde reaproveita um componente de `components/ds` tal como é, embrulha-o em
+ * `.ap-x2` (zoom 2), em vez de redesenhá-lo maior por fora.
  */
 
 .ap-raiz {
   position: fixed;
   inset: 0;
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--ds-surface-page);
+  color: var(--ds-text-primary);
   overflow: hidden;
   display: grid;
   place-items: center;
+}
+
+/*
+ * O ZOOM DE TELA GRANDE DO DS NÃO VALE AQUI. O ds.css amplia `.ds` em 1,125 a
+ * partir de 1800 px de largura e em 1,25 a partir de 2300 — certo para uma tela
+ * de ferramenta, errado para o palco, que já se escala sozinho por transform e
+ * mediria tudo em dobro: a folha transbordava a moldura. Dois seletores de
+ * classe vencem o `.ds` de um só, dentro ou fora do @media.
+ */
+.ap-raiz.ds {
+  zoom: 1;
 }
 
 /*
@@ -49,9 +70,9 @@
 /*
  * A FOLHA. Ocupa o palco inteiro; só a corrente é montada (mais a que sai, por
  * 260 ms). O recuo esquerdo de 224 deixa os 144 do trilho mais 80 de margem; o
- * de cima, 156, é onde o conteúdo nasce — abaixo do rótulo-título (y = 80) e
- * da linha fina (y = 124). NADA aqui centra verticalmente: o que sobra de
- * espaço fica embaixo, e isso é aceitável; o bloco à deriva não é.
+ * de cima, 156, é onde o conteúdo nasce — abaixo do cabeçalho. NADA aqui centra
+ * verticalmente: o que sobra de espaço fica embaixo, e isso é aceitável; o
+ * bloco à deriva não é.
  */
 .ap-folha {
   position: absolute;
@@ -60,18 +81,20 @@
   display: flex;
   flex-direction: column;
   padding: 156px 80px 80px 224px;
-  background: var(--background);
-  font-family: "IBM Plex Sans", system-ui, sans-serif;
+  background: var(--ds-surface-page);
+  font-family: var(--ds-font-sans);
+  font-size: 24px;
+  line-height: 1.45;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
    A ARMADURA — o que é igual em toda folha e NÃO participa do crossfade.
 
-   O TRILHO. Faixa de 144 px à esquerda com os índices de todas as folhas; a
-   corrente acesa, uma marca teal ao lado dela e o nome do bloco na vertical.
-   Mora no palco, fora da <section> da folha: na troca, o conteúdo se dissolve
-   e o trilho fica — só a marca desliza um índice. É assim que a sala percebe
-   a mudança de bloco sem slide separador.
+   O TRILHO é a barra lateral do app: um plano que afunda (`surface-sunken`),
+   a marca no topo, o índice de todas as folhas e o nome do bloco embaixo. A
+   folha corrente ganha a pílula de seleção do sistema — a mesma do Segmento —,
+   que desliza um índice por troca. Mora no palco, fora da <section> da folha:
+   o conteúdo se dissolve e o trilho fica.
    ═══════════════════════════════════════════════════════════════════════════ */
 .ap-trilho {
   position: absolute;
@@ -82,14 +105,24 @@
   /* Acima das folhas (a que sai tem z-index 2): a <section> tem fundo opaco e
      vem depois no DOM — sem isto ela cobria o trilho inteiro. Visto na captura. */
   z-index: 3;
-  border-right: 1px solid var(--border);
-  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  background: var(--ds-surface-sunken);
+  box-shadow: inset -1px 0 0 var(--ds-line-subtle);
+  font-family: var(--ds-font-mono);
+}
+
+.ap-trilho__marca-do-nexo {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 40px;
+  display: flex;
+  justify-content: center;
 }
 
 .ap-trilho__indices {
   position: absolute;
   left: 0;
-  top: 72px;
+  top: 100px;
   width: 144px;
   margin: 0;
   padding: 0;
@@ -98,29 +131,33 @@
 
 .ap-trilho__indice {
   /* 38 e não 40: com vinte folhas, 40 px levava o último índice para cima do
-     nome do bloco (72 + 20 × 40 = 872, e o bloco começa em 864). */
+     nome do bloco. */
+  position: relative;
+  z-index: 1;
   height: 38px;
   line-height: 38px;
   text-align: center;
-  font-size: 14px;
+  font-size: 15px;
   font-variant-numeric: tabular-nums;
-  color: var(--border);
+  color: var(--ds-text-tertiary);
+  transition: color var(--ds-dur-state) var(--ds-ease-feedback);
 }
 
 .ap-trilho__indice--atual {
-  color: var(--foreground);
-  font-weight: 500;
+  color: var(--ds-text-primary);
 }
 
-/* A marca desliza com a folha: um passo de 38 px por índice (ver `.ap-trilho__indice`). */
-.ap-trilho__marca {
+/* A pílula de seleção: um passo de 38 px por índice (ver `.ap-trilho__indice`). */
+.ap-trilho__selecao {
   position: absolute;
-  left: 128px;
-  top: 72px;
-  width: 16px;
-  height: 38px;
-  background: var(--nexodoc-accent);
-  transition: transform var(--ap-curta) var(--ap-entra);
+  left: 40px;
+  top: 104px;
+  width: 64px;
+  height: 30px;
+  border-radius: var(--ds-radius-pill);
+  background: var(--ds-surface-overlay);
+  box-shadow: var(--ds-edge-strong);
+  transition: transform var(--ds-dur-layout) var(--ds-ease-out);
 }
 
 .ap-trilho__bloco {
@@ -128,58 +165,57 @@
   left: 0;
   top: 864px;
   width: 144px;
-  height: 168px;
+  height: 184px;
   display: flex;
   align-items: center;
   justify-content: center;
   writing-mode: vertical-rl;
   transform: rotate(180deg);
-  font-size: 14px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--muted-foreground);
+  font-family: var(--ds-font-sans);
+  font-size: 15px;
+  color: var(--ds-text-tertiary);
   white-space: nowrap;
 }
 
 /*
- * O RÓTULO-TÍTULO. Mono, caixa alta por CSS (o DOM guarda caixa de frase), em
- * y = 80, com a linha fina em y = 124. Fica dentro da folha para dissolver com
- * ela, mas na mesma posição em toda folha — parece fixo, e só o texto muda.
+ * O CABEÇALHO DA FOLHA. O título da tela, como no app: Geist 500, caixa de
+ * frase, e o subtítulo (o arquivo, a fonte) em cinza ao lado. Fica dentro da
+ * folha para dissolver com ela, mas na mesma posição em toda folha — parece
+ * fixo, e só o texto muda.
  */
 .ap-rotulo-titulo {
   position: absolute;
   left: 224px;
   right: 80px;
-  top: 80px;
+  top: 64px;
   margin: 0;
-  padding-bottom: 20px;
-  border-bottom: 1px solid var(--border);
+  padding-bottom: 24px;
+  box-shadow: inset 0 -1px 0 var(--ds-line-subtle);
   display: flex;
   align-items: baseline;
-  gap: 28px;
-  font-family: "IBM Plex Mono", ui-monospace, monospace;
-  font-size: 20px;
-  line-height: 24px;
-  font-weight: 400;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--muted-foreground);
+  gap: 24px;
+  font-family: var(--ds-font-sans);
+  font-size: 30px;
+  line-height: 36px;
+  font-weight: 500;
+  letter-spacing: -0.015em;
+  color: var(--ds-text-primary);
 }
 
 .ap-rotulo-titulo__sub {
+  font-size: 20px;
+  font-weight: 400;
   letter-spacing: 0;
-  text-transform: none;
-  color: var(--muted-foreground);
+  color: var(--ds-text-tertiary);
 }
 
-/* Rótulo Mono genérico (A PERGUNTA, LEITURA, PÁGINAS…). Caixa alta por CSS. */
+/* Rótulo de seção (A pergunta, Leitura, A aritmética…): o título de cartão do app. */
 .ap-mono-rotulo {
-  font-family: "IBM Plex Mono", ui-monospace, monospace;
-  font-size: 16px;
-  line-height: 20px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--muted-foreground);
+  font-family: var(--ds-font-sans);
+  font-size: 19px;
+  line-height: 24px;
+  font-weight: 500;
+  color: var(--ds-text-secondary);
 }
 
 /* A grade: 12 colunas de x = 224 a 1840, calha 24. */
@@ -189,49 +225,67 @@
   gap: 0 24px;
 }
 
+/* Um painel do app, na escala do palco: a moldura de 1 px é luz, não cor. */
+.ap-painel {
+  border-radius: 24px;
+  background: var(--ds-surface-card);
+  box-shadow: var(--ds-edge);
+}
+
+/* Componente de `components/ds` usado tal como é, no dobro do tamanho. */
+.ap-x2 {
+  zoom: 2;
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
-   OS ARQUÉTIPOS — a escala segura o conteúdo; nada flutua.
+   OS ARQUÉTIPOS — a régua segura os fatos; nada flutua.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/* Texto de leitura: Sans 26, 64ch. */
+/* Texto de leitura: 26, 64ch. */
 .ap-texto {
   margin: 0;
   font-size: 26px;
   line-height: 1.45;
   max-width: 64ch;
-  color: var(--muted-foreground);
+  color: var(--ds-text-secondary);
   text-wrap: pretty;
 }
 
-/* Título de fato ou de leitura: Sans 500 44. */
+/* Título de fato ou de leitura: 500 44. */
 .ap-titulo-de-fato {
   margin: 0;
   font-size: 44px;
   font-weight: 500;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.025em;
   line-height: 1.1;
-  color: var(--foreground);
+  color: var(--ds-text-primary);
 }
 
 /*
- * ESCALA HORIZONTAL. Os fatos ficam ACIMA da linha; a linha atravessa; um tick
- * de 24 px marca o início de cada fato e o fim do último. Colunas iguais.
- * A linha se desenha (`ap-risca`) antes dos fatos assentarem: primeiro a
- * escala, depois a agulha.
+ * A RÉGUA (escala horizontal). Os fatos num painel só, em colunas iguais
+ * separadas por um fio — a régua de números do Cockpit, e não cartões soltos.
+ * A célula que tem selo leva o selo no topo: é ele que diz o estado (medido,
+ * operacional), e não uma cor no título.
  */
 .ap-escala-h {
   position: relative;
   display: grid;
   grid-auto-flow: column;
   grid-auto-columns: 1fr;
-  gap: 0 24px;
-  padding-bottom: 36px;
+  border-radius: 24px;
+  background: var(--ds-surface-card);
+  box-shadow: var(--ds-edge);
+  overflow: hidden;
 }
 
 .ap-escala-h__fato {
   position: relative;
   min-width: 0;
-  padding-right: 24px;
+  padding: 36px 40px 40px;
+}
+
+.ap-escala-h__fato + .ap-escala-h__fato {
+  box-shadow: inset 1px 0 0 var(--ds-line-subtle);
 }
 
 .ap-escala-h__fato > * + * {
@@ -240,66 +294,32 @@
 
 .ap-escala-h__titulo {
   margin: 0;
-  font-size: 44px;
+  font-size: 40px;
   font-weight: 500;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.025em;
   line-height: 1.1;
-  color: var(--foreground);
+  color: var(--ds-text-primary);
 }
 
 .ap-escala-h--compacta .ap-escala-h__titulo {
   font-size: 26px;
   line-height: 1.3;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.012em;
 }
 
 .ap-escala-h__texto {
   margin: 0;
-  font-size: 26px;
+  font-size: 24px;
   line-height: 1.45;
-  color: var(--muted-foreground);
+  color: var(--ds-text-secondary);
   text-wrap: pretty;
 }
 
-.ap-escala-h__linha {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 1px;
-  background: var(--border);
-}
-
-.ap-escala-h--tracejada .ap-escala-h__linha {
-  background: repeating-linear-gradient(
-    90deg,
-    var(--border) 0 8px,
-    transparent 8px 16px
-  );
-}
-
-/* O tick nasce no início de cada fato; o último fato ganha um segundo tick no fim. */
-.ap-escala-h__tick {
-  position: absolute;
-  bottom: -48px;
-  width: 1px;
-  height: 24px;
-  background: var(--muted-foreground);
-}
-
-.ap-escala-h__tick--inicio {
-  left: 0;
-}
-.ap-escala-h__tick--fim {
-  right: 0;
-}
-
 /*
- * ESCALA VERTICAL. Linha em x = 96 dentro do componente (x = 320 da folha),
- * número à esquerda dela, tick de 24 px por item, texto a partir de x = 144
- * (368 da folha). ALTURA IGUAL POR ITEM: o espaço disponível dividido pelo
- * número de itens, nunca a altura do texto — é o que a torna uma escala e não
- * uma lista.
+ * A LISTA NUMERADA (escala vertical). Linhas de altura igual — o espaço
+ * dividido pelo número de itens, nunca a altura do texto: é o que faz dela uma
+ * escala e não uma lista solta. O número mora num anel, como os passos da
+ * Ajuda; a linha começa num fio fino.
  */
 .ap-escala-v {
   position: relative;
@@ -309,71 +329,62 @@
   min-height: 0;
 }
 
-.ap-escala-v__linha {
-  position: absolute;
-  left: 96px;
-  top: 0;
-  bottom: 0;
-  width: 1px;
-  background: var(--border);
-}
-
 .ap-escala-v__item {
   position: relative;
   display: grid;
-  grid-template-columns: 96px 1fr;
+  grid-template-columns: 72px 1fr;
   align-items: start;
-  padding-top: 12px;
+  padding-top: 22px;
   min-width: 0;
+  box-shadow: inset 0 1px 0 var(--ds-line-subtle);
 }
 
 .ap-escala-v__numero {
-  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  font-family: var(--ds-font-mono);
   font-size: 16px;
-  line-height: 20px;
   font-variant-numeric: tabular-nums;
-  color: var(--muted-foreground);
-  padding-top: 8px;
+  color: var(--ds-text-secondary);
+  box-shadow: inset 0 0 0 1px var(--ds-line-default);
 }
 
-.ap-escala-v__tick {
-  position: absolute;
-  left: 84px;
-  top: 22px;
-  width: 24px;
-  height: 1px;
-  background: var(--muted-foreground);
+.ap-escala-v__numero--sinal {
+  color: var(--ap-sinal);
+  background: color-mix(in srgb, var(--ap-sinal) 12%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ap-sinal) 32%, transparent);
 }
 
 .ap-escala-v__corpo {
-  padding-left: 48px;
   min-width: 0;
 }
 
 .ap-escala-v__titulo {
   margin: 0;
-  font-size: 32px;
+  font-size: 30px;
   font-weight: 500;
   letter-spacing: -0.015em;
-  line-height: 1.2;
-  color: var(--foreground);
+  line-height: 1.25;
+  color: var(--ds-text-primary);
   text-wrap: pretty;
 }
 
 .ap-escala-v__texto {
   margin: 8px 0 0;
-  font-size: 26px;
+  font-size: 24px;
   line-height: 1.45;
   max-width: 64ch;
-  color: var(--muted-foreground);
+  color: var(--ds-text-secondary);
   text-wrap: pretty;
 }
 
 /*
- * A LEITURA. Base da folha: linha em y = 820, rótulo em y = 856, frase a
- * partir de y = 892. Altura MÍNIMA de 180 para a linha cair no mesmo y com uma
- * ou duas linhas de frase; um fecho de três linhas (14, 15) empurra a linha
- * para cima em vez de vazar pelo pé da folha.
+ * A LEITURA. Base da folha: um fio, o rótulo e a frase. A hierarquia é de
+ * cinza, como no app — a linha-chave em branco, as outras um degrau abaixo.
+ * Altura MÍNIMA de 180 para o fio cair no mesmo y com uma ou duas linhas.
  */
 .ap-leitura {
   flex: none;
@@ -381,26 +392,26 @@
   min-height: 180px;
   box-sizing: border-box;
   padding-top: 32px;
-  border-top: 1px solid var(--border);
+  box-shadow: inset 0 1px 0 var(--ds-line-subtle);
 }
 
 .ap-leitura__frase {
-  margin: 16px 0 0;
+  margin: 14px 0 0;
   font-size: 48px;
-  font-weight: 600;
-  letter-spacing: -0.02em;
+  font-weight: 500;
+  letter-spacing: -0.028em;
   line-height: 1.15;
-  color: var(--foreground);
+  color: var(--ds-text-tertiary);
 }
 
 .ap-leitura__linha--chave {
-  color: var(--nexodoc-accent);
+  color: var(--ds-text-primary);
 }
 
 /*
- * O CONFRONTO. Pergunta em Mono à esquerda (5 colunas), leituras à direita
- * (colunas 7 a 12). A pergunta cai um degrau (32 → 26) quando passa de 160
- * caracteres.
+ * O CONFRONTO. A pergunta do comprador à esquerda, como a mensagem de quem
+ * escreve no chat do Nexo (a bolha com o canto de baixo recolhido); as
+ * respostas como lista numerada à direita (colunas 6 a 12).
  */
 .ap-confronto {
   flex: 1;
@@ -415,12 +426,6 @@
   min-width: 0;
 }
 
-/*
- * Sete colunas para as leituras, e o texto um degrau abaixo (24). Com seis
- * colunas e 26 px, a resposta longa da folha 14 (oito linhas) empurrava a
- * terceira leitura para cima do fecho — visto na captura. A pergunta, em Mono,
- * cabe bem em quatro colunas.
- */
 .ap-confronto__direita {
   grid-column: 6 / span 7;
   min-width: 0;
@@ -429,16 +434,18 @@
 }
 
 .ap-confronto .ap-escala-v__texto {
-  font-size: 24px;
+  font-size: 23px;
 }
 
 .ap-confronto__pergunta {
-  margin: 16px 0 0;
-  font-family: "IBM Plex Mono", ui-monospace, monospace;
-  font-size: 32px;
+  margin: 20px 0 0;
+  padding: 26px 30px 28px;
+  border-radius: 30px 30px 10px 30px;
+  background: var(--ds-surface-raised);
+  font-size: 30px;
   line-height: 1.4;
-  letter-spacing: -0.012em;
-  color: var(--foreground);
+  letter-spacing: -0.01em;
+  color: var(--ds-text-primary);
   text-wrap: pretty;
 }
 
@@ -447,64 +454,161 @@
 }
 
 /*
- * O MOSTRADOR. Valor em Mono 80 sobre rótulo, com uma borda esquerda de 1 px
- * (é a régua do mostrador, não faixa de acento: 1 px, neutra).
+ * O MOSTRADOR. O número grande do app (Geist 400, apertado, tabular) sobre o
+ * rótulo. Vários mostradores vão numa régua (`.ap-regua-num`), com fio entre.
  */
 .ap-mostrador {
-  border-left: 1px solid var(--border);
-  padding-left: 24px;
   min-width: 0;
 }
 
 .ap-mostrador__valor {
-  font-family: "IBM Plex Mono", ui-monospace, monospace;
-  font-size: 80px;
-  font-weight: 500;
-  letter-spacing: -0.035em;
+  font-size: 84px;
+  font-weight: 400;
+  letter-spacing: -0.045em;
   line-height: 1;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
-  color: var(--foreground);
+  color: var(--ds-text-primary);
+}
+
+.ap-regua-num {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  border-radius: 24px;
+  background: var(--ds-surface-card);
+  box-shadow: var(--ds-edge);
+  overflow: hidden;
+}
+
+.ap-regua-num > * {
+  padding: 30px 36px 32px;
+}
+
+.ap-regua-num > * + * {
+  box-shadow: inset 1px 0 0 var(--ds-line-subtle);
 }
 
 .ap-fonte {
   margin: 28px 0 0;
-  font-family: "IBM Plex Mono", ui-monospace, monospace;
-  font-size: 22px;
-  line-height: 1.45;
-  color: var(--muted-foreground);
+  font-size: 20px;
+  line-height: 1.5;
+  color: var(--ds-text-tertiary);
   text-wrap: pretty;
 }
 
-/* O único link do deck precisa continuar visível quando a mão sai do mouse. */
+/* Os selos do app, na escala do palco (`.ds-pill` com 22 px vira 40). */
+.ap-selo {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  height: 40px;
+  padding: 0 18px;
+  border-radius: var(--ds-radius-pill);
+  font-size: 19px;
+  font-weight: 500;
+  white-space: nowrap;
+  background: rgb(255 255 255 / 0.055);
+  color: var(--ds-text-secondary);
+}
+
+.ap-selo > i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: currentColor;
+  flex: none;
+}
+
+.ap-selo--linha {
+  background: none;
+  box-shadow: inset 0 0 0 1px var(--ds-line-default);
+}
+.ap-selo--ok {
+  background: var(--ds-state-ok-wash);
+  color: var(--ds-state-ok);
+}
+.ap-selo--block {
+  background: var(--ds-sev-block-wash);
+  color: var(--ds-sev-block);
+}
+.ap-selo--decide {
+  background: var(--ds-sev-decide-wash);
+  color: var(--ds-sev-decide);
+}
+.ap-selo--nexo {
+  background: var(--ds-nexo-wash);
+  color: var(--ds-nexo);
+}
+
+/* O código da obra, do arquivo, da página: o `.ds-code` do app, maior. */
+.ap-codigo {
+  display: inline-block;
+  padding: 2px 12px;
+  border-radius: 8px;
+  background: rgb(255 255 255 / 0.055);
+  font-family: var(--ds-font-mono);
+  font-size: 0.82em;
+  color: var(--ds-text-secondary);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/*
+ * O ÚNICO LINK DO DECK é a ação principal do app: uma pílula de papel. É
+ * também a única coisa clara da folha — e por isso não precisa de cor.
+ */
 .ap-botao-valores {
+  display: inline-flex;
+  align-items: center;
+  gap: 18px;
+  height: 76px;
+  padding: 0 40px;
+  border-radius: var(--ds-radius-pill);
+  background: var(--ds-action-bg);
+  color: var(--ds-action-fg);
+  font-size: 30px;
+  font-weight: 500;
+  letter-spacing: -0.015em;
+  text-decoration: none;
   transition:
-    background-color var(--ap-micro) var(--ap-entra),
-    color var(--ap-micro) var(--ap-entra),
-    box-shadow var(--ap-micro) var(--ap-entra);
+    background-color var(--ds-dur-feedback) var(--ds-ease-feedback),
+    transform var(--ds-dur-press) var(--ds-ease-feedback);
 }
 
 .ap-botao-valores:hover {
-  background: rgb(91 218 198 / 0.16) !important;
+  background: var(--ds-action-bg-hover);
 }
 
 .ap-botao-valores:focus-visible {
   outline: none;
-  color: var(--ring) !important;
-  background: var(--nexodoc-raised) !important;
-  box-shadow: inset 0 0 0 3px var(--ring);
+  box-shadow:
+    0 0 0 4px var(--ds-surface-page),
+    0 0 0 8px var(--ds-focus-ring);
 }
 
 .ap-botao-valores:active {
-  transform: translateY(1px);
+  transform: scale(0.97);
+}
+
+.ap-botao-valores kbd {
+  display: inline-flex;
+  align-items: center;
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 8px;
+  font-family: var(--ds-font-mono);
+  font-size: 17px;
+  color: var(--ds-text-on-paper-muted);
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.14);
 }
 
 .ap-premissa {
-  color: var(--status-warning);
+  color: var(--ds-sev-decide);
 }
 
 .ap-mono {
-  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-family: var(--ds-font-mono);
 }
 
 .ap-cresce {
@@ -512,9 +616,9 @@
 }
 
 /*
- * A RÉGUA DE CONTROLE. Discreta de propósito: quem olha é o apresentador, e
- * uma barra viva no rodapé roubaria atenção do argumento. Some em tela cheia
- * enquanto o ponteiro estiver parado.
+ * A RÉGUA DE CONTROLE. A barra flutuante do protótipo: pílula sobre o
+ * overlay, teclas do sistema. Discreta de propósito — quem olha é o
+ * apresentador —, e some quando o ponteiro para.
  */
 .ap-regua {
   position: fixed;
@@ -522,15 +626,15 @@
   bottom: 20px;
   display: flex;
   align-items: center;
-  gap: 18px;
-  padding: 10px 16px;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  background: color-mix(in srgb, var(--card) 88%, transparent);
-  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  gap: 16px;
+  height: 40px;
+  padding: 0 16px;
+  border-radius: var(--ds-radius-pill);
+  background: var(--ds-surface-overlay);
+  box-shadow: var(--ds-shadow-float);
   font-size: 13px;
-  color: var(--muted-foreground);
-  transition: opacity 240ms ease;
+  color: var(--ds-text-secondary);
+  transition: opacity var(--ds-dur-enter) var(--ds-ease-out);
 }
 
 .ap-regua[data-oculta="true"] {
@@ -539,21 +643,26 @@
 }
 
 .ap-regua kbd {
-  padding: 2px 6px;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  background: var(--nexodoc-raised);
-  font: inherit;
-  color: var(--muted-foreground);
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 5px;
+  font-family: var(--ds-font-mono);
+  font-size: 11px;
+  color: var(--ds-text-tertiary);
+  box-shadow: inset 0 0 0 1px var(--ds-line-default);
 }
 
 .ap-posicao {
-  color: var(--foreground);
+  font-family: var(--ds-font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-text-primary);
 }
 
 /*
- * AS NOTAS DO APRESENTADOR. Painel lateral, sobre o palco, aberto por `N`.
- * Fica à esquerda porque a régua de controle já ocupa a direita.
+ * AS NOTAS DO APRESENTADOR. Painel lateral, aberto por `N`. Fica à esquerda
+ * porque a régua de controle já ocupa a direita.
  */
 .ap-notas {
   position: fixed;
@@ -564,26 +673,23 @@
   box-sizing: border-box;
   padding: 32px 28px;
   overflow-y: auto;
-  border-right: 1px solid var(--border);
-  background: var(--card);
-  color: var(--foreground);
+  background: var(--ds-surface-card);
+  box-shadow: inset -1px 0 0 var(--ds-line-subtle);
+  color: var(--ds-text-primary);
 }
 
 .ap-notas h2 {
-  margin: 0 0 8px;
-  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  margin: 0 0 10px;
   font-size: 13px;
   font-weight: 500;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--muted-foreground);
+  color: var(--ds-text-tertiary);
 }
 
 .ap-notas p {
   margin: 0;
   font-size: 16px;
   line-height: 1.6;
-  color: var(--foreground);
+  color: var(--ds-text-primary);
   text-wrap: pretty;
 }
 
@@ -592,14 +698,9 @@
   font-size: 22px;
   font-weight: 500;
   letter-spacing: -0.01em;
-  color: var(--foreground);
+  color: var(--ds-text-primary);
 }
 
-/*
- * A ARMADILHA DO ENSAIO: sem isto, uma transição de slide durante uma fala
- * lenta parece falha de projetor. Nenhuma animação de entrada, e movimento
- * reduzido continua valendo em toda parte.
- */
 @media (prefers-reduced-motion: reduce) {
   .ap-regua {
     transition: none;
@@ -618,27 +719,21 @@
 /* ═══════════════════════════════════════════════════════════════════════════
    MOVIMENTO
 
-   A regra que governa tudo aqui: NADA SE MEXE SEM DIZER ALGO. Cada animação
-   responde a uma pergunta — dirige a atenção, explica, cria hierarquia ou
-   marca um momento. O que não responde a nenhuma não existe.
+   A regra que governa tudo aqui: NADA SE MEXE SEM DIZER ALGO. A troca de folha
+   é o gesto do apresentador, e o que entra responde a ele — em ordem de
+   leitura, uma vez, sem loop. Nada roda sozinho depois que a folha assentou.
 
-   O SISTEMA. Cinco durações, três curvas, dois passos de cascata. Todo valor
-   nas folhas vem daqui; número solto em `style` é o que faz duas folhas
-   parecerem de decks diferentes.
+   O SISTEMA. As curvas são as do ds.css; as durações do deck são mais longas
+   que as do app porque a sala lê de longe e a fala acompanha.
 
      micro   120ms   resposta (hover do botão)
      curta   260ms   saída de folha, item de lista
-     média   480ms   revelação de texto, cartão
-     longa   720ms   número que corre, linha que se desenha
-     herói  1100ms   o momento da folha (o 56 assentando)
-
-   ENTRADA desacelera (chega rápido, assenta); SAÍDA acelera e dura ~75% da
-   entrada. Ambiente é senoidal e lento. Nunca linear em deslocamento.
+     média   480ms   revelação de texto, painel
+     longa   720ms   número que corre, barra que cresce
+     herói  1100ms   o momento da folha
 
    As folhas remontam a cada troca (a `<section>` tem `key`), então as animações
-   tocam de novo a cada visita — o que se ensaia é o que se projeta. A folha que
-   SAI fica montada por uma saída curta por cima da que entra: a troca deixa de
-   ser corte seco sem virar dissolve de PowerPoint.
+   tocam de novo a cada visita — o que se ensaia é o que se projeta.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 .ap-raiz {
@@ -651,12 +746,12 @@
   --ap-passo: 90ms;
   --ap-passo-largo: 160ms;
 
-  /* chega rápido e assenta — a curva de 80% do deck */
-  --ap-entra: cubic-bezier(0.2, 0.7, 0.2, 1);
+  /* chega rápido e assenta — a curva de entrada do sistema */
+  --ap-entra: var(--ds-ease-out);
   /* sai acelerando: o olho já foi embora */
-  --ap-sai: cubic-bezier(0.3, 0, 1, 1);
-  /* ambiente e travessia: simétrica, sem sobressalto */
-  --ap-suave: cubic-bezier(0.45, 0, 0.55, 1);
+  --ap-sai: var(--ds-ease-exit);
+  /* deslocamento de A para B com os dois pontos visíveis */
+  --ap-suave: var(--ds-ease-move);
 }
 
 /* Sobe 10px e assenta. Para itens secundários: listas, notas de rodapé. */
@@ -682,15 +777,11 @@
 
 /*
  * A MÁSCARA DE LINHA. O texto sobe de trás de uma borda invisível, linha a
- * linha — é a revelação do título e do fecho. Diferente do fade-up: o olho vê o
- * texto NASCER na linha de base, e não flutuar até ela. É a diferença entre
- * uma frase dita e uma frase que aparece.
+ * linha — é a revelação do título e do fecho. O olho vê o texto NASCER na
+ * linha de base, e não flutuar até ela.
  *
  * 118%, e não 100%: o invólucro tem 0,14em de folga embaixo para não decapitar
- * descendentes, e a linha precisa começar ABAIXO dessa folga. Com line-height 1
- * (os números grandes) a folga vale 14% da altura, e a 108% o topo do "R$" já
- * aparecia como dois tracinhos antes da revelação — visto no quadro de 1,3 s da
- * folha 09.
+ * descendentes, e a linha precisa começar ABAIXO dessa folga.
  */
 @keyframes ap-mascara {
   from {
@@ -701,7 +792,7 @@
   }
 }
 
-/* Linha que se desenha da esquerda para a direita: o fluxo tem direção. */
+/* Barra que cresce da esquerda: a proporção chegando. */
 @keyframes ap-risca {
   from {
     transform: scaleX(0);
@@ -711,7 +802,7 @@
   }
 }
 
-/* Descida, para o ramo que desce do motor. */
+/* Coluna ou fio que desce. */
 @keyframes ap-desce {
   from {
     transform: scaleY(0);
@@ -739,6 +830,24 @@
   }
 }
 
+/* O mesmo trajeto, medido pela própria caixa: anda 100% da largura do fio. */
+@keyframes ap-viaja {
+  0% {
+    opacity: 0;
+    transform: translateX(0);
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+}
+
 /* A folha que sai: um passo para trás e some. Por cima da que entra. */
 @keyframes ap-sai-folha {
   from {
@@ -751,13 +860,15 @@
   }
 }
 
-/* A página que acende no mapa do memorial. */
+/* A página que acende no mapa do memorial: lida, e não nascendo do nada. */
 @keyframes ap-acende {
   from {
-    opacity: 0.18;
+    opacity: 0.12;
+    transform: scale(0.7);
   }
   to {
     opacity: 1;
+    transform: none;
   }
 }
 
@@ -769,7 +880,7 @@
 }
 .ap-risca {
   transform-origin: left center;
-  animation: ap-risca var(--ap-media) var(--ap-suave) both;
+  animation: ap-risca var(--ap-longa) var(--ap-entra) both;
 }
 .ap-desce {
   transform-origin: top center;
@@ -794,13 +905,18 @@
 
 /* A página do memorial acendendo conforme a leitura passa por ela. */
 .ap-acende {
-  animation: ap-acende var(--ap-curta) var(--ap-suave) both;
+  animation: ap-acende var(--ap-curta) var(--ap-entra) both;
 }
 
 /* O documento atravessando o ramo do motor: um ponto, uma vez, sem rastro. */
 .ap-pulso {
   opacity: 0;
   animation: ap-pulso 1400ms var(--ap-suave) both;
+}
+
+.ap-viaja {
+  opacity: 0;
+  animation: ap-viaja 1400ms var(--ap-suave) both;
 }
 
 .ap-folha--sai {
@@ -813,11 +929,8 @@
  * A ASSINATURA DA CAPA. Um fio de neon vermelho atravessa "Coded by M" da
  * esquerda para a direita e some; o texto de baixo nunca muda. A cópia acesa
  * mora num `::after` com o mesmo texto (`data-texto`), e é a MÁSCARA que anda —
- * só as letras sob a faixa brilham. A folga de 0,5em em volta existe porque a
- * máscara recorta na caixa, e o halo do `text-shadow` seria decapitado.
- *
- * Começa depois do rodapé assentar e repete a cada 7 s: ~1,6 s de travessia e
- * o resto parado, para ser notado sem virar letreiro.
+ * só as letras sob a faixa brilham. É a assinatura do autor, não do produto:
+ * por isso pode ser vermelha numa folha onde nada mais tem cor.
  */
 .ap-neon {
   position: relative;
@@ -829,10 +942,10 @@
   position: absolute;
   inset: -0.5em;
   padding: 0.5em;
-  color: var(--status-critical);
+  color: var(--ds-p-coral);
   text-shadow:
-    0 0 4px color-mix(in srgb, var(--status-critical) 55%, transparent),
-    0 0 12px color-mix(in srgb, var(--status-critical) 30%, transparent);
+    0 0 4px color-mix(in srgb, var(--ds-p-coral) 55%, transparent),
+    0 0 12px color-mix(in srgb, var(--ds-p-coral) 30%, transparent);
   pointer-events: none;
   -webkit-mask-image: linear-gradient(
     90deg,
@@ -840,12 +953,7 @@
     #000 50%,
     transparent 58%
   );
-  mask-image: linear-gradient(
-    90deg,
-    transparent 42%,
-    #000 50%,
-    transparent 58%
-  );
+  mask-image: linear-gradient(90deg, transparent 42%, #000 50%, transparent 58%);
   -webkit-mask-size: 300% 100%;
   mask-size: 300% 100%;
   -webkit-mask-repeat: no-repeat;
@@ -874,8 +982,7 @@
 /*
  * MOVIMENTO REDUZIDO DESLIGA TUDO — e "tudo" precisa incluir o estado final.
  * `both` deixa o elemento no quadro inicial (opacidade 0) quando a animação não
- * roda: sem este bloco, quem pede movimento reduzido veria a folha VAZIA. Já
- * aconteceu em produto de gente grande.
+ * roda: sem este bloco, quem pede movimento reduzido veria a folha VAZIA.
  */
 @media (prefers-reduced-motion: reduce) {
   .ap-entra,
@@ -891,10 +998,11 @@
   }
   .ap-folha--sai,
   .ap-pulso,
+  .ap-viaja,
   .ap-neon::after {
     display: none;
   }
-  .ap-trilho__marca {
+  .ap-trilho__selecao {
     transition: none;
   }
 }

@@ -8,6 +8,8 @@ import {
   type ReactNode,
 } from "react";
 
+import { Orbe } from "@/components/ds/basicos";
+
 import "./palco.css";
 
 export interface Slide {
@@ -38,8 +40,9 @@ export interface Slide {
 const LARGURA_DAS_NOTAS = 460;
 
 /**
- * O TRILHO — os índices de todas as folhas, a corrente acesa e a marca ao lado.
- * Vive fora da <section> da folha: não dissolve na troca, só a marca desliza.
+ * O TRILHO — a barra lateral do app: o orbe no topo, os índices de todas as
+ * folhas com a pílula de seleção na corrente, e o bloco embaixo. Vive fora da
+ * <section> da folha: não dissolve na troca, só a pílula desliza.
  * `aria-hidden` porque é o mesmo dado que a régua de controle já anuncia.
  */
 function Trilho({
@@ -51,6 +54,9 @@ function Trilho({
 }) {
   return (
     <div className="ap-trilho" aria-hidden="true">
+      <span className="ap-trilho__marca-do-nexo">
+        <Orbe tamanho={28} />
+      </span>
       <ol className="ap-trilho__indices">
         {folhas.map((f, i) => (
           <li
@@ -66,7 +72,7 @@ function Trilho({
         ))}
       </ol>
       <span
-        className="ap-trilho__marca"
+        className="ap-trilho__selecao"
         style={{ transform: `translateY(${indice * 38}px)` }}
       />
       <span className="ap-trilho__bloco">{folhas[indice].bloco ?? ""}</span>
@@ -220,7 +226,7 @@ export function Palco({ slides }: { slides: readonly Slide[] }) {
   }, []);
 
   return (
-    <div className="ap-raiz" data-notas={notasAbertas} ref={raiz}>
+    <div className="ap-raiz ds" data-notas={notasAbertas} ref={raiz}>
       <div className="ap-moldura" ref={moldura}>
         <div className="ap-palco" ref={palco}>
           <Trilho folhas={slides} indice={indice} />

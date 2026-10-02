@@ -18,7 +18,31 @@ import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
  * o usa. Ver `2026-09-10-deck-instrumento-design.md`.
  */
 
-export const MONO = "'IBM Plex Mono', ui-monospace, monospace";
+/** A família de código do sistema novo (Geist Mono), para página, obra e arquivo. */
+export const MONO = "var(--ds-font-mono)";
+
+export type TomDoSelo = "neutro" | "linha" | "ok" | "block" | "decide" | "nexo";
+
+/**
+ * O SELO do app (`.ds-pill`) na escala do palco. Diz ESTADO — medido, em
+ * aberto, impede emitir —, e é a única coisa colorida perto de um título.
+ */
+export function Selo({
+  tom = "neutro",
+  ponto = true,
+  children,
+}: {
+  tom?: TomDoSelo;
+  ponto?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <span className={tom === "neutro" ? "ap-selo" : `ap-selo ap-selo--${tom}`}>
+      {ponto ? <i aria-hidden="true" /> : null}
+      {children}
+    </span>
+  );
+}
 
 /**
  * Entrada escalonada. O atraso é a ORDEM DE LEITURA tornada visível: o olho
@@ -152,9 +176,9 @@ export function Linhas({
 export type LinhaDeLeitura = { texto: string; chave?: boolean };
 
 /**
- * A LEITURA — a conclusão da folha, na base, como a leitura de um instrumento.
- * Linha fina, rótulo LEITURA e a frase em Sans 600 48, linha a linha por
- * máscara. Qual linha é a CHAVE (em teal) é decisão editorial por folha.
+ * A LEITURA — a conclusão da folha, na base. Fio fino, rótulo e a frase em
+ * Geist 500 48, linha a linha por máscara. Qual linha é a CHAVE (em branco; as
+ * outras um degrau de cinza abaixo) é decisão editorial por folha.
  */
 export function Leitura({
   linhas,
@@ -195,16 +219,21 @@ export type Fato = {
   /** Título em linhas deliberadas. */
   titulo: readonly string[];
   texto?: ReactNode;
-  /** Cor do título (padrão: foreground). */
+  /** Cor do título — só para sinal (coral, âmbar); o padrão é o texto primário. */
   cor?: string;
+  /** O estado do fato, no topo da célula (medido, operacional…). */
+  selo?: { tom: TomDoSelo; texto: string };
   /** O que vem depois do texto: uma frase colorida, uma lista Mono. */
   extra?: ReactNode;
 };
 
 /**
- * ESCALA HORIZONTAL — fatos em linha, ticks embaixo. A linha se desenha, os
- * ticks aparecem, e só então os fatos assentam, em cascata da esquerda para a
- * direita.
+ * A RÉGUA (escala horizontal) — os fatos num painel só, em colunas iguais com
+ * um fio entre elas, como a régua de números do app. O painel surge, e os
+ * fatos assentam em cascata da esquerda para a direita.
+ *
+ * `tracejada` sobrevive só por compatibilidade: era a linha de base do
+ * instrumento antigo, que o painel substituiu.
  */
 export function EscalaHorizontal({
   fatos,
@@ -219,17 +248,22 @@ export function EscalaHorizontal({
   compacta?: boolean;
   style?: CSSProperties;
 }) {
-  const classes = [
-    "ap-escala-h",
-    tracejada ? "ap-escala-h--tracejada" : "",
-    compacta ? "ap-escala-h--compacta" : "",
-  ]
+  void tracejada;
+  const classes = ["ap-escala-h", "ap-surge", compacta ? "ap-escala-h--compacta" : ""]
     .filter(Boolean)
     .join(" ");
   return (
-    <div className={classes} style={style}>
+    <div
+      className={classes}
+      style={{ animationDelay: `${atraso}ms`, ...style }}
+    >
       {fatos.map((f, i) => (
         <div key={f.titulo.join(" ")} className="ap-escala-h__fato">
+          {f.selo ? (
+            <Entra atraso={atraso + 200 + i * 160} style={{ marginBottom: 22 }}>
+              <Selo tom={f.selo.tom}>{f.selo.texto}</Selo>
+            </Entra>
+          ) : null}
           <p
             className="ap-escala-h__titulo"
             style={f.cor ? { color: f.cor } : undefined}
@@ -244,25 +278,8 @@ export function EscalaHorizontal({
           {f.extra ? (
             <Entra atraso={atraso + 560 + i * 160}>{f.extra}</Entra>
           ) : null}
-          <span
-            aria-hidden="true"
-            className="ap-escala-h__tick ap-escala-h__tick--inicio ap-surge"
-            style={{ animationDelay: `${atraso + 200}ms` }}
-          />
-          {i === fatos.length - 1 ? (
-            <span
-              aria-hidden="true"
-              className="ap-escala-h__tick ap-escala-h__tick--fim ap-surge"
-              style={{ animationDelay: `${atraso + 200}ms` }}
-            />
-          ) : null}
         </div>
       ))}
-      <span
-        aria-hidden="true"
-        className="ap-escala-h__linha ap-risca"
-        style={{ animationDelay: `${atraso}ms` }}
-      />
     </div>
   );
 }
@@ -270,8 +287,9 @@ export function EscalaHorizontal({
 export type ItemDaEscala = { titulo: string; texto?: string; cor?: string };
 
 /**
- * ESCALA VERTICAL — leituras numeradas de altura igual. A linha desce
- * (`ap-desce`), os ticks aparecem, e as leituras assentam de cima para baixo.
+ * A LISTA NUMERADA (escala vertical) — leituras de altura igual, cada uma
+ * aberta por um fio e com o número num anel. `cor` acende o anel: só para
+ * sinal (o item que pede atenção), nunca para enfeitar.
  */
 export function EscalaVertical({
   itens,
@@ -288,32 +306,32 @@ export function EscalaVertical({
 }) {
   return (
     <div className="ap-escala-v" style={style}>
-      <span
-        aria-hidden="true"
-        className="ap-escala-v__linha ap-desce"
-        style={{ animationDelay: `${atraso}ms` }}
-      />
       {itens.map((item, i) => (
-        <div key={item.titulo} className="ap-escala-v__item">
-          <span
-            className="ap-escala-v__numero ap-surge"
-            style={{ animationDelay: `${atraso + 200}ms`, color: item.cor }}
-          >
-            {numerada ? String(inicio + i).padStart(2, "0") : ""}
-          </span>
-          <span
-            aria-hidden="true"
-            className="ap-escala-v__tick ap-surge"
-            style={{
-              animationDelay: `${atraso + 200}ms`,
-              background: item.cor,
-            }}
-          />
-          <div className="ap-escala-v__corpo">
-            <p
-              className="ap-escala-v__titulo"
-              style={item.cor ? { color: item.cor } : undefined}
+        <div
+          key={item.titulo}
+          className="ap-escala-v__item ap-surge"
+          style={{ animationDelay: `${atraso + i * 120}ms` }}
+        >
+          {numerada ? (
+            <span
+              className={
+                item.cor
+                  ? "ap-escala-v__numero ap-escala-v__numero--sinal"
+                  : "ap-escala-v__numero"
+              }
+              style={
+                item.cor
+                  ? ({ ["--ap-sinal" as string]: item.cor } as CSSProperties)
+                  : undefined
+              }
             >
+              {inicio + i}
+            </span>
+          ) : (
+            <span aria-hidden="true" />
+          )}
+          <div className="ap-escala-v__corpo">
+            <p className="ap-escala-v__titulo">
               <Linhas linhas={[item.titulo]} atraso={atraso + 320 + i * 160} />
             </p>
             {item.texto ? (
@@ -330,9 +348,10 @@ export function EscalaVertical({
 
 /**
  * O CONFRONTO — a folha de objeção. A pergunta, com as palavras do comprador,
- * em Mono à esquerda (mono é o que os OUTROS dizem); as respostas como leituras
- * numeradas à direita; a leitura final na base. Sem `pergunta`, a esquerda traz
- * o título e a linha fina (a folha 17 afirma em vez de responder).
+ * à esquerda, na bolha de quem escreve no chat do Nexo (é o que os OUTROS
+ * dizem); as respostas como lista numerada à direita; a leitura final na base.
+ * Sem `pergunta`, a esquerda traz o título e a linha fina (a folha 16 afirma
+ * em vez de responder).
  */
 export function Confronto({
   pergunta,
@@ -400,7 +419,7 @@ export function Confronto({
   );
 }
 
-/** O MOSTRADOR — um valor em Mono 80 sobre o rótulo, com a régua de 1 px à esquerda. */
+/** O MOSTRADOR — o número grande do app sobre o rótulo. Vários vão numa `.ap-regua-num`. */
 export function Mostrador({
   valor,
   rotuloDo,

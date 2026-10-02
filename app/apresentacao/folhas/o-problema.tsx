@@ -9,7 +9,7 @@ import {
   EscalaVertical,
   Leitura,
   Linhas,
-  MONO,
+  Selo,
 } from "../pecas";
 
 /**
@@ -20,8 +20,8 @@ import {
 /**
  * TRECHOS TRANSCRITOS, com a página. Cada um foi conferido contra o texto da
  * própria página guardado com o parecer `34e41ba2` (117_25, 14/09/2026) — é a
- * frase do documento, e não a paráfrase do achado. Mono, porque é citação de
- * arquivo; aspas, porque é a letra de outra pessoa.
+ * frase do documento, e não a paráfrase do achado. A página vai no código do
+ * app, como no Relatório; aspas, porque é a letra de outra pessoa.
  */
 function Trechos({
   rotulo,
@@ -41,23 +41,70 @@ function Trechos({
             key={pagina}
             style={{
               display: "grid",
-              gridTemplateColumns: "88px 1fr",
+              gridTemplateColumns: "96px 1fr",
               alignItems: "baseline",
-              padding: "10px 0",
-              borderTop: "1px solid var(--border)",
-              fontFamily: MONO,
+              padding: "12px 0",
+              boxShadow: "inset 0 1px 0 var(--ds-line-subtle)",
               fontSize: 22,
               lineHeight: 1.4,
             }}
           >
-            <span style={{ color: "var(--muted-foreground)" }}>p. {pagina}</span>
-            <span style={{ color: "var(--foreground)", textWrap: "pretty" }}>
+            <span>
+              <span className="ap-codigo" style={{ fontSize: 17 }}>
+                p. {pagina}
+              </span>
+            </span>
+            <span style={{ color: "var(--ds-text-primary)", textWrap: "pretty" }}>
               “{trecho}”
             </span>
           </li>
         ))}
       </ul>
     </div>
+  );
+}
+
+/**
+ * A FRASE QUE FECHA CADA LADO da folha 07, com o ponto de estado do app: coral
+ * é a consequência (quem revisa é o cliente), verde é a saída (corrigido uma
+ * vez). Antes o segundo era âmbar — e âmbar, no sistema novo, é "pede decisão",
+ * que não é o que a frase diz.
+ */
+function Consequencia({
+  tom,
+  children,
+}: {
+  tom: "block" | "ok";
+  children: string;
+}) {
+  const cor = tom === "block" ? "var(--ds-sev-block)" : "var(--ds-state-ok)";
+  return (
+    <p
+      style={{
+        display: "flex",
+        alignItems: "baseline",
+        gap: 14,
+        margin: "8px 0 0",
+        paddingTop: 22,
+        boxShadow: "inset 0 1px 0 var(--ds-line-subtle)",
+        fontSize: 26,
+        lineHeight: 1.4,
+        color: cor,
+      }}
+    >
+      <i
+        aria-hidden="true"
+        style={{
+          flex: "none",
+          width: 10,
+          height: 10,
+          borderRadius: "50%",
+          background: cor,
+          transform: "translateY(-3px)",
+        }}
+      />
+      {children}
+    </p>
   );
 }
 
@@ -132,18 +179,9 @@ export const O_PROBLEMA: readonly Slide[] = [
                     [38, "estacionamento com vagas (ambulânciua, PCD e idoso)"],
                   ]}
                 />
-                <p
-                  style={{
-                    margin: 0,
-                    paddingTop: 20,
-                    borderTop: "1px solid var(--border)",
-                    fontSize: 26,
-                    lineHeight: 1.4,
-                    color: "var(--status-critical)",
-                  }}
-                >
+                <Consequencia tom="block">
                   Quando isso acontece, quem revisa é quem contratou.
-                </p>
+                </Consequencia>
               </>
             ),
           },
@@ -170,18 +208,9 @@ export const O_PROBLEMA: readonly Slide[] = [
                     ],
                   ]}
                 />
-                <p
-                  style={{
-                    margin: 0,
-                    paddingTop: 20,
-                    borderTop: "1px solid var(--border)",
-                    fontSize: 26,
-                    lineHeight: 1.4,
-                    color: "var(--status-warning)",
-                  }}
-                >
+                <Consequencia tom="ok">
                   Achado uma vez, corrigido uma vez, resolvido em todos.
-                </p>
+                </Consequencia>
               </>
             ),
           },
@@ -220,11 +249,12 @@ export const O_PROBLEMA: readonly Slide[] = [
           <div
             style={{
               marginTop: 20,
-              fontFamily: MONO,
               fontSize: 60,
+              fontWeight: 400,
               lineHeight: 1.2,
-              letterSpacing: "-0.02em",
-              color: "var(--foreground)",
+              letterSpacing: "-0.03em",
+              fontVariantNumeric: "tabular-nums",
+              color: "var(--ds-text-secondary)",
             }}
           >
             <Linhas
@@ -238,12 +268,13 @@ export const O_PROBLEMA: readonly Slide[] = [
             style={{
               marginTop: 16,
               paddingTop: 16,
-              borderTop: "1px solid var(--border)",
-              fontFamily: MONO,
+              boxShadow: "inset 0 1px 0 var(--ds-line-default)",
               fontSize: 60,
+              fontWeight: 400,
               lineHeight: 1.2,
-              letterSpacing: "-0.02em",
-              color: "var(--foreground)",
+              letterSpacing: "-0.03em",
+              fontVariantNumeric: "tabular-nums",
+              color: "var(--ds-text-primary)",
             }}
           >
             ={" "}
@@ -259,10 +290,9 @@ export const O_PROBLEMA: readonly Slide[] = [
             <p
               style={{
                 margin: "20px 0 0",
-                fontFamily: MONO,
                 fontSize: 26,
                 lineHeight: 1.4,
-                color: "var(--muted-foreground)",
+                color: "var(--ds-text-secondary)",
               }}
             >
               Hora de engenheiro ou arquiteto{" "}
@@ -270,33 +300,39 @@ export const O_PROBLEMA: readonly Slide[] = [
             </p>
           </Entra>
           <div className="ap-cresce" />
-          <Entra
-            atraso={1750}
-            style={{
-              paddingTop: 24,
-              borderTop: "1px solid var(--nexodoc-accent)",
-            }}
-          >
-            <span
-              className="ap-mono-rotulo"
-              style={{ display: "block", marginBottom: 16 }}
-            >
-              Só de horas paradas
-            </span>
-          </Entra>
+          {/*
+            O TOTAL NUM PAINEL, como o número de um cartão do app: o rótulo em
+            cima, o selo âmbar dizendo que é estimativa — a premissa fica na
+            tela, e não só na fala.
+          */}
           <div
-            style={{
-              fontFamily: MONO,
-              fontSize: 80,
-              fontWeight: 500,
-              letterSpacing: "-0.035em",
-              lineHeight: 1,
-              color: "var(--foreground)",
-              whiteSpace: "nowrap",
-              fontVariantNumeric: "tabular-nums",
-            }}
+            className="ap-painel ap-entra"
+            style={{ padding: "28px 36px 34px", animationDelay: "1750ms" }}
           >
-            <Linhas linhas={["R$ 5.040 a R$ 7.920"]} atraso={1900} />
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: 18,
+              }}
+            >
+              <span className="ap-mono-rotulo">Só de horas paradas</span>
+              <Selo tom="decide">estimativa</Selo>
+            </div>
+            <div
+              style={{
+                fontSize: 84,
+                fontWeight: 400,
+                letterSpacing: "-0.045em",
+                lineHeight: 1,
+                color: "var(--ds-text-primary)",
+                whiteSpace: "nowrap",
+                fontVariantNumeric: "tabular-nums",
+              }}
+            >
+              <Linhas linhas={["R$ 5.040 a R$ 7.920"]} atraso={1900} />
+            </div>
           </div>
         </div>
         <div
@@ -307,12 +343,7 @@ export const O_PROBLEMA: readonly Slide[] = [
           }}
         >
           <Entra atraso={2500}>
-            <span
-              className="ap-mono-rotulo"
-              style={{ color: "var(--status-critical)" }}
-            >
-              O que não entra nessa conta
-            </span>
+            <Selo tom="block">O que não entra nessa conta</Selo>
           </Entra>
           <EscalaVertical
             atraso={2600}

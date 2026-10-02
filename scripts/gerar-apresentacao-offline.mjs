@@ -19,10 +19,14 @@
 //
 // NÃO GASTA TOKEN: só lê a tela que já existe.
 //
-// O QUE NÃO VAI JUNTO: as fontes. `next/font` auto-hospeda o IBM Plex, e embutir
+// O QUE NÃO VAI JUNTO: as fontes. `next/font` auto-hospeda a Geist, e embutir
 // os `woff2` custaria centenas de KB por um caso degradado do caso degradado. O
 // arquivo pede a fonte ao Google e cai na do sistema quando não há internet — o
 // deck continua legível, só menos afinado, e isso está escrito no rodapé dele.
+//
+// DESDE 02/10/2026 O DECK FALA O SISTEMA NOVO: os tokens vêm do `app/ds.css` e
+// das medidas de `components/ds/medidas.css`, lidos do disco e embutidos inteiros
+// — uma segunda cópia dos valores aqui divergiria na primeira correção.
 import fs from "node:fs";
 import path from "node:path";
 
@@ -41,24 +45,13 @@ function dataUri(arquivo, tipo) {
 }
 
 /**
- * Os tokens que o `globals.css` daria e que o arquivo solto não terá, mais a
- * regra da marca reduzida ao que a capa usa.
+ * O que o `next/font` e o `globals.css` dariam e que o arquivo solto não terá:
+ * as variáveis das famílias (o ds.css as lê de `--font-ds-*`) e a base do body.
  */
 const TOKENS = `
 :root {
-  --background: #0a0e11;
-  --foreground: #e1e7ea;
-  --card: #121518;
-  --border: #23282c;
-  --muted-foreground: #8e9ba3;
-  --primary: #00a693;
-  --nexodoc-accent: #5bdac6;
-  --nexodoc-raised: #1a1e21;
-  --status-ok: #6ee7a3;
-  --status-ok-bg: rgb(110 231 163 / 0.13);
-  --status-warning: #e9b45c;
-  --status-critical: #ff9285;
-  --status-critical-bg: rgb(255 146 133 / 0.14);
+  --font-ds-sans: "Geist";
+  --font-ds-mono: "Geist Mono";
 }
 * { box-sizing: border-box; }
 /*
@@ -72,23 +65,15 @@ const TOKENS = `
  */
 body {
   margin: 0;
-  background: var(--background);
-  color: var(--foreground);
-  font-family: "IBM Plex Sans", system-ui, sans-serif;
-}
-.nx-marca {
-  display: inline-block;
-  position: relative;
-  flex: 0 0 auto;
-  background-image: var(--nx-marca-estatica);
-  background-size: 100% 100%;
-  background-repeat: no-repeat;
+  background: var(--ds-surface-page);
+  color: var(--ds-text-primary);
+  font-family: "Geist", system-ui, sans-serif;
 }
 .ap-folha[hidden] { display: none; }
 .ap-aviso {
   position: fixed; left: 24px; bottom: 20px;
-  font-family: "IBM Plex Mono", ui-monospace, monospace;
-  font-size: 12px; color: #3d474d;
+  font-family: "Geist Mono", ui-monospace, monospace;
+  font-size: 12px; color: #4a4e57;
 }
 `;
 
@@ -356,7 +341,13 @@ async function main() {
 
   await navegador.close();
 
-  const palcoCss = fs.readFileSync("app/apresentacao/palco.css", "utf8");
+  const palcoCss = [
+    "app/ds.css",
+    "components/ds/medidas.css",
+    "app/apresentacao/palco.css",
+  ]
+    .map((arquivo) => fs.readFileSync(arquivo, "utf8"))
+    .join("\n");
   const orbe = dataUri("public/marca/orbe-512.png", "image/png");
   // A `MarcaViva` escolhe o arquivo pelo tamanho pedido: o diagrama usa o de
   // 180. Trocar só o de 512 deixava um endereço de servidor para trás.
@@ -395,11 +386,11 @@ async function main() {
 <title>NexoDoc — Apresentação à diretoria</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300..700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>${TOKENS}${palcoCss}</style>
 </head>
 <body>
-<div class="ap-raiz" id="raiz">
+<div class="ap-raiz ds" id="raiz">
   <div class="ap-moldura" id="moldura">
     <div class="ap-palco" id="palco">
 ${corpo}

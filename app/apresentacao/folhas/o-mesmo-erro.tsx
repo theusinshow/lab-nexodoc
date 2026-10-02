@@ -30,10 +30,11 @@ import { Entra, Leitura, Linhas, MONO } from "../pecas";
 
 type Tom = "critico" | "tecnico" | "editorial";
 
+/** As cores dos níveis do sistema novo — as mesmas do mapa da folha 05. */
 const COR: Record<Tom, string> = {
-  critico: "var(--status-critical)",
-  tecnico: "var(--status-warning)",
-  editorial: "var(--muted-foreground)",
+  critico: "var(--ds-sev-block)",
+  tecnico: "var(--ds-sev-decide)",
+  editorial: "var(--ds-sev-note)",
 };
 
 /** As cinco obras, na ordem das colunas. */
@@ -114,13 +115,23 @@ const LINHAS: readonly Linha[] = [
   },
 ];
 
-/** Largura de cada coluna de obra. 5 × 148 + o rótulo = a largura útil. */
-const COLUNA = 148;
+/** Largura de cada coluna de obra. 5 × 140 + o rótulo = a largura do painel. */
+const COLUNA = 140;
 const GRADE = `1fr repeat(${OBRAS.length}, ${COLUNA}px)`;
 
+/**
+ * A MATRIZ é uma tabela do app: um painel, o cabeçalho em cinza, linhas
+ * separadas por fio fino. Cada casa apontada leva o PONTO REDONDO do nível
+ * (no sistema novo, redondo é nível e quadrado é disciplina) e a página.
+ */
 function Matriz({ atraso }: { atraso: number }) {
   return (
-    <div role="table" aria-label="Erros apontados por obra">
+    <div
+      role="table"
+      aria-label="Erros apontados por obra"
+      className="ap-painel ap-surge"
+      style={{ padding: "26px 36px 8px", animationDelay: `${atraso}ms` }}
+    >
       {/* Cabeçalho: código da obra sobre a cidade. */}
       <Entra atraso={atraso}>
         <div
@@ -132,32 +143,28 @@ function Matriz({ atraso }: { atraso: number }) {
             paddingBottom: 12,
           }}
         >
-          <span role="columnheader" className="ap-mono-rotulo">
+          <span
+            role="columnheader"
+            className="ap-mono-rotulo"
+            style={{ color: "var(--ds-text-primary)" }}
+          >
             O que o Nexo apontou
           </span>
           {OBRAS.map((o) => (
             <span
               key={o.codigo}
               role="columnheader"
-              style={{ fontFamily: MONO, textAlign: "center" }}
+              style={{ textAlign: "center" }}
             >
-              <span
-                style={{
-                  display: "block",
-                  fontSize: 22,
-                  color: "var(--foreground)",
-                  fontVariantNumeric: "tabular-nums",
-                }}
-              >
+              <span className="ap-codigo" style={{ fontSize: 19 }}>
                 {o.codigo}
               </span>
               <span
                 style={{
                   display: "block",
-                  marginTop: 4,
+                  marginTop: 8,
                   fontSize: 16,
-                  letterSpacing: "0.06em",
-                  color: "var(--muted-foreground)",
+                  color: "var(--ds-text-tertiary)",
                 }}
               >
                 {o.cidade}
@@ -177,8 +184,8 @@ function Matriz({ atraso }: { atraso: number }) {
               display: "grid",
               gridTemplateColumns: GRADE,
               alignItems: "center",
-              minHeight: 84,
-              borderTop: "1px solid var(--border)",
+              minHeight: 86,
+              boxShadow: "inset 0 1px 0 var(--ds-line-subtle)",
             }}
           >
             <div role="rowheader" style={{ paddingRight: 32 }}>
@@ -189,7 +196,7 @@ function Matriz({ atraso }: { atraso: number }) {
                   fontWeight: 500,
                   lineHeight: 1.2,
                   letterSpacing: "-0.012em",
-                  color: "var(--foreground)",
+                  color: "var(--ds-text-primary)",
                 }}
               >
                 <Linhas linhas={[linha.tipo]} atraso={entra} />
@@ -198,10 +205,9 @@ function Matriz({ atraso }: { atraso: number }) {
                 <p
                   style={{
                     margin: 0,
-                    fontFamily: MONO,
-                    fontSize: 20,
+                    fontSize: 19,
                     lineHeight: 1.35,
-                    color: "var(--muted-foreground)",
+                    color: "var(--ds-text-tertiary)",
                     whiteSpace: "nowrap",
                     overflow: "hidden",
                     textOverflow: "ellipsis",
@@ -210,7 +216,9 @@ function Matriz({ atraso }: { atraso: number }) {
                   {linha.trechos.map((t, j) => (
                     <span key={t}>
                       {j > 0 ? " · " : ""}
-                      <span style={{ color: "var(--foreground)" }}>“{t}”</span>
+                      <span style={{ color: "var(--ds-text-secondary)" }}>
+                        “{t}”
+                      </span>
                     </span>
                   ))}
                   <span> — {linha.de}</span>
@@ -238,16 +246,17 @@ function Matriz({ atraso }: { atraso: number }) {
                     <>
                       {/*
                         A casa ACENDE, como a página no mapa da folha 05: a
-                        mesma grafia (uma marca na cor da gravidade), da
-                        esquerda para a direita, depois que a linha foi lida.
+                        mesma grafia (o ponto do nível), da esquerda para a
+                        direita, depois que a linha foi lida.
                       */}
                       <span
                         aria-hidden="true"
                         className="ap-acende"
                         style={{
-                          width: 14,
-                          height: 14,
+                          width: 12,
+                          height: 12,
                           flex: "none",
+                          borderRadius: "50%",
                           background: COR[linha.tom],
                           animationDelay: `${entra + 260 + j * 90}ms`,
                         }}
@@ -255,7 +264,7 @@ function Matriz({ atraso }: { atraso: number }) {
                       <span
                         className="ap-entra"
                         style={{
-                          color: "var(--foreground)",
+                          color: "var(--ds-text-primary)",
                           animationDelay: `${entra + 300 + j * 90}ms`,
                         }}
                       >
@@ -265,12 +274,10 @@ function Matriz({ atraso }: { atraso: number }) {
                   ) : (
                     <span
                       aria-label="não apontado"
-                      style={{
-                        width: 14,
-                        height: 1,
-                        background: "var(--border)",
-                      }}
-                    />
+                      style={{ color: "var(--ds-text-tertiary)", opacity: 0.6 }}
+                    >
+                      —
+                    </span>
                   )}
                 </div>
               );
@@ -278,7 +285,6 @@ function Matriz({ atraso }: { atraso: number }) {
           </div>
         );
       })}
-      <div style={{ borderTop: "1px solid var(--border)" }} />
     </div>
   );
 }
@@ -293,11 +299,11 @@ export const O_MESMO_ERRO: Slide = {
     "É A PROVA DA FOLHA ANTERIOR. A 07 disse que o modelo-padrão leva o mesmo defeito para todos os projetos; aqui ele aparece, casa por casa. Cada linha é um tipo de erro, cada coluna é um memorial auditado, e cada casa acesa traz a página onde o Nexo apontou.\n\nLER UMA LINHA SÓ, e escolher a do Chapecó: duas UBS de Criciúma, dois memoriais diferentes, e nos dois a proprietária é a Prefeitura de Chapecó. Ninguém escreveu isso duas vezes — veio do mesmo texto-base. Depois, apontar a última linha com a mão: 'corpo estradal', texto de rodovia, nas cinco obras — UBS, orla e skatepark.\n\nOS DEMAIS EXEMPLOS, se perguntarem: 'Bairro Vila Francesa' no 117-25 (p. 14) — o nome da outra UBS — e 'UBS Renascer' no 118-25 (p. 119); 'USB' no lugar de UBS nos dois; 'Beiram Mar' na orla de São José; 'Protóripo', 'padrõa', 'inos' repetidos igual no 117 e no 118; 'escava de aço' na orla e no skatepark; poste com seção de 60x40 METROS em quatro memoriais.\n\nCASA VAZIA NÃO É 'NÃO TEM'. É 'a auditoria daquele memorial não apontou'. O rodapé diz isso; se perguntarem, dizer igual.\n\nNINGUÉM JULGOU ESTES ACHADOS AINDA dentro do sistema. Por isso só entraram erros que se provam lendo o trecho — grafia, nome, cidade, unidade. Cada trecho foi conferido contra o texto da página.\n\nNÃO DIZER DE QUAL PROJETO veio o texto reaproveitado. O documento não diz, e o deck não sabe.",
   corpo: (
     <>
-      <div style={{ marginTop: 28 }}>
+      <div style={{ marginTop: 8 }}>
         <Matriz atraso={200} />
       </div>
       <Entra atraso={1700}>
-        <p className="ap-fonte" style={{ margin: "16px 0 0", fontSize: 18 }}>
+        <p className="ap-fonte" style={{ margin: "14px 0 0", fontSize: 18 }}>
           Casa acesa: o Nexo apontou naquele memorial, e o trecho está na página
           indicada. Casa vazia: a auditoria daquele memorial não apontou.
         </p>
