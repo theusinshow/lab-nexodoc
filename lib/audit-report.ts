@@ -818,11 +818,11 @@ export function getImpactRank(impact: FindingImpact) {
 export function getImpactLabel(impact: FindingImpact) {
   switch (impact) {
     case "critico_documental":
-      return "Critico documental";
+      return "Crítico documental";
     case "tecnico_contratual":
-      return "Tecnico/contratual";
+      return "Técnico/contratual";
     case "revisao_editorial":
-      return "Revisao editorial";
+      return "Revisão editorial";
     default:
       return "Outro";
   }

@@ -6,7 +6,7 @@
 // (auditoria padrão ~US$ 0,25; leitura de carimbo, centavos) — rodar de
 // propósito, não em laço.
 //
-// Uso: node scripts/teste-real-do-nexo.mjs [base] [volume|auditoria|tudo]
+// Uso: node scripts/teste-real-do-nexo.mjs [base] [volume|auditoria|tudo] [memorial.pdf]
 // Capturas e registro em prova-real/ (fora do git: mostram a tela logada).
 import { chromium } from "playwright";
 import fs from "node:fs";
@@ -15,6 +15,7 @@ import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 
 const BASE = process.argv[2] ?? "http://localhost:3400";
 const QUAL = process.argv[3] ?? "tudo";
+const MEMORIAL = process.argv[4] ?? "tests/117_25_md_geral_a.pdf";
 const OUT = "prova-real";
 fs.mkdirSync(OUT, { recursive: true });
 const registro = fs.createWriteStream(path.join(OUT, "registro.txt"), { flags: "w" });
@@ -177,9 +178,9 @@ if (QUAL === "volume" || QUAL === "tudo") {
 
 /* ================= B. auditar um memorial ================= */
 if (QUAL === "auditoria" || QUAL === "tudo") {
-  log("=== B. auditar um memorial (117-25, 218 páginas, padrão) ===");
+  log(`=== B. auditar um memorial (${MEMORIAL}, padrão) ===`);
   await novaConversa();
-  await anexar(["tests/117_25_md_geral_a.pdf"]);
+  await anexar([MEMORIAL]);
   ok(await esperar(async () => (await p.getByText(/Li as primeiras páginas/).count()) > 0, 240_000, 2000), "o Nexo leu as primeiras páginas do memorial");
   await foto("auditoria-ficha");
   // A saída "Auditar o memorial" pede a auditoria; o cartão com o botão Auditar vem na resposta.

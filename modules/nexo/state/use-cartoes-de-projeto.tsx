@@ -72,7 +72,18 @@ export function esquecerResumo(): void {
  * falta um código.
  */
 let projetosEmVoo: Promise<Map<string, { code: string; client: string }>> | null = null;
-function buscarProjetos(): Promise<Map<string, { code: string; client: string }>> {
+/**
+ * Os projetos que já mandaram buscar a lista de novo. Um projeto CRIADO nesta
+ * sessão (a auditoria de um memorial de obra nova o cria) não estava na lista
+ * guardada, e a pasta dele ficava sem código nem cliente até o F5 (teste real
+ * de 02/10/2026). Cada id desconhecido pede uma busca nova, uma vez — os dois
+ * consumidores (barra e paleta) dividem o mesmo pedido.
+ */
+const jaPediram = new Set<string>();
+function buscarProjetos(desconhecidos: readonly string[] = []): Promise<Map<string, { code: string; client: string }>> {
+  const novos = desconhecidos.filter((id) => !jaPediram.has(id));
+  for (const id of novos) jaPediram.add(id);
+  if (novos.length > 0) projetosEmVoo = null;
   if (!projetosEmVoo) {
     projetosEmVoo = fetch("/api/projects?includeArchived=true")
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
@@ -95,20 +106,24 @@ export function useCartoesDeProjeto(
   const [projetos, setProjetos] = useState<Map<string, { code: string; client: string }> | null>(
     null,
   );
-  const faltaCodigo = useMemo(() => {
+  /** Projetos das conversas que nem o resumo nem a lista de projetos conhecem. */
+  const semCodigo = useMemo(() => {
     const doResumo = new Set((resumo ?? []).filter((r) => r.projectCode).map((r) => r.id));
-    return conversations.some((c) => c.projectId && !doResumo.has(c.id));
-  }, [conversations, resumo]);
+    const ids = conversations
+      .filter((c) => c.projectId && !doResumo.has(c.id) && !projetos?.has(c.projectId))
+      .map((c) => c.projectId as string);
+    return [...new Set(ids)].sort().join(",");
+  }, [conversations, resumo, projetos]);
   useEffect(() => {
-    if (!faltaCodigo || projetos) return;
+    if (!semCodigo) return;
     let vivo = true;
-    buscarProjetos().then((m) => {
+    buscarProjetos(semCodigo.split(",")).then((m) => {
       if (vivo) setProjetos(m);
     });
     return () => {
       vivo = false;
     };
-  }, [faltaCodigo, projetos]);
+  }, [semCodigo]);
 
   /*
    * A CONVERSA ABERTA FALA POR SI (teste real de 02/10/2026). O resumo é uma

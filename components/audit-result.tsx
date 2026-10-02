@@ -575,6 +575,18 @@ function getSeverityVariant(
   return "ok";
 }
 
+/**
+ * A COR DA PÍLULA SEGUE O QUE ELA DIZ (teste real de 02/10/2026). A pílula
+ * mostra a faixa de impacto, mas a cor vinha da severidade do modelo: um
+ * "Técnico/contratual" de severidade alta saía no vermelho do bloqueio, ao lado
+ * do trilho dizendo "exige decisão" em âmbar. Com faixa, a cor é da faixa.
+ */
+function getImpactVariant(impact: FindingImpact): "critical" | "warning" | "ok" {
+  if (impact === "critico_documental") return "critical";
+  if (impact === "tecnico_contratual") return "warning";
+  return "ok";
+}
+
 function parseProjectFields(project: string): ProjectField[] {
   return project
     .split("\n")
@@ -4573,7 +4585,7 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
                               alcança sem sair do cartão.
                             */}
                                 <Badge
-                                  variant={getSeverityVariant(finding.severity)}
+                                  variant={finding.impacto ? getImpactVariant(finding.impacto) : getSeverityVariant(finding.severity)}
                                   title={finding.severityReason}
                                   data-motivo-severidade={
                                     finding.severityReason || undefined

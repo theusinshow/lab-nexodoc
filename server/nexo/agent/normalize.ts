@@ -504,7 +504,13 @@ export function normalizeProposals(
     } else if (p.kind === "auditoria") {
       out.push({
         kind: "auditoria",
-        resumo: String(p.resumo ?? "").trim() || `Auditoria ${ctx.disciplina}`,
+        /*
+         * O TÍTULO NÃO VEM DO MODELO (teste real de 02/10/2026). O exemplo do
+         * prompt é "Auditoria <disciplina>", e num memorial sem disciplina lida
+         * o modelo escreveu "Auditoria ?" no cartão. A auditoria é sempre do
+         * memorial anexado: o título é fixo.
+         */
+        resumo: "Auditoria do memorial",
         params: {
           // "deep" preservado; ausente/"xyz" → "standard".
           nivel: clampNivel(p.nivel),
