@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion } from "motion/react";
 import { Check, ChevronDown } from "lucide-react";
-import { useEffect, useId, useRef, useState, type ButtonHTMLAttributes, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ComponentPropsWithRef, type ReactNode } from "react";
 
 import { CURVA } from "@/lib/ds/movimento";
 import { useTempo } from "@/lib/ds/tempo";
@@ -21,7 +21,7 @@ export function Botao({
   className = "",
   children,
   ...resto
-}: ButtonHTMLAttributes<HTMLButtonElement> & { variante?: Variante; tamanho?: "sm"; icone?: boolean }) {
+}: ComponentPropsWithRef<"button"> & { variante?: Variante; tamanho?: "sm"; icone?: boolean }) {
   const cls = ["ds-btn", `ds-btn--${variante}`, tamanho === "sm" && "ds-btn--sm", icone && "ds-btn--icon", className]
     .filter(Boolean)
     .join(" ");

@@ -4,6 +4,7 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useId, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 
 import { CURVA } from "@/lib/ds/movimento";
+import { partesEmBrasilia } from "@/lib/fuso-de-brasilia";
 import { useTempo } from "@/lib/ds/tempo";
 
 /*
@@ -336,14 +337,17 @@ export function MapaDeAtividade({ dias, unidade }: { dias: DiaDeUso[]; unidade: 
   const [sobre, setSobre] = useState<number | null>(null);
   const maximo = Math.max(1, ...dias.map((d) => d.valor));
   // segunda = 0
-  const deslocamento = dias.length ? (dias[0].data.getDay() + 6) % 7 : 0;
+  // as datas são lidas no relógio de Brasília (lib/fuso-de-brasilia), não no da máquina
+  const partes = dias.map((d) => partesEmBrasilia(d.data));
+  const deslocamento = dias.length ? (partes[0].diaDaSemana + 6) % 7 : 0;
   const semanas = Math.ceil((dias.length + deslocamento) / 7);
   const meses: { coluna: number; nome: string }[] = [];
-  dias.forEach((d, i) => {
-    if (d.data.getDate() === 1 || i === 0) meses.push({ coluna: Math.floor((i + deslocamento) / 7), nome: MESES[d.data.getMonth()] });
+  dias.forEach((_, i) => {
+    if (partes[i].dia === 1 || i === 0) meses.push({ coluna: Math.floor((i + deslocamento) / 7), nome: MESES[partes[i].mes - 1] });
   });
   const ativos = dias.filter((d) => !d.fora && d.valor > 0).length;
   const d = sobre !== null ? dias[sobre] : null;
+  const pd = sobre !== null ? partes[sobre] : null;
   const grade = { gridTemplateColumns: `repeat(${semanas}, minmax(0, 1fr))` };
 
   return (
@@ -379,7 +383,7 @@ export function MapaDeAtividade({ dias, unidade }: { dias: DiaDeUso[]; unidade: 
             {d ? (
               <>
                 <b>
-                  {SEMANA[d.data.getDay()]}, {d.data.getDate()} {MESES[d.data.getMonth()]}
+                  {pd && `${SEMANA[pd.diaDaSemana]}, ${pd.dia} ${MESES[pd.mes - 1]}`}
                 </b>
                 : {d.valor === 0 ? "sem uso" : `${d.valor} ${d.valor === 1 ? unidade[0] : unidade[1]}`}
               </>
