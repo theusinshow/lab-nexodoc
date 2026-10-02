@@ -830,11 +830,13 @@
  * desenho. zoom e não transform: o layout acompanha e nada vaza.
  */
 @media (min-width: 1800px) {
-  .ds { zoom: 1.125; }
+  .ds { zoom: 1.125; --ds-zoom: 1.125; }
 }
 @media (min-width: 2300px) {
-  .ds { zoom: 1.25; }
+  .ds { zoom: 1.25; --ds-zoom: 1.25; }
 }
+/* dvh não acompanha o zoom: uma altura "da janela" dentro do .ds divide por ele (veio da migração, 02/10). */
+.ds { --ds-altura-da-janela: calc(100dvh / var(--ds-zoom, 1)); }
 .ds .au-painel .au-arquivo, .ds .rs-painel .rs-arquivo { flex-wrap: nowrap; white-space: nowrap; overflow: hidden; }
 
 /* ---------- selo de disciplina: ponto + sigla, na cor da disciplina ---------- */
