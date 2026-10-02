@@ -15,6 +15,7 @@ import { FileSearch, FileText, ListChecks, ScrollText, SquareStack } from "lucid
 import { useState } from "react";
 
 import { Girando } from "@/components/ds/basicos";
+import { Dica } from "@/components/ds/micro";
 import { useMoldura } from "@/components/moldura/contexto";
 import { abrirParecerEmPdf, type AuditView } from "@/components/audit-result";
 import { avaliarEmissao, type AuditReport } from "@/lib/audit-report";
@@ -63,7 +64,13 @@ export function TrilhoDoResultado({
   vista,
   podeVerNoDocumento,
   onVista,
+  compacto = false,
 }: {
+  /**
+   * SÓ ÍCONES, como no lab dentro do palco da conversa: o chat já ocupa a
+   * direita, e a fila precisa da largura. O rótulo e o porquê vão para a dica.
+   */
+  compacto?: boolean;
   report: AuditReport;
   /** Os achados principais (os que contam no veredito e na aba Achados). */
   total: number;
@@ -89,11 +96,11 @@ export function TrilhoDoResultado({
       ? "Parte do documento não foi lida: os achados valem, mas não dá para liberar. O aviso ao lado diz o que faltou."
       : veredito.detail;
 
-  const NAV: { id: VistaDoResultado; rotulo: string; Icone: typeof FileText; conta?: number }[] = [
-    { id: "summary", rotulo: "Resumo", Icone: SquareStack },
-    { id: "findings", rotulo: "Achados", Icone: ListChecks, conta: total },
-    { id: "report", rotulo: "Parecer", Icone: ScrollText },
-    ...(podeVerNoDocumento ? [{ id: "documento" as const, rotulo: "No documento", Icone: FileSearch }] : []),
+  const NAV: { id: VistaDoResultado; rotulo: string; Icone: typeof FileText; conta?: number; tecla: string }[] = [
+    { id: "summary", rotulo: "Resumo", Icone: SquareStack, tecla: "1" },
+    { id: "findings", rotulo: "Achados", Icone: ListChecks, conta: total - tratados || undefined, tecla: "2" },
+    { id: "report", rotulo: "Relatório", Icone: ScrollText, tecla: "3" },
+    ...(podeVerNoDocumento ? [{ id: "documento" as const, rotulo: "No documento", Icone: FileSearch, tecla: "4" }] : []),
   ];
 
   async function pdf() {
@@ -106,19 +113,21 @@ export function TrilhoDoResultado({
   return (
     <aside className={`re-trilho re-trilho--${selo.tom} nx-trilho`} aria-label="Resultado">
       <section className="re-estado" data-tour="veredito-parecer">
-        <span className="rs-selo">
+        <span className="rs-selo" title={compacto ? `${selo.rotulo}. ${porque}` : undefined} aria-label={compacto ? selo.rotulo : undefined}>
           <i />
-          {selo.rotulo}
+          {!compacto && selo.rotulo}
         </span>
-        <p className="re-porque">{porque}</p>
+        {!compacto && <p className="re-porque">{porque}</p>}
         <button type="button" className="re-tratado" onClick={() => onVista("findings")} title={`${tratados} de ${total} tratados`}>
           <Anel fracao={tratados / Math.max(1, total)} completo={total > 0 && tratados >= total} />
-          <span>
-            <b className="ds-num">
-              {tratados} <small>de {total}</small>
-            </b>
-            <small>{total === 0 ? "nenhum achado" : tratados >= total ? "todos tratados" : "tratados"}</small>
-          </span>
+          {!compacto && (
+            <span>
+              <b className="ds-num">
+                {tratados} <small>de {total}</small>
+              </b>
+              <small>{total === 0 ? "nenhum achado" : tratados >= total ? "todos tratados" : "tratados"}</small>
+            </span>
+          )}
         </button>
       </section>
 
@@ -126,26 +135,32 @@ export function TrilhoDoResultado({
         {NAV.map((n) => {
           const atual = vista === n.id;
           return (
-            <button key={n.id} type="button" aria-current={atual ? "page" : undefined} aria-pressed={atual} data-tour={n.id === "documento" ? "chip-no-documento" : undefined} onClick={() => onVista(n.id)}>
-              {atual && <motion.i layoutId="nx-trilho-vista" className="re-nav-fundo" transition={{ duration: RITMO.troca * k, ease: SUAVE }} />}
-              <n.Icone aria-hidden />
-              <span className="re-nav-rotulo">{n.rotulo}</span>
-              {n.conta ? <em className="ds-num">{n.conta}</em> : null}
-              {n.id === "findings" && incompleta && <span className="nx-trilho-incompleta">incompleta</span>}
-            </button>
+            <Dica key={n.id} texto={n.rotulo} tecla={n.tecla} lado="esquerda">
+              <button type="button" aria-label={compacto ? n.rotulo : undefined} aria-current={atual ? "page" : undefined} aria-pressed={atual} data-tour={n.id === "documento" ? "chip-no-documento" : undefined} onClick={() => onVista(n.id)}>
+                {atual && <motion.i layoutId="nx-trilho-vista" className="re-nav-fundo" transition={{ duration: RITMO.troca * k, ease: SUAVE }} />}
+                <n.Icone aria-hidden />
+                {!compacto && <span className="re-nav-rotulo">{n.rotulo}</span>}
+                {n.conta ? <em className="ds-num">{n.conta}</em> : null}
+                {!compacto && n.id === "findings" && incompleta && <span className="nx-trilho-incompleta">incompleta</span>}
+              </button>
+            </Dica>
           );
         })}
       </nav>
 
       <section className="re-acoes">
-        <h3>Levar adiante</h3>
-        <button type="button" className="re-acao re-acao--principal" onClick={() => void pdf()} disabled={gerando}>
-          {gerando ? <Girando tamanho={14} /> : <FileText aria-hidden />}
-          <span>
-            Parecer em PDF
-            <small>{gerando ? "gerando…" : "abre numa aba nova"}</small>
-          </span>
-        </button>
+        {!compacto && <h3>Levar adiante</h3>}
+        <Dica texto="Parecer em PDF, numa aba nova" lado="esquerda">
+          <button type="button" className="re-acao re-acao--principal" aria-label={compacto ? "Parecer em PDF" : undefined} onClick={() => void pdf()} disabled={gerando}>
+            {gerando ? <Girando tamanho={14} /> : <FileText aria-hidden />}
+            {!compacto && (
+              <span>
+                Parecer em PDF
+                <small>{gerando ? "gerando…" : "abre numa aba nova"}</small>
+              </span>
+            )}
+          </button>
+        </Dica>
       </section>
     </aside>
   );

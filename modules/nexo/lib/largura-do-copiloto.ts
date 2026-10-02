@@ -138,5 +138,12 @@ export function soltarDoPalco() {
 
 export function restaurarPreferencia() {
   const salvo = Number(window.localStorage.getItem(CHAVE));
-  aplicar(Number.isFinite(salvo) && salvo > 0 ? salvo : PADRAO);
+  const preferida = Number.isFinite(salvo) && salvo > 0 ? salvo : PADRAO;
+  // O palco já pediu a compactação (conversa aberta direto no parecer): a
+  // preferência fica guardada para a volta, e o chat segue compacto.
+  if (compactadaDe !== null) {
+    compactadaDe = preferida;
+    return;
+  }
+  aplicar(preferida);
 }

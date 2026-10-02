@@ -1,0 +1,80 @@
+/* O RESULTADO NO PALCO DO NEXO (lab: nexo-auditoria.css, regras do .re--embutido) e os ajustes do app (02/10/2026). */
+/* a fila no palco: lista e achado dividem a largura, e o achado lê de cima para baixo */
+.ds .re--embutido .rs-fila { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); height: max(560px, calc(100vh - 64px - 48px - 32px)); }
+.ds .re--embutido .rs-partes > div { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+.ds .re--embutido .rs-detalhe-corpo h2 { font-size: 19px; }
+/* A LISTA ESTREITA LÊ EM DUAS FAIXAS: em cima o número, a disciplina e o dono;
+   embaixo o título inteiro, em até duas linhas. Cortar o título em "Revisão B
+   n…" deixava a fila ilegível no palco. As abas de cima rolam de lado em vez
+   de sumir pela borda. */
+.ds .re.re--embutido .rs-linha-corpo {
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "id meta" "titulo titulo";
+  row-gap: 3px;
+  height: auto;
+  min-height: 52px;
+  padding: 8px 10px 9px 8px;
+}
+.ds .re.re--embutido .rs-linha-id { grid-area: id; }
+.ds .re.re--embutido .rs-linha-meta { grid-area: meta; }
+.ds .re.re--embutido .rs-linha-titulo {
+  grid-area: titulo;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  white-space: normal;
+  line-height: 1.4;
+}
+.ds .re--embutido .rs-lista-topo .ds-seg { max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+.ds .re--embutido .rs-lista-topo .ds-seg::-webkit-scrollbar { display: none; }
+.ds .re--embutido .rs-lista-topo .ds-seg button { flex: none; }
+
+/* a faixa de cima do achado e a linha do dono quebram em vez de cortar */
+.ds .re--embutido .rs-detalhe-topo { flex-wrap: wrap; row-gap: 6px; padding-left: 16px; }
+.ds .re--embutido .rs-dono { flex-wrap: wrap; row-gap: 8px; }
+.ds .re--embutido .rs-dono > * { white-space: nowrap; }
+.ds .re--embutido .rs-detalhe-corpo { padding: 16px 16px 18px; }
+/* as ações do achado quebram linha no palco estreito; os atalhos J/K saem (o teclado continua valendo) */
+.ds .re--embutido .rs-botoes { flex-wrap: wrap; row-gap: 6px; }
+.ds .re--embutido .rs-atalhos { display: none; }
+
+/* ---------- ajustes do app ---------- */
+.ds .re-conteudo { display: grid; align-content: start; gap: 12px; min-height: 100%; padding: 12px 14px 24px; background: transparent; }
+.ds .re-conteudo.rs { padding-bottom: 24px; }
+/* A fila ocupa a altura do palco (sem o topo, o cabeçalho do palco e o aviso, quando há). */
+.ds .re.re--embutido .rs-fila { height: max(520px, calc(var(--ds-altura-da-janela, 100vh) - 64px - 44px - 40px)); }
+.ds .re-aviso { margin: 0; }
+.ds .re-leitura { min-width: 0; }
+.ds .rs-aviso { margin: 0 0 8px; font-size: var(--ds-text-xs); color: var(--ds-text-secondary); }
+.ds .rs-aviso--falha { color: var(--ds-state-error); }
+.ds .rs-aviso--ok { color: var(--ds-state-ok); }
+.ds .rs-linha-conversa { display: inline-grid; place-items: center; min-width: 18px; height: 16px; padding: 0 4px; border-radius: 999px; background: var(--ds-surface-raised); font-size: 10.5px; color: var(--ds-text-secondary); }
+.ds .rs-grupo--sugestoes { margin-top: 10px; border-top: 1px solid var(--ds-line-subtle); }
+.ds .rs-sugestoes-barra { display: flex; align-items: center; gap: 8px; width: 100%; padding: 10px 10px 8px; border: 0; background: none; font: inherit; font-size: var(--ds-text-xs); color: var(--ds-text-secondary); cursor: pointer; text-align: left; }
+.ds .rs-sugestoes-barra span { flex: 1; font-size: 11.5px; color: var(--ds-text-tertiary); }
+.ds .rs-sugestoes-barra:hover { color: var(--ds-text-primary); }
+.ds .rs-faltou { padding: 12px 10px 16px; }
+.ds .rs-faltou form { display: grid; gap: 8px; }
+.ds .rs-faltou textarea { width: 100%; min-height: 0; padding: 8px 10px; border: 0; border-radius: var(--ds-radius-control); background: var(--ds-surface-sunken); box-shadow: inset 0 0 0 1px var(--ds-line-default); font: inherit; font-size: var(--ds-text-xs); color: var(--ds-text-primary); resize: vertical; }
+.ds .rs-faltou form > span { display: flex; justify-content: flex-end; gap: 6px; }
+.ds .rs-parte-fazer dd { min-width: 0; }
+.ds .rc-leitura ul { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.ds .rc-leitura li { display: grid; gap: 2px; font-size: var(--ds-text-xs); color: var(--ds-text-secondary); }
+.ds .rc-leitura b { font-family: var(--ds-font-mono); font-size: 11.5px; font-weight: 400; color: var(--ds-text-primary); overflow-wrap: anywhere; }
+.ds .rc-leitura p { margin: 2px 0 0; line-height: 1.5; color: var(--ds-text-tertiary); }
+.ds .vm-mesa--pdf { display: block; overflow: auto; padding: 16px; }
+.ds .vm-carregando { padding: 24px; font-size: var(--ds-text-xs); color: var(--ds-text-tertiary); }
+.ds .vm-fundo { z-index: 85; }
+
+/* No documento com a página de verdade: a miniatura e as etiquetas na margem. */
+.ds .nd-folha-botao--real { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: start; gap: 8px; width: 100%; padding: 0; border: 0; background: none; cursor: pointer; text-align: left; }
+.ds .nd-real { display: block; line-height: 0; }
+.ds .nd-real canvas { display: block; border-radius: 4px; box-shadow: var(--ds-edge); transition: box-shadow 0.15s; }
+.ds .nd-folha-botao--real:hover .nd-real canvas { box-shadow: var(--ds-edge-strong); }
+.ds .nd-margem { display: grid; align-content: start; justify-items: start; gap: 4px; padding-top: 6px; }
+.ds .nd-folha--carregando { display: block; width: 168px; aspect-ratio: 1 / 1.414; border-radius: 4px; background: var(--ds-surface-raised); }
+.ds .nd-mini--numero { display: grid; place-items: center; min-height: 0; height: 40px; }
+.ds .nd-colunas:has(.nd-folha-botao--real) { grid-template-columns: repeat(auto-fill, minmax(196px, 1fr)); }
+.ds .nd-margem .nd-etq { min-width: 26px; text-align: center; }
+/* na margem da página de verdade a etiqueta curta fica em fila, não presa a uma linha falsa */
+.ds .nd-margem .nd-etq--margem { position: static; transform: none; padding: 2px 4px; font-size: 10px; }

@@ -118,15 +118,17 @@
   --ds-state-error-wash: rgb(255 125 110 / 0.12);
 
   /* PRESERVADAS do sistema antigo: disciplina (8 famílias) e escala de dados.
-     Apontam para os tokens de lá para não haver duas verdades. */
-  --ds-disc-arq: var(--discipline-arq);
-  --ds-disc-est: var(--discipline-est);
-  --ds-disc-hid: var(--discipline-hid);
-  --ds-disc-ele: var(--discipline-ele);
-  --ds-disc-pci: var(--discipline-pci);
-  --ds-disc-cli: var(--discipline-cli);
-  --ds-disc-ter: var(--discipline-ter);
-  --ds-disc-pai: var(--discipline-pai);
+     A disciplina é VALOR aqui, os mesmos do tema antigo (globals.css). Era
+     `var(--discipline-*)`, e a pele do Nexo aponta `--discipline-*` de volta
+     para cá: o ciclo invalidava as duas e a cor sumia (02/10/2026). */
+  --ds-disc-arq: #8fa9d0;
+  --ds-disc-est: #a79ac9;
+  --ds-disc-hid: #79b6c4;
+  --ds-disc-ele: #c9b47f;
+  --ds-disc-pci: #cf9a9a;
+  --ds-disc-cli: #c99ab8;
+  --ds-disc-ter: #c4a58f;
+  --ds-disc-pai: #a3bd8a;
   /* as quatro que não tinham cor */
   --ds-disc-cab: #d6a472;
   --ds-disc-gas: #86c4a8;

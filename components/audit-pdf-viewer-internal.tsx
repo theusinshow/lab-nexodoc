@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import { Skeleton } from "@/components/ui/skeleton";
 import { marcacaoDoTrecho, type FaixasDaMarcacao } from "@/lib/marcacao-do-trecho";
@@ -35,6 +35,11 @@ type AuditPdfViewerInternalProps = {
    * quem abriu o PDF sabe o tamanho dele.
    */
   onNumPages?: (n: number) => void;
+  /**
+   * Avisa, quando a página e o texto dela chegam, se o trecho foi achado nela.
+   * O visor do Resultado usa para ir sozinho à página do achado que tem o grifo.
+   */
+  onGrifo?: (achou: boolean, pagina: number) => void;
 };
 
 function escaparHtml(value: string) {
@@ -72,6 +77,7 @@ export default function AuditPdfViewerInternal({
   highlight,
   zoom = 1,
   onNumPages,
+  onGrifo,
 }: AuditPdfViewerInternalProps) {
   const [numPages, setNumPages] = useState(0);
   const [itens, setItens] = useState<ItemDeTexto[] | null>(null);
@@ -88,6 +94,12 @@ export default function AuditPdfViewerInternal({
     if (!itens || paginaDosItens !== page || needle.length < 3) return null;
     return marcacaoDoTrecho(itens, needle);
   }, [itens, paginaDosItens, page, needle]);
+
+  // O resultado do casamento sobe uma vez por página lida (e por trecho).
+  useEffect(() => {
+    if (!onGrifo || !itens || paginaDosItens !== page || needle.length < 3) return;
+    onGrifo(Boolean(faixas && faixas.size > 0), page);
+  }, [onGrifo, itens, paginaDosItens, page, needle, faixas]);
 
   const textRenderer = useCallback(
     ({ str, itemIndex }: { str: string; itemIndex: number }) => {

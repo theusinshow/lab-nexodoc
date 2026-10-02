@@ -247,7 +247,7 @@ type AuditSectionKey =
 
 type ParsedAudit = Record<AuditSectionKey, string>;
 
-type StructuredFinding = {
+export type StructuredFinding = {
   title: string;
   refId?: string;
   /** `AuditFinding.motor`, quando o achado veio do motor novo. */
@@ -298,10 +298,10 @@ type ProjectField = {
   value: string;
 };
 
-type FeedbackVerdict =
+export type FeedbackVerdict =
   "CONFIRMED" | "FALSE_POSITIVE" | "WRONG_SEVERITY" | "MISSING_FINDING";
 
-type SavedFeedback = {
+export type SavedFeedback = {
   id: string;
   findingId: string | null;
   /** Nulo quando a linha só registra "corrigido", sem julgar o achado. */
@@ -404,7 +404,7 @@ const zoomSeguinte = (atual: number) =>
 const zoomAnterior = (atual: number) =>
   [...ZOOMS].reverse().find((z) => z < atual) ?? ZOOMS[0];
 
-function getFeedbackEndpoint(auditId: string) {
+export function getFeedbackEndpoint(auditId: string) {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "");
   const path = `/api/audits/${encodeURIComponent(auditId)}/feedback`;
 
@@ -803,7 +803,7 @@ function countUniqueDocuments(findings: StructuredFinding[]) {
   ).size;
 }
 
-function getFirstPageNumber(value?: string) {
+export function getFirstPageNumber(value?: string) {
   const match = value?.match(/\d+/);
 
   if (!match) {
@@ -827,7 +827,7 @@ function escapeSvgText(value: string) {
     .replace(/"/g, "&quot;");
 }
 
-function getHighlightNeedle(finding: StructuredFinding) {
+export function getHighlightNeedle(finding: StructuredFinding) {
   const evidence = finding.evidencia ?? "";
   const candidates = [
     finding.termoBusca,
@@ -984,7 +984,7 @@ async function createFindingSnapshot(
   link.click();
 }
 
-function reportFindingToStructured(finding: AuditFinding): StructuredFinding {
+export function reportFindingToStructured(finding: AuditFinding): StructuredFinding {
   const severity =
     finding.prioridade === "Alta" || finding.prioridade === "Media/Alta"
       ? "critical"
