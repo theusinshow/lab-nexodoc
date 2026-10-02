@@ -598,7 +598,7 @@ async function conferirNoDisco(arquivo, esperadas, noAnexo) {
     throw new Error(`O botão abriu "${naFolhaDoValor}" — o anexo tem que começar pela folha A.`);
   }
   const textosDoAnexo = await pagina.locator(".ap-folha[data-anexo]").allTextContents();
-  if (!textosDoAnexo.some((t) => t.includes("R$ 10.000"))) {
+  if (!textosDoAnexo.some((t) => t.includes("R$ 8.000"))) {
     throw new Error("Nenhuma folha do anexo traz o valor do piloto — o preço sumiu do arquivo.");
   }
   // Dentro do anexo a seta anda no anexo, e `End` para na última folha DELE.
