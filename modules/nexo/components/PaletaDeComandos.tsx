@@ -40,11 +40,12 @@ import {
   filtrarAcoes,
   type AcaoDaPaleta,
 } from "../lib/paleta";
+import { EVENTO_ABRIR_PALETA } from "../lib/evento-da-paleta";
 import { useComposer } from "../state/composer-controller";
 import { MarcaDaPrefeitura } from "./MarcaDaPrefeitura";
 
 /** Pedir a paleta de fora (botão visível), sem prop atravessando o Nexo. */
-export const EVENTO_ABRIR_PALETA = "nexo:abrir-paleta";
+export { EVENTO_ABRIR_PALETA };
 export function abrirPaleta() {
   window.dispatchEvent(new Event(EVENTO_ABRIR_PALETA));
 }

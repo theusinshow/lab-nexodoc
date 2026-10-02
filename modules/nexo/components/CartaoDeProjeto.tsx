@@ -1,39 +1,21 @@
 "use client";
 
 /**
- * O CARTÃO DE PROJETO — a linha da barra lateral, do desenho aprovado.
+ * UMA PASTA DA COLUNA DE CONVERSAS (desenho do lab: `.nw-pasta`). Fechada, é
+ * uma linha: a marca da prefeitura, o código e a cidade, quando mexeu. Aberta,
+ * lista as conversas da obra; a aberta no palco leva `aria-current`.
  *
- * FECHADO são duas linhas: identidade (código · cliente · quando) e desfecho
- * (as etiquetas do que existe, e as folhas). Nada do que está DENTRO aparece —
- * se importasse, o cartão estaria aberto.
- *
- * ABERTO, ele mostra as quatro conversas mais recentes. O quinto item não é
- * rolagem: é "as outras 8 conversas · desde 04/07", que abre o projeto no
- * palco. Rolagem dentro de rolagem é o que transforma barra em acordeão, e é
- * por isso que a altura aqui é previsível.
- *
- * DENTRO, A CONVERSA NÃO REPETE O CÓDIGO: ele está três linhas acima. Ela se
- * chama pelas disciplinas e pelo que produziu — "MET · EST — volume".
- *
- * O VOCABULÁRIO É O DA CASA. O desenho veio com hexadecimais próprios; aqui
- * eles viram tokens (`--secondary` para a etiqueta quieta, `--input` para o
- * documento final), porque a DESIGN.md manda que cor nova nasça com nome e
- * consumidor declarados — e estas não são cores novas, são as que já existem
- * fazendo o trabalho que o desenho pediu.
+ * O cabeçalho continua sendo o alvo do clique quando aberta: fechar é o mesmo
+ * gesto de abrir. A marca não se repete nas conversas — todas são da mesma obra.
  */
 
 import { formatarDiaMes, formatarEmBrasilia, formatarHora, mesmoDiaEmBrasilia } from "@/lib/fuso-de-brasilia";
 import { ChevronRight, Loader2 } from "lucide-react";
 
-import { cn } from "@/lib/utils";
 import { cidadeDoCliente } from "@/lib/cliente-do-projeto";
-import {
-  ehDocumentoFinal,
-  type CartaoDeProjeto as Cartao,
-} from "../lib/cartoes-de-projeto";
+import { ehDocumentoFinal, type CartaoDeProjeto as Cartao } from "../lib/cartoes-de-projeto";
 import { MarcaDaPrefeitura } from "./MarcaDaPrefeitura";
 
-/** "4 min", "17:40", "ontem", "qui", "12/08" — a régua curta da barra. */
 function quando(ms: number, agora = Date.now()): string {
   const min = Math.round((agora - ms) / 60_000);
   if (min < 1) return "agora";
@@ -45,21 +27,18 @@ function quando(ms: number, agora = Date.now()): string {
   return formatarDiaMes(ms);
 }
 
-/** A etiqueta de um artefato. O documento FINAL vem mais forte que os meios. */
-function Etiqueta({ nome }: { nome: string }) {
-  const final = ehDocumentoFinal(nome);
-  return (
-    <span
-      className={cn(
-        "nx-cut-4 px-[5px] py-px font-mono text-[11px] leading-[13px] tracking-[0.06em]",
-        final
-          ? "bg-[var(--input)] text-foreground"
-          : "bg-[var(--secondary)] text-muted-foreground",
-      )}
-    >
-      {nome}
-    </span>
-  );
+/**
+ * "CRICIÚMA" → "Criciúma". O cliente costuma vir do carimbo, em caixa-alta; na
+ * coluna o nome se lê em caixa normal. Só na exibição: o dado fica como veio.
+ */
+const MINUSCULAS = new Set(["de", "da", "do", "das", "dos", "e"]);
+function nomeProprio(texto: string) {
+  if (texto !== texto.toUpperCase()) return texto;
+  return texto
+    .toLowerCase()
+    .split(" ")
+    .map((p, i) => (i > 0 && MINUSCULAS.has(p) ? p : p.charAt(0).toUpperCase() + p.slice(1)))
+    .join(" ");
 }
 
 export function CartaoDeProjeto({
@@ -77,205 +56,71 @@ export function CartaoDeProjeto({
   onAlternar: () => void;
   onAbrirConversa: (id: string) => void;
   onVerTudo?: (chave: string) => void;
-  /** Mostra também as conversas de fora do corte (`cartao.ocultas`). */
   estendido?: boolean;
 }) {
-  /*
-   * "A ENDEREÇAR", e não "Sem código no carimbo".
-   *
-   * Memorial não tem carimbo — o rótulo antigo era mentira de vocabulário, e
-   * dizia à pessoa que o documento dela estava errado quando o que faltava era
-   * o sistema ter ligado a conversa a um projeto.
-   */
   const semCodigo = cartao.aEnderecar;
-  /*
-   * A CIDADE, e não o órgão inteiro. Numa coluna de 300px, "129-24 ·
-   * PREFEITURA MUN…" corta antes da única palavra que separa esta obra da de
-   * cima. A MARCA continua recebendo o texto CRU: `chaveDaPrefeitura` sabe ler
-   * as duas formas, e a cor não depende de quem encurtou o rótulo.
-   */
-  const nome = semCodigo
-    ? "A endereçar"
-    : cartao.cliente
-      ? `${cartao.codigo} · ${cidadeDoCliente(cartao.cliente)}`
-      : cartao.codigo;
+  const cidade = cartao.cliente ? nomeProprio(cidadeDoCliente(cartao.cliente)) : "";
+  const total = cartao.conversas.length + cartao.restantes;
 
   return (
-    <li className="list-none">
-      <div
-        className={cn(
-          "nx-edge-6 transition-colors",
-          aberto
-            ? "[--nx-edge:var(--border)] [--nx-fill:var(--card)]"
-            : "[--nx-edge:transparent] [--nx-fill:transparent] hover:[--nx-fill:var(--accent)]",
+    <li className={`nw-pasta nx-pasta${aberto ? " nw-pasta--aberta" : ""}`}>
+      <button type="button" className="nw-pasta-cabeca nx-pasta-cabeca" onClick={onAlternar} aria-expanded={aberto}>
+        <ChevronRight size={12} className="nx-pasta-seta" aria-hidden />
+        <MarcaDaPrefeitura prefeitura={semCodigo ? null : cartao.cliente} forma="sinal" />
+        {semCodigo ? (
+          <span className="nw-pasta-nome">A endereçar</span>
+        ) : (
+          <>
+            <span className="mp-mono">{cartao.codigo}</span>
+            {cidade && <span className="nw-pasta-nome">{cidade}</span>}
+          </>
         )}
-      >
-        {/*
-          A MARCA NA ARESTA, dentro do `nx-edge-6` e antes do cabeçalho.
+        <span className="ds-num nx-pasta-quando">{cartao.rodando ? <Loader2 size={12} className="animate-spin" aria-label="análise rodando" /> : quando(cartao.atualizadoEm)}</span>
+      </button>
 
-          `pl-2.5` é o mesmo `px-2.5` do botão: o primeiro segmento nasce
-          alinhado com o chevron, e os segmentos de todos os cartões da coluna
-          caem na mesma vertical, abertos ou fechados. A marca não tem chanfro
-          próprio — o recorte é o do `nx-edge-6`, que já envolve o cartão.
-
-          O `py-2` do botão virou `pt-[5px] pb-2`: os 3px da marca mais 5px
-          devolvem os 8px que separavam a aresta da primeira linha. A altura do
-          cartão FECHADO não muda, que era a condição do desenho.
-
-          O `pt-px` quando aberto é a única correção ao spec, e é por causa de
-          COMO o chanfro desta casa desenha borda: em `.nx-edge-*` o contorno é
-          o fundo do próprio elemento com o miolo recortado a 1px por cima —
-          não é padding. O spec pedia um pixel a menos no `padding-left` para
-          compensar uma borda que empurra o conteúdo; aqui ela não empurra, e
-          tirar o pixel na horizontal DESALINHARIA justamente o que ele queria
-          alinhar. O pixel vai para o topo, onde a borda de fato passaria por
-          baixo dos segmentos.
-
-          NO REPOUSO A MARCA APARECE SOBRE O FUNDO DA BARRA, não sobre um
-          cartão: fechado, `--nx-fill` é `transparent`. No hover o fill vira
-          `--accent` e a marca continua na aresta, sem mudar de cor.
-        */}
-        <MarcaDaPrefeitura
-          /*
-           * A MESMA FONTE QUE JÁ NOMEIA O CARTÃO — o `cliente` da pasta. O
-           * balde "A endereçar" agrega conversas de projetos diferentes e por
-           * isso não pode ter a cor de nenhum: vai como ausência, que é o que
-           * ele é.
-           */
-          prefeitura={semCodigo ? null : cartao.cliente}
-          forma="sinal"
-          className={cn("pl-2.5", aberto && "pt-px")}
-        />
-
-        {/* O CABEÇALHO é o cartão fechado, e continua sendo o alvo do clique
-            quando aberto: fechar é o mesmo gesto de abrir. */}
-        <button
-          type="button"
-          onClick={onAlternar}
-          aria-expanded={aberto}
-          className="flex w-full flex-col gap-0.5 px-2.5 pb-2 pt-[5px] text-left focus-visible:outline-none"
-        >
-          <span className="flex w-full items-center gap-1.5">
-            <ChevronRight
-              className={cn(
-                "h-3 w-3 shrink-0 text-muted-foreground transition-transform duration-[var(--duration-fast)]",
-                aberto && "rotate-90",
-              )}
-              strokeWidth={1.5}
-              aria-hidden
-            />
-            <span
-              className={cn(
-                "min-w-0 flex-1 truncate font-mono text-[12px] font-medium tracking-[0.06em]",
-                semCodigo ? "uppercase text-muted-foreground" : "text-foreground",
-              )}
-            >
-              {nome}
+      {/* O que a obra já tem (LD, CAPA, SEP, VOL) e quantas folhas: o ritmo que faz uma pasta diferir da vizinha. */}
+      {!semCodigo && (cartao.artefatos.length > 0 || cartao.folhas > 0) && (
+        <p className="nx-pasta-tem">
+          {cartao.artefatos.slice(0, 4).map((a) => (
+            <span key={a} className={ehDocumentoFinal(a) ? "nx-pasta-peca nx-pasta-peca--final" : "nx-pasta-peca"}>
+              {a}
             </span>
-            <span className="shrink-0 font-mono text-[11.5px] tabular-nums text-muted-foreground">
-              {quando(cartao.atualizadoEm)}
-            </span>
-          </span>
+          ))}
+          {cartao.folhas > 0 && <span className="ds-num nx-pasta-folhas">{cartao.folhas} fl</span>}
+        </p>
+      )}
+      {semCodigo && !aberto && <p className="nx-pasta-tem">{total === 1 ? "1 conversa sem projeto" : `${total} conversas sem projeto`}</p>}
 
-          {/* A SEGUNDA LINHA: o que o projeto tem. Ela é o ritmo horizontal que
-              faz uma linha parecer diferente da vizinha — sem ela a lista vira
-              um cinza uniforme de longe. */}
-          <span className="flex w-full items-center gap-1.5 pl-[18px]">
-            {cartao.rodando ? (
-              <span className="inline-flex items-center gap-1 font-mono text-[11px] text-[var(--status-warning)]">
-                <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
-                análise rodando
-              </span>
-            ) : semCodigo ? (
-              /*
-               * O BALDE SEM CÓDIGO NÃO É UM PROJETO, e etiquetar o agregado
-               * dele mente: "CAPA AUDITORIA" ali soma artefatos de conversas
-               * que nada têm a ver umas com as outras. O que ele tem para
-               * dizer é quantas são.
-               */
-              <span className="font-mono text-[11px] text-muted-foreground">
-                {cartao.conversas.length + cartao.restantes} conversa
-                {cartao.conversas.length + cartao.restantes === 1 ? "" : "s"} sem projeto
-              </span>
-            ) : (
-              cartao.artefatos.slice(0, 4).map((a) => <Etiqueta key={a} nome={a} />)
-            )}
-            <span className="flex-1" />
-            {cartao.folhas > 0 && !semCodigo ? (
-              <span className="shrink-0 font-mono text-[11.5px] tabular-nums text-muted-foreground">
-                {cartao.folhas} fl
-              </span>
-            ) : null}
-          </span>
-        </button>
-
-        {/*
-          AS CONVERSAS DE DENTRO NÃO RECEBEM MARCA. Todas são do mesmo projeto;
-          repetir a marca em cada linha diria quatro vezes o que o cartão já
-          disse na aresta. A linha selecionada usa o teal em
-          `--nx-edge: var(--primary)`, que é a única cor de que a lista interna
-          precisa.
-        */}
-        {aberto ? (
-          <ul className="m-0 list-none border-t border-border/50 px-1.5 py-1">
-            {(estendido
-              ? [...cartao.conversas, ...cartao.ocultas]
-              : cartao.conversas
-            ).map((c) => {
-              const ativa = c.id === conversaAtiva;
-              return (
-                <li key={c.id}>
-                  <button
-                    type="button"
-                    onClick={() => onAbrirConversa(c.id)}
-                    aria-current={ativa ? "true" : undefined}
-                    className={cn(
-                      "nx-edge-5 flex w-full items-baseline gap-2 px-2 py-1.5 text-left transition-colors focus-visible:outline-none",
-                      ativa
-                        ? "[--nx-edge:var(--primary)] [--nx-fill:var(--accent)]"
-                        : "[--nx-edge:transparent] [--nx-fill:transparent] hover:[--nx-fill:var(--accent)]",
-                    )}
-                  >
-                    <span className="min-w-0 flex-1 truncate text-[12.5px] text-foreground">
-                      {c.titulo}
-                      <span className="text-muted-foreground"> — {c.desfecho}</span>
-                    </span>
-                    <span className="shrink-0 font-mono text-[11px] tabular-nums text-muted-foreground">
-                      {c.rodando ? "rodando" : quando(c.updatedAt)}
-                    </span>
-                  </button>
-                </li>
-              );
-            })}
-
-            {/* O QUINTO ITEM NÃO É ROLAGEM: é uma linha que estende o cartão com
-                as antigas, e depois recolhe de volta. */}
-            {cartao.restantes > 0 ? (
-              <li>
-                <button
-                  type="button"
-                  onClick={() => onVerTudo?.(cartao.chave)}
-                  aria-expanded={estendido}
-                  className="flex w-full items-baseline gap-2 px-2 py-1.5 text-left font-mono text-[11px] text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none"
-                >
-                  <span className="flex-1 truncate">
-                    {estendido
-                      ? "recolher as antigas"
-                      : cartao.restantes === 1
-                        ? "a outra conversa"
-                        : `as outras ${cartao.restantes} conversas`}
+      {aberto && (
+        <ul>
+          {(estendido ? [...cartao.conversas, ...cartao.ocultas] : cartao.conversas).map((c) => {
+            const ativa = c.id === conversaAtiva;
+            return (
+              <li key={c.id} className={ativa ? "nw-ativa" : undefined}>
+                <button type="button" className="nx-conversa" onClick={() => onAbrirConversa(c.id)} aria-current={ativa ? "true" : undefined}>
+                  <span className="nw-conversa-titulo">{c.titulo}</span>
+                  <span className="nw-conversa-meta">
+                    <span>{c.desfecho}</span>
+                    <span className="ds-num">{c.rodando ? "rodando" : quando(c.updatedAt)}</span>
                   </span>
-                  {estendido ? null : (
-                    <span className="shrink-0 tabular-nums">
-                      desde {quando(cartao.restantesDesde)}
-                    </span>
-                  )}
                 </button>
               </li>
-            ) : null}
-          </ul>
-        ) : null}
-      </div>
+            );
+          })}
+
+          {/* As antigas não são rolagem: uma linha estende a pasta, e depois recolhe. */}
+          {cartao.restantes > 0 && (
+            <li>
+              <button type="button" className="nx-conversa nx-conversa--mais" onClick={() => onVerTudo?.(cartao.chave)} aria-expanded={estendido}>
+                <span className="nw-conversa-meta">
+                  <span>{estendido ? "recolher as antigas" : cartao.restantes === 1 ? "a outra conversa" : `as outras ${cartao.restantes} conversas`}</span>
+                  {!estendido && <span className="ds-num">desde {quando(cartao.restantesDesde)}</span>}
+                </span>
+              </button>
+            </li>
+          )}
+        </ul>
+      )}
     </li>
   );
 }

@@ -39,12 +39,19 @@ export function Moldura({
   dados,
   atual,
   buscaPropria = false,
+  buscaPorEvento,
   trabalhando = false,
   children,
 }: {
   dados: DadosDaMoldura;
   atual: DestinoDoTopo | null;
   buscaPropria?: boolean;
+  /**
+   * A tela tem a PRÓPRIA paleta (o Nexo, com as ações da conversa): a busca do
+   * Topo continua visível, mas o clique só dispara este evento na janela, e o
+   * Ctrl K fica com a tela. Uma paleta só, com gatilho à vista.
+   */
+  buscaPorEvento?: string;
   trabalhando?: boolean;
   children: ReactNode;
 }) {
@@ -64,15 +71,19 @@ export function Moldura({
   const fecharAviso = useCallback((id: number) => setAvisos((a) => a.filter((x) => x.id !== id)), []);
 
   const contexto = useMemo(
-    () => ({ abrirBusca: (t?: string) => (setTermo(t ?? ""), setAtalhos(false), setPaleta(true)), abrirAtalhos: () => (setPaleta(false), setAtalhos(true)), avisar }),
-    [avisar],
+    () => ({
+      abrirBusca: (t?: string) => (buscaPorEvento ? window.dispatchEvent(new Event(buscaPorEvento)) : (setTermo(t ?? ""), setAtalhos(false), setPaleta(true))),
+      abrirAtalhos: () => (setPaleta(false), setAtalhos(true)),
+      avisar,
+    }),
+    [avisar, buscaPorEvento],
   );
 
   // Ctrl K e ? em qualquer tela
   useEffect(() => {
     const tecla = (e: KeyboardEvent) => {
       if (e.defaultPrevented) return;
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k" && !buscaPropria) {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k" && !buscaPropria && !buscaPorEvento) {
         e.preventDefault();
         setAtalhos(false);
         setTermo("");
@@ -85,7 +96,7 @@ export function Moldura({
     };
     document.addEventListener("keydown", tecla);
     return () => document.removeEventListener("keydown", tecla);
-  }, [buscaPropria]);
+  }, [buscaPropria, buscaPorEvento]);
 
   // G e depois a letra. No window, em captura: a letra que vem depois do G não
   // chega aos atalhos de lista da tela (J/K/A).

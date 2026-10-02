@@ -2035,29 +2035,10 @@ function NexoWorkspaceInner({
   }, []);
 
   /*
-   * Apagar a PASTA inteira, do cabeçalho do grupo na barra lateral.
-   *
-   * Se a conversa aberta estava no meio, a tela volta ao começo — seguir
-   * mostrando o canvas de uma conversa que não existe mais em lugar nenhum
-   * seria uma tela que mente. E volta DESCARTANDO a gravação pendente: o flush
-   * de sempre escreveria de volta, meio segundo depois, o que se acabou de
-   * mandar apagar.
+   * O MENU DA OBRA (apagar a pasta, nova conversa a partir da mais recente,
+   * limpar) saiu em 01/10/2026, por decisão do Matheus. Expurgar conversas é do
+   * Centro de controle (Dados).
    */
-  const apagarPasta = async (ids: string[]) => {
-    const levouAAtiva = ids.includes(conv.conversationId);
-    await conv.removeConversations(ids);
-    if (levouAAtiva) reset({ descartar: true });
-  };
-
-  /*
-   * Nova conversa A PARTIR de outra. O registro nasce no disco com os selos já
-   * lidos, e a tela o abre pelo MESMO caminho do clique no histórico — sem um
-   * segundo jeito de restaurar o shell, que é onde os dois divergiriam.
-   */
-  const duplicarConv = async (id: string) => {
-    const novo = await conv.duplicarConversa(id);
-    if (novo) await selectConv(novo);
-  };
 
   /*
    * Ao abrir, retoma a conversa que tem AUDITORIA EM VOO.
@@ -2956,23 +2937,9 @@ function NexoWorkspaceInner({
             conversations={conv.conversations}
             activeId={abrindo ?? conv.conversationId}
             onSelect={abrirPelaBarra}
-            onDelete={conv.removeConversation}
-            onDeleteFolder={apagarPasta}
-            onDuplicate={duplicarConv}
-            isAdmin={isAdmin}
             onVerTour={iniciarTour}
-            /* O bloco da conta, no rodapé: nome e e-mail vêm da SESSÃO, pelo
-               servidor. Sem sessão o bloco não renderiza. */
-            nome={nome}
-            email={email}
             sincronizacao={conv.sincronizacao}
             gravacaoLocal={conv.gravacaoLocal}
-            /*
-             * A marca da barra lateral respira enquanto o agente trabalha. Ela
-             * está sempre visível, e o orbe grande não: sai de vista quando se
-             * rola a conversa ou se olha o canvas.
-             */
-            trabalhando={agentState !== "idle" && agentState !== "complete"}
           />
         }
         stage={

@@ -12,6 +12,7 @@ import { carregarMoldura } from "@/lib/moldura";
 import { assertProjectAccess, getUserActor, normalizeEmail } from "@/lib/project-store";
 import type { ProjetoPedido } from "@/modules/nexo/lib/projeto-pedido";
 import { NexoWorkspace } from "@/modules/nexo";
+import { EVENTO_ABRIR_PALETA } from "@/modules/nexo/lib/evento-da-paleta";
 
 export default async function NexoPage({
   searchParams,
@@ -70,11 +71,12 @@ export default async function NexoPage({
    * A MOLDURA DO SISTEMA NOVO (migração, passo 5): o Topo em cima, o Nexo
    * embaixo na altura que sobra (`.nx-mesa`).
    *
-   * `buscaPropria`: no Nexo o Ctrl K ainda é da paleta dele (as ações dentro
-   * da conversa, "onde fica"). Duas paletas no mesmo atalho abririam juntas.
+   * A BUSCA DO TOPO ABRE A PALETA DO NEXO (as ações dentro da conversa,
+   * "onde fica"), por evento; o Ctrl K também é dela. Duas paletas no mesmo
+   * atalho abririam juntas.
    */
   return (
-    <Moldura dados={dados} atual="Nexo" buscaPropria>
+    <Moldura dados={dados} atual="Nexo" buscaPorEvento={EVENTO_ABRIR_PALETA}>
       <div className="nx-mesa">
         <NexoWorkspace
           projetoPedido={projetoPedido}
