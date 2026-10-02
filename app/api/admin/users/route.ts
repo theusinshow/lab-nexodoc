@@ -1,3 +1,4 @@
+import { esquecerAcessoGuardado } from "@/lib/access-control";
 import { NextResponse } from "next/server";
 import type { Prisma, UserRole } from "@prisma/client";
 
@@ -153,6 +154,8 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  // Papel, conta ou vínculo mudam aqui: o acesso guardado (access-control) não pode durar.
+  esquecerAcessoGuardado();
   const { email: quem, erro } = await portaoDoAdmin(request);
   if (erro) return erro;
 
@@ -202,6 +205,8 @@ export async function POST(request: Request) {
 }
 
 export async function PATCH(request: Request) {
+  // Papel, conta ou vínculo mudam aqui: o acesso guardado (access-control) não pode durar.
+  esquecerAcessoGuardado();
   const { email: quem, erro } = await portaoDoAdmin(request);
   if (erro) return erro;
 

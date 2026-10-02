@@ -11,6 +11,7 @@
  * convida é a coordenação do escritório; aqui é o operador da plataforma, pelo
  * painel, e por isso o portão é `checkAdminRequest`.
  */
+import { esquecerAcessoGuardado } from "@/lib/access-control";
 import { NextResponse } from "next/server";
 
 import { checkAdminRequest } from "@/lib/admin-gate";
@@ -31,6 +32,8 @@ function jsonError(message: string, status: number) {
 }
 
 export async function POST(request: Request) {
+  // Papel, conta ou vínculo mudam aqui: o acesso guardado (access-control) não pode durar.
+  esquecerAcessoGuardado();
   const portao = await checkAdminRequest(request);
   if (!portao.ok) return jsonError(portao.message, portao.status);
 

@@ -47,7 +47,9 @@ export function LinhaDoTempo({ passos, agora, total }: { passos: PassoDaLinha[];
   const escala = (s: number) => `${(s / total) * 100}%`;
   const feitos = passos.filter((p) => p.estado === "feito");
   const maisLento = feitos.length > 1 ? feitos.reduce((a, b) => (b.duracao > a.duracao ? b : a)).id : null;
-  const marcas = Array.from({ length: Math.floor(total / 60) + 1 }, (_, i) => i * 60);
+  // O passo do eixo acompanha a duração: de minuto em minuto até 10 min, depois de 2 e de 5.
+  const passo = total > 1500 ? 300 : total > 600 ? 120 : 60;
+  const marcas = Array.from({ length: Math.floor(total / passo) + 1 }, (_, i) => i * passo);
 
   return (
     <div className="gr-linha" onMouseLeave={() => setFoco(null)}>

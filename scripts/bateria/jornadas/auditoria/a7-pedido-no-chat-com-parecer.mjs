@@ -4,7 +4,10 @@
 // vezes "Encaminhei a nova auditoria", sem cartão; a porta virou regra no
 // cliente (`pedeNovaAuditoria`). A prova é pela rede: nenhuma chamada ao chat da
 // auditoria, uma ao agente, e um cartão novo com "Auditar".
-const RESPOSTA_DO_AGENTE = "Vou auditar o memorial (resposta simulada).";
+// A frase exata do botão não passa mais pelo modelo (02/10/2026): a rota do
+// agente responde a proposta fixa (`app/api/nexo/agent/route.ts`,
+// `ehOPedidoDoBotao`). A resposta a reconhecer é a dela, não a da IA simulada.
+const RESPOSTA_DO_AGENTE = "Leio o memorial contra a obra declarada";
 
 export default {
   id: "a7",

@@ -249,7 +249,12 @@ function caracteresDoAlvo(
 }
 
 /** Quantos achados, no máximo, uma chamada de validação julga. */
-export const ACHADOS_POR_LOTE = 20;
+/*
+ * 12, e não 20 (02/10/2026): em produção um lote de 20 num modelo que raciocina
+ * passou dos 120 s e foi cancelado — "17 de 40 achado(s) sem revisão", e o
+ * parecer saiu INCOMPLETO. Lotes menores terminam antes e rodam juntos.
+ */
+export const ACHADOS_POR_LOTE = 12;
 
 /**
  * OS LOTES DA VALIDAÇÃO — todo achado candidato em algum lote, e cada lote com
