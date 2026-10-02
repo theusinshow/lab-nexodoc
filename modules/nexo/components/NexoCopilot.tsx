@@ -20,6 +20,7 @@ import { AgentOrb, AgentStatusPopover, type AgentState } from "./agent-orb";
 import type { AgentContext } from "../lib/agent-context";
 import { NexoChat, type ReadStatus, type Attachment } from "./NexoChat";
 import { PartidasDoNexo } from "./PartidasDoNexo";
+import type { Partida } from "../lib/partidas";
 import { SaudacaoDoNexo } from "./SaudacaoDoNexo";
 
 export function NexoCopilot({
@@ -43,7 +44,12 @@ export function NexoCopilot({
   onTrocarPapelAnexo,
   onDefinirPapelAnexo,
   onTurnStatus,
+  tarefa = null,
+  onEscolherTarefa,
 }: {
+  /** A tarefa da tela (Painel → Nexo, ou um atalho): a entrada fala dela. */
+  tarefa?: Partida | null;
+  onEscolherTarefa?: (id: string) => void;
   started: boolean;
   /** Nome de quem está logado — a saudação usa o primeiro. */
   nome?: string | null;
@@ -201,7 +207,7 @@ export function NexoCopilot({
             o próprio Nexo, escrevendo.
           */}
           <>
-            <SaudacaoDoNexo nome={nome} onDigitando={setSaudando} />
+            <SaudacaoDoNexo nome={nome} convite={tarefa?.tela.convite} onDigitando={setSaudando} />
             {/*
               As partidas ENTRAM COM A SAUDAÇÃO, e saem com ela: passada a
               primeira mensagem, a pessoa já sabe pedir, e três chips fixos no
@@ -211,6 +217,8 @@ export function NexoCopilot({
               temPranchas={pranchaFiles.length > 0 || selos.length > 0}
               temMemorial={Boolean(memorialFile)}
               onAnexar={onAttach}
+              ativa={tarefa?.id ?? null}
+              onEscolher={onEscolherTarefa}
             />
           </>
         </div>
@@ -227,6 +235,7 @@ export function NexoCopilot({
           onSend={onSend}
           onAttach={onAttach}
           arrastando={arrastando}
+          tarefa={tarefa?.tela ?? null}
           readStatus={readStatus}
           pranchaFiles={pranchaFiles}
           memorialFile={memorialFile}

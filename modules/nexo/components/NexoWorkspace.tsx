@@ -557,6 +557,18 @@ function NexoWorkspaceInner({
 
   // Nova conversa: limpa o estado efêmero e REMONTA o chat (via convId → key).
   const [convId, setConvId] = useState(0);
+  /*
+   * A TAREFA DA TELA (02/10/2026): quem chega pelo Painel com "Auditar um
+   * memorial" encontra a conversa preparada para ela — convite, o que soltar,
+   * o botão certo. Presa à conversa em que foi pedida (`convId`): abrir outra
+   * conversa, ou uma nova, volta à entrada de sempre. Um atalho da entrada
+   * também prepara a tela.
+   */
+  const [tarefaDaTela, setTarefaDaTela] = useState<{ id: string | null; conv: number }>(() => ({
+    id: contexto?.intencao ?? null,
+    conv: 0,
+  }));
+  const tarefa = tarefaDaTela.conv === convId ? partidaPorId(tarefaDaTela.id) : null;
   const attachInputRef = useRef<HTMLInputElement>(null);
   const [reading, setReading] = useState(false);
   const [readingMemorial, setReadingMemorial] = useState(false);
@@ -1733,7 +1745,9 @@ function NexoWorkspaceInner({
     if (intencaoAplicada.current || typeof window === "undefined") return;
     // A mensagem escrita na busca do topo ganha da intenção: é o mais específico.
     // Com o arquivo vindo junto (Painel), a leitura já oferece a saída certa: sem frase.
-    const frase = contexto.mensagem ?? (haEntregaPendente() ? null : partidaPorId(contexto.intencao)?.frase);
+    // Na tarefa de memorial, a leitura já oferece "Auditar o memorial": a frase no campo sobraria.
+    const partida = partidaPorId(contexto.intencao);
+    const frase = contexto.mensagem ?? (haEntregaPendente() || partida?.precisa === "memorial" ? null : partida?.frase);
     if (!frase) return;
     /*
      * `requestAnimationFrame` porque o composer só se registra depois de o
@@ -2995,6 +3009,8 @@ function NexoWorkspaceInner({
         copilot={
           <NexoCopilot
             key={convId}
+            tarefa={tarefa}
+            onEscolherTarefa={(id) => setTarefaDaTela({ id, conv: convId })}
             started={started}
             nome={nome}
             selos={selos}

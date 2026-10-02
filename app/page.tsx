@@ -1,3 +1,5 @@
+import { redirect } from "next/navigation";
+
 import { Moldura } from "@/components/moldura/moldura";
 import { TelaPainel, type AchadoComVoce, type IdTarefa, type TrabalhoParaContinuar } from "@/components/telas/painel/tela-painel";
 import { comVoce } from "@/lib/achados-em-aberto";
@@ -6,6 +8,7 @@ import { cidadeDoCliente } from "@/lib/cliente-do-projeto";
 import { getPrisma } from "@/lib/db";
 import { partesEmBrasilia } from "@/lib/fuso-de-brasilia";
 import { carregarMoldura } from "@/lib/moldura";
+import { linkDoNexo } from "@/lib/contexto-da-url";
 import { resumoDoEscritorio, type DiaDoEscritorio } from "@/lib/resumo-do-escritorio";
 
 /*
@@ -38,6 +41,13 @@ function primeiroNome(nome: string) {
 
 export default async function PainelPage({ searchParams }: { searchParams: Promise<{ tarefa?: string }> }) {
   const { tarefa } = await searchParams;
+  /*
+   * `/?tarefa=` é endereço antigo: a tarefa abria aqui uma área de soltar. Desde
+   * 02/10/2026 ela abre o Nexo já preparado para ela — o link segue funcionando.
+   */
+  if (tarefa && TAREFAS.includes(tarefa as IdTarefa)) {
+    redirect(linkDoNexo({ intencao: tarefa === "volume" ? "montar" : (tarefa as "auditar" | "ld" | "conferir") }));
+  }
   const dados = await carregarMoldura("/");
 
   let continuar: TrabalhoParaContinuar[] = [];
@@ -93,7 +103,7 @@ export default async function PainelPage({ searchParams }: { searchParams: Promi
       <TelaPainel
         nome={primeiroNome(dados.usuario.nome)}
         saudacao={saudacaoDe(new Date())}
-        tarefaInicial={TAREFAS.includes(tarefa as IdTarefa) ? (tarefa as IdTarefa) : null}
+        tarefaInicial={null}
         obras={dados.obras}
         recentes={dados.recentes}
         continuar={continuar}

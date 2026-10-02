@@ -372,7 +372,7 @@ export function TelaProjetos({ obras, semBanco, podeCriar }: { obras: ObraDaList
                     <Plus size={14} /> Novo projeto <Tecla>N</Tecla>
                   </Botao>
                 )}
-                <Botao variante="ghost" tamanho="sm" onClick={() => router.push("/?tarefa=auditar")}>
+                <Botao variante="ghost" tamanho="sm" onClick={() => router.push("/nexo?intencao=auditar")}>
                   Auditar um memorial
                 </Botao>
               </div>

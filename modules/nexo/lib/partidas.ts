@@ -31,6 +31,12 @@ export interface Partida {
    */
   frase: string;
   precisa: InsumoDaPartida;
+  /**
+   * A CONVERSA PREPARADA (02/10/2026): quem chega pelo Painel com uma tarefa
+   * escolhida vê a tela dela — o convite na saudação, o que soltar e o que o
+   * Nexo vai fazer —, e não a entrada genérica.
+   */
+  tela: { convite: string; pede: string; faz: string; botao: string };
 }
 
 export const PARTIDAS: readonly Partida[] = [
@@ -39,18 +45,36 @@ export const PARTIDAS: readonly Partida[] = [
     rotulo: "Montar um volume",
     frase: "cria a LD e a capa dessas pranchas",
     precisa: "pranchas",
+    tela: {
+      convite: "Vamos montar um volume.",
+      pede: "Solte as pranchas em PDF",
+      faz: "O Nexo lê os carimbos e gera a LD, a capa e as separatrizes; com elas prontas, monta o volume.",
+      botao: "Escolher as pranchas",
+    },
   },
   {
     id: "auditar",
     rotulo: "Auditar um memorial",
     frase: "audita o memorial",
     precisa: "memorial",
+    tela: {
+      convite: "Vamos auditar um memorial.",
+      pede: "Solte o memorial descritivo em PDF",
+      faz: "O Nexo lê a capa, mostra a ficha da obra para você conferir e audita o documento contra ela.",
+      botao: "Escolher o memorial",
+    },
   },
   {
     id: "conferir",
     rotulo: "Conferir as folhas",
     frase: "confere as folhas",
     precisa: "pranchas",
+    tela: {
+      convite: "Vamos conferir as folhas.",
+      pede: "Solte as pranchas em PDF",
+      faz: "O Nexo lê o carimbo de cada folha e confere código, revisão e numeração entre elas.",
+      botao: "Escolher as pranchas",
+    },
   },
 ];
 
@@ -70,12 +94,24 @@ export const INTENCOES_SO_DE_LINK: readonly Partida[] = [
     rotulo: "Gerar a lista de documentos (LD)",
     frase: "cria a LD dessas pranchas",
     precisa: "pranchas",
+    tela: {
+      convite: "Vamos gerar a lista de documentos.",
+      pede: "Solte as pranchas em PDF",
+      faz: "O Nexo lê os carimbos e monta a LD com o título, o código e a revisão de cada folha.",
+      botao: "Escolher as pranchas",
+    },
   },
   {
     id: "capa",
     rotulo: "Gerar a capa",
     frase: "cria a capa dessas pranchas",
     precisa: "pranchas",
+    tela: {
+      convite: "Vamos gerar a capa.",
+      pede: "Solte as pranchas em PDF",
+      faz: "O Nexo lê os carimbos e preenche a capa da prefeitura com a obra, o código e a data.",
+      botao: "Escolher as pranchas",
+    },
   },
 ];
 

@@ -173,14 +173,11 @@ const telas = [
     await p.waitForTimeout(400);
     ok(await p.evaluate(() => document.activeElement?.closest(".bc, [class*=barra]") !== null || document.activeElement?.tagName === "INPUT"), "painel: Ctrl K vai à barra da própria tela");
     await p.keyboard.press("Escape");
+    // Desde 02/10/2026 a tarefa abre o Nexo já preparado (o endereço antigo redireciona).
     await abrir("/?tarefa=auditar");
-    ok((await p.locator(".d2-tarefa[data-tarefa=auditar][aria-pressed=true]").count()) === 1 && (await p.locator(".d2-soltar").count()) === 1, "painel: ?tarefa=auditar abre a tarefa (Nova auditoria de Achados)");
-    await p.locator("input[type=file]").first().setInputFiles("tests/117_25_md_geral_a.pdf");
-    await p.waitForTimeout(6000);
-    ok(new URL(p.url()).pathname === "/nexo", "painel: o arquivo escolhido leva ao Nexo", p.url().replace(BASE, ""));
-    const corpo = await p.locator("body").innerText();
-    ok(/117_25_md_geral_a/.test(corpo), "painel: o Nexo recebeu o arquivo do Painel");
-    await p.screenshot({ path: `${OUT}/painel-entregou-${LARGURA}.png` });
+    await p.waitForTimeout(4000);
+    ok(new URL(p.url()).pathname === "/nexo" && (await p.locator(".nx-saudacao", { hasText: "Vamos auditar um memorial" }).count()) === 1, "painel: ?tarefa=auditar abre o Nexo preparado para a auditoria", p.url().replace(BASE, ""));
+    await p.screenshot({ path: `${OUT}/painel-nexo-preparado-${LARGURA}.png` });
   }],
 ];
 
