@@ -176,15 +176,13 @@ try {
   const headerNoNexo = await page.locator("header").count();
   check("em /nexo não há mais cabeçalho do AppShell", headerNoNexo === 0, `count=${headerNoNexo}`);
 
+  // `/volumes` saiu em 01/10/2026: o endereço antigo leva ao Nexo, montando.
   await page.goto(`${BASE}/volumes`, { waitUntil: "domcontentloaded" });
   await page.waitForTimeout(2000);
-  const volumesIntacto = await page
-    .getByText(/Projeto vinculado|Modo independente/i)
-    .count();
   check(
-    "/volumes segue com o próprio cabeçalho de contexto",
-    volumesIntacto > 0,
-    `faixa de contexto não encontrada`,
+    "/volumes leva ao Nexo com a intenção de montar",
+    /\/nexo\?intencao=montar/.test(page.url()),
+    page.url(),
   );
 
   check("nenhum erro de runtime", erros.length === 0, erros[0] ?? "");

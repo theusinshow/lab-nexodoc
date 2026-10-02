@@ -44,7 +44,6 @@
     "test:estado-da-carga": "node scripts/test-estado-da-carga.ts",
     "test:mesa": "node scripts/test-mesa.ts",
     "test:atencao-painel": "node scripts/test-atencao-do-painel.ts",
-    "test:home-preferencias": "node scripts/test-home-preferencias.ts",
     "test:expurgo": "node scripts/test-expurgo.ts",
     "test:controles": "node scripts/test-controles.ts",
     "test:nome-do-zip": "node --import ./scripts/lib/resolver-de-imports.mjs scripts/test-nome-do-zip.ts",

@@ -1,6 +1,5 @@
 import {
   FolderKanban,
-  Layers3,
   type LucideIcon,
   Waypoints,
 } from "lucide-react";
@@ -51,28 +50,9 @@ export const projetosModule: ModuleDef = {
   shortcut: null,
 };
 
-/**
- * O que sobrou das telas de módulo único, anteriores ao Nexo.
- *
- * Eram cinco; restou UMA. LD, capas e separatrizes foram aposentadas depois que
- * o Nexo passou a corrigir tudo que elas corrigiam — a razão de existirem era
- * ser a saída de emergência para o carimbo lido errado, e essa saída agora está
- * no canvas (nº da prancha, código, disciplina, total de referência, identidade
- * do projeto, criar e remover folha).
- *
- * `/volumes` fica, e não é dívida: a distância dela é de ESCOPO, não de
- * paridade. A mesa monta o projeto inteiro a partir de PDFs soltos; o Nexo monta
- * um volume do que ele mesmo gerou. Ver docs/nexo-paridade-telas.md.
+/*
+ * As telas de módulo único, anteriores ao Nexo, acabaram. A última,
+ * `/volumes` (montar volumes com PDFs existentes), saiu em 01/10/2026 por
+ * decisão do Matheus: o endereço redireciona para o Nexo, onde o volume nasce
+ * das pranchas.
  */
-export const legacyModules: readonly ModuleDef[] = [
-  {
-    title: "Montar volumes com PDFs existentes",
-    description: "Junção, ordenação e conferência final dos volumes de projeto.",
-    href: "/volumes",
-    label: "Montar volumes",
-    icon: Layers3,
-    emphasis: false,
-    status: "active",
-    shortcut: null,
-  },
-];
