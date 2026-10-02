@@ -119,3 +119,30 @@ Feita no fim, depois de escrever tudo, para conferir que o protótipo auditado �
 - **Sem subagentes.** Os 13 papéis pedidos rodaram em sequência, na mesma conversa, por regra do dono. A revisão cruzada é minha contra mim, por caminho diferente (seção 4), não por outra pessoa.
 - **"Botão morto"** é "sem mutação de DOM nem troca de endereço em 600 ms". Pega affordance falsa, mas não pega botão que faz a coisa errada.
 - **O produto atual** foi visto pela branch do PR #9, cujo diff só toca login e sem-acesso. O login atual veio da `main` pura, servida por webpack na 3300; o Turbopack recusou o node_modules ligado por junção no worktree temporário.
+
+## 9. Decisões do dono depois da auditoria (01/10)
+
+| Item | Decisão | Efeito |
+|---|---|---|
+| PARITY-003 `/volumes` | "é antigo, pode ser removido com cuidado" | Vira INTENTIONALLY CHANGED. Remover na migração com redirecionamento, não com apagão. |
+| PARITY-002 controles do Painel; PARITY-004 menu da obra | "pode retirar" | Vira INTENTIONALLY CHANGED. Some na migração. |
+| PARITY-006 aprovação do Nexo: a auditoria | pendente: reexplicada ao dono | segue bloqueando G3 |
+
+**O que "com cuidado" quer dizer no código atual.** Pontos que hoje apontam para `/volumes`:
+
+- `app/projetos/[id]/page.tsx:118`: o módulo "Montar volume" da obra leva a `/volumes?project=…`.
+- `modules/nexo/lib/paleta.ts:72, 103, 119, 135`: 4 entradas do Ctrl K.
+- `lib/modules.ts:71`, `lib/navegacao-principal.ts`, `components/layout/app-shell.tsx`: navegação.
+- `app/ferramentas/page.tsx`: redireciona para `/volumes`.
+- Provas que visitam a rota: `scripts/prova-ux/*`, `prova-barra-do-nexo.mjs`, `prova-glossario.mjs`, `shot-telas.mjs`.
+
+Remoção segura:
+
+1. `/volumes` e `/ferramentas` passam a redirecionar para `/nexo?intencao=volume`, como `/capas` e `/ld` já fazem.
+2. Os 4 + 1 links são trocados para o mesmo destino.
+3. As provas são ajustadas.
+4. Só depois a página é apagada.
+
+O rascunho de montagem que algum usuário tenha salvo no navegador se perde. Avisar antes.
+
+Com isso, G2 fica com 3 itens UNCLEAR de baixo peso: o tour (PARITY-005), cancelar a notificação por e-mail e as rotas de intenção no protótipo.
