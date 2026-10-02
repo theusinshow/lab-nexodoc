@@ -36,6 +36,8 @@ const BLOCO = "O problema";
 /* ═══════════════════════════════════════════ folha 06: o processo de hoje */
 
 const Y = 180;
+/** A linha das anotações, sob os nós. */
+const NOTA = 300;
 const ARCO = `M 630 ${Y} C 690 ${Y} 690 60 750 60 L 950 60 C 1010 60 1010 ${Y} 1070 ${Y}`;
 
 /* ═══════════════════════════════════════════════ folha 07: os trechos */
@@ -285,6 +287,10 @@ export const O_PROBLEMA: readonly Slide[] = [
             <Fio d={`M 260 ${Y} L 330 ${Y}`} atraso={500} seta={{ x: 330, y: Y, dir: "direita" }} />
             <Fio d={ARCO} atraso={1100} seta={{ x: 1070, y: Y, dir: "direita" }} />
             <Fio d={`M 1330 ${Y} L 1400 ${Y}`} atraso={1700} seta={{ x: 1400, y: Y, dir: "direita" }} />
+            {/* cada anotação presa ao nó que ela explica: o traço sai da borda de baixo */}
+            <Fio d={`M 352 ${Y + 60} L 352 ${NOTA - 14}`} atraso={900} />
+            <Fio d={`M 722 ${Y + 60} L 722 ${NOTA - 14}`} atraso={1500} tom="block" />
+            <Fio d={`M 1422 ${Y + 60} L 1422 ${NOTA - 14}`} atraso={2100} />
           </>
         }
       >
@@ -304,23 +310,29 @@ export const O_PROBLEMA: readonly Slide[] = [
           icone={<Inbox size={22} strokeWidth={1.75} />} titulo="O cliente lê"
           texto="a primeira revisão de verdade" />
 
-        <Entra atraso={900} style={{ position: "absolute", left: 330, top: 290, width: 330 }}>
-          <span style={{ display: "block", fontSize: 64, fontWeight: 400, letterSpacing: "-0.045em", lineHeight: 1 }}>
-            1 a 2 h
+        <Entra atraso={1000} style={{ position: "absolute", left: 352, top: NOTA, width: 300 }}>
+          <span style={{ display: "block", fontSize: 22, fontWeight: 500, lineHeight: 1.3 }}>
+            1 a 2 horas
           </span>
-          <span className="ap-texto" style={{ display: "block", marginTop: 12, fontSize: 20, color: "var(--ds-text-tertiary)" }}>
+          <span className="ap-texto" style={{ display: "block", marginTop: 6, fontSize: 19, lineHeight: 1.4, color: "var(--ds-text-tertiary)" }}>
             quando de fato acontece — sem tempo dedicado, a conferência disputa
             espaço com a entrega
           </span>
         </Entra>
-        <Entra atraso={1500} style={{ position: "absolute", left: 700, top: 300, width: 300 }}>
-          <span style={{ fontSize: 22, color: "var(--ds-sev-block)" }}>
-            o controle que falta
+        <Entra atraso={1600} style={{ position: "absolute", left: 722, top: NOTA, width: 270 }}>
+          <span style={{ display: "block", fontSize: 22, fontWeight: 500, lineHeight: 1.3, color: "var(--ds-sev-block)" }}>
+            O controle que falta
+          </span>
+          <span className="ap-texto" style={{ display: "block", marginTop: 6, fontSize: 19, lineHeight: 1.4, color: "var(--ds-text-tertiary)" }}>
+            o caminho salta por cima dele
           </span>
         </Entra>
-        <Entra atraso={2100} style={{ position: "absolute", left: 1400, top: 300, width: 280 }}>
-          <span style={{ fontSize: 20, color: "var(--ds-text-tertiary)" }}>
-            quando o erro aparece, quem revisa é quem contratou
+        <Entra atraso={2200} style={{ position: "absolute", left: 1422, top: NOTA, width: 258 }}>
+          <span style={{ display: "block", fontSize: 22, fontWeight: 500, lineHeight: 1.3 }}>
+            Quem revisa é quem contratou
+          </span>
+          <span className="ap-texto" style={{ display: "block", marginTop: 6, fontSize: 19, lineHeight: 1.4, color: "var(--ds-text-tertiary)" }}>
+            quando o erro aparece, já está na mão do cliente
           </span>
         </Entra>
       </Diagrama>

@@ -52,37 +52,55 @@ function Marca({ valor }: { valor: Celula }) {
   return <span style={{ fontSize: 19, color: "var(--ds-text-tertiary)" }}>{valor}</span>;
 }
 
+/** As colunas da comparação: o critério, o chat, o NexoDoc. */
+const COLUNAS = "minmax(0, 1fr) 240px 200px";
+/** A coluna do NexoDoc é um trilho só, de cima a baixo: o fundo não se parte entre os grupos. */
+const TRILHO = "rgb(255 255 255 / 0.04)";
+
+/**
+ * A COMPARAÇÃO como grade, e não como <table>: a célula centra o visto de
+ * verdade (o ícone é bloco, e `text-align` não o movia), e a coluna do NexoDoc
+ * vira uma faixa contínua com os cantos arredondados no topo e no pé.
+ */
 function Comparacao({ atraso }: { atraso: number }) {
+  const linhas = GRUPOS.flatMap((g) => [
+    { tipo: "grupo" as const, texto: g.grupo },
+    ...g.linhas.map(([rotulo, chat, nexo]) => ({ tipo: "linha" as const, rotulo, chat, nexo })),
+  ]);
   let n = 0;
+  const centro = { display: "flex", alignItems: "center", justifyContent: "center" } as const;
   return (
-    <table className="ap-tabela ap-surge" style={{ animationDelay: `${atraso}ms` }}>
-      <thead>
-        <tr>
-          <th />
-          <th style={{ width: 230, textAlign: "center" }}>Um chat com o PDF</th>
-          <th style={{ width: 200, textAlign: "center", color: "var(--ds-text-primary)" }}>NexoDoc</th>
-        </tr>
-      </thead>
-      {GRUPOS.map((g) => (
-        <tbody key={g.grupo}>
-          <tr>
-            <td colSpan={3} style={{ paddingTop: 22, paddingBottom: 8, boxShadow: "none" }}>
-              <b style={{ fontSize: 22 }}>{g.grupo}</b>
-            </td>
-          </tr>
-          {g.linhas.map(([rotulo, chat, nexo]) => {
-            const i = n++;
-            return (
-              <tr key={rotulo} className="ap-entra" style={{ animationDelay: `${atraso + 200 + i * 150}ms` }}>
-                <td style={{ fontSize: 21, padding: "13px 0" }}>{rotulo}</td>
-                <td style={{ textAlign: "center", padding: "13px 16px" }}><Marca valor={chat} /></td>
-                <td style={{ textAlign: "center", padding: "13px 0", background: "rgb(255 255 255 / 0.03)" }}><Marca valor={nexo} /></td>
-              </tr>
-            );
-          })}
-        </tbody>
-      ))}
-    </table>
+    <div role="table" aria-label="Um chat com o PDF e o NexoDoc" className="ap-surge" style={{ display: "grid", gridTemplateColumns: COLUNAS, animationDelay: `${atraso}ms` }}>
+      <span role="columnheader" />
+      <span role="columnheader" style={{ ...centro, padding: "18px 0 14px", fontSize: 17, fontWeight: 500, color: "var(--ds-text-tertiary)" }}>
+        Um chat com o PDF
+      </span>
+      <span role="columnheader" style={{ ...centro, padding: "18px 0 14px", fontSize: 17, fontWeight: 600, background: TRILHO, borderRadius: "16px 16px 0 0" }}>
+        NexoDoc
+      </span>
+      {linhas.map((l, i) => {
+        const ultima = i === linhas.length - 1;
+        if (l.tipo === "grupo") {
+          return (
+            <div key={l.texto} role="row" style={{ display: "contents" }}>
+              <span style={{ gridColumn: "1 / span 2", padding: "22px 0 10px", fontSize: 22, fontWeight: 500 }}>{l.texto}</span>
+              <span style={{ background: TRILHO }} />
+            </div>
+          );
+        }
+        const a = atraso + 200 + n++ * 150;
+        const celula = { boxShadow: "inset 0 1px 0 var(--ds-line-subtle)", padding: "14px 0", animationDelay: `${a}ms` };
+        return (
+          <div key={l.rotulo} role="row" style={{ display: "contents" }}>
+            <span role="cell" className="ap-entra" style={{ ...celula, fontSize: 21, color: "var(--ds-text-secondary)" }}>{l.rotulo}</span>
+            <span role="cell" className="ap-entra" style={{ ...celula, ...centro }}><Marca valor={l.chat} /></span>
+            <span role="cell" className="ap-entra" style={{ ...celula, ...centro, background: TRILHO, borderRadius: ultima ? "0 0 16px 16px" : undefined }}>
+              <Marca valor={l.nexo} />
+            </span>
+          </div>
+        );
+      })}
+    </div>
   );
 }
 
@@ -158,7 +176,7 @@ export const OBJECOES: readonly Slide[] = [
                 Utilizáveis fora do sistema, sem depender dele.
               </p>
             </Entra>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 14, marginTop: 26 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 14, marginTop: 26 }}>
               {ARQUIVOS.map((a, i) => (
                 <span
                   key={a}
@@ -167,8 +185,9 @@ export const OBJECOES: readonly Slide[] = [
                     display: "inline-flex",
                     alignItems: "center",
                     gap: 12,
-                    height: 64,
-                    padding: "0 22px",
+                    gridColumn: i < 4 ? "span 3" : "span 2",
+                    height: 92,
+                    padding: "0 24px",
                     borderRadius: 14,
                     background: "var(--ds-p-paper)",
                     color: "var(--ds-text-on-paper)",

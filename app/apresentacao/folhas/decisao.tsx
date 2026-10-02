@@ -20,7 +20,7 @@ const BLOCO = "O piloto";
 export type LinhaDoCronograma = {
   rotulo: string;
   texto: string;
-  /** Em meses, de 0 a 6. */
+  /** Em meses, de 0 a `meses`. */
   de: number;
   ate: number;
   /** Marco: um losango em vez de barra. */
@@ -29,23 +29,26 @@ export type LinhaDoCronograma = {
 };
 
 /**
- * O CRONOGRAMA em meses relativos — Mês 1 a Mês 6, nunca datas: o calendário
+ * O CRONOGRAMA em meses relativos — Mês 1 a Mês N, nunca datas: o calendário
  * nasce na reunião de início. Cada linha é uma frente; a barra cresce da
  * esquerda, na ordem em que as frentes começam.
  */
 export function Cronograma({
   linhas,
   atraso,
+  meses = 3,
 }: {
   linhas: readonly LinhaDoCronograma[];
   atraso: number;
+  meses?: number;
 }) {
   const ROTULO = 300;
+  const pct = (m: number) => (m / meses) * 100;
   return (
     <div>
-      <div style={{ display: "grid", gridTemplateColumns: `${ROTULO}px repeat(6, 1fr)` }}>
+      <div style={{ display: "grid", gridTemplateColumns: `${ROTULO}px repeat(${meses}, 1fr)` }}>
         <span />
-        {Array.from({ length: 6 }, (_, m) => (
+        {Array.from({ length: meses }, (_, m) => (
           <Entra
             key={m}
             atraso={atraso + m * 60}
@@ -70,7 +73,7 @@ export function Cronograma({
                 position: "relative",
                 height: 96,
                 backgroundImage: "linear-gradient(90deg, var(--ds-line-subtle) 1px, transparent 1px)",
-                backgroundSize: "calc(100% / 6) 100%",
+                backgroundSize: `calc(100% / ${meses}) 100%`,
               }}
             >
               {l.marco ? (
@@ -78,8 +81,8 @@ export function Cronograma({
                   className="ap-assenta"
                   style={{
                     position: "absolute",
-                    left: `calc(${(l.de / 6) * 100}% - 11px)`,
-                    top: 22,
+                    left: l.de >= meses ? "calc(100% - 22px)" : `calc(${pct(l.de)}% - 11px)`,
+                    top: 37,
                     width: 22,
                     height: 22,
                     transform: "rotate(45deg)",
@@ -93,24 +96,34 @@ export function Cronograma({
                   className="ap-risca"
                   style={{
                     position: "absolute",
-                    left: `calc(${(l.de / 6) * 100}% + 6px)`,
-                    width: `calc(${((l.ate - l.de) / 6) * 100}% - 12px)`,
-                    top: 24,
-                    height: 18,
+                    left: `calc(${pct(l.de)}% + 6px)`,
+                    width: `calc(${pct(l.ate - l.de)}% - 12px)`,
+                    top: 26,
+                    height: 16,
                     borderRadius: 999,
                     background: l.forte ? "#c9ccd4" : "#5b5f6b",
                     animationDelay: `${a + 100}ms`,
                   }}
                 />
               )}
+              {/*
+                O TEXTO DA LINHA. Marco: ao lado do losango, no eixo. Barra:
+                embaixo dela — e, quando a barra começa no último mês, o texto
+                encosta pela direita no fim dela, senão vaza do palco.
+              */}
               <Entra
                 atraso={a + 300}
                 style={{
                   position: "absolute",
-                  left: l.marco ? `calc(${(l.de / 6) * 100}% + ${l.de >= 5 ? -30 : 22}px)` : `calc(${(l.de / 6) * 100}% + 6px)`,
-                  transform: l.marco && l.de >= 5 ? "translateX(-100%)" : undefined,
-                  top: l.marco ? 18 : 52,
+                  ...(l.marco
+                    ? l.de >= meses
+                      ? { right: 36, top: 34, textAlign: "right" as const }
+                      : { left: `calc(${pct(l.de)}% + 24px)`, top: 34 }
+                    : l.de >= meses - 1 && l.de > 0
+                      ? { right: `calc(${pct(meses - l.ate)}% + 6px)`, top: 52, textAlign: "right" as const }
+                      : { left: `calc(${pct(l.de)}% + 6px)`, top: 52 }),
                   fontSize: 19,
+                  lineHeight: "28px",
                   color: "var(--ds-text-secondary)",
                   whiteSpace: "nowrap",
                 }}
@@ -162,7 +175,7 @@ export const DECISAO: readonly Slide[] = [
     rotulo: "Como o piloto mede",
     numero: "17",
     bloco: BLOCO,
-    titulo: "Seis meses, três checkpoints",
+    titulo: "Três meses, três checkpoints",
     manchete: [
       { texto: "Ao fim, a decisão não depende de impressão.", fraca: true },
       "Depende da evidência produzida aqui.",
@@ -174,9 +187,9 @@ export const DECISAO: readonly Slide[] = [
         atraso={300}
         linhas={[
           { rotulo: "Início", texto: "projeto, responsável, usuários e linha de base", de: 0, ate: 0, marco: true },
-          { rotulo: "Conferência", texto: "quem projeta julga os achados, por disciplina", de: 0, ate: 6, forte: true },
-          { rotulo: "Montagem", texto: "quem monta registra tempo, retrabalho, falhas e correções", de: 0, ate: 6, forte: true },
-          { rotulo: "Fechamento", texto: "as duas medidas, separadas, para a diretoria", de: 6, ate: 6, marco: true },
+          { rotulo: "Conferência", texto: "quem projeta julga os achados, por disciplina", de: 0, ate: 3, forte: true },
+          { rotulo: "Montagem", texto: "quem monta registra tempo, retrabalho, falhas e correções", de: 0, ate: 3, forte: true },
+          { rotulo: "Fechamento", texto: "as duas medidas, separadas, para a diretoria", de: 3, ate: 3, marco: true },
         ]}
       />
     ),
@@ -192,7 +205,7 @@ export const DECISAO: readonly Slide[] = [
       "Decisão comercial do outro.",
     ],
     notas:
-      "ESTA FOLHA NÃO ESCONDE O PREÇO: separa o argumento técnico da decisão comercial. Quando chegar aqui, abrir a proposta — não esperar que alguém peça. A reunião precisa terminar com uma decisão, e o valor faz parte dela.\n\nÀ ESQUERDA, o que a sala já viu; à direita, as quatro perguntas que a proposta responde: o que entra, o que os R$ 10 mil compram, que prova fica ao final e o que precisa ser decidido para começar.\n\nO BOTÃO ABRE EM ABA NOVA: clicar não perde o deck. Fechar com Ctrl+W devolve esta folha, ainda em tela cheia.",
+      "ESTA FOLHA NÃO ESCONDE O PREÇO: separa o argumento técnico da decisão comercial. Quando chegar aqui, abrir a proposta — não esperar que alguém peça. A reunião precisa terminar com uma decisão, e o valor faz parte dela.\n\nÀ ESQUERDA, o que a sala já viu; à direita, as quatro perguntas que a proposta responde: o que entra, o que os R$ 8 mil compram, que prova fica ao final e o que precisa ser decidido para começar.\n\nO BOTÃO ABRE EM ABA NOVA: clicar não perde o deck. Fechar com Ctrl+W devolve esta folha, ainda em tela cheia.",
     corpo: (
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", alignItems: "stretch" }}>
         <div style={{ paddingRight: 64 }}>
@@ -268,18 +281,13 @@ export const DECISAO: readonly Slide[] = [
     numero: "20",
     bloco: BLOCO,
     titulo: "A decisão",
-    manchete: ["Aprovar o piloto de seis meses."],
+    manchete: ["Aprovar o piloto de três meses."],
     lead: "Conferência e montagem, cada uma julgada pela evidência que lhe pertence.",
     notas:
-      "ESTA É A ÚLTIMA TELA. O deck termina no pedido, não no limite, no roadmap ou na propriedade.\n\nDIZER: 'O que eu peço hoje é autorização para transformar estas duas provas em uso acompanhado por seis meses. Se a resposta for sim, saímos daqui com o projeto inicial, o responsável e os usuários — e a próxima conversa já é de implantação.'\n\nDEPOIS, PARAR. Não preencher o silêncio com desconto, justificativa de custo ou promessa nova.\n\nSE A RESPOSTA FOR 'PRECISO PENSAR': perguntar qual evidência ainda falta para decidir. A objeção volta para o critério, não para uma defesa genérica do software.",
+      "ESTA É A ÚLTIMA TELA. O deck termina no pedido, não no limite, no roadmap ou na propriedade.\n\nDIZER: 'O que eu peço hoje é autorização para transformar estas duas provas em uso acompanhado por três meses. Se a resposta for sim, saímos daqui com o projeto inicial, o responsável e os usuários — e a próxima conversa já é de implantação.'\n\nDEPOIS, PARAR. Não preencher o silêncio com desconto, justificativa de custo ou promessa nova.\n\nSE A RESPOSTA FOR 'PRECISO PENSAR': perguntar qual evidência ainda falta para decidir. A objeção volta para o critério, não para uma defesa genérica do software.",
     corpo: (
       <div className="ap-grade" style={{ alignItems: "center" }}>
         <ol style={{ gridColumn: "1 / span 7", margin: 0, padding: 0, listStyle: "none", position: "relative" }}>
-          <span
-            aria-hidden="true"
-            className="ap-desce"
-            style={{ position: "absolute", left: 19, top: 40, bottom: 40, width: 1.5, background: "var(--ds-line-strong)", animationDelay: "400ms" }}
-          />
           {(
             [
               ["Escolher o projeto inicial.", "Um caso real, com começo e fim dentro do período."],
@@ -288,6 +296,10 @@ export const DECISAO: readonly Slide[] = [
             ] as const
           ).map(([t, x], i) => (
             <li key={t} className="ap-entra" style={{ position: "relative", display: "grid", gridTemplateColumns: "72px 1fr", padding: "22px 0", animationDelay: `${500 + i * 200}ms` }}>
+              {/* o fio liga este anel ao próximo, e para no último */}
+              {i < 2 ? (
+                <span aria-hidden="true" style={{ position: "absolute", left: 19.25, top: 66, bottom: -18, width: 1.5, background: "var(--ds-line-strong)" }} />
+              ) : null}
               <span style={{ display: "grid", placeItems: "center", width: 40, height: 40, borderRadius: "50%", background: "var(--ds-surface-page)", boxShadow: "inset 0 0 0 1.5px var(--ds-line-strong)", fontFamily: MONO, fontSize: 16, color: "var(--ds-text-secondary)" }}>
                 {i + 1}
               </span>

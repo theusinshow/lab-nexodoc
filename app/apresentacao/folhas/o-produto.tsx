@@ -238,8 +238,9 @@ function IlustraMonta({ atraso }: { atraso: number }) {
   );
   return (
     <Diagrama
-      largura={700}
+      largura={656}
       altura={280}
+      style={{ alignSelf: "center" }}
       fios={
         <>
           <Fio d="M 102 140 L 128 140" atraso={atraso + 260} />
@@ -341,7 +342,7 @@ function Raia({
         className="ap-entra"
         style={{
           position: "absolute",
-          left: 650,
+          left: PASSOS_X[0] - 18,
           top: y - 62,
           fontSize: 20,
           fontWeight: 500,
@@ -393,9 +394,9 @@ function Raia({
       ))}
       <No
         x={1420}
-        y={y - 46}
+        y={y - 56}
         largura={260}
-        altura={92}
+        altura={112}
         variante="claro"
         atraso={atraso + 200 + passos.length * 140}
         icone={<FileText size={22} strokeWidth={1.75} />}

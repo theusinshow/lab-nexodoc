@@ -187,8 +187,8 @@ function MiniMapa({ atraso }: { atraso: number }) {
     <div style={{ display: "flex", flexDirection: "column", gap: 18, height: "100%" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 14, flex: 1 }}>
         {pecas.map((p, i) => (
-          <span key={i} style={{ display: "flex", alignItems: "center", gap: 14 }}>
-            {i ? <i style={{ width: 14, height: 1.5, background: "var(--ds-line-strong)" }} /> : null}
+          <span key={i} style={{ display: "flex", alignItems: "center", gap: 14, flex: i ? 1 : "none" }}>
+            {i ? <i style={{ flex: 1, height: 1.5, background: "var(--ds-line-strong)" }} /> : null}
             <span
               className="ap-assenta"
               style={{
@@ -428,10 +428,10 @@ export const MATURIDADE: readonly Slide[] = [
         <No x={1300} y={60} largura={380} altura={180} atraso={1300} icone={icone(Cloud)}
           titulo="Provedor do modelo" texto="a inteligência vem pronta de fora; pela política da API, o conteúdo não alimenta treinamento" />
 
-        <Entra atraso={1500} style={{ position: "absolute", left: 860, top: 84, fontSize: 17, color: "var(--ds-text-tertiary)" }}>
+        <Entra atraso={1500} style={{ position: "absolute", left: 740, width: 560, top: 84, textAlign: "center", fontSize: 17, color: "var(--ds-text-tertiary)" }}>
           texto para leitura
         </Entra>
-        <Entra atraso={2000} style={{ position: "absolute", left: 860, top: 184, fontSize: 17, color: "var(--ds-text-tertiary)" }}>
+        <Entra atraso={2000} style={{ position: "absolute", left: 740, width: 560, top: 184, textAlign: "center", fontSize: 17, color: "var(--ds-text-tertiary)" }}>
           resposta
         </Entra>
 
@@ -602,7 +602,7 @@ export const MATURIDADE: readonly Slide[] = [
           <span />
           <div style={{ display: "grid", gridTemplateColumns: `repeat(${ESTAGIOS.length}, 1fr)` }}>
             {ESTAGIOS.map((e, i) => (
-              <Entra key={e} atraso={300 + i * 120} style={{ padding: "0 16px 18px", boxShadow: "inset 1px 0 0 var(--ds-line-subtle)" }}>
+              <Entra key={e} atraso={300 + i * 120} style={{ padding: "22px 28px 20px", boxShadow: "inset 1px 0 0 var(--ds-line-subtle)" }}>
                 <span style={{ fontFamily: MONO, fontSize: 15, color: "var(--ds-text-tertiary)" }}>{i + 1}</span>
                 <p style={{ margin: "6px 0 0", fontSize: 21, fontWeight: 500, color: "var(--ds-text-secondary)" }}>{e}</p>
               </Entra>
@@ -628,10 +628,10 @@ export const MATURIDADE: readonly Slide[] = [
           className="ap-surge"
           style={{
             position: "absolute",
-            left: `calc(260px + (100% - 260px) / 2 + 8px)`,
-            right: -8,
+            left: `calc(260px + (100% - 260px) / 2 + 10px)`,
+            right: -10,
             top: 0,
-            bottom: -16,
+            bottom: -18,
             borderRadius: 22,
             outline: "1.5px dashed rgb(255 255 255 / 0.32)",
             outlineOffset: -1.5,

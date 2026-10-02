@@ -94,9 +94,9 @@ function Campo({ rotulo, atraso, children }: { rotulo: string; atraso: number; c
   return (
     <Entra
       atraso={atraso}
-      style={{ display: "grid", gridTemplateColumns: "200px 1fr", alignItems: "baseline", padding: "18px 0", boxShadow: "inset 0 1px 0 var(--ds-line-subtle)" }}
+      style={{ display: "grid", gridTemplateColumns: "200px 1fr", alignItems: "center", padding: "18px 0", boxShadow: "inset 0 1px 0 var(--ds-line-subtle)" }}
     >
-      <span style={{ fontSize: 19, color: "var(--ds-text-tertiary)" }}>{rotulo}</span>
+      <span style={{ fontSize: 19, color: "var(--ds-text-tertiary)", alignSelf: "start", paddingTop: 6 }}>{rotulo}</span>
       <div>{children}</div>
     </Entra>
   );
@@ -171,7 +171,7 @@ export const VALORES: readonly Slide[] = [
     titulo: "Quanto custa operar",
     manchete: ["O custo por execução é medido; o mensal, estimado."],
     notas:
-      "O CUSTO POR EXECUÇÃO É MEDIDO; o mensal é estimativa. Atualizar a cotação antes de apresentar: a tela usa a PTAX de venda de 28/09/2026 (R$ 5,2132), e o total é US$ 57 × a cotação — 57 × 5,2132 ≈ R$ 297.\n\nA FAIXA POR MEMORIAL É MEDIDA em produção, leitura profunda, somando leitura, validação e transcrição das páginas sem texto: 129-24 (54 p.) US$ 0,54; 025-24 (155 p.) US$ 0,91; 117-25 (218 p.) US$ 1,06; 027-24 (190 p.) US$ 1,09; 118-25 (234 p.) US$ 1,10. SE PERGUNTAREM POR QUE A FOLHA 05 DIZ US$ 1,61: aquela foi uma corrida anterior do mesmo 117-25 (US$ 1,23 de leitura, US$ 0,37 de validação, US$ 0,01 de transcrição); as de produção saíram mais baratas. O mensal continua calculado pela mais cara — 16 × US$ 1,61 ≈ US$ 26 —, de propósito: estimativa de custo erra para cima.\n\nO TOTAL MENSAL usa dezesseis memoriais, montagem corrente, servidor e banco. Não apresentar esse número como preço nem como retorno: é custo operacional e precisa continuar separado dos R$ 10 mil do piloto.",
+      "O CUSTO POR EXECUÇÃO É MEDIDO; o mensal é estimativa. Atualizar a cotação antes de apresentar: a tela usa a PTAX de venda de 28/09/2026 (R$ 5,2132), e o total é US$ 57 × a cotação — 57 × 5,2132 ≈ R$ 297.\n\nA FAIXA POR MEMORIAL É MEDIDA em produção, leitura profunda, somando leitura, validação e transcrição das páginas sem texto: 129-24 (54 p.) US$ 0,54; 025-24 (155 p.) US$ 0,91; 117-25 (218 p.) US$ 1,06; 027-24 (190 p.) US$ 1,09; 118-25 (234 p.) US$ 1,10. SE PERGUNTAREM POR QUE A FOLHA 05 DIZ US$ 1,61: aquela foi uma corrida anterior do mesmo 117-25 (US$ 1,23 de leitura, US$ 0,37 de validação, US$ 0,01 de transcrição); as de produção saíram mais baratas. O mensal continua calculado pela mais cara — 16 × US$ 1,61 ≈ US$ 26 —, de propósito: estimativa de custo erra para cima.\n\nO TOTAL MENSAL usa dezesseis memoriais, montagem corrente, servidor e banco. Não apresentar esse número como preço nem como retorno: é custo operacional e precisa continuar separado dos R$ 8 mil do piloto.",
     corpo: (
       <div className="ap-grade" style={{ alignItems: "start" }}>
         <div style={{ gridColumn: "1 / span 5" }}>
@@ -219,7 +219,7 @@ export const VALORES: readonly Slide[] = [
     bloco: BLOCO,
     titulo: "O que o piloto compra",
     manchete: [
-      { texto: "Não são seis meses de acesso.", fraca: true },
+      { texto: "Não são três meses de acesso.", fraca: true },
       "É uma implantação com prova de saída.",
     ],
     notas:
@@ -229,8 +229,8 @@ export const VALORES: readonly Slide[] = [
         atraso={300}
         linhas={[
           { rotulo: "Implantação", texto: "projeto, usuários, configuração e linha de base, nos dois caminhos", de: 0, ate: 1, forte: true },
-          { rotulo: "Acompanhamento", texto: "problemas recorrentes recebem correção ou procedimento documentado", de: 0, ate: 6 },
-          { rotulo: "Evidência", texto: "medidas separadas, registro das decisões e memorial-padrão corrigido", de: 5, ate: 6, forte: true },
+          { rotulo: "Acompanhamento", texto: "problemas recorrentes recebem correção ou procedimento documentado", de: 0, ate: 3 },
+          { rotulo: "Evidência", texto: "medidas separadas, registro das decisões e memorial-padrão corrigido", de: 2, ate: 3, forte: true },
         ]}
       />
     ),
@@ -243,10 +243,10 @@ export const VALORES: readonly Slide[] = [
     titulo: "A proposta",
     manchete: [
       "Licença de uso com acompanhamento,",
-      { texto: "por seis meses.", fraca: true },
+      { texto: "por três meses.", fraca: true },
     ],
     notas:
-      "LER O ESCOPO ANTES DO NÚMERO. A ficha monta de cima para baixo e o valor chega por último: ele compra a implantação descrita na folha anterior e a evidência da folha seguinte.\n\nSE PERGUNTAREM POR QUE SEIS MESES: porque um projeto precisa atravessar o sistema por inteiro e produzir julgamento, não impressão.\n\nOCR pode funcionar em casos específicos, mas não é cobertura garantida do piloto. Dizer assim evita contradizer a demonstração das quatorze páginas sem texto da corrida real.\n\nÀ DIREITA, AS DUAS SAÍDAS: se não produzir evidência suficiente, encerra; se produzir, a renovação nasce dos dados do piloto.\n\nO PISO CONTINUA R$ 10 mil. Não conceder desconto por alívio de a reunião estar acabando.",
+      "LER O ESCOPO ANTES DO NÚMERO. A ficha monta de cima para baixo e o valor chega por último: ele compra a implantação descrita na folha anterior e a evidência da folha seguinte.\n\nSE PERGUNTAREM POR QUE TRÊS MESES: porque um projeto precisa atravessar o sistema por inteiro e produzir julgamento, não impressão.\n\nOCR pode funcionar em casos específicos, mas não é cobertura garantida do piloto. Dizer assim evita contradizer a demonstração das quatorze páginas sem texto da corrida real.\n\nÀ DIREITA, AS DUAS SAÍDAS: se não produzir evidência suficiente, encerra; se produzir, a renovação nasce dos dados do piloto.\n\nO PISO CONTINUA R$ 8 mil. Não conceder desconto por alívio de a reunião estar acabando.",
     corpo: (
       <div className="ap-grade" style={{ alignItems: "center" }}>
         <div className="ap-painel ap-entra" style={{ gridColumn: "1 / span 8", padding: "12px 36px 28px", animationDelay: "300ms" }}>
@@ -254,7 +254,7 @@ export const VALORES: readonly Slide[] = [
             <span style={{ fontSize: 25 }}>Licença de uso durante o piloto</span>
           </Campo>
           <Campo rotulo="Prazo" atraso={540}>
-            <span style={{ fontSize: 25 }}>6 meses</span>
+            <span style={{ fontSize: 25 }}>3 meses</span>
           </Campo>
           <Campo rotulo="Inclui" atraso={660}>
             {INCLUI.map((t) => fichinha(t))}
@@ -264,7 +264,7 @@ export const VALORES: readonly Slide[] = [
           </Campo>
           <Campo rotulo="Valor" atraso={1100}>
             <span style={{ display: "block", fontSize: 72, letterSpacing: "-0.045em", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>
-              <Linhas linhas={["R$ 10.000"]} atraso={1200} />
+              <Linhas linhas={["R$ 8.000"]} atraso={1200} />
             </span>
           </Campo>
         </div>
@@ -292,7 +292,7 @@ export const VALORES: readonly Slide[] = [
       "Sustenta-se no que fica para decidir.",
     ],
     notas:
-      "ESTA É A JUSTIFICATIVA DO VALOR. Não comparar os R$ 10 mil com horas de desenvolvimento. Mostrar o pacote de decisão que a empresa recebe — a folha é o sumário dele.\n\nCONFERÊNCIA: matriz julgada por disciplina, taxa de achados verdadeiros, classes recorrentes de falso positivo e correções do memorial-padrão.\n\nMONTAGEM: linha de base contra tempo real, LDs e volumes gerados, arquivos aceitos, falhas, retrabalho e correções.\n\nO REGISTRO DE DECISÃO fecha: o que ficou provado, o que ainda falta e qual condição sustenta renovar. Mesmo sem renovação, essa evidência não some.",
+      "ESTA É A JUSTIFICATIVA DO VALOR. Não comparar os R$ 8 mil com horas de desenvolvimento. Mostrar o pacote de decisão que a empresa recebe — a folha é o sumário dele.\n\nCONFERÊNCIA: matriz julgada por disciplina, taxa de achados verdadeiros, classes recorrentes de falso positivo e correções do memorial-padrão.\n\nMONTAGEM: linha de base contra tempo real, LDs e volumes gerados, arquivos aceitos, falhas, retrabalho e correções.\n\nO REGISTRO DE DECISÃO fecha: o que ficou provado, o que ainda falta e qual condição sustenta renovar. Mesmo sem renovação, essa evidência não some.",
     corpo: (
       <div style={{ display: "grid", gridTemplateColumns: "520px 1fr", gap: 64, alignItems: "center" }}>
         <div className="ap-papel ap-entra" style={{ height: 560, boxSizing: "border-box", padding: "44px 48px", animationDelay: "300ms" }}>
@@ -305,7 +305,7 @@ export const VALORES: readonly Slide[] = [
           </p>
           <span style={{ position: "absolute", left: 48, right: 48, bottom: 44, display: "flex", justifyContent: "space-between", fontSize: 16, color: "var(--ds-text-on-paper-muted)" }}>
             <span>PROSUL</span>
-            <span>Mês 6</span>
+            <span>Mês 3</span>
           </span>
         </div>
         <ol style={{ margin: 0, padding: 0, listStyle: "none" }}>
@@ -335,12 +335,12 @@ export const VALORES: readonly Slide[] = [
     bloco: BLOCO,
     titulo: "Para começar",
     manchete: [
-      "Aprovar o piloto de seis meses por R$ 10 mil.",
+      "Aprovar o piloto de três meses por R$ 8 mil.",
       { texto: "Escolher o projeto. Nomear as pessoas.", fraca: true },
     ],
     lead: "Com a aprovação, a próxima reunião é de implantação.",
     notas:
-      "ÚLTIMA FOLHA DO ANEXO: terminar em decisão, não em propriedade.\n\nPEDIR TRÊS COISAS: aprovar o piloto de seis meses por R$ 10 mil; escolher o projeto inicial; nomear o responsável e os usuários. O checklist está vazio de propósito: quem marca é a sala.\n\nSE A RESPOSTA FOR SIM, a próxima conversa é de implantação. Se precisarem pensar, perguntar qual evidência ainda falta para decidir e registrar quem a traz.\n\nNÃO REPETIR o custo de construção, não oferecer desconto e não abrir roadmap. Parar depois do pedido.",
+      "ÚLTIMA FOLHA DO ANEXO: terminar em decisão, não em propriedade.\n\nPEDIR TRÊS COISAS: aprovar o piloto de três meses por R$ 8 mil; escolher o projeto inicial; nomear o responsável e os usuários. O checklist está vazio de propósito: quem marca é a sala.\n\nSE A RESPOSTA FOR SIM, a próxima conversa é de implantação. Se precisarem pensar, perguntar qual evidência ainda falta para decidir e registrar quem a traz.\n\nNÃO REPETIR o custo de construção, não oferecer desconto e não abrir roadmap. Parar depois do pedido.",
     corpo: (
       <div style={{ width: 1300 }}>
         <Checklist
