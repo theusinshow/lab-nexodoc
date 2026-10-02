@@ -1,0 +1,80 @@
+/*
+ * AJUDA. Usa o painel, as abas, a busca, a tabela, o lado e o rodapé do Mapa
+ * (mapa.css); aqui só o que é da ajuda: o caminho até o botão, os passos e
+ * o lugar da palavra na obra.
+ */
+.ds .aj .mp-miolo { min-height: 600px; grid-template-columns: minmax(0, 1fr) 380px; }
+.ds .aj-busca { width: 300px; }
+.ds .aj-grade--tarefas { --mp-colunas: 36px minmax(0, 1.2fr) minmax(0, 1fr) 96px 16px; }
+.ds .aj-grade--lugares { --mp-colunas: 36px minmax(0, 0.9fr) minmax(0, 1.3fr) 16px; }
+.ds .aj-grade--palavras { --mp-colunas: 36px 190px minmax(0, 1fr) 16px; }
+.ds .aj-linha { height: 48px; }
+.ds .aj-nome { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.ds .aj-resumo { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.ds .aj-seta { color: var(--ds-text-tertiary); opacity: 0; transform: translateX(-4px); transition: opacity 0.25s, transform 0.25s cubic-bezier(0.22, 1, 0.36, 1); }
+.ds .aj-linha:hover .aj-seta, .ds .aj-linha[aria-selected="true"] .aj-seta { opacity: 1; transform: none; }
+
+/* o principal: só um selo, sem cor de alarme */
+.ds .aj-selo { display: inline-flex; align-items: center; height: 18px; padding: 0 6px; border-radius: 5px; background: var(--ds-nexo-wash); color: var(--ds-nexo-soft); font-size: 11px; white-space: nowrap; }
+
+/* o caminho até o botão: o último degrau é o que se procura */
+.ds .aj-caminho { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 2px 4px; min-width: 0; font-size: 12px; color: var(--ds-text-tertiary); }
+.ds .aj-caminho svg { flex: none; opacity: 0.6; }
+.ds .aj-caminho-fim { color: var(--ds-text-primary); }
+.ds .aj-teclas { display: inline-flex; gap: 3px; }
+
+.ds .aj-cabeca { display: grid; gap: 6px; justify-items: start; }
+.ds .aj-titulo { margin: 0; font-size: 17px; line-height: 1.3; letter-spacing: -0.015em; color: var(--ds-text-primary); }
+.ds .aj-forte { color: var(--ds-text-secondary); }
+.ds .aj-rotulo { margin: 0 0 8px; font-size: 11.5px; color: var(--ds-text-tertiary); }
+
+.ds .aj-passos { display: grid; gap: 0; margin: 0; padding: 0; list-style: none; }
+.ds .aj-passos li { display: grid; grid-template-columns: 22px 1fr; gap: 10px; padding: 10px 0; border-top: 1px solid var(--ds-line-subtle); }
+.ds .aj-passos li:first-child { border-top: 0; padding-top: 0; }
+.ds .aj-passos p { margin: 0; font-size: 13px; line-height: 1.5; color: var(--ds-text-secondary); }
+.ds .aj-n { display: grid; place-items: center; width: 20px; height: 20px; margin-top: 1px; border-radius: 6px; box-shadow: inset 0 0 0 1px var(--ds-line-default); font-size: 11px; color: var(--ds-text-tertiary); }
+.ds .aj-passos .aj-passo-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 6px; }
+
+.ds .aj-pe { display: flex; gap: 8px; }
+.ds .aj-fichas { display: flex; flex-wrap: wrap; gap: 6px; }
+.ds .aj-ficha { height: 26px; padding: 0 10px; border: 0; border-radius: 7px; background: none; box-shadow: inset 0 0 0 1px var(--ds-line-default); font: inherit; font-size: 12px; color: var(--ds-text-secondary); cursor: pointer; transition: background 0.2s, color 0.2s; }
+.ds .aj-ficha:hover { background: rgb(255 255 255 / 0.05); color: var(--ds-text-primary); }
+
+/* sem nada escolhido */
+.ds .aj-principal { display: grid; grid-template-columns: 18px 1fr 14px; align-items: center; gap: 12px; width: 100%; padding: 14px; border: 0; border-radius: 12px; background: rgb(255 255 255 / 0.03); box-shadow: inset 0 0 0 1px var(--ds-line-default); font: inherit; text-align: left; color: var(--ds-text-primary); cursor: pointer; transition: background 0.2s, box-shadow 0.2s; }
+.ds .aj-principal:hover { background: rgb(255 255 255 / 0.05); box-shadow: inset 0 0 0 1px var(--ds-line-strong); }
+.ds .aj-principal > svg:first-child { color: var(--ds-nexo); }
+.ds .aj-principal b { display: block; font-weight: 500; font-size: 14px; }
+.ds .aj-principal small { display: block; margin-top: 2px; font-size: 12px; color: var(--ds-text-tertiary); }
+.ds .aj-principal-seta { color: var(--ds-text-tertiary); transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1); }
+.ds .aj-principal:hover .aj-principal-seta { transform: translateX(2px); color: var(--ds-text-primary); }
+.ds .aj-dicas { display: grid; gap: 8px; }
+.ds .aj-dicas p { margin: 0; font-size: 12.5px; line-height: 1.5; color: var(--ds-text-tertiary); }
+
+/* o lugar: o trajeto em degraus, ligados por um fio */
+.ds .aj-trajeto { display: grid; gap: 0; }
+.ds .aj-trajeto-passo { position: relative; display: flex; align-items: center; gap: 10px; height: 32px; font-size: 13px; color: var(--ds-text-secondary); }
+.ds .aj-trajeto-passo i { position: relative; width: 7px; height: 7px; flex: none; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--ds-text-tertiary); }
+.ds .aj-trajeto-passo:not(:last-child) i::after { content: ""; position: absolute; left: 3px; top: 9px; width: 1px; height: 23px; background: var(--ds-line-default); }
+.ds .aj-trajeto-passo--fim { color: var(--ds-text-primary); }
+.ds .aj-trajeto-passo--fim i { background: var(--ds-text-primary); box-shadow: none; }
+.ds .aj-trajeto-passo .aj-teclas { margin-left: auto; }
+.ds .aj-nota { margin: 0; font-size: 12.5px; line-height: 1.5; color: var(--ds-text-tertiary); }
+
+/* a palavra */
+.ds .aj-definicao { margin: 0; font-size: 13.5px; line-height: 1.6; color: var(--ds-text-secondary); }
+.ds .aj-hierarquia ol { display: grid; gap: 2px; margin: 0; padding: 0; list-style: none; }
+.ds .aj-hierarquia li { display: flex; align-items: center; gap: 8px; height: 24px; font-size: 12.5px; color: var(--ds-text-tertiary); }
+.ds .aj-hierarquia li i { width: 6px; height: 6px; border-radius: 1.5px; box-shadow: inset 0 0 0 1px var(--ds-line-strong); }
+.ds .aj-hierarquia .aj-h--acima { color: var(--ds-text-secondary); }
+.ds .aj-hierarquia .aj-h--aqui { color: var(--ds-text-primary); }
+.ds .aj-hierarquia .aj-h--aqui i { background: var(--ds-text-primary); box-shadow: none; }
+
+/* busca */
+.ds .aj-sem { display: grid; gap: 6px; justify-items: start; padding: 40px 12px; font-size: 13px; color: var(--ds-text-secondary); }
+.ds .aj-sem p { margin: 0; max-width: 60ch; line-height: 1.5; }
+.ds .aj-sem b { font-weight: 400; color: var(--ds-text-primary); }
+.ds .aj-sem-acoes { display: flex; gap: 8px; margin-top: 8px; }
+.ds .aj-tambem { margin: 14px 12px 0; font-size: 12.5px; color: var(--ds-text-tertiary); }
+.ds .aj-tambem button { padding: 0; border: 0; background: none; font: inherit; color: var(--ds-text-secondary); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--ds-line-strong); cursor: pointer; }
+.ds .aj-tambem button:hover { color: var(--ds-text-primary); }

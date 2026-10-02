@@ -122,3 +122,4 @@ data/nexodoc-learnings.json
 # pagou caro para evitar.
 /design-system/
 .playwright-mcp/
+/prova-telas/
