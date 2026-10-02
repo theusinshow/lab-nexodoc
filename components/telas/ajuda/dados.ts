@@ -36,8 +36,8 @@ export const TAREFAS: Tarefa[] = [
     passos: [
       { texto: "No Painel, escolha a tarefa e solte o PDF. Também vale soltar direto numa conversa do Nexo.", caminho: ["Painel", "Auditar um memorial"] },
       { texto: "O Nexo lê a capa e o carimbo e diz de que obra é. Confirme o projeto, ou crie um se a obra for nova." },
-      { texto: "Escolha a leitura: Rápida, ou Profunda quando o memorial for longo ou a obra pedir mais cuidado. Pode fechar a aba enquanto roda.", caminho: ["Auditar"] },
-      { texto: "O Resultado abre com o veredito e a fila de achados, do que impede emitir ao que é só texto.", caminho: ["Resultado", "Resumo"] },
+      { texto: "Toque em Auditar. Pode fechar a aba enquanto roda: a análise segue no servidor e o resultado abre no palco.", caminho: ["Conversa", "Auditar"] },
+      { texto: "O Resultado abre com o veredito no trilho da direita e os achados por nível, do que impede emitir ao que é só texto.", caminho: ["Resultado", "Resumo"] },
     ],
     ir: "Abrir o Painel",
     palavras: ["parecer", "achado", "veredito", "nivel"],
@@ -49,10 +49,11 @@ export const TAREFAS: Tarefa[] = [
     precisa: "Um parecer aberto.",
     comeca: "Resultado",
     passos: [
-      { texto: "Abra a fila. J e K andam de achado em achado.", caminho: ["Resultado", "Achados"], tecla: "J K" },
-      { texto: "Para cada um: C marca corrigido, D registra decisão técnica com o motivo, F diz que é falso positivo. Z desfaz.", tecla: "C D F" },
-      { texto: "M abre o memorial na página do trecho, grifado.", caminho: ["Achado", "Ver no memorial"], tecla: "M" },
-      { texto: "Para passar um achado a alguém: Atribuir a…. Atribuir não manda e-mail.", caminho: ["Achado", "Atribuir a…"] },
+      { texto: "No trilho do resultado, abra Achados. J e K andam de achado em achado.", caminho: ["Resultado", "Achados"], tecla: "J K" },
+      { texto: "Diga se cada achado está certo: C confirma, F marca falso positivo. Gravidade errada fica no detalhe do achado.", tecla: "C F" },
+      { texto: "O que foi feito com ele — correção informada ou decisão técnica com o motivo — se registra no detalhe do achado.", caminho: ["Achado", "Tratamento"] },
+      { texto: "Ver no documento abre o memorial na página do trecho.", caminho: ["Achado", "Ver no documento"] },
+      { texto: "Para passar um achado a alguém: Atribuir a…. Atribuir não manda e-mail; Notificar por e-mail é um passo à parte.", caminho: ["Achado", "Atribuir a…"] },
     ],
     ir: "Abrir o último parecer",
     palavras: ["achado", "tratamento", "nivel"],
@@ -64,8 +65,8 @@ export const TAREFAS: Tarefa[] = [
     precisa: "Um parecer aberto.",
     comeca: "Resultado",
     passos: [
-      { texto: "Na coluna da direita do Resultado, em Levar adiante: Parecer em PDF. Ele abre numa aba nova.", caminho: ["Resultado", "Levar adiante", "Parecer em PDF"] },
-      { texto: "Para controlar a correção numa planilha, um achado por linha: Matriz de achados.", caminho: ["Levar adiante", "Matriz de achados"] },
+      { texto: "No trilho da direita do Resultado, em Levar adiante: Parecer em PDF. Ele abre numa aba nova.", caminho: ["Resultado", "Levar adiante", "Parecer em PDF"] },
+      { texto: "Para colar num e-mail ou numa planilha: Exportar, Copiar achados ou Copiar ações. Baixar .md traz o texto inteiro.", caminho: ["Resultado", "Exportar", "Copiar achados"] },
     ],
     ir: "Abrir o último parecer",
     palavras: ["parecer", "veredito"],
@@ -92,8 +93,8 @@ export const TAREFAS: Tarefa[] = [
     comeca: "Nexo",
     passos: [
       { texto: "Com as folhas no mapa, diga o que quer na conversa: “divide em 2 tomos”, “tira a ARQ-12”, “monta os volumes”. O mapa muda a cada pedido.", caminho: ["Nexo", "Mapa do volume"] },
-      { texto: "Para mudar a ordem, arraste a folha no mapa. Ctrl Z desfaz.", tecla: "Ctrl Z" },
-      { texto: "Os PDFs gerados aparecem na coluna da conversa; Baixar editáveis traz tudo num ZIP.", caminho: ["Conversa", "Gerados", "Baixar editáveis"] },
+      { texto: "Para mudar a ordem, arraste a folha no mapa.", caminho: ["Mapa do volume", "arrastar a folha"] },
+      { texto: "Os PDFs gerados aparecem na coluna da conversa; Baixar os editáveis (ZIP) traz capa, LD e separatriz em ODT, antes do PDF do volume.", caminho: ["Conversa", "Volume montado", "Baixar os editáveis (ZIP)"] },
     ],
     ir: "Abrir o Nexo",
     palavras: ["volume", "tomo", "grupo"],
@@ -116,15 +117,14 @@ export const TAREFAS: Tarefa[] = [
 
 export const LUGARES: Lugar[] = [
   { id: "pdf", nome: "Parecer em PDF", caminho: ["Resultado", "Levar adiante", "Parecer em PDF"], precisa: "Um parecer aberto.", nota: "Abre numa aba nova.", sinonimos: ["exportar parecer", "imprimir", "relatorio"] },
-  { id: "matriz", nome: "Matriz de achados", caminho: ["Resultado", "Levar adiante", "Matriz de achados"], precisa: "Um parecer aberto.", nota: "Planilha, um achado por linha.", sinonimos: ["planilha", "excel"] },
-  { id: "atribuir", nome: "Atribuir um achado", caminho: ["Resultado", "Achados", "Atribuir a…"], precisa: "Um parecer aberto.", nota: "Vários de uma vez: marque e use Atribuir a…. Atribuir não manda e-mail.", sinonimos: ["delegar", "responsavel", "passar achado"] },
+  { id: "copiar", nome: "Copiar os achados", caminho: ["Resultado", "Exportar", "Copiar achados"], precisa: "Um parecer aberto.", nota: "Texto para colar no e-mail ou na planilha; Copiar ações traz só o que fazer.", sinonimos: ["planilha", "excel", "copiar", "colar"] },
+  { id: "atribuir", nome: "Atribuir um achado", caminho: ["Resultado", "Achados", "Atribuir a…"], precisa: "Um parecer aberto.", nota: "Vários de uma vez: marque e use Atribuir a…. Atribuir não manda e-mail; Notificar por e-mail, no topo do parecer, avisa todos de uma vez.", sinonimos: ["delegar", "responsavel", "passar achado", "notificar", "email"] },
   { id: "link", nome: "Copiar o link de um achado", caminho: ["Achado", "Mais ações", "Copiar link do achado"], precisa: "Um achado aberto na fila.", nota: "Quem abre o link cai no mesmo achado do mesmo parecer.", sinonimos: ["compartilhar", "link"] },
-  { id: "memorial", nome: "Ver o trecho no memorial", caminho: ["Achado", "Ver no memorial"], precisa: "Um achado aberto.", tecla: "M", nota: "O memorial abre na página, com o trecho grifado na cor do nível.", sinonimos: ["pagina", "evidencia", "trecho"] },
-  { id: "deixou", nome: "O Nexo deixou passar algo", caminho: ["Resultado", "Levar adiante", "O Nexo deixou passar algo?"], precisa: "Um parecer aberto.", nota: "Registra o erro que a auditoria não apontou.", sinonimos: ["erro ausente", "faltou achado"] },
+  { id: "memorial", nome: "Ver o trecho no memorial", caminho: ["Achado", "Ver no documento"], precisa: "Um achado aberto.", nota: "O memorial abre na página do trecho. Para ver todos os achados sobre as páginas: No documento, no trilho.", sinonimos: ["pagina", "evidencia", "trecho"] },
   { id: "carimbo", nome: "Corrigir o carimbo de uma folha", caminho: ["Nexo", "Mapa do volume", "folha", "Corrigir"], precisa: "As pranchas lidas.", tecla: "E", sinonimos: ["corrigir numero", "titulo da prancha", "revisao errada"] },
-  { id: "ordem", nome: "Mudar a ordem das folhas", caminho: ["Nexo", "Mapa do volume", "arrastar a folha"], precisa: "As pranchas lidas.", tecla: "Ctrl Z", nota: "Ctrl Z desfaz o último arrasto.", sinonimos: ["reordenar", "mover", "subir", "descer"] },
+  { id: "ordem", nome: "Mudar a ordem das folhas", caminho: ["Nexo", "Mapa do volume", "arrastar a folha"], precisa: "As pranchas lidas.", sinonimos: ["reordenar", "mover", "subir", "descer"] },
   { id: "tomos", nome: "Dividir em tomos", caminho: ["Nexo", "conversa", "“divide em 2 tomos”"], precisa: "As pranchas lidas.", sinonimos: ["tomo", "dividir volume"] },
-  { id: "zip", nome: "Baixar os gerados (ZIP)", caminho: ["Conversa", "Gerados", "Baixar editáveis"], precisa: "LD, capa ou volume já gerados.", sinonimos: ["exportar volume", "baixar volume", "zip", "editaveis"] },
+  { id: "zip", nome: "Baixar os gerados (ZIP)", caminho: ["Conversa", "Volume montado", "Baixar os editáveis (ZIP)"], precisa: "LD, capa ou volume já gerados.", sinonimos: ["exportar volume", "baixar volume", "zip", "editaveis"] },
 ];
 
 /** Projeto › Conversa e auditoria › Volume › Grupo › Documento e página. */
@@ -133,7 +133,7 @@ export const HIERARQUIA = ["Projeto", "Conversa e auditoria", "Volume", "Grupo",
 export const PALAVRAS: Palavra[] = [
   { id: "projeto", termo: "Projeto", nivel: 0, texto: "A obra. Guarda conversas, auditorias, volumes e arquivos. Cria-se em Projetos, ou nasce do memorial que o Nexo lê." },
   { id: "conversa", termo: "Conversa", nivel: 1, texto: "Um trabalho no Nexo: você solta PDFs e pede o que precisa. Ela entra num projeto quando os documentos dizem qual é." },
-  { id: "parecer", termo: "Auditoria e parecer", nivel: 1, texto: "A leitura do memorial contra a obra declarada. O parecer é o que sai dela: veredito, achados e o texto para a prefeitura.", ve: ["pdf", "matriz"], sinonimos: ["auditoria"] },
+  { id: "parecer", termo: "Auditoria e parecer", nivel: 1, texto: "A leitura do memorial contra a obra declarada. O parecer é o que sai dela: veredito, achados e o texto para a prefeitura.", ve: ["pdf", "copiar"], sinonimos: ["auditoria"] },
   { id: "veredito", termo: "Veredito", nivel: 1, texto: "O resumo do parecer em uma palavra: Liberado, Com ressalvas, Revisar ou Não emitir. Muda conforme os achados são tratados." },
   { id: "achado", termo: "Achado", nivel: 1, texto: "Um ponto do memorial que o Nexo apontou, com o trecho, a página e o que fazer. Na tela se lê ACH-014.", ve: ["memorial", "atribuir", "link"], sinonimos: ["ach", "problema"] },
   { id: "nivel", termo: "Nível do achado", nivel: 1, texto: "O peso de um achado: Impede (não dá para emitir), Decisão (alguém precisa decidir), Revisão (conferir) e Gramática (só texto)." },
