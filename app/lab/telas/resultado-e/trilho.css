@@ -48,6 +48,7 @@
 .ds .re-acao small { font-size: 11px; color: var(--ds-text-tertiary); }
 .ds .re-acao--principal { background: var(--ds-action-bg, var(--ds-p-paper)); color: var(--ds-text-on-paper); }
 .ds .re-acao--principal svg { color: currentColor; }
+.ds .re-acao--principal small { color: var(--ds-text-on-paper-muted); }
 .ds .re-acao--discreta { margin-top: 4px; font-size: var(--ds-text-2xs); color: var(--ds-text-secondary); }
 
 /* coluna compacta: só ícones, centralizados */

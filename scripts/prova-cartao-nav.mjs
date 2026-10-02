@@ -40,6 +40,10 @@ ok("Esc fecha e devolve o foco à marca", (await p.locator(".pn-cartao-nav").cou
 await p.close();
 
 p = await abrir(390, 800);
+// abaixo de 1024 vem primeiro o aviso de tela pequena; quem continua chega ao Topo
+ok("390: o aviso de tela pequena vem antes", (await p.locator(".at h1").count()) === 1);
+await p.locator('button:has-text("Continuar assim mesmo")').click();
+await p.waitForTimeout(600);
 await p.locator(".pn-marca--botao").click();
 await p.waitForTimeout(450);
 const cy = await p.locator(".pn-cartao-nav").boundingBox();

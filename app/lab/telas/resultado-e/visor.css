@@ -17,7 +17,7 @@
 .ds .vm-trecho { position: relative; margin: 2px 0 9px; line-height: 1.5; color: #2a2d34; cursor: pointer; --vm-tom: #8e99ae; }
 .ds .vm-trecho mark { padding: 0 2px; border-radius: 2px; color: inherit; background-image: linear-gradient(color-mix(in srgb, var(--vm-tom) 38%, transparent), color-mix(in srgb, var(--vm-tom) 38%, transparent)); background-repeat: no-repeat; background-color: transparent; }
 .ds .vm-trecho--ativo mark { box-shadow: 0 0 0 1.5px var(--vm-tom); }
-.ds .vm-pino { position: absolute; right: -11%; top: 50%; display: grid; place-items: center; border-radius: 50%; background: var(--vm-tom); color: #fff; font-family: var(--ds-font-mono); font-weight: 600; transform: translateY(-50%); }
+.ds .vm-pino { position: absolute; right: -11%; top: 50%; display: grid; place-items: center; border-radius: 50%; background: var(--vm-tom); color: var(--ds-p-ink); font-family: var(--ds-font-mono); font-weight: 600; transform: translateY(-50%); }
 .ds .vm-sem { position: absolute; left: 0; right: 0; bottom: 12%; text-align: center; font-size: 11px; color: #8a8f99; }
 
 .ds .vm--block { --vm-tom: var(--ds-sev-block); }

@@ -9,7 +9,7 @@
 .ds .pj-codigo { display: inline-flex; align-items: center; gap: 8px; }
 .ds .pj-nome { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 13px; line-height: 1.35; }
 .ds .pj-espera .mp-conf { font-size: 12.5px; color: var(--ds-text-primary); }
-.ds .pj-nada { opacity: 0.6; }
+.ds .pj-nada { color: var(--ds-text-tertiary); }
 .ds .pj-seta { color: var(--ds-text-tertiary); opacity: 0; transform: translateX(-4px); transition: opacity 0.25s, transform 0.25s cubic-bezier(0.22, 1, 0.36, 1); }
 .ds .pj-linha:hover .pj-seta, .ds .pj-linha[aria-selected="true"] .pj-seta { opacity: 1; transform: none; }
 .ds .pj-linha--arquivada .pj-nome, .ds .pj-linha--arquivada .mp-mono { color: var(--ds-text-secondary); }

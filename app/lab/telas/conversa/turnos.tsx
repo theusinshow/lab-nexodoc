@@ -8,7 +8,7 @@ import { Orbe, Tecla } from "@/components/ds/basicos";
 import { Cronometro, Trelica } from "@/components/ds/micro";
 import { useTempo } from "@/lib/ds/tempo";
 
-import { useIr, type IdTela } from "../_comum/prototipo";
+import { useAvisar, useIr, type AvisoDoPrototipo, type IdTela } from "../_comum/prototipo";
 
 /*
  * O MOVIMENTO DA CONVERSA. Cada gesto responde a uma pergunta só:
@@ -239,11 +239,32 @@ const SAIDA_LEVA: Record<string, [IdTela, string]> = {
   "Auditar de novo (nova rodada)": ["nexo-auditoria", "rodando"],
   "Montar o volume": ["nexo", "soltou"],
   "Abrir a ELE-04": ["mapa", "folha-aberta"],
+  // montar o volume: a conversa anda pelas situações do palco
+  "Dividir assim": ["nexo", "dividido"],
+  Desfazer: ["nexo", "lido"],
+  "Pode gerar": ["nexo", "gerando"],
+  "Restaurar a ARQ-12": ["nexo", "dividido"],
+  "Monta os volumes": ["nexo", "montado"],
+  "Remontar e baixar": ["nexo", "montado"],
+};
+
+/** As saídas que, no app, terminam fora da tela (um download, uma decisão que só fica registrada). */
+const SAIDA_AVISA: Record<string, AvisoDoPrototipo> = {
+  "Baixar os editáveis (ZIP)": { tom: "ok", titulo: "117_25_editaveis.zip baixado.", texto: "Capa, LD e separatriz em .odt, com o nome do escritório." },
+  "Baixar os 2 (ZIP)": { tom: "ok", titulo: "Volume_117-25.zip baixado.", texto: "TOMO-01 e TOMO-02, 412 páginas." },
+  "Deixar como está": { tom: "ok", titulo: "O volume fica como está.", texto: "O mapa continua marcado como desatualizado até você remontar." },
+  "Um tomo só": { tom: "ok", titulo: "Um tomo só, com as 412 páginas.", texto: "No protótipo, só a divisão em 2 tomos tem tela desenhada." },
 };
 
 export function Saidas({ itens, onEscolher }: { itens: { texto: string; principal?: boolean }[]; onEscolher?: (texto: string) => void }) {
   const { k } = useTempo();
   const ir = useIr();
+  const avisar = useAvisar();
+  const escolher = (texto: string) => {
+    if (SAIDA_LEVA[texto]) ir(...SAIDA_LEVA[texto]);
+    else if (onEscolher) onEscolher(texto);
+    else avisar(SAIDA_AVISA[texto] ?? { tom: "ok", titulo: `“${texto}”`, texto: "No protótipo, esta resposta não leva a outra tela." });
+  };
   return (
     <div className="cx-saidas">
       {itens.map((it, i) => (
@@ -251,7 +272,7 @@ export function Saidas({ itens, onEscolher }: { itens: { texto: string; principa
           key={it.texto}
           type="button"
           className={`cx-saida${it.principal ? " cx-saida--principal" : ""}`}
-          onClick={() => (SAIDA_LEVA[it.texto] ? ir(...SAIDA_LEVA[it.texto]) : onEscolher?.(it.texto))}
+          onClick={() => escolher(it.texto)}
           initial={{ opacity: 0, y: 4 }}
           animate={{ opacity: 1, y: 0 }}
           whileTap={{ scale: 0.98, transition: { duration: RITMO.toque * k } }}

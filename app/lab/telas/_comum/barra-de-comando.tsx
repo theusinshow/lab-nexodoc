@@ -265,6 +265,19 @@ export function BarraDeComando({
       entrada.current?.focus();
     }
   }, [arquivo]);
+  // Suspensa: é a busca da própria tela (Painel), então o Ctrl K que a dica
+  // mostra põe o foco nela em vez de abrir a paleta por cima.
+  useEffect(() => {
+    if (modo !== "suspensa") return;
+    const tecla = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey) || e.key.toLowerCase() !== "k") return;
+      e.preventDefault();
+      entrada.current?.focus();
+      setAberta(true);
+    };
+    document.addEventListener("keydown", tecla);
+    return () => document.removeEventListener("keydown", tecla);
+  }, [modo]);
   // Suspensa: clique fora fecha.
   useEffect(() => {
     if (modo !== "suspensa" || !aberta) return;

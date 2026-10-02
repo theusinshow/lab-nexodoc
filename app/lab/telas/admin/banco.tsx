@@ -121,7 +121,15 @@ function ConfirmaExclusao({ texto, onCancelar }: { texto: string | null; onCance
   );
 }
 
+// os filtros valem ao apertar Filtrar (como no app: o formulário manda, a lista recarrega)
+const STATUS_AUD: Record<string, string> = { COMPLETED: "Concluída", PROCESSING: "Processando", FAILED: "Falha", CANCELED: "Cancelada" };
+const STATUS_LD: Record<string, string> = { DRAFT: "Rascunho", GENERATED: "Gerada", ARCHIVED: "Arquivada" };
+const tem = (texto: string, q: string) => texto.toLocaleLowerCase("pt-BR").includes(q.trim().toLocaleLowerCase("pt-BR"));
+const campo = (f: FormData, nome: string) => String(f.get(nome) ?? "");
+
 export function Banco({ variante }: { variante: VarianteBanco }) {
+  const [filtroAud, setFiltroAud] = useState({ q: "", status: "all", modo: "all", usuario: "" });
+  const [filtroLd, setFiltroLd] = useState({ q: "", status: "all" });
   const [marcadas, setMarcadas] = useState<Set<string>>(new Set());
   const [expurgo, setExpurgo] = useState<{ chave: string; rotulo: string; palavra: string } | null>(
     variante === "expurgo" ? { chave: "088-25", rotulo: "a obra 088-25", palavra: "088-25 · Criciúma, escola do Pinheirinho (entregue)" } : null,
@@ -129,6 +137,14 @@ export function Banco({ variante }: { variante: VarianteBanco }) {
   const [audMarcadas, setAudMarcadas] = useState<Set<string>>(new Set(variante === "excluir" ? ["g3", "g6"] : []));
   const [confAud, setConfAud] = useState<string | null>(variante === "excluir" ? CONFIRMA_EXCLUSAO.auditorias(2) : null);
   const [ldMarcadas, setLdMarcadas] = useState<Set<string>>(new Set());
+  const audVisiveis = AUDITORIAS_GUARDADAS.filter(
+    (a) =>
+      (!filtroAud.q || tem(`${a.projeto} ${a.titulo}`, filtroAud.q)) &&
+      (filtroAud.status === "all" || a.status === STATUS_AUD[filtroAud.status]) &&
+      (filtroAud.modo === "all" || a.modo === filtroAud.modo) &&
+      (!filtroAud.usuario || tem(a.usuario, filtroAud.usuario)),
+  );
+  const ldVisiveis = LDS_GUARDADAS.filter((l) => (!filtroLd.q || tem(`${l.codigo} ${l.obra} ${l.usuario}`, filtroLd.q)) && (filtroLd.status === "all" || l.status === STATUS_LD[filtroLd.status]));
   const [confLd, setConfLd] = useState<string | null>(null);
   const maxBytes = Math.max(...OBRAS_GUARDADAS.map((o) => o.bytes));
   const total = OBRAS_GUARDADAS.reduce((a, o) => a + o.bytes, 0);
@@ -200,24 +216,31 @@ export function Banco({ variante }: { variante: VarianteBanco }) {
           <h2 id="pb-aud">Histórico de auditorias</h2>
         </header>
         <p className="din-lede">Acompanhe auditorias persistidas e filtre por projeto, status, modo e responsável.</p>
-        <form className="pb-linha-form pb-filtros" onSubmit={(e) => e.preventDefault()}>
+        <form
+          className="pb-linha-form pb-filtros"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const f = new FormData(e.currentTarget);
+            setFiltroAud({ q: campo(f, "q"), status: campo(f, "status"), modo: campo(f, "modo"), usuario: campo(f, "usuario") });
+          }}
+        >
           <label className="pb-busca">
             <Search size={14} aria-hidden />
-            <input placeholder="Buscar projeto, título ou arquivo" aria-label="Buscar auditoria" />
+            <input name="q" placeholder="Buscar projeto, título ou arquivo" aria-label="Buscar auditoria" />
           </label>
-          <select className="pb-campo pb-select" aria-label="Status" defaultValue="all">
+          <select name="status" className="pb-campo pb-select" aria-label="Status" defaultValue="all">
             <option value="all">Todos status</option>
             <option value="COMPLETED">Concluídas</option>
             <option value="PROCESSING">Processando</option>
             <option value="FAILED">Falhas</option>
             <option value="CANCELED">Canceladas</option>
           </select>
-          <select className="pb-campo pb-select" aria-label="Modo" defaultValue="all">
+          <select name="modo" className="pb-campo pb-select" aria-label="Modo" defaultValue="all">
             <option value="all">Todos modos</option>
             <option value="memorial">Memorial</option>
             <option value="volume">Volume</option>
           </select>
-          <input className="pb-campo" placeholder="Usuário" aria-label="Usuário" />
+          <input name="usuario" className="pb-campo" placeholder="Usuário" aria-label="Usuário" />
           <Botao variante="ghost" tamanho="sm" type="submit">
             Filtrar
           </Botao>
@@ -240,7 +263,8 @@ export function Banco({ variante }: { variante: VarianteBanco }) {
             <span>Usuário</span>
             <span>Criada em</span>
           </div>
-          {AUDITORIAS_GUARDADAS.map((a) => (
+          {audVisiveis.length === 0 && <p className="adm-vazio">Nenhuma auditoria com esses filtros.</p>}
+          {audVisiveis.map((a) => (
             <div key={a.id} className={`adm-linha${audMarcadas.has(a.id) ? " pb-pessoa--marcada" : ""}`}>
               <span>
                 <input type="checkbox" className="pb-check" checked={audMarcadas.has(a.id)} onChange={() => setAudMarcadas((m) => alterna(m, a.id))} aria-label={`Selecionar ${a.titulo}`} />
@@ -268,12 +292,19 @@ export function Banco({ variante }: { variante: VarianteBanco }) {
           <h2 id="pb-ld">Operação de LDs</h2>
         </header>
         <p className="din-lede">As LDs geradas, por usuário — é o registro do servidor, o mesmo que o Nexo alimenta. PDFs anexados não são armazenados.</p>
-        <form className="pb-linha-form pb-filtros" onSubmit={(e) => e.preventDefault()}>
+        <form
+          className="pb-linha-form pb-filtros"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const f = new FormData(e.currentTarget);
+            setFiltroLd({ q: campo(f, "q"), status: campo(f, "status") });
+          }}
+        >
           <label className="pb-busca">
             <Search size={14} aria-hidden />
-            <input placeholder="Código, obra ou usuário" aria-label="Buscar LD" />
+            <input name="q" placeholder="Código, obra ou usuário" aria-label="Buscar LD" />
           </label>
-          <select className="pb-campo pb-select" aria-label="Status" defaultValue="all">
+          <select name="status" className="pb-campo pb-select" aria-label="Status" defaultValue="all">
             <option value="all">Todos status</option>
             <option value="DRAFT">Rascunho</option>
             <option value="GENERATED">Gerada</option>
@@ -301,7 +332,8 @@ export function Banco({ variante }: { variante: VarianteBanco }) {
             <span className="din-direita">Eventos</span>
             <span>Atualizada</span>
           </div>
-          {LDS_GUARDADAS.map((l) => (
+          {ldVisiveis.length === 0 && <p className="adm-vazio">Nenhuma LD com esses filtros.</p>}
+          {ldVisiveis.map((l) => (
             <div key={l.id} className={`adm-linha${ldMarcadas.has(l.id) ? " pb-pessoa--marcada" : ""}`}>
               <span>
                 <input type="checkbox" className="pb-check" checked={ldMarcadas.has(l.id)} onChange={() => setLdMarcadas((m) => alterna(m, l.id))} aria-label={`Selecionar LD ${l.codigo}`} />

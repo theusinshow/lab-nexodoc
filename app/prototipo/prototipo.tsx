@@ -7,6 +7,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore
 import { Tecla } from "@/components/ds/basicos";
 import { CURVA } from "@/lib/ds/movimento";
 
+import { FaixaDeAviso, TelaDeAviso, useAvisoDeTela } from "../lab/telas/_comum/aviso-de-tela";
 import { EsqueletoDaTela } from "../lab/telas/_comum/esqueletos";
 import { NoPrototipo, type IdTela } from "../lab/telas/_comum/prototipo";
 import { ControleDoTopo } from "../lab/telas/_comum/topo";
@@ -182,7 +183,33 @@ export function Prototipo() {
     }),
     [setPaleta, setAtalhos],
   );
-  const noPrototipo = useMemo(() => ({ ir }), [ir]);
+  const noPrototipo = useMemo(() => ({ ir, avisar }), [ir, avisar]);
+  // tela pequena: a Entrada cabe em qualquer largura; o resto avisa antes
+  const aviso = useAvisoDeTela();
+  const avisaTela = aviso.mostrarTela && tela !== "entrada";
+  const avisaFaixa = aviso.mostrarFaixa && tela !== "entrada";
+
+  // G e depois a letra leva a uma área. Escuta no window, em captura, para a
+  // letra não chegar aos atalhos de lista da tela (J/K/A) quando vem depois do G.
+  useEffect(() => {
+    if (!globais) return;
+    const AREAS: Record<string, [IdTela, string?]> = { p: ["inicio"], n: ["nexo-auditoria", "pronta"], o: ["projetos"], a: ["achados"], j: ["ajuda"], d: ["admin"] };
+    let g = 0;
+    const tecla = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey || e.altKey || digitando(e.target)) return;
+      const k = e.key.toLowerCase();
+      if (g && Date.now() - g < 1200 && AREAS[k]) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        g = 0;
+        ir(...AREAS[k]);
+        return;
+      }
+      g = k === "g" ? Date.now() : 0;
+    };
+    window.addEventListener("keydown", tecla, true);
+    return () => window.removeEventListener("keydown", tecla, true);
+  }, [globais, ir]);
 
   return (
     <NoPrototipo.Provider value={noPrototipo}>
@@ -197,7 +224,14 @@ export function Prototipo() {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.12, ease: [...CURVA.out] as [number, number, number, number] }}
             >
-              {carregando ? <EsqueletoDaTela tela={tela} /> : def.render(situacao)}
+              {avisaTela ? (
+                <TelaDeAviso largura={aviso.largura} onContinuar={aviso.continuar} />
+              ) : (
+                <>
+                  {avisaFaixa && <FaixaDeAviso largura={aviso.largura} onFechar={aviso.fecharFaixa} />}
+                  {carregando ? <EsqueletoDaTela tela={tela} /> : def.render(situacao)}
+                </>
+              )}
             </motion.main>
           </AnimatePresence>
 

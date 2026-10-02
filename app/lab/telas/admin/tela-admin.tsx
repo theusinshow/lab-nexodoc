@@ -4,10 +4,11 @@ import { motion } from "motion/react";
 import { ArrowRight, BarChart3, CircleAlert, Database, Gauge, Info, KeyRound, RefreshCcw, ShieldCheck, UsersRound } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 
-import { Botao, Orbe, Segmento, Tecla } from "@/components/ds/basicos";
+import { Botao, Girando, Orbe, Segmento, Tecla } from "@/components/ds/basicos";
 import { useTempo } from "@/lib/ds/tempo";
 
 import { Topo } from "../_comum/topo";
+import { useIr } from "../_comum/prototipo";
 import { RITMO, SUAVE } from "../conversa/turnos";
 import { LinhaDeTendencia } from "@/components/ds/medidas";
 
@@ -32,7 +33,8 @@ const comDados = (s: SituacaoAdmin) => s !== "sem-token" && s !== "erro";
 const ICONES: Record<Destino, typeof Gauge> = { cockpit: Gauge, dinheiro: BarChart3, motor: ShieldCheck, pessoas: UsersRound, dados: Database };
 const PRONTOS: Destino[] = ["cockpit", "dinheiro", "motor", "pessoas", "dados"];
 
-function Trilho({ situacao, atual, onIr }: { situacao: SituacaoAdmin; atual: Destino; onIr: (d: Destino) => void }) {
+function Trilho({ situacao, atual, onIr, onAtualizar }: { situacao: SituacaoAdmin; atual: Destino; onIr: (d: Destino) => void; onAtualizar: () => void }) {
+  const ir = useIr();
   const { k } = useTempo();
   const status = situacao === "atencao" ? STATUS.degradado : comDados(situacao) ? STATUS.ok : null;
   const [editando, setEditando] = useState(!comDados(situacao));
@@ -86,13 +88,18 @@ function Trilho({ situacao, atual, onIr }: { situacao: SituacaoAdmin; atual: Des
               <KeyRound size={13} aria-hidden /> sessão admin
             </p>
             <p className="adm-token-acoes">
-              <button type="button">atualizar</button>
+              <button type="button" onClick={onAtualizar}>
+                atualizar
+              </button>
               <span aria-hidden>·</span>
               <button type="button" onClick={() => setEditando(true)}>
                 trocar
               </button>
               <span aria-hidden>·</span>
-              <button type="button">sair</button>
+              {/* sair esquece o token deste navegador: volta à porta do admin */}
+              <button type="button" onClick={() => ir("admin", "sem-token")}>
+                sair
+              </button>
             </p>
           </>
         ) : (
@@ -130,9 +137,9 @@ function Aviso({ tom, children, acao }: { tom: "info" | "erro"; children: ReactN
   );
 }
 
-function Numero({ rotulo, valor, detalhe, alerta, para, serie }: { rotulo: string; valor: ReactNode; detalhe: string; alerta?: boolean; para?: string; serie?: number[] }) {
+function Numero({ rotulo, valor, detalhe, alerta, para, serie, onAbrir }: { rotulo: string; valor: ReactNode; detalhe: string; alerta?: boolean; para?: string; serie?: number[]; onAbrir?: () => void }) {
   return (
-    <button type="button" className={`adm-num${alerta ? " adm-num--alerta" : ""}`} title={para ? `Abrir ${para}` : undefined}>
+    <button type="button" className={`adm-num${alerta ? " adm-num--alerta" : ""}`} title={para ? `Abrir ${para}` : undefined} onClick={onAbrir} disabled={!onAbrir}>
       <span className="adm-num-rotulo">
         {alerta && <i aria-hidden />}
         {rotulo}
@@ -149,7 +156,7 @@ function Numero({ rotulo, valor, detalhe, alerta, para, serie }: { rotulo: strin
   );
 }
 
-function Cockpit({ situacao }: { situacao: SituacaoAdmin }) {
+function Cockpit({ situacao, onIr }: { situacao: SituacaoAdmin; onIr: (d: Destino) => void }) {
   const tem = situacao === "cockpit" || situacao === "atencao";
   const vazio = situacao === "sem-token" ? "Aguardando o token." : "Não carregado.";
   const t = TOTAIS;
@@ -191,11 +198,11 @@ function Cockpit({ situacao }: { situacao: SituacaoAdmin }) {
       )}
 
       <section className="adm-numeros" aria-label="Números">
-        <Numero rotulo="Usuários ativos" valor={tem ? t.ativos : "—"} detalhe={tem ? `${t.admins} admins` : vazio} para="Pessoas" />
-        <Numero rotulo="Auditorias" valor={tem ? t.auditorias : "—"} detalhe={tem ? `${t.auditorias7d} nos últimos 7 dias` : vazio} para="Dados" serie={tem ? SERIES.auditorias : undefined} />
-        <Numero rotulo="Falhas" valor={tem ? t.falhas : "—"} detalhe={tem ? "auditorias com erro" : vazio} alerta={tem && t.falhas > 0} para="as auditorias que falharam" serie={tem ? SERIES.falhas : undefined} />
-        <Numero rotulo="LDs" valor={tem ? t.lds : "—"} detalhe={tem ? `${t.ldsGeradas} geradas · ${t.lds7d} nos últimos 7 dias` : vazio} para="Dados" serie={tem ? SERIES.lds : undefined} />
-        <Numero rotulo="Eventos LD" valor={tem ? t.eventosLd : "—"} detalhe={tem ? `${t.eventosLd7d} nos últimos 7 dias` : vazio} para="Dados" serie={tem ? SERIES.eventosLd : undefined} />
+        <Numero rotulo="Usuários ativos" valor={tem ? t.ativos : "—"} detalhe={tem ? `${t.admins} admins` : vazio} para="Pessoas" onAbrir={tem ? () => onIr("pessoas") : undefined} />
+        <Numero rotulo="Auditorias" valor={tem ? t.auditorias : "—"} detalhe={tem ? `${t.auditorias7d} nos últimos 7 dias` : vazio} para="Dados" serie={tem ? SERIES.auditorias : undefined} onAbrir={tem ? () => onIr("dados") : undefined} />
+        <Numero rotulo="Falhas" valor={tem ? t.falhas : "—"} detalhe={tem ? "auditorias com erro" : vazio} alerta={tem && t.falhas > 0} para="as auditorias que falharam" serie={tem ? SERIES.falhas : undefined} onAbrir={tem ? () => onIr("dados") : undefined} />
+        <Numero rotulo="LDs" valor={tem ? t.lds : "—"} detalhe={tem ? `${t.ldsGeradas} geradas · ${t.lds7d} nos últimos 7 dias` : vazio} para="Dados" serie={tem ? SERIES.lds : undefined} onAbrir={tem ? () => onIr("dados") : undefined} />
+        <Numero rotulo="Eventos LD" valor={tem ? t.eventosLd : "—"} detalhe={tem ? `${t.eventosLd7d} nos últimos 7 dias` : vazio} para="Dados" serie={tem ? SERIES.eventosLd : undefined} onAbrir={tem ? () => onIr("dados") : undefined} />
       </section>
 
       <div className="adm-duas">
@@ -284,6 +291,17 @@ export function TelaAdmin({ situacao }: { situacao: SituacaoAdmin }) {
   const [destino, setDestino] = useState<Destino>(situacao.startsWith("dinheiro") ? "dinheiro" : situacao.startsWith("motor") ? "motor" : situacao.startsWith("pessoas") ? "pessoas" : situacao.startsWith("dados") ? "dados" : "cockpit");
   const [periodo, setPeriodo] = useState<string>("7");
   const tem = comDados(situacao);
+  // Atualizar relê os números: um giro curto no botão e a hora dos dados anda.
+  const [hora, setHora] = useState("21:14");
+  const [atualizando, setAtualizando] = useState(false);
+  const atualizar = () => {
+    if (atualizando) return;
+    setAtualizando(true);
+    window.setTimeout(() => {
+      setHora(new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }));
+      setAtualizando(false);
+    }, 650);
+  };
   const varPessoas: VariantePessoas = situacao === "pessoas-lote" ? "lote" : situacao === "pessoas-convite" ? "convite" : situacao === "pessoas-ficha" ? "ficha" : "normal";
   const varBanco: VarianteBanco = situacao === "dados-expurgo" ? "expurgo" : situacao === "dados-excluir" ? "excluir" : "normal";
   const varMotor: VarianteMotor = situacao === "motor-amostra" ? "amostra" : situacao === "motor-teste-falhou" ? "teste-falhou" : "normal";
@@ -294,6 +312,7 @@ export function TelaAdmin({ situacao }: { situacao: SituacaoAdmin }) {
       if ((e.target as HTMLElement).closest("input, textarea")) return;
       const i = Number(e.key) - 1;
       if (i >= 0 && i < DESTINOS.length && PRONTOS.includes(DESTINOS[i].id)) (e.preventDefault(), setDestino(DESTINOS[i].id));
+      else if (tem && !e.ctrlKey && !e.metaKey && !e.altKey && e.key.toLowerCase() === "r") (e.preventDefault(), atualizar());
     };
     document.addEventListener("keydown", tecla, true);
     return () => document.removeEventListener("keydown", tecla, true);
@@ -312,17 +331,17 @@ export function TelaAdmin({ situacao }: { situacao: SituacaoAdmin }) {
         {tem && (
           <div className="adm-atualizado">
             {destino === "dinheiro" && <Segmento rotulo="Período" valor={periodo} onTroca={setPeriodo} opcoes={PERIODOS.map((p) => ({ valor: String(p), rotulo: `${p} dias` }))} />}
-            <span className="ds-num">dados de 21:14</span>
-            <Botao variante="quiet" tamanho="sm">
-              <RefreshCcw size={13} /> Atualizar <Tecla>R</Tecla>
+            <span className="ds-num">dados de {hora}</span>
+            <Botao variante="quiet" tamanho="sm" onClick={atualizar} aria-busy={atualizando}>
+              {atualizando ? <Girando tamanho={13} /> : <RefreshCcw size={13} />} Atualizar <Tecla>R</Tecla>
             </Botao>
           </div>
         )}
       </header>
       <div className="adm-corpo">
-        <Trilho situacao={situacao} atual={destino} onIr={setDestino} />
+        <Trilho situacao={situacao} atual={destino} onIr={setDestino} onAtualizar={atualizar} />
         <main className="adm-conteudo">
-          {destino === "pessoas" ? <Pessoas variante={varPessoas} /> : destino === "dados" ? <Banco variante={varBanco} /> : destino === "motor" ? <Motor variante={varMotor} /> : destino === "dinheiro" ? <Dinheiro variante={variante} periodo={Number(periodo)} /> : <Cockpit situacao={comDados(situacao) && situacao !== "atencao" ? "cockpit" : situacao} />}
+          {destino === "pessoas" ? <Pessoas variante={varPessoas} /> : destino === "dados" ? <Banco variante={varBanco} /> : destino === "motor" ? <Motor variante={varMotor} /> : destino === "dinheiro" ? <Dinheiro variante={variante} periodo={Number(periodo)} /> : <Cockpit situacao={comDados(situacao) && situacao !== "atencao" ? "cockpit" : situacao} onIr={setDestino} />}
         </main>
       </div>
     </div>

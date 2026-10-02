@@ -57,6 +57,49 @@ export function ControlesDoZoom({ onEnquadrar }: { onEnquadrar: () => void }) {
  * o canvas com as fileiras e, à direita, o checklist "Antes de gerar" ou a
  * folha escolhida. Escolher uma folha centraliza a câmera nela.
  */
+/** Nº de tomos: a divisão automática é o padrão; escolher outro número fica
+ *  marcado como decisão à mão, e o Nexo refaz a divisão ao gerar. */
+function SeletorDeTomos({ valor, onTroca }: { valor: number; onTroca: (n: number) => void }) {
+  const [aberto, setAberto] = useState(false);
+  const ref = useRef<HTMLSpanElement>(null);
+  useEffect(() => {
+    if (!aberto) return;
+    const fora = (e: MouseEvent) => !ref.current?.contains(e.target as Node) && setAberto(false);
+    const esc = (e: KeyboardEvent) => e.key === "Escape" && (e.preventDefault(), setAberto(false));
+    document.addEventListener("mousedown", fora);
+    document.addEventListener("keydown", esc, true);
+    return () => {
+      document.removeEventListener("mousedown", fora);
+      document.removeEventListener("keydown", esc, true);
+    };
+  }, [aberto]);
+  return (
+    <span ref={ref} className="mp-divisao-seletor">
+      <button type="button" className="mp-divisao-tomos" aria-haspopup="listbox" aria-expanded={aberto} onClick={() => setAberto((a) => !a)}>
+        {valor === 1 ? "1 tomo" : `${valor} tomos`} <ChevronDown size={13} />
+      </button>
+      {aberto && (
+        <span role="listbox" aria-label="Número de tomos" className="ds-menu ds-menu--acoes mp-divisao-lista">
+          {[1, 2, 3, 4].map((n) => (
+            <button
+              key={n}
+              type="button"
+              role="option"
+              aria-selected={n === valor}
+              onClick={() => (onTroca(n), setAberto(false))}
+            >
+              <span className="ds-menu-texto">
+                {n === 1 ? "1 tomo" : `${n} tomos`}
+                {n === TOMOS.length && <small>a divisão do Nexo</small>}
+              </span>
+            </button>
+          ))}
+        </span>
+      )}
+    </span>
+  );
+}
+
 function Mapa({ situacao }: { situacao: SituacaoMapa }) {
   const { k } = useTempo();
   const ir = useIr();
@@ -66,6 +109,7 @@ function Mapa({ situacao }: { situacao: SituacaoMapa }) {
   const [corrigindo, setCorrigindo] = useState(situacao === "corrigindo");
   const [tomo, setTomo] = useState(situacao === "fora-da-divisao" ? 0 : inicial === "ELE-04" ? 2 : 1);
   const [recorte, setRecorte] = useState<Recorte>("todas");
+  const [nTomos, setNTomos] = useState(TOMOS.length);
   const [busca, setBusca] = useState("");
   const [lidas, setLidas] = useState(situacao === "lendo-selos" ? 5 : FOLHAS.length);
   const campoDeBusca = useRef<HTMLInputElement>(null);
@@ -229,11 +273,9 @@ function Mapa({ situacao }: { situacao: SituacaoMapa }) {
             <span className="mp-tile-rotulo">Divisão</span>
             <span className="mp-divisao-valor">
               <span className="ds-num">412</span> páginas em
-              <button type="button" className="mp-divisao-tomos" aria-haspopup="listbox">
-                2 tomos <ChevronDown size={13} />
-              </button>
+              <SeletorDeTomos valor={nTomos} onTroca={setNTomos} />
             </span>
-            <span className="mp-tile-sub">automática, pelas disciplinas</span>
+            <span className="mp-tile-sub">{nTomos === TOMOS.length ? "automática, pelas disciplinas" : "escolhida à mão; o Nexo redivide ao gerar"}</span>
           </div>
         </div>
 

@@ -96,7 +96,7 @@
 .ds .cx-gerando-linha .cx-peca { width: 100%; }
 .ds .cx-pecas--coluna .cx-peca-nome, .ds .cx-gerando-linha .cx-peca-nome { flex: 1 0 auto; min-width: 240px; }
 .ds .cx-gerando-linha { min-height: 36px; align-items: center; }
-.ds .cx-fila { font-size: 12.5px; color: var(--ds-text-tertiary); opacity: 0.6; }
+.ds .cx-fila { font-size: 12.5px; color: var(--ds-text-tertiary); }
 .ds .cx-peca--gerada { height: 36px; padding-right: 4px; background: var(--ds-surface-card); box-shadow: var(--ds-edge); }
 .ds .cx-peca-acoes { display: inline-flex; margin-left: 6px; }
 .ds .cx-peca-acoes button { display: grid; place-items: center; width: 28px; height: 28px; border: 0; border-radius: 6px; background: none; color: var(--ds-text-tertiary); cursor: pointer; }

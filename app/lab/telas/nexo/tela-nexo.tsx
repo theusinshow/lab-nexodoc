@@ -446,11 +446,13 @@ export function TelaNexo({ situacao }: { situacao: SituacaoNexo }) {
   const lidas = situacao === "soltou" ? LIDAS_NA_LEITURA : FOLHAS.length;
   const lendo = situacao === "soltou";
   const estado = lendo ? `lendo os selos, ${lidas} de ${FOLHAS.length}` : q.estado;
+  const [semConversas, setSemConversas] = useState(false);
+  const [semChat, setSemChat] = useState(false);
   return (
     <CartaoAtual.Provider value="carimbo">
       <div className="mp nw">
         <Topo atual="Nexo" />
-        <div className="nw-mesa">
+        <div className={`nw-mesa${semConversas ? " nw-mesa--sem-conversas" : ""}${semChat ? " nw-mesa--sem-chat" : ""}`}>
           <Conversas />
 
           <main className="nw-palco" aria-label="Organização dos arquivos">
@@ -468,10 +470,10 @@ export function TelaNexo({ situacao }: { situacao: SituacaoNexo }) {
                 <NoPalco />
               </span>
               <span className="nw-espaco">
-                <button type="button" aria-label="Recolher as conversas" title="Recolher as conversas">
+                <button type="button" aria-pressed={semConversas} aria-label={semConversas ? "Mostrar as conversas" : "Recolher as conversas"} title={semConversas ? "Mostrar as conversas" : "Recolher as conversas"} onClick={() => setSemConversas((v) => !v)}>
                   <PanelLeftClose size={15} />
                 </button>
-                <button type="button" aria-label="Recolher o chat" title="Recolher o chat">
+                <button type="button" aria-pressed={semChat} aria-label={semChat ? "Mostrar o chat" : "Recolher o chat"} title={semChat ? "Mostrar o chat" : "Recolher o chat"} onClick={() => setSemChat((v) => !v)}>
                   <PanelRightClose size={15} />
                 </button>
               </span>

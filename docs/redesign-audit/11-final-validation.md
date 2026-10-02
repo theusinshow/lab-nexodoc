@@ -146,3 +146,21 @@ Remoção segura:
 O rascunho de montagem que algum usuário tenha salvo no navegador se perde. Avisar antes.
 
 Com isso, G2 fica com 3 itens UNCLEAR de baixo peso: o tour (PARITY-005), cancelar a notificação por e-mail e as rotas de intenção no protótipo.
+
+## 10. Correções feitas depois da auditoria (01/10, pedido do dono)
+
+O dono pediu para resolver os defeitos baratos e pôr um aviso de tela pequena. Acessibilidade de leitor de tela e o filme da Entrada ficaram de fora por decisão dele: o filme vai ser refeito.
+
+| ID | O que mudou | Prova |
+|---|---|---|
+| QA-001 | Os atalhos J/K de Projetos, Projeto e Achados ignoram Ctrl, Meta e Alt; Ctrl K abre a busca nas três | `scripts/prova-correcoes-auditoria.mjs` |
+| QA-002 | No Painel, Ctrl K foca a barra da própria tela | idem |
+| QA-003 | Mapa: "Confirmar e gerar" leva à conversa gerando; "2 tomos" abre a lista de 1 a 4 tomos e marca a divisão como escolhida à mão | idem |
+| QA-004 | Montar volume: recolher conversas e chat funcionam, como no Nexo: a auditoria | idem |
+| QA-005 | As respostas rápidas do chat levam à situação seguinte ou mostram um aviso; nenhuma fica muda | idem |
+| QA-006 | Admin: os números do Cockpit abrem a seção; "atualizar" e R relêem os dados (giro + hora nova); "sair" volta à porta do token; os dois "Filtrar" de Dados filtram de fato | idem |
+| QA-007, UX-002 | Os atalhos de navegação viraram G + letra (P Painel, N Nexo, O Projetos, A Achados, J Ajuda, D Administração). Ctrl A e Ctrl L saíram da lista; a lista do parecer foi corrigida (C, D, F, M) | idem |
+| A11Y-004 (texto cinza) | Terciário `#80858f` → `#8a8f99` (≥ 4,5:1 em todas as superfícies); `--ds-text-on-paper-muted` para texto fraco em botão claro; tiradas as opacidades que apagavam "nada", a fila do chat e "segure"; etiquetas de nível com texto escuro | `scripts/auditoria/contraste.mjs`: de 334 para 200 nós. Os 200 restantes são miniaturas de papel desenhado (4–7 px) e cartões do canvas esmaecidos de propósito |
+| UI-001 | Abaixo de 1024 px: tela de aviso com o fundo líquido (Liquid Ether, React Bits, adaptado em `components/ds/fundo-liquido.tsx`), "Continuar assim mesmo" e "Copiar o link"; quem continua vê uma faixa fina que fecha. Vale para a sessão. A Entrada não avisa. Com movimento reduzido, o fundo fica parado. `?aviso=tela` força o aviso para revisar | idem |
+
+Ficam abertos por decisão do dono: A11Y-001 (filme), A11Y-002, -003, -005, -006 e -007 (leitor de tela e alvos).

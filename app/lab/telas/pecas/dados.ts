@@ -15,20 +15,32 @@ export const ATALHOS: GrupoDeAtalhos[] = [
     nome: "Em qualquer tela",
     atalhos: [
       { teclas: ["Ctrl", "K"], texto: "Buscar obra, código ou ação" },
-      { teclas: ["Ctrl", "G"], texto: "Ir para o painel" },
-      { teclas: ["Ctrl", "A"], texto: "Ir para auditoria" },
-      { teclas: ["Ctrl", "L"], texto: "Ir para montagem de LDs" },
-      { teclas: ["Ctrl", "Shift", "A"], texto: "Ir para a administração" },
       { teclas: ["?"], texto: "Mostrar estes atalhos" },
       { teclas: ["Esc"], texto: "Fechar o que estiver aberto" },
     ],
   },
   {
+    // G e depois a letra, como no Linear e no GitHub: Ctrl A e Ctrl L, os de
+    // antes, são "selecionar tudo" e a barra de endereço do navegador.
+    nome: "Ir para",
+    onde: "G e depois a letra",
+    atalhos: [
+      { teclas: ["G", "P"], texto: "Painel" },
+      { teclas: ["G", "N"], texto: "Nexo" },
+      { teclas: ["G", "O"], texto: "Projetos (obras)" },
+      { teclas: ["G", "A"], texto: "Achados" },
+      { teclas: ["G", "J"], texto: "Ajuda" },
+      { teclas: ["G", "D"], texto: "Administração" },
+    ],
+  },
+  {
     nome: "Nas listas",
-    onde: "Projetos, Achados, Ajuda",
+    onde: "Projetos, Projeto, Achados",
     atalhos: [
       { teclas: ["J"], texto: "Próximo item" },
       { teclas: ["K"], texto: "Item anterior" },
+      { teclas: ["/"], texto: "Buscar na lista" },
+      { teclas: ["N"], texto: "Novo projeto (em Projetos)" },
     ],
   },
   {
@@ -37,8 +49,10 @@ export const ATALHOS: GrupoDeAtalhos[] = [
     atalhos: [
       { teclas: ["J"], texto: "Próximo achado" },
       { teclas: ["K"], texto: "Achado anterior" },
-      { teclas: ["C"], texto: "Confirmar o achado aberto" },
-      { teclas: ["F"], texto: "Marcar como falso positivo" },
+      { teclas: ["C"], texto: "Marcar corrigido" },
+      { teclas: ["D"], texto: "Decisão técnica" },
+      { teclas: ["F"], texto: "Falso positivo" },
+      { teclas: ["M"], texto: "Ver no memorial" },
     ],
   },
 ];

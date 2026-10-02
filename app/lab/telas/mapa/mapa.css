@@ -284,3 +284,6 @@
   .ds .react-flow__node-folha > *, .ds .react-flow__node-fresta, .ds .mp-bloco { transition: none; }
   .ds .mp-fresta { animation: none; }
 }
+.ds .mp-divisao-seletor { position: relative; display: inline-flex; }
+.ds .mp-divisao-lista { position: absolute; top: calc(100% + 6px); left: 0; z-index: 30; min-width: 168px; display: flex; flex-direction: column; }
+.ds .mp-divisao-lista [aria-selected="true"] { color: var(--ds-text-primary); background: rgb(255 255 255 / 0.05); }

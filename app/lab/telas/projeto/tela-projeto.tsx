@@ -264,6 +264,8 @@ export function TelaProjeto({ situacao }: { situacao: SituacaoProjeto }) {
         if (e.key === "Escape") (e.preventDefault(), config ? setConfig(false) : alvo.blur());
         return;
       }
+      // Ctrl/Meta/Alt são de outro dono (Ctrl K abre a busca de qualquer tela)
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
       if (e.key === "ArrowDown" || e.key === "j") (e.preventDefault(), andar(1));
       else if (e.key === "ArrowUp" || e.key === "k") (e.preventDefault(), andar(-1));
       else if (e.key === "/") (e.preventDefault(), campo.current?.focus());

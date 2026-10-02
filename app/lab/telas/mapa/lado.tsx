@@ -7,6 +7,7 @@ import { useState, type ReactNode } from "react";
 import { Botao, Tecla } from "@/components/ds/basicos";
 import { useTempo } from "@/lib/ds/tempo";
 
+import { useIr } from "../_comum/prototipo";
 import { RITMO, SUAVE } from "../conversa/turnos";
 import { DISCIPLINA } from "../resultado-e/dados";
 import { SeloDaDisciplina } from "../resultado-e/disciplina";
@@ -64,6 +65,7 @@ function Caixinha({ feito }: { feito: boolean }) {
 
 export function AntesDeGerar({ pronto, onVer }: { pronto: boolean; onVer: (id: string) => void }) {
   const { k } = useTempo();
+  const ir = useIr();
   const [itens, setItens] = useState(() => itensIniciais(pronto));
   const feitos = itens.filter((i) => i.feito).length;
   const faltam = itens.length - feitos;
@@ -114,7 +116,8 @@ export function AntesDeGerar({ pronto, onVer }: { pronto: boolean; onVer: (id: s
         ))}
       </ul>
       <div className="mp-lado-pe">
-        <Botao variante={faltam === 0 ? "primary" : "ghost"} className="mp-gerar">
+        {/* gerar acontece na conversa da obra: o chat conta peça por peça */}
+        <Botao variante={faltam === 0 ? "primary" : "ghost"} className="mp-gerar" onClick={() => ir("nexo", "gerando")}>
           {faltam === 0 ? "Confirmar e gerar" : "Gerar mesmo assim"} {faltam === 0 && <Tecla>↵</Tecla>}
         </Botao>
       </div>

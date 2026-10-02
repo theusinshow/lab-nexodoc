@@ -3,7 +3,7 @@
  * ativo: barra de 300 px, palco no centro, copiloto docado à direita.
  */
 .ds .nw { min-height: 100%; }
-.ds .nw-mesa { display: grid; grid-template-columns: 240px minmax(0, 1fr) 430px; height: calc(100vh - 64px); min-height: 640px; border-top: 1px solid var(--ds-line-subtle); }
+.ds .nw-mesa { --nw-conversas: 240px; --nw-chat: 430px; display: grid; grid-template-columns: var(--nw-conversas) minmax(0, 1fr) var(--nw-chat); height: calc(100vh - 64px); min-height: 640px; border-top: 1px solid var(--ds-line-subtle); }
 
 /* conversas */
 .ds .nw-conversas { display: flex; flex-direction: column; gap: 10px; min-width: 0; padding: 14px 12px; border-right: 1px solid var(--ds-line-subtle); overflow: auto; }
@@ -82,3 +82,10 @@
 /* a barra do canvas flutua no pé, ao centro (como num quadro de nós); o aviso do arrasto sobe acima dela */
 .ds .nw-canvas .mp-zoom { left: 50%; transform: translateX(-50%); }
 .ds .nw-feito { bottom: 64px; }
+/* recolher conversas e chat: o palco fica com a largura (o mesmo par do Nexo: a auditoria) */
+.ds .nw-mesa { transition: grid-template-columns var(--ds-dur-layout) var(--ds-ease-out); }
+.ds .nw-mesa.nw-mesa--sem-conversas { --nw-conversas: 0px; }
+.ds .nw-mesa.nw-mesa--sem-chat { --nw-chat: 0px; }
+.ds .nw-mesa--sem-conversas > .nw-conversas,
+.ds .nw-mesa--sem-chat > .nw-chat { overflow: hidden; padding-left: 0; padding-right: 0; border: 0; visibility: hidden; }
+.ds .nw-espaco button[aria-pressed="true"] { background: rgb(255 255 255 / 0.08); color: var(--ds-text-primary); }
