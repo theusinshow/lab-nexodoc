@@ -10,7 +10,7 @@ import { flushSync } from "react-dom";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { plural } from "@/lib/plural";
-import { retirarEntrega } from "@/lib/entrega-ao-nexo";
+import { haEntregaPendente, retirarEntrega } from "@/lib/entrega-ao-nexo";
 import type { NexoDossieDraft, NexoSlotSuggestion } from "../types";
 import { vincularProjetoDaConversa } from "../lib/projeto-da-auditoria";
 import {
@@ -169,6 +169,15 @@ const VisorDaFolha = dynamic(
 );
 import { useConexao } from "../lib/use-conexao";
 import { duracaoLegivel, useSessaoExpirada } from "../lib/use-sessao-expirada";
+import { CorrecaoDoMemorialContexto } from "../state/correcao-do-memorial";
+import {
+  COM_ARTIGO,
+  corrigirDossie,
+  corrigirFicha,
+  fichaDoMemorial,
+  patchDaIdentidade,
+  type CampoDoMemorial,
+} from "../lib/ficha-do-memorial";
 import { separarMemorialRepetido } from "../lib/memorial-repetido";
 import { detalheDoParecer, type ParecerParaIncompletude } from "@/lib/auditoria-incompleta";
 
@@ -957,22 +966,6 @@ function NexoWorkspaceInner({
 
   // Intake conversacional do MEMORIAL: identifica e já propõe auditar/conferir.
   function appendMemorialIntake(memorial: File, dossie: NexoDossieDraft | null) {
-    /*
-     * O que a classificação LEU, na ordem da capa (ver [[lib/leitura-da-capa.ts]]).
-     * Endereço não entra: ele sai da caracterização da obra, não da capa, e
-     * misturá-lo aqui faria a frase afirmar a capa e o corpo como uma coisa só.
-     */
-    const detail = [
-      dossie?.obra,
-      dossie?.orgao,
-      dossie?.secretaria,
-      dossie?.bairro,
-      dossie?.municipio,
-      dossie?.codigo ? `código ${dossie.codigo}` : "",
-      dossie?.mesAno,
-    ]
-      .filter(Boolean)
-      .join(" · ");
     /* Código da capa × nome do arquivo: o nome manda, mas a divergência se vê. */
     const divergencia = dossie?.arquivos
       .find((a) => a.tipo === "memorial")
@@ -1014,12 +1007,15 @@ function NexoWorkspaceInner({
       content:
         /*
          * A abertura "Li as primeiras páginas" é CONTRATO: as jornadas da
-         * bateria esperam por ela. Os dados agora vêm da capa, mas a frase fica.
+         * bateria esperam por ela. O que a capa trouxe sai da frase e vai para
+         * a FICHA, linha a linha (02/10/2026): era uma frase de sete campos
+         * colados por "·", difícil de conferir, e corrigir um deles exigia
+         * escrever ao agente — que não tem como aplicar a correção.
          */
-        `Li as primeiras páginas: é o memorial descritivo${detail ? ` — ${detail}` : ""}.\n\n` +
-        (divergencia ? `Atenção: ${divergencia}.\n\n` : "") +
-        `Vou auditar usando essa obra como referência. Se o nome estiver errado, ` +
-        `me diga o correto — é ele que denuncia texto reaproveitado de outro projeto.`,
+        `Li as primeiras páginas: é o memorial descritivo. Esta ficha é a referência ` +
+        `da auditoria — um nome de outra obra no texto é o que denuncia reaproveitamento. ` +
+        `Se algum campo estiver errado, corrija no lápis da linha.`,
+      fichaDoMemorial: fichaDoMemorial(dossie, memorial.name, divergencia ? `Atenção: ${divergencia}.` : null),
       slotRequest: {
         slotId: "memorial",
         taskKind: "auditoria",
@@ -1033,9 +1029,8 @@ function NexoWorkspaceInner({
            * e uma versão pior dela, pelo mesmo preço. Ver `requirements.ts`.
            */
           { label: "Auditar o memorial", value: "audita o memorial", commit: "send" },
-          // `fill` escreve no composer e deixa o cursor: corrigir a obra exige
-          // texto, e é a correção que transforma o gabarito em régua confiável.
-          { label: "A obra está errada", value: "a obra correta é ", commit: "fill" },
+          // "A obra está errada" saiu: a correção é no lápis de cada linha da
+          // ficha, que muda a régua de verdade (o texto ao agente não mudava).
         ],
       },
     });
@@ -1737,7 +1732,8 @@ function NexoWorkspaceInner({
   useEffect(() => {
     if (intencaoAplicada.current || typeof window === "undefined") return;
     // A mensagem escrita na busca do topo ganha da intenção: é o mais específico.
-    const frase = contexto.mensagem ?? partidaPorId(contexto.intencao)?.frase;
+    // Com o arquivo vindo junto (Painel), a leitura já oferece a saída certa: sem frase.
+    const frase = contexto.mensagem ?? (haEntregaPendente() ? null : partidaPorId(contexto.intencao)?.frase);
     if (!frase) return;
     /*
      * `requestAnimationFrame` porque o composer só se registra depois de o
@@ -2654,8 +2650,36 @@ function NexoWorkspaceInner({
     conv.ajustarFolhas(comGrupo.map((f) => ({ id: f.id, patch: { grupo: undefined } })));
   }, [conv, selos]);
 
+  /*
+   * A CORREÇÃO DE UM CAMPO DA FICHA DO MEMORIAL (02/10/2026). Três lugares, uma
+   * verdade: a linha da ficha (o que se vê), o dossiê (a régua da auditoria, e
+   * o que volta com o memorial depois do F5) e a identidade do projeto (capa,
+   * LD e pasta). O Nexo registra no fio o que mudou: a conversa é o histórico.
+   */
+  const corrigirCampoDoMemorial = (mensagemId: string, campo: CampoDoMemorial, valor: string) => {
+    const mensagem = conv.messages.find((m) => m.id === mensagemId);
+    if (!mensagem?.fichaDoMemorial) return;
+    const anterior = mensagem.fichaDoMemorial.linhas.find((l) => l.campo === campo)?.valor ?? null;
+    conv.atualizarMensagem(mensagemId, { fichaDoMemorial: corrigirFicha(mensagem.fichaDoMemorial, campo, valor) });
+    const novo = corrigirDossie(dossie, campo, valor);
+    if (novo && novo !== dossie) {
+      setDossie(novo);
+      conv.salvarDossieDoMemorial(novo);
+    }
+    const patch = patchDaIdentidade(campo, valor);
+    if (patch) conv.corrigirIdentidade(patch);
+    const rotulo = COM_ARTIGO[campo];
+    conv.appendMessage({
+      id: crypto.randomUUID(),
+      role: "assistant",
+      content: anterior
+        ? `Corrigi ${rotulo}: era “${anterior}”, agora é “${valor.trim()}”. A auditoria usa a ficha corrigida.`
+        : `Anotei ${rotulo}: “${valor.trim()}”. A auditoria usa a ficha com ele.`,
+    });
+  };
+
   return (
-    <>
+    <CorrecaoDoMemorialContexto.Provider value={corrigirCampoDoMemorial}>
       {/* Overlay de drag-and-drop (chrome imersivo → vidro permitido). */}
       {dragging && (
         <div
@@ -2947,6 +2971,7 @@ function NexoWorkspaceInner({
             obra={<BarraDoNexo projetoPedido={projetoPedido} />}
             mapa={
           <NexoCanvas
+            memorial={memorialFile?.name ?? null}
             folhas={selos}
             numeros={numerosDasFolhas}
             origens={origensDasFolhas}
@@ -3021,7 +3046,7 @@ function NexoWorkspaceInner({
           onRemoveFile={removeFile}
         />
       )}
-    </>
+    </CorrecaoDoMemorialContexto.Provider>
   );
 }
 

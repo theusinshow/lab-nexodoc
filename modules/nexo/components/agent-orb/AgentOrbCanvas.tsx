@@ -55,6 +55,15 @@ export function AgentOrbCanvas({
        * aparece do mesmo tamanho na tela, com folga em volta em vez de corte.
        */
       camera={{ position: [0, 0, 4.25], fov: 42 }}
+      /*
+       * MEDIDO SEM O ZOOM (produção, 02/10/2026). Em tela grande o `.ds` ganha
+       * `zoom: 1.25`; a medição padrão (getBoundingClientRect) devolve a caixa
+       * JÁ ampliada, o R3F grava esse número como largura em CSS — que o zoom
+       * amplia de novo — e o canvas saía 1,25× maior que o círculo que o
+       * recorta: o orbe aparecia cortado à direita e embaixo, batendo nas
+       * bordas. `offsetSize` mede pelo offsetWidth, em px de layout.
+       */
+      resize={{ offsetSize: true }}
       style={{ width: "100%", height: "100%", pointerEvents: "none" }}
     >
       <AgentOrbScene

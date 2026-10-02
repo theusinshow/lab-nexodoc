@@ -21,3 +21,13 @@ export function retirarEntrega(): File[] | null {
   pendente = null;
   return arquivos;
 }
+
+/**
+ * Há arquivo esperando o Nexo? Olha sem retirar. A intenção do link (`?intencao=`)
+ * não escreve a frase no campo quando o arquivo veio junto: a leitura já
+ * responde com a saída certa ("Auditar o memorial"), e a frase no campo ficava
+ * sobrando ao lado dela (02/10/2026).
+ */
+export function haEntregaPendente(): boolean {
+  return pendente !== null;
+}

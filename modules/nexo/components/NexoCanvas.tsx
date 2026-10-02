@@ -30,7 +30,7 @@ import {
   type OnNodeDrag,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { Waypoints, Maximize2, MessageSquare, Trash2, SlidersHorizontal } from "lucide-react";
+import { FileSearch, Waypoints, Maximize2, MessageSquare, Trash2, SlidersHorizontal } from "lucide-react";
 
 import type { NexoArtifactKind } from "../types";
 import { useArtifactStore, type CanvasArtifact } from "../state/artifact-store";
@@ -437,7 +437,15 @@ function CanvasInterno({
   onRestaurarFolhas,
   tomosDeclarados = 0,
   conferencia,
+  memorial = null,
 }: {
+  /**
+   * O memorial desta conversa, quando há. Sem pranchas, o palco vazio fala da
+   * AUDITORIA, e não do volume: uma conversa de memorial mostrava "Anexe as
+   * pranchas e gere os documentos… (capa → LD → pranchas)", como se o pedido
+   * fosse outro (produção, 02/10/2026).
+   */
+  memorial?: string | null;
   /**
    * O resultado da conferência leve que JÁ RODOU nesta conversa.
    *
@@ -1058,6 +1066,18 @@ function CanvasInterno({
   // O tomo que o "+ Tomo" vai criar: o próximo depois do maior que existe.
   const maiorTomo = fileiras.reduce((maior, f) => Math.max(maior, f.tomo), 0);
 
+  if (nodes.length === 0 && memorial) {
+    return (
+      <div className="nx-palco-vazio" data-palco-vazio="memorial">
+        <FileSearch aria-hidden />
+        <p>
+          <b>{memorial}</b>
+          O parecer da auditoria aparece aqui. Confira a ficha do memorial no chat e peça a auditoria quando ela estiver certa.
+        </p>
+      </div>
+    );
+  }
+
   if (nodes.length === 0) {
     return (
       <div className="flex h-full min-h-[240px] w-full flex-col items-center justify-center gap-2 rounded-md border border-dashed border-border bg-card text-center">
@@ -1265,6 +1285,7 @@ export function NexoCanvas(props: {
   onRestaurarFolhas?: () => void;
   tomosDeclarados?: number;
   conferencia?: { findings: { severidade: string; campo: string; mensagem: string; folhas?: string[] }[] };
+  memorial?: string | null;
 }) {
   return (
     <ReactFlowProvider>

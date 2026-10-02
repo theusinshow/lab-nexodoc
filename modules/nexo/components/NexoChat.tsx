@@ -24,6 +24,7 @@ import {
 import { PlanoDeGeracao } from "./PlanoDeGeracao";
 import { VolumesDesatualizados } from "./VolumesDesatualizados";
 import { FichaDoDropCard } from "./FichaDoDrop";
+import { FichaDoMemorialCard } from "./FichaDoMemorial";
 import { QuickReplyChips, NextStepChips } from "./QuickReplyChips";
 import { useConexao } from "../lib/use-conexao";
 import { estadoDoAnexo, type EstadoDoAnexo, type SeloLido } from "../lib/estado-do-anexo";
@@ -622,6 +623,8 @@ export function NexoChat({
                       Abaixo do texto e acima dos botões — a ordem em que se
                       decide: leia o que entrou, confira de quem é, então escolha. */}
                   {m.ficha && <FichaDoDropCard ficha={m.ficha} />}
+                  {/* A ficha do memorial: o que a capa trouxe, cada linha corrigível. */}
+                  {m.fichaDoMemorial && <FichaDoMemorialCard mensagemId={m.id} ficha={m.fichaDoMemorial} />}
                   {/* UM plano para tudo que sai de capa/LD/separatriz; volume,
                       auditoria e conferência seguem com cartão próprio. */}
                   {m.proposals && m.proposals.length > 0 && (

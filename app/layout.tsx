@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Suspense } from "react";
 
 import { ProgressoDaNavegacao } from "@/components/layout/progresso-da-navegacao";
+import { VERSAO_DA_MARCA } from "@/components/brand/versao-da-marca";
 
 // IBM Plex Sans/Mono (DESIGN.md secao 3): familia unica de engenharia,
 // fora do look v0/IA. Pesos conforme a rampa: 400 body, 500 label/title,
@@ -48,13 +49,18 @@ export const metadata: Metadata = {
    * exatamente o problema que este commit fecha. Ele continua servindo onde
    * raster perde: fundo claro e impressão.
    */
+  /*
+   * `?v=violeta`: o orbe violeta→coral entrou NO MESMO endereço do antigo, e o
+   * navegador guarda favicon por endereço — em produção a aba seguiu com o
+   * ícone velho (02/10/2026). Trocar o desenho do ícone pede trocar a versão.
+   */
   icons: {
     icon: [
-      { url: "/marca/orbe-32.png", sizes: "32x32", type: "image/png" },
-      { url: "/marca/orbe-16.png", sizes: "16x16", type: "image/png" },
+      { url: `/marca/orbe-32.png?v=${VERSAO_DA_MARCA}`, sizes: "32x32", type: "image/png" },
+      { url: `/marca/orbe-16.png?v=${VERSAO_DA_MARCA}`, sizes: "16x16", type: "image/png" },
     ],
-    apple: [{ url: "/marca/orbe-180.png", sizes: "180x180", type: "image/png" }],
-    shortcut: "/marca/orbe-32.png",
+    apple: [{ url: `/marca/orbe-180.png?v=${VERSAO_DA_MARCA}`, sizes: "180x180", type: "image/png" }],
+    shortcut: `/marca/orbe-32.png?v=${VERSAO_DA_MARCA}`,
   },
 };
 
