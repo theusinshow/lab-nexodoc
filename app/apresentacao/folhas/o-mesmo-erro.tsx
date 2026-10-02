@@ -1,7 +1,7 @@
 "use client";
 
 import type { Slide } from "../palco";
-import { Entra, Leitura, Linhas, MONO } from "../pecas";
+import { Entra, Linhas, MONO } from "../pecas";
 
 /**
  * FOLHA 08 — O MESMO ERRO, EM OBRAS DIFERENTES. Entrou em 28/09/2026, depois
@@ -184,7 +184,7 @@ function Matriz({ atraso }: { atraso: number }) {
               display: "grid",
               gridTemplateColumns: GRADE,
               alignItems: "center",
-              minHeight: 86,
+              minHeight: 72,
               boxShadow: "inset 0 1px 0 var(--ds-line-subtle)",
             }}
           >
@@ -294,27 +294,24 @@ export const O_MESMO_ERRO: Slide = {
   numero: "08",
   bloco: "O problema",
   titulo: "O mesmo erro, em obras diferentes",
-  subtitulo: "cinco memoriais auditados — trechos transcritos das páginas",
+  manchete: [
+    { texto: "Não é descuido de uma obra.", fraca: true },
+    "É o mesmo texto passando de uma para a outra.",
+  ],
   notas:
     "É A PROVA DA FOLHA ANTERIOR. A 07 disse que o modelo-padrão leva o mesmo defeito para todos os projetos; aqui ele aparece, casa por casa. Cada linha é um tipo de erro, cada coluna é um memorial auditado, e cada casa acesa traz a página onde o Nexo apontou.\n\nLER UMA LINHA SÓ, e escolher a do Chapecó: duas UBS de Criciúma, dois memoriais diferentes, e nos dois a proprietária é a Prefeitura de Chapecó. Ninguém escreveu isso duas vezes — veio do mesmo texto-base. Depois, apontar a última linha com a mão: 'corpo estradal', texto de rodovia, nas cinco obras — UBS, orla e skatepark.\n\nOS DEMAIS EXEMPLOS, se perguntarem: 'Bairro Vila Francesa' no 117-25 (p. 14) — o nome da outra UBS — e 'UBS Renascer' no 118-25 (p. 119); 'USB' no lugar de UBS nos dois; 'Beiram Mar' na orla de São José; 'Protóripo', 'padrõa', 'inos' repetidos igual no 117 e no 118; 'escava de aço' na orla e no skatepark; poste com seção de 60x40 METROS em quatro memoriais.\n\nCASA VAZIA NÃO É 'NÃO TEM'. É 'a auditoria daquele memorial não apontou'. O rodapé diz isso; se perguntarem, dizer igual.\n\nNINGUÉM JULGOU ESTES ACHADOS AINDA dentro do sistema. Por isso só entraram erros que se provam lendo o trecho — grafia, nome, cidade, unidade. Cada trecho foi conferido contra o texto da página.\n\nNÃO DIZER DE QUAL PROJETO veio o texto reaproveitado. O documento não diz, e o deck não sabe.",
   corpo: (
     <>
-      <div style={{ marginTop: 8 }}>
-        <Matriz atraso={200} />
+      <div>
+        <Matriz atraso={360} />
       </div>
       <Entra atraso={1700}>
         <p className="ap-fonte" style={{ margin: "14px 0 0", fontSize: 18 }}>
-          Casa acesa: o Nexo apontou naquele memorial, e o trecho está na página
-          indicada. Casa vazia: a auditoria daquele memorial não apontou.
+          Cinco memoriais auditados. Casa acesa: o Nexo apontou naquele
+          memorial, e o trecho está na página indicada. Casa vazia: a auditoria
+          daquele memorial não apontou.
         </p>
       </Entra>
-      <Leitura
-        atraso={1900}
-        linhas={[
-          { texto: "Não é descuido de uma obra." },
-          { texto: "É o mesmo texto passando de uma para a outra.", chave: true },
-        ]}
-      />
     </>
   ),
 };

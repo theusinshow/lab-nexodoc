@@ -10,22 +10,145 @@ import {
 
 import { Orbe } from "@/components/ds/basicos";
 
+import { Linhas } from "./pecas";
+
 import "./palco.css";
 
+/** Uma linha da manchete. `fraca` vai um degrau de cinza abaixo: é o contexto, não a afirmação. */
+export type LinhaDaManchete = string | { texto: string; fraca: true };
+
 export interface Slide {
-  /** Rótulo curto, para as notas e para o índice. */
+  /** Rótulo curto, para as notas. */
   rotulo: string;
-  /** O que aparece no trilho: "01".."20" no deck, "A".."F" no anexo. */
+  /** O que aparece na contagem: "01".."20" no deck, "A".."F" no anexo. */
   numero: string;
-  /** O bloco narrativo a que o slide pertence. Vazio na capa. */
+  /** O capítulo a que a folha pertence. Vazio na capa — e aí a moldura some. */
   bloco?: string;
-  /** O rótulo-título da folha, em caixa de frase (o CSS põe em caixa alta). Vazio na capa. */
+  /** O assunto da folha, pequeno, acima da manchete. */
   titulo?: string;
-  /** Nome de arquivo ou subtítulo que acompanha o rótulo-título, sem caixa alta. */
-  subtitulo?: string;
+  /**
+   * A MANCHETE: a conclusão da folha, dita primeiro. Cada item é uma linha
+   * deliberada — a quebra é decisão editorial, e o palco tem largura fixa.
+   */
+  manchete?: readonly LinhaDaManchete[];
+  /** Uma frase de apoio sob a manchete (o arquivo, a fonte, o porquê). */
+  lead?: string;
   /** O que o apresentador fala e o slide NÃO mostra. */
   notas: string;
   corpo: ReactNode;
+}
+
+/** Largura do painel de notas. Precisa bater com `.ap-notas` no CSS. */
+const LARGURA_DAS_NOTAS = 460;
+
+/** Os capítulos, na ordem em que aparecem: grupos de folhas seguidas com o mesmo bloco. */
+function capitulos(folhas: readonly Slide[]) {
+  const lista: { nome: string; de: number; ate: number }[] = [];
+  folhas.forEach((f, i) => {
+    if (!f.bloco) return;
+    const ultimo = lista[lista.length - 1];
+    if (ultimo && ultimo.nome === f.bloco && ultimo.ate === i - 1) ultimo.ate = i;
+    else lista.push({ nome: f.bloco, de: i, ate: i });
+  });
+  return lista;
+}
+
+/**
+ * A MOLDURA — o que é igual em toda folha e NÃO participa da troca: a barra do
+ * topo (marca, capítulo, contagem) e o progresso por capítulo no pé. Mora no
+ * palco, fora da <section>: o conteúdo se dissolve e a moldura fica, só o
+ * capítulo e o preenchimento mudam. Na capa ela se recolhe.
+ *
+ * O nome `ap-trilho` e o `ap-trilho__indice--atual` ficam por contrato com o
+ * gerador da cópia offline, que lê o número da folha dali e clona a moldura
+ * para dentro de cada folha.
+ *
+ * `aria-hidden` porque é o mesmo dado que a régua de controle já anuncia.
+ */
+function Trilho({
+  folhas,
+  indice,
+}: {
+  folhas: readonly Slide[];
+  indice: number;
+}) {
+  const atual = folhas[indice];
+  const caps = capitulos(folhas);
+  return (
+    <div
+      className={atual.bloco ? "ap-trilho" : "ap-trilho ap-trilho--recolhido"}
+      aria-hidden="true"
+    >
+      <div className="ap-trilho__topo">
+        <span className="ap-trilho__marca">
+          <Orbe tamanho={22} />
+          NexoDoc
+        </span>
+        <span className="ap-trilho__capitulo">{atual.bloco ?? ""}</span>
+        <span className="ap-trilho__conta">
+          <span className="ap-trilho__indice ap-trilho__indice--atual">
+            {atual.numero}
+          </span>
+          <span className="ap-trilho__total">
+            {folhas[folhas.length - 1].numero}
+          </span>
+        </span>
+      </div>
+      <div className="ap-trilho__progresso">
+        {caps.map((c) => {
+          const total = c.ate - c.de + 1;
+          const feito =
+            indice > c.ate ? 1 : indice < c.de ? 0 : (indice - c.de + 1) / total;
+          return (
+            <span
+              key={`${c.nome}-${c.de}`}
+              className="ap-trilho__parte"
+              style={{ flexGrow: total }}
+            >
+              <i style={{ transform: `scaleX(${feito})` }} />
+            </span>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/** O topo da folha: assunto, manchete e apoio, na ordem em que se lê. */
+function Cabeca({ folha }: { folha: Slide }) {
+  if (!folha.titulo) return null;
+  const linhas = folha.manchete ?? [];
+  return (
+    <header className="ap-cabeca">
+      <p className="ap-assunto ap-entra">{folha.titulo}</p>
+      {linhas.length ? (
+        <h1 className="ap-manchete">
+          {linhas.map((l, i) => {
+            const texto = typeof l === "string" ? l : l.texto;
+            return (
+              <span
+                key={texto}
+                className={
+                  typeof l === "string" ? undefined : "ap-manchete__fraca"
+                }
+                style={{ display: "block" }}
+              >
+                <Linhas linhas={[texto]} atraso={80 + i * 120} />
+              </span>
+            );
+          })}
+        </h1>
+      ) : null}
+      {folha.lead ? (
+        <p
+          className="ap-lead ap-entra"
+          style={{ animationDelay: `${180 + linhas.length * 120}ms` }}
+        >
+          {folha.lead}
+        </p>
+      ) : null}
+    </header>
+  );
 }
 
 /**
@@ -36,61 +159,12 @@ export interface Slide {
  * remotos de sala emitem — um controle Logitech manda PageUp/PageDown, não setas,
  * e um deck que só ouve seta trava na mão de quem usa o controle da empresa.
  */
-/** Largura do painel de notas. Precisa bater com `.ap-notas` no CSS. */
-const LARGURA_DAS_NOTAS = 460;
-
-/**
- * O TRILHO — a barra lateral do app: o orbe no topo, os índices de todas as
- * folhas com a pílula de seleção na corrente, e o bloco embaixo. Vive fora da
- * <section> da folha: não dissolve na troca, só a pílula desliza.
- * `aria-hidden` porque é o mesmo dado que a régua de controle já anuncia.
- */
-function Trilho({
-  folhas,
-  indice,
-}: {
-  folhas: readonly Slide[];
-  indice: number;
-}) {
-  return (
-    <div className="ap-trilho" aria-hidden="true">
-      <span className="ap-trilho__marca-do-nexo">
-        <Orbe tamanho={28} />
-      </span>
-      <ol className="ap-trilho__indices">
-        {folhas.map((f, i) => (
-          <li
-            key={f.numero}
-            className={
-              i === indice
-                ? "ap-trilho__indice ap-trilho__indice--atual"
-                : "ap-trilho__indice"
-            }
-          >
-            {f.numero}
-          </li>
-        ))}
-      </ol>
-      <span
-        className="ap-trilho__selecao"
-        style={{ transform: `translateY(${indice * 38}px)` }}
-      />
-      <span className="ap-trilho__bloco">{folhas[indice].bloco ?? ""}</span>
-    </div>
-  );
-}
-
 export function Palco({ slides }: { slides: readonly Slide[] }) {
   const [indice, setIndice] = useState(0);
   /*
    * A FOLHA QUE SAI. Fica montada por uma saída curta, por cima da que entra,
    * e depois some. Sem isto a troca é um corte seco — e um corte seco no meio de
    * uma fala parece falha de projetor, não decisão.
-   *
-   * Ela é renderizada na MESMA lista da folha atual, com a mesma `key` de
-   * antes: o React mantém o DOM, e o que já estava no estado final (o número
-   * que correu, a linha que se desenhou) continua lá durante a saída em vez de
-   * recomeçar do zero por cima do fade.
    */
   const [saindo, setSaindo] = useState<Slide | null>(null);
   const indiceAtual = useRef(0);
@@ -130,21 +204,13 @@ export function Palco({ slides }: { slides: readonly Slide[] }) {
 
   /*
    * A ESCALA. `transform: scale()` no palco inteiro, calculada a cada resize e
-   * uma vez no monte. Não é CSS puro porque `scale()` precisa de um número, e o
-   * número depende de duas razões (largura e altura) das quais vale a MENOR —
-   * `min()` com unidades de viewport chega perto, mas erra quando há barra de
-   * rolagem ou barra de ferramentas do navegador em cima.
+   * uma vez no monte. Vale a MENOR das duas razões (largura e altura).
    */
   useEffect(() => {
     function ajusta() {
       const alvo = palco.current;
       if (!alvo) return;
-      /*
-       * As notas ROUBAM LARGURA do palco, e não podem cobri-lo: no ensaio se lê
-       * o slide e a nota ao mesmo tempo, e um painel por cima do slide obriga a
-       * fechar para conferir o que se ia dizer sobre ele. Visto na tela, com o
-       * painel tapando a coluna esquerda de um slide em duas colunas.
-       */
+      /* As notas ROUBAM LARGURA do palco, e não podem cobri-lo. */
       const largura =
         window.innerWidth - (notasAbertas ? LARGURA_DAS_NOTAS : 0);
       const escala = Math.min(largura / 1920, window.innerHeight / 1080);
@@ -237,21 +303,16 @@ export function Palco({ slides }: { slides: readonly Slide[] }) {
                 aria-hidden={folha !== atual || undefined}
                 aria-label={`${folha.numero} de ${slides.length}: ${folha.titulo ?? folha.rotulo}`}
                 aria-roledescription="slide"
-                className={["ap-folha", folha !== atual ? "ap-folha--sai" : ""]
+                className={[
+                  "ap-folha",
+                  folha.bloco ? "" : "ap-folha--capa",
+                  folha !== atual ? "ap-folha--sai" : "",
+                ]
                   .filter(Boolean)
                   .join(" ")}
               >
-                {folha.titulo ? (
-                  <h1 className="ap-rotulo-titulo">
-                    <span>{folha.titulo}</span>
-                    {folha.subtitulo ? (
-                      <span className="ap-rotulo-titulo__sub">
-                        {folha.subtitulo}
-                      </span>
-                    ) : null}
-                  </h1>
-                ) : null}
-                {folha.corpo}
+                <Cabeca folha={folha} />
+                <div className="ap-corpo">{folha.corpo}</div>
               </section>
             ),
           )}
@@ -265,11 +326,9 @@ export function Palco({ slides }: { slides: readonly Slide[] }) {
           </p>
           <h2>Notas do apresentador</h2>
           {/*
-            AS NOTAS QUEBRAM EM PARÁGRAFOS. Desde que elas passaram a carregar as
-            RÉPLICAS — o que o comprador diz quando a resposta não o satisfaz —
-            uma nota tem três ou quatro blocos, e num `<p>` único eles viram uma
-            parede de texto que ninguém acha no meio de uma frase. O painel é
-            lido de relance, com a sala esperando.
+            AS NOTAS QUEBRAM EM PARÁGRAFOS: elas carregam as RÉPLICAS — o que o
+            comprador diz quando a resposta não o satisfaz —, e num `<p>` único
+            viram uma parede de texto que ninguém acha no meio de uma frase.
           */}
           {atual.notas.split("\n\n").map((paragrafo) => (
             <p key={paragrafo}>{paragrafo}</p>

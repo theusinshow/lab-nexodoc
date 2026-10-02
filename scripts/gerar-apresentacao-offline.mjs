@@ -71,7 +71,7 @@ body {
 }
 .ap-folha[hidden] { display: none; }
 .ap-aviso {
-  position: fixed; left: 24px; bottom: 20px;
+  position: fixed; left: 24px; top: 12px;
   font-family: "Geist Mono", ui-monospace, monospace;
   font-size: 12px; color: #4a4e57;
 }
