@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
-import { ArrowRight, Bell, ChevronDown, Keyboard, LogOut, Repeat2, Search } from "lucide-react";
+import { ArrowRight, Bell, ChevronDown, FolderOpen, Keyboard, LayoutGrid, LifeBuoy, ListChecks, LogOut, MessageSquare, Repeat2, Search, ShieldCheck } from "lucide-react";
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type KeyboardEvent as KE, type ReactNode, type RefObject } from "react";
 
 import { Avatar, Botao, Orbe, Tecla } from "@/components/ds/basicos";
@@ -61,10 +61,12 @@ export function Topo({
         <Tecla>↵</Tecla>
       </a>
       <header className="pn-topo">
-        <a className="pn-marca" href="#inicio" onClick={(e) => (e.preventDefault(), ir("inicio"))}>
+        {/* larga: a marca leva ao Painel; estreita (abaixo de 1280): a marca abre o cartão de navegação */}
+        <a className="pn-marca pn-marca--link" href="#inicio" onClick={(e) => (e.preventDefault(), ir("inicio"))}>
           <Orbe tamanho={22} estado={trabalhando ? "trabalhando" : "repouso"} />
           <span className="pn-marca-nome">Nexo</span>
         </a>
+        <CartaoDeNavegacao atual={atual} trabalhando={trabalhando} />
         <nav className="pn-nav" aria-label="Principal">
           {DESTINOS.map((n) => (
             <a key={n} href={`#${DESTINO_DA_BARRA[n][0]}`} aria-current={n === atual ? "page" : undefined} onClick={(e) => (e.preventDefault(), ir(...DESTINO_DA_BARRA[n]))}>
@@ -84,6 +86,88 @@ export function Topo({
         <Sino ponto={aviso} abertoInicial={ctx.aberto === "sino"} />
         <MenuDaConta atual={atual} onAtalhos={onAtalhos} abertoInicial={ctx.aberto === "menu"} />
       </header>
+    </div>
+  );
+}
+
+/*
+ * O CARTÃO DE NAVEGAÇÃO (ref.: Card Nav, 01/10/2026). Abaixo de 1280 os
+ * destinos não cabem na barra; em vez de irem morar no menu da conta (que é
+ * da conta, não do app), a marca vira o botão que abre um cartão com os seis
+ * destinos, cada um com uma linha do que tem lá agora. Sem painéis coloridos:
+ * a cor fica para o sinal (o vermelho de quem bloqueia). Acima de 1280, a
+ * barra continua inteira, que é o mais rápido de ler.
+ */
+const ICONE_DO_DESTINO: Record<Destino, ReactNode> = {
+  Painel: <LayoutGrid size={16} />,
+  Nexo: <MessageSquare size={16} />,
+  Projetos: <FolderOpen size={16} />,
+  Achados: <ListChecks size={16} />,
+  Ajuda: <LifeBuoy size={16} />,
+  Administração: <ShieldCheck size={16} />,
+};
+
+function CartaoDeNavegacao({ atual, trabalhando }: { atual: Destino | null; trabalhando: boolean }) {
+  const { dur, k } = useTempo();
+  const p = usePainel(false);
+  const ir = useIr();
+  const comVoce = COM_VOCE.reduce((n, c) => n + c.achados.length, 0);
+  const bloqueiam = COM_VOCE.reduce((n, c) => n + c.achados.filter((a) => a.impacto === "block").length, 0);
+  const LINHA: Record<Destino, ReactNode> = {
+    Painel: "Tarefas e o que retomar",
+    Nexo: (
+      <>
+        <span className="ds-code">117-25</span> auditar o memorial geral
+      </>
+    ),
+    Projetos: <span className="ds-num">9 obras abertas</span>,
+    Achados: (
+      <span className="pn-cartao-sinal">
+        <span className="ds-num">{comVoce}</span> com você
+        {bloqueiam > 0 && (
+          <em>
+            <i aria-hidden /> {bloqueiam} bloqueiam
+          </em>
+        )}
+      </span>
+    ),
+    Ajuda: "Tarefas, lugares e palavras",
+    Administração: "Centro de controle",
+  };
+  return (
+    <div ref={p.raiz} className="pn-conta pn-marca-raiz">
+      <button type="button" className="pn-marca pn-marca--botao" aria-haspopup="menu" aria-label="Navegação" {...p.gatilho}>
+        <Orbe tamanho={22} estado={trabalhando ? "trabalhando" : "repouso"} />
+        <span className="pn-marca-nome">Nexo</span>
+        <motion.span className="pn-quem-seta" animate={{ rotate: p.aberto ? 180 : 0 }} transition={{ duration: dur("state"), ease: [...CURVA.out] }}>
+          <ChevronDown size={14} />
+        </motion.span>
+      </button>
+      <AnimatePresence>
+        {p.aberto && (
+          <Painel painel={p.painel} andar={p.andar} rotulo="Navegação" classe="pn-cartao-nav">
+            <div className="pn-cartao-grade">
+              {DESTINOS.map((d, i) => (
+                <motion.button
+                  key={d}
+                  type="button"
+                  role="menuitem"
+                  aria-current={d === atual ? "page" : undefined}
+                  className="pn-cartao-destino"
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: dur("enter"), delay: (0.04 + i * 0.03) * k, ease: [...CURVA.out] }}
+                  onClick={() => (p.fechar(false), ir(...DESTINO_DA_BARRA[d]))}
+                >
+                  <span className="pn-cartao-icone">{ICONE_DO_DESTINO[d]}</span>
+                  <b>{d}</b>
+                  <span className="pn-cartao-linha">{LINHA[d]}</span>
+                </motion.button>
+              ))}
+            </div>
+          </Painel>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -242,10 +326,10 @@ function Sino({ ponto, abertoInicial }: { ponto: boolean; abertoInicial: boolean
 
 /**
  * O MENU DA CONTA: quem você é e com que alçada (as mesmas duas chaves de
- * Pessoas: centro de controle e escritório), para onde ir quando a barra não
- * cabe, os atalhos e as duas saídas do app (Sair, e Entrar com outra conta,
- * que é o `signOut` para /login da tela Sem acesso). Os destinos só aparecem
- * aqui quando a navegação saiu da barra, para nenhum ser oferecido duas vezes.
+ * Pessoas: centro de controle e escritório), os atalhos e as duas saídas do
+ * app (Sair, e Entrar com outra conta, que é o `signOut` para /login da tela
+ * Sem acesso). Só a conta: os destinos, quando não cabem na barra, vão para o
+ * cartão de navegação da marca, e não para cá.
  */
 function MenuDaConta({ atual, onAtalhos, abertoInicial }: { atual: Destino | null; onAtalhos?: () => void; abertoInicial: boolean }) {
   const { dur } = useTempo();
@@ -289,13 +373,6 @@ function MenuDaConta({ atual, onAtalhos, abertoInicial }: { atual: Destino | nul
                 </dd>
               </div>
             </dl>
-            <div className="pn-menu-destinos" role="group" aria-label="Ir para">
-              {DESTINOS.map((d) => (
-                <button key={d} type="button" role="menuitem" aria-current={d === atual ? "page" : undefined} onClick={() => (p.fechar(false), ir(...DESTINO_DA_BARRA[d]))}>
-                  {d}
-                </button>
-              ))}
-            </div>
             <div className="pn-menu-grupo">
               <button
                 type="button"

@@ -173,7 +173,7 @@ export function TelaPecas({ situacao }: { situacao: SituacaoPecas }) {
 function Estreita() {
   const larguras: { px: number; nota: string }[] = [
     { px: 1280, nota: "A navegação inteira cabe na barra." },
-    { px: 1100, nota: "Abaixo de 1280, os destinos vão para o menu da conta (a regra do app)." },
+    { px: 1100, nota: "Abaixo de 1280, os destinos saem da barra: a marca do Nexo abre o cartão de navegação." },
     { px: 760, nota: "Abaixo de 900, a busca vira o ícone com o atalho." },
     { px: 390, nota: "Telefone: só a marca, a busca, o sino e o avatar." },
   ];

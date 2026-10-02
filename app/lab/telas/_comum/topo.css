@@ -59,10 +59,45 @@
 .ds .pn-sino-bloq i { width: 6px; height: 6px; border-radius: 2px; background: var(--ds-state-error); transform: rotate(45deg); }
 .ds .pn-sino-vazio { margin: 0; padding: 10px; font-size: 12.5px; color: var(--ds-text-tertiary); }
 
-/* abaixo de 1280: a navegação vai para o menu da conta (regra do app) */
+/* ---------- o cartão de navegação (ref.: Card Nav) ---------- */
+.ds .pn-marca--botao { display: none; gap: 8px; padding: 4px 8px 4px 4px; margin-left: -4px; border: 0; border-radius: 10px; background: none; font: inherit; color: inherit; cursor: pointer; transition: background var(--ds-dur-feedback); }
+.ds .pn-marca--botao:hover, .ds .pn-marca--botao[aria-expanded="true"] { background: rgb(255 255 255 / 0.05); }
+.ds .pn-marca-raiz { flex: none; }
+.ds .pn-cartao-nav { left: 0; right: auto; width: min(560px, calc(100vw - 32px)); padding: 8px; transform-origin: top left; }
+.ds .pn-cartao-grade { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.ds .pn-painel .pn-cartao-destino {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas: "icone nome" "linha linha";
+  align-items: center;
+  gap: 8px 10px;
+  min-height: 78px;
+  padding: 12px;
+  border-radius: 10px;
+  background: rgb(255 255 255 / 0.025);
+  box-shadow: inset 0 0 0 1px var(--ds-line-subtle);
+  text-align: left;
+}
+.ds .pn-painel .pn-cartao-destino:hover,
+.ds .pn-painel .pn-cartao-destino:focus-visible { background: var(--ds-surface-raised); box-shadow: inset 0 0 0 1px var(--ds-line-strong); }
+.ds .pn-painel .pn-cartao-destino[aria-current="page"] { background: var(--ds-nexo-wash); box-shadow: inset 0 0 0 1px var(--ds-nexo-line); }
+.ds .pn-cartao-icone { grid-area: icone; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 8px; background: rgb(255 255 255 / 0.05); color: var(--ds-text-secondary); }
+.ds .pn-cartao-destino[aria-current="page"] .pn-cartao-icone { color: var(--ds-nexo); }
+.ds .pn-cartao-destino b { grid-area: nome; font-weight: 500; font-size: 13.5px; color: var(--ds-text-primary); }
+.ds .pn-cartao-linha { grid-area: linha; overflow: hidden; font-size: 11.5px; line-height: 1.4; color: var(--ds-text-tertiary); white-space: nowrap; text-overflow: ellipsis; }
+.ds .pn-cartao-linha .ds-code { font-size: 10.5px; }
+.ds .pn-cartao-sinal { display: inline-flex; align-items: center; white-space: pre; }
+.ds .pn-cartao-sinal em { display: inline-flex; align-items: center; gap: 5px; margin-left: 8px; font-style: normal; color: var(--ds-text-secondary); }
+.ds .pn-cartao-sinal em i { width: 6px; height: 6px; border-radius: 2px; background: var(--ds-state-error); transform: rotate(45deg); }
+
+/* abaixo de 1280: os destinos saem da barra e a marca abre o cartão */
 @container topo (max-width: 1279px) {
   .ds .pn-nav { display: none; }
-  .ds .pn-menu-destinos { display: grid; }
+  .ds .pn-marca--link { display: none; }
+  .ds .pn-marca--botao { display: inline-flex; align-items: center; }
+}
+@container topo (max-width: 599px) {
+  .ds .pn-cartao-grade { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 /* abaixo de 900: a busca vira o ícone com o atalho */
 @container topo (max-width: 899px) {
