@@ -27,7 +27,7 @@ export interface PassoDaLinha {
   inicio: number;
   /** Duração real (feitos) ou decorrida (atual). */
   duracao: number;
-  /** Duração prevista — para o atual e os que faltam. */
+  /** Duração prevista — para o atual e os que faltam. 0 = sem previsão (o futuro fica "na fila"). */
   previsto: number;
   estado: "feito" | "atual" | "futuro" | "erro";
   /** Uma linha sob a etapa (a atual diz o que está fazendo; a que parou, por quê). */
@@ -52,7 +52,9 @@ export function LinhaDoTempo({ passos, agora, total }: { passos: PassoDaLinha[];
   return (
     <div className="gr-linha" onMouseLeave={() => setFoco(null)}>
       {passos.map((p, i) => {
-        const passou = p.estado === "atual" && p.duracao > p.previsto;
+        // Sem previsão (0) não há "passou do previsto" nem pílula no futuro: o app não inventa estimativa.
+        const temPrevisto = p.previsto > 0;
+        const passou = p.estado === "atual" && temPrevisto && p.duracao > p.previsto;
         const largura = p.estado === "futuro" ? p.previsto : Math.max(p.duracao, 2);
         return (
           <div
@@ -72,10 +74,10 @@ export function LinhaDoTempo({ passos, agora, total }: { passos: PassoDaLinha[];
                 {p.estado !== "futuro" && largura / total > 0.07 && <span className="gr-pilula-valor">{mmss(p.duracao)}</span>}
               </motion.span>
               {/* o previsto do passo atual: um contorno onde ele deveria terminar */}
-              {p.estado === "atual" && !passou && <span className="gr-previsto" style={{ left: escala(p.inicio), width: escala(p.previsto) }} />}
+              {p.estado === "atual" && temPrevisto && !passou && <span className="gr-previsto" style={{ left: escala(p.inicio), width: escala(p.previsto) }} />}
             </span>
             <span className="gr-passo-tempo">
-              {p.estado === "futuro" ? `~${mmss(p.previsto)}` : p.estado === "erro" ? "parou" : mmss(p.duracao)}
+              {p.estado === "futuro" ? (temPrevisto ? `~${mmss(p.previsto)}` : "na fila") : p.estado === "erro" ? "parou" : mmss(p.duracao)}
             </span>
             {p.nota && <span className="gr-passo-nota">{p.nota}</span>}
           </div>

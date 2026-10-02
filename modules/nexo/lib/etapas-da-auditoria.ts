@@ -18,7 +18,12 @@
 import type { MarcoDaAuditoria, PassadaDaAuditoria } from "@/lib/audit-progress";
 
 /** O marco, com a hora em que CHEGOU ao cliente. */
-export type MarcoRecebido = MarcoDaAuditoria & { emMs: number };
+export type MarcoRecebido = MarcoDaAuditoria & {
+  /** Quando o marco chegou pela primeira vez. */
+  emMs: number;
+  /** Quando ele foi atualizado pela última vez (os blocos se atualizam a cada conclusão). */
+  ultimoMs?: number;
+};
 
 export interface EtapaVista {
   passada: PassadaDaAuditoria;
@@ -29,6 +34,8 @@ export interface EtapaVista {
   orcamentoMs?: number;
   /** Quando esta passada começou — é contra ela que o orçamento é medido. */
   inicioMs: number;
+  /** Quando a etapa terminou (o marco de fim). */
+  fimMs?: number;
 }
 
 /** A ordem em que o motor trabalha. */
@@ -55,6 +62,7 @@ export function etapasDosMarcos(marcos: readonly MarcoRecebido[]): EtapaVista[] 
       total: m.total ?? atual?.total,
       orcamentoMs: m.orcamentoMs ?? atual?.orcamentoMs,
       inicioMs: atual?.inicioMs ?? m.emMs,
+      fimMs: m.estado === "fim" ? m.emMs : atual?.fimMs,
     });
   }
   return ORDEM.filter((p) => porPassada.has(p)).map((p) => porPassada.get(p)!);

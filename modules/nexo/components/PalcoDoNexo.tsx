@@ -12,6 +12,7 @@
  * disciplina e as duas camadas de confiança — o que dá credibilidade ao parecer.
  */
 
+import { compactarParaOPalco, soltarDoPalco } from "../lib/largura-do-copiloto";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import {
@@ -323,6 +324,14 @@ export function PalcoDoNexo({
    * o PDF do memorial em mãos: sem os bytes, o canvas seria uma grade de ícones.
    */
   const [noDocumento, setNoDocumento] = useState(false);
+
+  /* Com o parecer no palco, o chat cede a largura; ele volta quando o parecer sai. */
+  const parecerNoPalco = mostrandoAuditoria && Boolean(report) && !emCurso;
+  useEffect(() => {
+    if (!parecerNoPalco) return;
+    compactarParaOPalco();
+    return () => soltarDoPalco();
+  }, [parecerNoPalco]);
   const podeVerNoDocumento = Boolean(report && documento);
   /*
    * A vista do parecer sobe para cá: as quatro vistas da auditoria (Resumo,
@@ -528,7 +537,7 @@ export function PalcoDoNexo({
       <div className="min-h-0 flex-1" data-tour="palco">
         {mostrandoAuditoria ? (
           emCurso ? (
-            <div className="flex h-full items-start justify-center overflow-y-auto pt-6">
+            <div className="h-full overflow-y-auto">
               <AuditoriaEmCurso
                 nivel={emCurso.nivel}
                 arquivo={emCurso.arquivo}
@@ -601,7 +610,7 @@ export function PalcoDoNexo({
              * animação que este módulo se recusa a fazer — a tela diz só o que
              * sabe, e o resultado aparece quando o servidor terminar.
              */
-            <div className="flex h-full items-start justify-center overflow-y-auto pt-6">
+            <div className="h-full overflow-y-auto">
               <AuditoriaEmCurso
                 nivel={reconexao.pendente.nivel}
                 arquivo={reconexao.pendente.arquivo}

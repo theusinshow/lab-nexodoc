@@ -193,9 +193,11 @@ if (QUAL === "auditoria" || QUAL === "tudo") {
   ok(await esperar(async () => (await auditar.count()) > 0 && (await auditar.first().isEnabled()), 180_000, 2000), "Auditar está disponível");
   const inicio = Date.now();
   await auditar.first().click();
-  await p.waitForTimeout(20_000);
+  await p.waitForTimeout(6_000);
   await foto("auditoria-rodando");
-  ok((await p.locator(".nx-aud").count()) === 1, "o palco mostra a auditoria rodando no painel novo");
+  ok((await p.locator(".au-painel").count()) === 1, "o palco mostra a auditoria rodando no painel novo");
+  await p.waitForTimeout(8_000);
+  await foto("auditoria-rodando-2");
   const pronta = await esperar(async () => (await p.locator('[data-tour="veredito-parecer"]').count()) > 0, 1_200_000, 5000);
   ok(pronta, "a auditoria terminou e o veredito está no trilho", `${Math.round((Date.now() - inicio) / 1000)} s`);
   if (pronta) {
