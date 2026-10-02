@@ -5,6 +5,7 @@ import { ArrowUpRight, Check, ChevronDown, Copy, Download, FileText, RotateCcw }
 import { Children, createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 
 import { Orbe, Tecla } from "@/components/ds/basicos";
+import { Cronometro, Trelica } from "@/components/ds/micro";
 import { useTempo } from "@/lib/ds/tempo";
 
 import { useIr, type IdTela } from "../_comum/prototipo";
@@ -393,36 +394,91 @@ export function Escrevendo({ texto, onFim }: { texto: string; onFim?: () => void
   );
 }
 
-/** Pensando: antes da primeira palavra, três pontos que respiram. */
-export function Pensando() {
+/** Pensando: antes da primeira palavra, a treliça varrendo e o tempo contando. */
+export function Pensando({ desde }: { desde?: number }) {
+  const [inicio] = useState(() => desde ?? Date.now());
   return (
     <span className="cx-pensando" role="status" aria-label="O Nexo está pensando">
-      <i />
-      <i />
-      <i />
+      <Trelica />
+      <span>Pensando</span>
+      <Cronometro desde={inicio} />
     </span>
   );
 }
 
 /**
- * Respondendo em tempo de verdade: pensa (os pontos viram a linha de estado
- * em crossfade), consulta (o giro), escreve, e no fim o giro vira visto e
- * aparece Copiar resposta.
+ * A LINHA DO PENSAMENTO (ref.: Thought Line). Enquanto pensa, os passos
+ * aparecem um a um: o feito ganha visto, o da vez fica claro. Quando a
+ * resposta começa, tudo recolhe numa linha só, "Pensou por 1,6 s", que abre
+ * de novo no clique para quem quer saber o que o Nexo consultou.
  */
-export function Respondendo({ texto }: { texto: string }) {
+export function LinhaDoPensamento({ passos, pensando, segundos }: { passos: string[]; pensando: boolean; segundos?: number }) {
+  const { k } = useTempo();
+  const [vistos, setVistos] = useState(1);
+  const [aberta, setAberta] = useState(false);
+  const [inicio] = useState(() => Date.now());
+  useEffect(() => {
+    if (!pensando || vistos >= passos.length) return;
+    const t = setTimeout(() => setVistos((n) => n + 1), 480 * k);
+    return () => clearTimeout(t);
+  }, [pensando, vistos, passos.length, k]);
+  const mostrar = pensando ? passos.slice(0, vistos) : aberta ? passos : [];
+  return (
+    <div className="cx-pensamento">
+      {pensando ? (
+        <Pensando desde={inicio} />
+      ) : (
+        <button type="button" className="cx-pensou" aria-expanded={aberta} onClick={() => setAberta((a) => !a)}>
+          <Check size={13} />
+          Pensou por <span className="ds-num">{(segundos ?? 0).toFixed(1).replace(".", ",")} s</span>
+          <motion.span className="cx-pensou-seta" animate={{ rotate: aberta ? 180 : 0 }} transition={{ duration: RITMO.toque * k }}>
+            <ChevronDown size={13} />
+          </motion.span>
+        </button>
+      )}
+      <AnimatePresence initial={false}>
+        {mostrar.length > 0 && (
+          <motion.ol className="cx-pensamento-passos" initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: RITMO.troca * k, ease: SUAVE }}>
+            {mostrar.map((p, i) => {
+              const daVez = pensando && i === vistos - 1;
+              return (
+                <motion.li key={p} data-da-vez={daVez || undefined} initial={{ opacity: 0, x: -4 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: RITMO.toque * k }}>
+                  {daVez ? <i aria-hidden /> : <Check size={12} />}
+                  {p}
+                </motion.li>
+              );
+            })}
+          </motion.ol>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+const PASSOS_DA_PERGUNTA = ["Lendo a pergunta", "Consultando o parecer da revisão A", "Conferindo as páginas citadas"];
+
+/**
+ * Respondendo em tempo de verdade: pensa (a treliça e os passos aparecendo,
+ * com o tempo correndo), escreve (os passos recolhem em "Pensou por…"), e no
+ * fim aparece Copiar resposta.
+ */
+export function Respondendo({ texto, passos = PASSOS_DA_PERGUNTA }: { texto: string; passos?: string[] }) {
   const { k } = useTempo();
   const [fase, setFase] = useState<"pensando" | "escrevendo" | "fim">("pensando");
+  const [segundos, setSegundos] = useState(0);
+  const [inicio] = useState(() => Date.now());
   const avisar = useContext(FimDaResposta);
   useEffect(() => {
     if (fase !== "pensando") return;
-    const t = setTimeout(() => setFase("escrevendo"), 1400 * k);
+    const t = setTimeout(() => {
+      setSegundos((Date.now() - inicio) / 1000);
+      setFase("escrevendo");
+    }, 480 * passos.length * k + 300 * k);
     return () => clearTimeout(t);
-  }, [fase, k]);
+  }, [fase, k, inicio, passos.length]);
   return (
     <DoNexo atraso={0.3} copiar={fase === "fim"}>
-      <Troca chave={fase === "pensando" ? "pensando" : "passo"}>
-        {fase === "pensando" ? <Pensando /> : <Passo texto={fase === "fim" ? "Consultei o parecer da revisão A" : "Consultando o parecer da revisão A"} emCurso={fase !== "fim"} />}
-      </Troca>
+      <LinhaDoPensamento passos={passos} pensando={fase === "pensando"} segundos={segundos} />
       {fase !== "pensando" && (
         <Escrevendo
           texto={texto}

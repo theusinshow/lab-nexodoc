@@ -5,6 +5,7 @@ import { CircleAlert, Search, Trash2 } from "lucide-react";
 import { Fragment, useState } from "react";
 
 import { Botao } from "@/components/ds/basicos";
+import { BotaoDeSegurar } from "@/components/ds/micro";
 import { BarraEmbutida } from "@/components/ds/medidas";
 import { useTempo } from "@/lib/ds/tempo";
 
@@ -110,9 +111,9 @@ function ConfirmaExclusao({ texto, onCancelar }: { texto: string | null; onCance
             <Botao variante="ghost" tamanho="sm" onClick={onCancelar}>
               Cancelar
             </Botao>
-            <Botao variante="primary" tamanho="sm" className="pb-perigo" onClick={onCancelar}>
-              Excluir permanentemente
-            </Botao>
+            <BotaoDeSegurar feito="Excluídas" onConfirmar={() => setTimeout(onCancelar, 900)}>
+              <Trash2 size={14} /> Segure para excluir
+            </BotaoDeSegurar>
           </div>
         </motion.div>
       )}

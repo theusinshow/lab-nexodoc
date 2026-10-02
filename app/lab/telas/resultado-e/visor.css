@@ -61,7 +61,7 @@
 }
 .ds .ds-btn.rs-ver-memorial:hover {
   box-shadow: inset 0 0 0 1px var(--ds-nexo);
-  background: color-mix(in srgb, var(--ds-nexo) 12%, transparent);
+  background: radial-gradient(90px circle at var(--mx, 50%) var(--my, 50%), color-mix(in srgb, var(--ds-nexo) 26%, transparent), transparent 70%), color-mix(in srgb, var(--ds-nexo) 10%, transparent);
 }
 .ds .ds-btn.rs-ver-memorial svg { color: var(--ds-nexo); }
 .ds .ds-btn.rs-ver-memorial::before {

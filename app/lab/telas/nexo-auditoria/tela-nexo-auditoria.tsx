@@ -204,7 +204,7 @@ export function TelaNexoAuditoria({ situacao }: { situacao: SituacaoNexoAud }) {
             ))}
           </div>
           <div className="nw-campo">
-            <Campo respondendo={rodando || situacao === "respondendo"} onEnviar={perguntar} dica="Pergunte sobre esta auditoria: “por que a ACH-002 bloqueia?”" />
+            <Campo modo="pergunta" respondendo={rodando || situacao === "respondendo"} onEnviar={perguntar} dica="Pergunte sobre esta auditoria: “por que a ACH-002 bloqueia?”" />
           </div>
         </aside>
       </div>

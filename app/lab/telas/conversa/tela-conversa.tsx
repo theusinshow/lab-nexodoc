@@ -48,6 +48,96 @@ const GERADOS = [
  * enviar. Os arquivos entram e saem com layout (os vizinhos escorregam para o
  * lugar); enviar vira Parar girando, e acende quando há o que mandar.
  */
+/*
+ * COMO O NEXO TRABALHA (ref.: Prompt Bar). A escolha mora no campo, ao lado do
+ * anexo, e abre para cima com o que cada opção custa: tempo e preço relativo.
+ * É técnico de propósito: quem escolhe precisa saber o que está trocando.
+ */
+const MODOS = {
+  auditoria: {
+    titulo: "Como o Nexo audita",
+    opcoes: [
+      { id: "rapida", nome: "Análise rápida", curto: "Rápida", faz: "Regras locais e leitura global. Acha o que é de capa, revisão e número.", tempo: "~1 min", custo: 1 },
+      { id: "profunda", nome: "Análise profunda", curto: "Profunda", faz: "Lê capítulo a capítulo e um segundo modelo confere cada achado.", tempo: "~4 min", custo: 3 },
+    ],
+    padrao: "profunda",
+  },
+  pergunta: {
+    titulo: "Como o Nexo responde",
+    opcoes: [
+      { id: "direta", nome: "Direta", curto: "Direta", faz: "Responde pelo parecer, curto.", tempo: "~3 s", custo: 1 },
+      { id: "conferida", nome: "Conferida", curto: "Conferida", faz: "Relê as páginas citadas antes de responder.", tempo: "~12 s", custo: 2 },
+    ],
+    padrao: "conferida",
+  },
+} as const;
+
+function SeletorDoModo({ contexto }: { contexto: "auditoria" | "pergunta" }) {
+  const { k } = useTempo();
+  const def = MODOS[contexto];
+  const [escolha, setEscolha] = useState<string>(def.padrao);
+  const [aberto, setAberto] = useState(false);
+  const raiz = useRef<HTMLSpanElement>(null);
+  useEffect(() => {
+    if (!aberto) return;
+    const fora = (e: MouseEvent) => !raiz.current?.contains(e.target as Node) && setAberto(false);
+    const esc = (e: KeyboardEvent) => e.key === "Escape" && (e.preventDefault(), setAberto(false));
+    document.addEventListener("mousedown", fora);
+    document.addEventListener("keydown", esc, true);
+    return () => {
+      document.removeEventListener("mousedown", fora);
+      document.removeEventListener("keydown", esc, true);
+    };
+  }, [aberto]);
+  const atual = def.opcoes.find((o) => o.id === escolha)!;
+  return (
+    <span ref={raiz} className="cx-modo-raiz">
+      <button type="button" className="cx-modo" aria-haspopup="true" aria-expanded={aberto} title={def.titulo} onClick={() => setAberto((a) => !a)}>
+        {atual.curto} <ChevronDown size={13} />
+      </button>
+      <AnimatePresence>
+        {aberto && (
+          <motion.div
+            className="cx-modo-painel"
+            role="radiogroup"
+            aria-label={def.titulo}
+            initial={{ opacity: 0, y: 6, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 4, transition: { duration: RITMO.toque * k } }}
+            transition={{ duration: RITMO.troca * k, ease: SUAVE }}
+          >
+            <p className="cx-modo-titulo">{def.titulo}</p>
+            {def.opcoes.map((o) => (
+              <button
+                key={o.id}
+                type="button"
+                role="radio"
+                aria-checked={o.id === escolha}
+                className="cx-modo-opcao"
+                onClick={() => {
+                  setEscolha(o.id);
+                  setAberto(false);
+                }}
+              >
+                <span className="cx-modo-nome">
+                  <b>{o.nome}</b>
+                  <span className="ds-num">{o.tempo}</span>
+                  <span className="cx-modo-custo" title={`custo ${o.custo === 1 ? "baixo" : o.custo === 2 ? "médio" : "alto"}`}>
+                    {[1, 2, 3].map((n) => (
+                      <i key={n} data-aceso={n <= o.custo || undefined} />
+                    ))}
+                  </span>
+                </span>
+                <span className="cx-modo-faz">{o.faz}</span>
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </span>
+  );
+}
+
 export function Campo({
   arquivos: iniciais,
   respondendo,
@@ -59,7 +149,8 @@ export function Campo({
   arquivos?: Arquivo[];
   respondendo?: boolean;
   texto?: string;
-  modo?: boolean;
+  /** O seletor de como o Nexo trabalha: "auditoria" (conversa nova) ou "pergunta" (sobre uma auditoria). */
+  modo?: boolean | "auditoria" | "pergunta";
   /** Quem quer a mensagem (o chat do Nexo na auditoria): Enter envia e o campo limpa. */
   onEnviar?: (texto: string) => void;
   dica?: string;
@@ -116,11 +207,7 @@ export function Campo({
         <motion.button type="button" className="cx-campo-botao" aria-label="Anexar PDFs" title="Anexar PDFs" whileTap={{ scale: 0.94 }}>
           <Paperclip size={16} />
         </motion.button>
-        {modo && (
-          <button type="button" className="cx-modo" title="Como o Nexo audita">
-            Análise profunda <ChevronDown size={13} />
-          </button>
-        )}
+        {modo && <SeletorDoModo contexto={modo === "pergunta" ? "pergunta" : "auditoria"} />}
         <span className="cx-enviar-caixa">
         <AnimatePresence initial={false}>
           {respondendo ? (

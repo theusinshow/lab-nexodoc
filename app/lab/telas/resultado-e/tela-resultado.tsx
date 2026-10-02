@@ -2,9 +2,10 @@
 
 import { AnimatePresence, motion } from "motion/react";
 import { AlertTriangle, ArrowLeft, FileSearch, FileSpreadsheet, FileText, LayoutList, ListChecks, MessageSquare, MessageSquareWarning, RotateCcw, ScrollText } from "lucide-react";
-import { useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 
 import { Botao, Tecla } from "@/components/ds/basicos";
+import { Dica } from "@/components/ds/micro";
 import { CURVA } from "@/lib/ds/movimento";
 import { useTempo } from "@/lib/ds/tempo";
 import { MarcaDaPrefeitura } from "@/modules/nexo/components/MarcaDaPrefeitura";
@@ -99,6 +100,8 @@ function Anel({ fracao, completo }: { fracao: number | null; completo: boolean }
   );
 }
 
+const ORDEM_DAS_ABAS: Aba[] = ["resumo", "achados", "parecer", "documento"];
+
 /** O ponto de partida de cada situação: que achados, que aba, o que já vem aberto. */
 function partida(s: SituacaoRes) {
   const base = { achados: ACHADOS, aba: "resumo" as Aba, parcial: false, comparado: false, fila: { selecionado: "ACH-002" } as InicialDaFila };
@@ -152,7 +155,13 @@ export function TelaResultado({ situacao, embutido = false, selecionado }: { sit
   // No palco da conversa, quem fala de um achado (o chat) escolhe qual abre.
   const p = selecionado ? { ...p0, aba: "achados" as Aba, fila: { ...p0.fila, selecionado } } : p0;
   const [achados, setAchados] = useState<Achado[]>(p.achados);
-  const [aba, setAba] = useState<Aba>(p.aba);
+  // A aba nova entra pelo lado de onde fica na ordem (ref.: Sliding Panel):
+  // ir de Resumo para Achados empurra para a esquerda; voltar, para a direita.
+  const [{ aba, dir }, setVista] = useState<{ aba: Aba; dir: number }>({ aba: p.aba, dir: 1 });
+  const setAba = useCallback(
+    (nova: Aba) => setVista((v) => (v.aba === nova ? v : { aba: nova, dir: ORDEM_DAS_ABAS.indexOf(nova) > ORDEM_DAS_ABAS.indexOf(v.aba) ? 1 : -1 })),
+    [setVista],
+  );
   const [filaInicial, setFilaInicial] = useState(p.fila);
   const [carregando, setCarregando] = useState(situacao === "abrindo");
   const [visor, setVisor] = useState<{ aberto: boolean; achado: string | null }>({ aberto: situacao === ("memorial" as SituacaoRes), achado: situacao === ("memorial" as SituacaoRes) ? "ACH-002" : null });
@@ -254,12 +263,18 @@ export function TelaResultado({ situacao, embutido = false, selecionado }: { sit
               <MioloDoResultado />
             </div>
           ) : (
-            <AnimatePresence mode="wait" initial={false}>
+            <AnimatePresence mode="wait" initial={false} custom={dir}>
               <motion.div
                 key={aba}
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, transition: { duration: dur("feedback") } }}
+                custom={dir}
+                variants={{
+                  entra: (d: number) => ({ opacity: 0, x: 28 * d }),
+                  fica: { opacity: 1, x: 0 },
+                  sai: (d: number) => ({ opacity: 0, x: -20 * d, transition: { duration: dur("feedback"), ease: ease(CURVA.exit) } }),
+                }}
+                initial="entra"
+                animate="fica"
+                exit="sai"
                 transition={{ duration: dur("enter"), ease: ease(CURVA.out) }}
               >
                 {aba === "resumo" && (
@@ -320,15 +335,25 @@ export function TelaResultado({ situacao, embutido = false, selecionado }: { sit
           </section>
 
           <nav className="re-nav" aria-label="Visões do resultado">
-            {visoes.map((v) => (
-              <button key={v.id} type="button" aria-current={aba === v.id ? "page" : undefined} title={compacto ? `${v.rotulo} (${v.tecla})` : undefined} onClick={() => setAba(v.id)}>
-                {aba === v.id && <motion.span layoutId="re-nav-ativa" className="re-nav-fundo" transition={mola("snappy")} />}
-                {v.icone}
-                {!compacto && <span className="re-nav-rotulo">{v.rotulo}</span>}
-                {v.conta && <em className="ds-num">{v.conta}</em>}
-                {!compacto && <Tecla>{v.tecla}</Tecla>}
-              </button>
-            ))}
+            {visoes.map((v) => {
+              const botao = (
+                <button key={v.id} type="button" aria-current={aba === v.id ? "page" : undefined} aria-label={compacto ? v.rotulo : undefined} onClick={() => setAba(v.id)}>
+                  {aba === v.id && <motion.span layoutId="re-nav-ativa" className="re-nav-fundo" transition={mola("snappy")} />}
+                  {v.icone}
+                  {!compacto && <span className="re-nav-rotulo">{v.rotulo}</span>}
+                  {v.conta && <em className="ds-num">{v.conta}</em>}
+                  {!compacto && <Tecla>{v.tecla}</Tecla>}
+                </button>
+              );
+              // só ícones: o nome e a tecla aparecem na dica, e quem anda pela fileira lê uma atrás da outra
+              return compacto ? (
+                <Dica key={v.id} texto={v.rotulo} tecla={v.tecla} lado="esquerda">
+                  {botao}
+                </Dica>
+              ) : (
+                botao
+              );
+            })}
           </nav>
 
           <section className="re-acoes" aria-label="Levar adiante">

@@ -72,3 +72,5 @@
 .ds .re-trilho { box-shadow: var(--ds-edge), inset 0 1px 0 color-mix(in srgb, var(--re-tom) 60%, transparent); }
 .ds .re-corpo--compacto .re-estado { gap: 8px; padding: 12px 6px 10px; }
 .ds .re-corpo--compacto .re-nav, .ds .re-corpo--compacto .re-acoes { padding: 6px; }
+.ds .re-nav > .ds-dica-ancora { display: flex; }
+.ds .re-nav > .ds-dica-ancora > button { flex: 1; }

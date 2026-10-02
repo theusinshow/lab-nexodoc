@@ -5,6 +5,7 @@ import { AlertTriangle, ChevronDown, FileSearch, FileText, RotateCcw, X } from "
 import { useEffect, useRef, useState } from "react";
 
 import { Botao, Esqueleto, NumeroQueChega, Orbe, Selo } from "@/components/ds/basicos";
+import { SinoDeAviso } from "@/components/ds/micro";
 import { LinhaDoTempo, MapaDasPaginas, NiveisEmFaixa, type GrupoDoMapa, type PassoDaLinha } from "@/components/ds/graficos";
 import { CURVA } from "@/lib/ds/movimento";
 import { useTempo } from "@/lib/ds/tempo";
@@ -504,12 +505,7 @@ export function TelaAuditoria({ situacao, embutido = false }: { situacao: Situac
               Pode fechar a aba: a auditoria continua no servidor e fica em Continuar, no Painel. Quando terminar, o resultado abre aqui, com o
               veredito e a fila de achados.
             </span>
-            <label>
-              <button type="button" role="switch" aria-checked={aviso} className="au-chave" onClick={() => setAviso((a) => !a)}>
-                <motion.span animate={{ x: aviso ? 14 : 0 }} transition={{ type: "spring", stiffness: 520 / (k * k), damping: 40 / k }} />
-              </button>
-              Avisar por e-mail quando terminar
-            </label>
+            <SinoDeAviso ligado={aviso} onTroca={setAviso} rotulo="Me avise por e-mail quando terminar" ligadoRotulo="Vou avisar por e-mail quando terminar" />
           </footer>
         )}
       </div>

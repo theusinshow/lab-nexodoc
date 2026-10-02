@@ -5,6 +5,7 @@ import { Check, ChevronDown, ChevronUp, FileSearch, FileText, Link2, Mail, Searc
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Avatar, Botao, Menu, Segmento, Selo, Seletor, Tecla } from "@/components/ds/basicos";
+import { BotaoDoGrupo, GrupoDeBotoes } from "@/components/ds/micro";
 import { CURVA } from "@/lib/ds/movimento";
 import { useTempo } from "@/lib/ds/tempo";
 
@@ -477,7 +478,20 @@ export function Fila({
                 <span className="rs-sem-dono">Sem responsável</span>
               )}
               <Menu rotulo={atual.responsavel ? "Trocar" : "Atribuir a…"} variante="quiet" alinhar="left" itens={PESSOAS.map((p) => ({ rotulo: p.rotulo, onClick: () => onMudar(atual.id, atual.desfecho, p.valor) }))} />
-              <Botao key={atual.id} variante="ghost" tamanho="sm" className="rs-ver-memorial" title="Abre o memorial nesta página, com o trecho grifado (M)" onClick={() => onAbrirPagina?.(atual.id)}>
+              <Botao
+                key={atual.id}
+                variante="ghost"
+                tamanho="sm"
+                className="rs-ver-memorial"
+                title="Abre o memorial nesta página, com o trecho grifado (M)"
+                onClick={() => onAbrirPagina?.(atual.id)}
+                onPointerMove={(e) => {
+                  // a luz de dentro segue o ponteiro (ref.: Aurora Glow Button), só enquanto ele está em cima
+                  const r = e.currentTarget.getBoundingClientRect();
+                  e.currentTarget.style.setProperty("--mx", `${e.clientX - r.left}px`);
+                  e.currentTarget.style.setProperty("--my", `${e.clientY - r.top}px`);
+                }}
+              >
                 <FileSearch /> Ver no memorial, p. {atual.pagina} <Tecla>M</Tecla>
               </Botao>
             </div>
@@ -632,15 +646,17 @@ export function Fila({
               </motion.form>
             ) : (
               <motion.div key="botoes" className="rs-botoes" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: dur("feedback") }}>
-                <Botao variante="primary" tamanho="sm" onClick={() => encerrar("corrigido")}>
-                  <Check /> Marcar corrigido <Tecla>C</Tecla>
-                </Botao>
-                <Botao variante="ghost" tamanho="sm" onClick={() => setDecisao(true)}>
-                  Decisão técnica <Tecla>D</Tecla>
-                </Botao>
-                <Botao variante="ghost" tamanho="sm" onClick={() => encerrar("falso-positivo")}>
-                  Falso positivo <Tecla>F</Tecla>
-                </Botao>
+                <GrupoDeBotoes rotulo="Encerrar o achado">
+                  <BotaoDoGrupo principal tecla="C" curto="Corrigido" onClick={() => encerrar("corrigido")}>
+                    <Check /> Marcar corrigido
+                  </BotaoDoGrupo>
+                  <BotaoDoGrupo tecla="D" curto="Decisão" onClick={() => setDecisao(true)}>
+                    Decisão técnica
+                  </BotaoDoGrupo>
+                  <BotaoDoGrupo tecla="F" curto="Falso positivo" onClick={() => encerrar("falso-positivo")}>
+                    Falso positivo
+                  </BotaoDoGrupo>
+                </GrupoDeBotoes>
                 <span className="rs-atalhos" title="J próximo, K anterior">
                   <Tecla>J</Tecla>
                   <Tecla>K</Tecla> andam

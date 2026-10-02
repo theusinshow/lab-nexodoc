@@ -5,6 +5,7 @@ import { CircleAlert, Trash2 } from "lucide-react";
 import { useState } from "react";
 
 import { Botao } from "@/components/ds/basicos";
+import { BotaoDeSegurar } from "@/components/ds/micro";
 import { useTempo } from "@/lib/ds/tempo";
 
 import { OBRAS_GUARDADAS, PREVIA_088, megas } from "../admin/dados-pessoas-banco";
@@ -18,7 +19,7 @@ import { RITMO, SUAVE } from "../conversa/turnos";
  * botão, e o peso da confirmação cresce com o que se perde:
  *
  *   1. some das listas, fica no histórico        → uma frase e o verbo;
- *   2. apaga de verdade                          → faixa vermelha e o verbo inteiro;
+ *   2. apaga de verdade                          → faixa vermelha, e o botão se SEGURA (1,2 s);
  *   3. apaga muito, de vez, e além deste banco   → o que vai e o que fica, e a palavra.
  *
  * Em todos: o botão repete o verbo ("Excluir", nunca "OK"), a saída é a ação
@@ -103,9 +104,9 @@ export function Confirmacoes() {
             <Botao variante="ghost" tamanho="sm" onClick={() => setDois(false)}>
               Cancelar
             </Botao>
-            <Botao variante="primary" tamanho="sm" className="pb-perigo" onClick={() => setDois(false)}>
-              Excluir permanentemente
-            </Botao>
+            <BotaoDeSegurar feito="Excluídas" onConfirmar={() => setTimeout(() => setDois(false), 900)}>
+              <Trash2 size={14} /> Segure para excluir
+            </BotaoDeSegurar>
           </div>
         </Abre>
       </Nivel>

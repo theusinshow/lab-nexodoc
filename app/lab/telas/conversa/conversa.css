@@ -50,10 +50,18 @@
 .ds .cx-palavra { animation: cx-acender 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
 @keyframes cx-acender { from { opacity: 0; } }
 /* pensando: três pontos que respiram em onda, antes da primeira palavra */
-.ds .cx-pensando { display: inline-flex; gap: 4px; align-items: center; height: 22px; }
-.ds .cx-pensando i { width: 5px; height: 5px; border-radius: 50%; background: var(--ds-nexo); animation: cx-respirar 1.4s ease-in-out infinite; }
-.ds .cx-pensando i:nth-child(2) { animation-delay: 0.18s; }
-.ds .cx-pensando i:nth-child(3) { animation-delay: 0.36s; }
+.ds .cx-pensando { display: inline-flex; gap: 9px; align-items: center; height: 22px; font-size: 12.5px; color: var(--ds-text-secondary); }
+/* a linha do pensamento: os passos enquanto pensa, "Pensou por…" depois */
+.ds .cx-pensamento { display: grid; gap: 6px; }
+.ds .cx-pensou { display: inline-flex; align-items: center; gap: 6px; width: max-content; padding: 0; border: 0; background: none; font: inherit; font-size: 12.5px; color: var(--ds-text-tertiary); cursor: pointer; }
+.ds .cx-pensou:hover { color: var(--ds-text-secondary); }
+.ds .cx-pensou svg:first-child { color: var(--ds-state-ok); }
+.ds .cx-pensou-seta { display: inline-grid; }
+.ds .cx-pensamento-passos { display: grid; gap: 4px; margin: 0; padding: 0 0 0 2px; list-style: none; overflow: hidden; }
+.ds .cx-pensamento-passos li { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--ds-text-tertiary); }
+.ds .cx-pensamento-passos li svg { flex: none; color: var(--ds-text-tertiary); }
+.ds .cx-pensamento-passos li[data-da-vez] { color: var(--ds-text-secondary); }
+.ds .cx-pensamento-passos li[data-da-vez] i { width: 5px; height: 5px; margin: 0 3.5px; border-radius: 50%; background: var(--ds-nexo); }
 @keyframes cx-respirar { 0%, 80%, 100% { opacity: 0.25; } 40% { opacity: 1; } }
 /* copiar: aparece ao passar o mouse na resposta */
 .ds .cx-nexo-acoes { display: flex; margin-top: -8px; }
@@ -211,3 +219,51 @@
   .ds .cx-peca--nova::after, .ds .cx-peca-barra, .ds .cx-palavra, .ds .cx-lacuna--vazia, .ds .cx-cursor { animation: none; }
   .ds .cx-pensando i { animation-duration: 2.4s; }
 }
+
+/* ---------- como o Nexo trabalha: o seletor do campo ---------- */
+.ds .cx-modo-raiz { position: relative; display: inline-flex; }
+.ds .cx-modo-painel {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  z-index: 40;
+  display: grid;
+  gap: 2px;
+  width: 300px;
+  padding: 8px;
+  border-radius: 12px;
+  background: var(--ds-surface-overlay);
+  box-shadow: inset 0 0 0 1px var(--ds-line-default), 0 16px 36px -12px rgb(0 0 0 / 0.75);
+  transform-origin: bottom left;
+}
+.ds .cx-modo-titulo { margin: 2px 6px 6px; font-size: 11.5px; color: var(--ds-text-tertiary); }
+.ds .cx-modo-opcao { display: grid; gap: 3px; padding: 8px 10px; border: 0; border-radius: 8px; background: none; font: inherit; text-align: left; color: var(--ds-text-secondary); cursor: pointer; }
+.ds .cx-modo-opcao:hover { background: var(--ds-surface-raised); }
+.ds .cx-modo-opcao[aria-checked="true"] { background: var(--ds-surface-raised); box-shadow: inset 0 0 0 1px var(--ds-nexo-line); color: var(--ds-text-primary); }
+.ds .cx-modo-nome { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.ds .cx-modo-nome b { font-weight: 500; color: var(--ds-text-primary); }
+.ds .cx-modo-nome .ds-num { margin-left: auto; font-size: 11.5px; color: var(--ds-text-tertiary); }
+.ds .cx-modo-custo { display: inline-flex; gap: 2px; }
+.ds .cx-modo-custo i { width: 4px; height: 9px; border-radius: 1px; background: var(--ds-line-default); }
+.ds .cx-modo-custo i[data-aceso] { background: var(--ds-text-secondary); }
+.ds .cx-modo-faz { font-size: 12px; line-height: 1.45; color: var(--ds-text-tertiary); }
+
+/* ---------- enviando o arquivo (ref.: Call Chip) ----------
+   Ao anexar, o fundo da peça enche da esquerda (o envio) e o clipe vira visto:
+   resposta ao gesto de anexar, uma vez, e pronto. */
+.ds .cx-campo-peca { position: relative; isolation: isolate; }
+.ds .cx-campo-peca::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--ds-nexo) 14%, transparent);
+  transform: scaleX(0);
+  transform-origin: left;
+  animation: cx-enviar 1.4s cubic-bezier(0.3, 0, 0.2, 1) 0.2s forwards, cx-enviado 0.4s ease-out 1.6s forwards;
+  pointer-events: none;
+}
+@keyframes cx-enviar { to { transform: scaleX(1); } }
+@keyframes cx-enviado { to { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .ds .cx-campo-peca::before { animation: none; } }
