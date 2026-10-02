@@ -23,7 +23,7 @@ import type { AuditFinding, AuditReport } from "./audit-report";
  * Imports de VALOR relativos e com extensão, pelo mesmo motivo de
  * `lib/audit-report.ts`: a geração do papel é provada em node cru.
  */
-import { avaliarEmissao } from "./audit-report.ts";
+import { achadosConfirmados, avaliarEmissao } from "./audit-report.ts";
 import { findingCard } from "./audit-engine/finding-card.ts";
 import { rotuloDoAchado, textoComRotulos } from "./rotulo-do-achado.ts";
 
@@ -132,7 +132,7 @@ export function contagemPorImpacto(achados: readonly AuditFinding[]) {
  * sólido apagaria justamente a distinção que a validação existe para fazer.
  */
 export function blocosDoParecer(report: AuditReport): Bloco[] {
-  const achados = report.incongruencias.filter((f) => f.tier !== "sugestao");
+  const achados = achadosConfirmados(report.incongruencias);
   const conta = contagemPorImpacto(achados);
   const avaliacao = avaliarEmissao(report);
   const blocos: Bloco[] = [

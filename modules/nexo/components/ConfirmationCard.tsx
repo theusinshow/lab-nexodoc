@@ -44,6 +44,7 @@ import type { LightCheckResult } from "@/server/nexo/light-check-core";
 import type { SeloIdentityResult } from "@/server/nexo/selo-identity-core";
 import {
   avaliarEmissao,
+  achadosConfirmados,
   groupFindingsByImpact,
   type AuditReport,
 } from "@/lib/audit-report";
@@ -3118,7 +3119,8 @@ function AuditoriaAncora({
   const verdict = avaliarEmissao(report).veredito;
   const variant =
     verdict.emoji === "🔴" ? "critical" : verdict.emoji === "🟢" ? "ok" : "warning";
-  const porImpacto = groupFindingsByImpact(report.incongruencias);
+  // Só os confirmados, como o trilho e o rótulo acima (`camada-do-achado.ts`).
+  const porImpacto = groupFindingsByImpact(achadosConfirmados(report.incongruencias));
 
   return (
     <div className="flex flex-col gap-2 rounded-md border border-border bg-[var(--nexodoc-recessed)] p-3">

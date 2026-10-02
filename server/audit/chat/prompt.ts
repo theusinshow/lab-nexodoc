@@ -9,6 +9,7 @@
  */
 import type { AuditReport } from "../../../lib/audit-report.ts";
 import { incompletudeDoParecer } from "../../../lib/auditoria-incompleta.ts";
+import { achadosConfirmados } from "../../../lib/camada-do-achado.ts";
 import { achadoComRotulos } from "../../../lib/rotulo-do-achado.ts";
 
 export function instrucoesDoAdvogado(args: { temMemoria: boolean }): string {
@@ -66,7 +67,14 @@ finja ter lido.`;
  * "INC-014" e a conversa usa um nome que a tela não usa mais.
  */
 function parecerComRotulos(report: AuditReport): AuditReport {
-  return { ...report, incongruencias: (report.incongruencias ?? []).map(achadoComRotulos) };
+  return {
+    ...report,
+    // O total é o de CONFIRMADOS, o mesmo da tela (`camada-do-achado.ts`); o
+    // cru da corrida somava as sugestões e o modelo respondia "62 achados" ao
+    // lado de um trilho com 56.
+    total_incongruencias: achadosConfirmados(report.incongruencias ?? []).length,
+    incongruencias: (report.incongruencias ?? []).map(achadoComRotulos),
+  };
 }
 
 export function primeiraEntrada(args: {
@@ -91,8 +99,16 @@ ATENÇÃO — ${incompleta.titulo}. ${incompleta.explicacao} Diga isso ao engenh
 `
     : "";
 
+  const confirmados = achadosConfirmados(args.report.incongruencias ?? []).length;
+  const sugestoes = (args.report.incongruencias ?? []).length - confirmados;
+  const contagem = sugestoes > 0
+    ? `
+CONTAGEM: este parecer tem ${confirmados} achados confirmados. Os ${sugestoes} itens com "tier": "sugestao" (ou confiança baixa) são sugestões da IA que a validação rebaixou: não são achados e não entram em nenhuma contagem; fale deles só como sugestões, se perguntarem.
+`
+    : "";
+
   return `
-Parecer desta auditoria:${aviso}
+Parecer desta auditoria:${aviso}${contagem}
 ${JSON.stringify(parecerComRotulos(args.report), null, 2)}
 
 Histórico recente da conversa:

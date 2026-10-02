@@ -63,6 +63,7 @@ import {
   classifyFindingDiscipline,
   classifyFindingErrorType,
   classifyFindingImpact,
+  achadosConfirmados,
   classifyFindingTier,
   getDisciplineLabel,
   avaliarEmissao,
@@ -1966,7 +1967,7 @@ export function AuditResult({
     report && emissao?.estado === "incompleto" && incompletudeDoParecer(report).incompleta,
   );
   const groupedReportFindings = report
-    ? groupFindingsByImpact(report.incongruencias)
+    ? groupFindingsByImpact(achadosConfirmados(report.incongruencias))
     : null;
   const groupedStructuredFindings = {
     critico_documental: findingsWithPdf.filter(
@@ -1983,8 +1984,13 @@ export function AuditResult({
         (!finding.impacto && finding.severity !== "critical"),
     ),
   };
-  const findingsText = buildFindingsText(findingsWithPdf);
-  const actionsText = buildActionsText(findingsWithPdf);
+  /*
+   * O TEXTO DO PARECER conta e lista só os confirmados (`camada-do-achado.ts`),
+   * como o PDF. Somava as sugestões: "BLOQUEIA A EMISSÃO (7) · EXIGE DECISÃO
+   * (41) · REVISÃO (14)" dava 62 ao lado do "56 achados".
+   */
+  const findingsText = buildFindingsText(principalFindingsWithPdf);
+  const actionsText = buildActionsText(principalFindingsWithPdf);
   const uniqueDocumentCount = countUniqueDocuments(findingsWithPdf);
   const evidenceLinkCount = findingsWithPdf.filter(
     (finding) => finding.pdfUrl,
@@ -2039,7 +2045,7 @@ export function AuditResult({
         },
         {
           label: "Total de achados",
-          value: String(report.total_incongruencias),
+          value: String(achadosConfirmados(report.incongruencias).length),
         },
       ]
     : parseProjectFields(parsed.project);

@@ -16,6 +16,7 @@ import type { Prisma } from "@prisma/client";
 import type { AnalysisLevel } from "@/lib/analysis-level";
 import type { AuditMode } from "@/lib/audit-mode";
 import type { AuditReport } from "@/lib/audit-report";
+import { achadosConfirmados } from "@/lib/camada-do-achado";
 import {
   INTERVALO_DE_BATIMENTO_MS,
   MOTIVO_SEM_SINAL,
@@ -174,7 +175,8 @@ export async function persistCompletedAudit(args: {
           result: args.result,
           report: args.report as Prisma.InputJsonValue,
           elapsedMs: args.elapsedMs,
-          totalFindings: args.report.total_incongruencias,
+          // Só os confirmados: é o número do Painel e do Admin (`camada-do-achado.ts`).
+          totalFindings: achadosConfirmados(args.report.incongruencias).length,
           completedAt: new Date(),
         },
       });
@@ -271,7 +273,7 @@ export async function persistCompletedAudit(args: {
           metadata: {
             auditMode: args.report.tipo_auditoria,
             analysisLevel: args.report.runtime?.nivel_analise,
-            totalFindings: args.report.total_incongruencias,
+            totalFindings: achadosConfirmados(args.report.incongruencias).length,
           },
         });
       }, PRAZO_DA_ETAPA),

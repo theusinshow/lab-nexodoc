@@ -12,6 +12,7 @@ import type { TextoCorrigido } from "./texto-corrigido.ts";
  */
 import { ehLeituraDoDocumentoPelaIa, incompletudeDoParecer } from "./auditoria-incompleta.ts";
 import { plural } from "./plural.ts";
+import { classifyFindingTier, type FindingTier } from "./camada-do-achado.ts";
 import { rotuloDoAchado, textoComRotulos } from "./rotulo-do-achado.ts";
 
 /**
@@ -126,23 +127,9 @@ export type AuditFinding = {
   motor?: EngineFindingV1;
 };
 
-export type FindingTier = "principal" | "sugestao";
-
-// Regra de camada para a UI de duas camadas (itens 2 e 4):
-// - achado de regra é sempre principal (verificado, não alucina);
-// - achado de IA explicitamente rebaixado pela validação vai pra "sugestao";
-// - achado de IA de baixa confiança também é sugestão.
-export function classifyFindingTier(finding: AuditFinding): FindingTier {
-  if (finding.origem === "regra") {
-    return "principal";
-  }
-
-  if (finding.tier) {
-    return finding.tier;
-  }
-
-  return finding.confianca === "baixa" ? "sugestao" : "principal";
-}
+// A regra de camada mora em `camada-do-achado.ts` (a contagem é só de confirmados).
+export type { FindingTier } from "./camada-do-achado.ts";
+export { achadosConfirmados, classifyFindingTier } from "./camada-do-achado.ts";
 
 /**
  * QUANTO DO DOCUMENTO PASSOU PELO MODELO nesta corrida.

@@ -23,6 +23,7 @@ import {
 } from "@/lib/ai-providers";
 import { executeOpenAiResponse } from "@/lib/ai-runner";
 import type { AuditReport } from "@/lib/audit-report";
+import { achadosConfirmados } from "@/lib/camada-do-achado";
 import type { Actor } from "@/lib/actor";
 import { getPrisma, isDatabaseConfigured } from "@/lib/db";
 import { carregarMemoriaDoDocumento } from "@/lib/memoria-do-documento";
@@ -124,7 +125,7 @@ async function gravarAchadoNoParecer(auditId: string, report: AuditReport, actor
       where: auditByIdWhereForActor(auditId, actor),
       data: {
         report: report as never,
-        totalFindings: report.total_incongruencias,
+        totalFindings: achadosConfirmados(report.incongruencias).length,
       },
     });
   } catch (error) {
