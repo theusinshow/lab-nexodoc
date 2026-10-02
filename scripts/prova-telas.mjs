@@ -132,6 +132,33 @@ const telas = [
     await p.waitForTimeout(3000);
     ok(/\/projetos\/[^/]+$/.test(new URL(p.url()).pathname), "projetos: Enter entra na obra", new URL(p.url()).pathname);
   }],
+  ["projeto", async () => {
+    await abrir("/projetos");
+    await p.locator(".pj-busca input").fill("117-25");
+    await p.waitForTimeout(400);
+    await p.locator(".pj-grade .mp-g-linha").first().dblclick();
+    await p.waitForTimeout(4000);
+    ok((await p.locator(".md-raiz .mp.pr").count()) === 1, "projeto: a tela nova dentro da moldura", new URL(p.url()).pathname);
+    ok((await p.locator(".pr-tarefa").count()) === 4, "projeto: as quatro tarefas no topo");
+    ok((await p.locator(".mp-lado-titulo").first().innerText()).length > 0, "projeto: o lado abre com o que fazer agora", await p.locator(".mp-lado-titulo").first().innerText());
+    await p.mouse.click(5, LARGURA * 0.5);
+    for (const [n, nome] of [["1", "Documentos"], ["2", "Arquivos"], ["3", "Gerados"], ["4", "Eventos"]]) {
+      await tecla(n);
+      ok(new RegExp(nome).test(await p.locator(".mp-abas [aria-selected=true]").innerText()), `projeto: ${n} abre ${nome}`, String(await p.locator(".pr-grade .mp-g-linha").count()));
+    }
+    await tecla("j");
+    ok((await p.locator(".pj-obra-nome").count()) === 1, "projeto: J escolhe o evento e mostra o lado dele");
+    await p.screenshot({ path: `${OUT}/projeto-evento-${LARGURA}.png` });
+    await p.locator("button", { hasText: "Configurações" }).click();
+    await p.waitForTimeout(600);
+    ok((await p.locator(".mp-form input.mp-mono").inputValue()) === "117-25", "projeto: Configurações abre com os dados da obra");
+    await p.screenshot({ path: `${OUT}/projeto-config-${LARGURA}.png` });
+    await p.locator(".mp-form button", { hasText: "Cancelar" }).click();
+    await p.waitForTimeout(500);
+    await p.locator(".pr-tarefa[data-tarefa=auditoria]").click();
+    await p.waitForTimeout(3000);
+    ok(new URL(p.url()).pathname === "/nexo", "projeto: a tarefa Auditoria leva ao Nexo", p.url().replace(BASE, ""));
+  }],
 ];
 
 for (const [nome, rodar] of telas) {
