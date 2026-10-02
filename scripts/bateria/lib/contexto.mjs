@@ -266,6 +266,23 @@ export async function criarContexto({ browser, base }) {
       return Boolean(await condicao());
     },
 
+    /**
+     * Espera o SERVIDOR já ter a auditoria (GET /api/audits/<id> sem 404).
+     *
+     * O bilhete no disco nasce no clique, antes de o POST chegar a registrar a
+     * auditoria. Um F5 nessa janela corta o pedido antes de ele existir no
+     * servidor, e a reconexão só acha 404 — na CI, mais lenta, isso derrubava
+     * a x1 de vez em quando (02/10/2026). Quem quer provar "F5 com a análise
+     * rodando no servidor" espera ela estar lá.
+     */
+    async esperarAuditoriaNoServidor(auditId, ms = 30_000) {
+      return this.esperar(
+        async () => (await page.evaluate(async (id) => (await fetch(`/api/audits/${id}`)).status, auditId)) !== 404,
+        ms,
+        500,
+      );
+    },
+
     verificar(nome, condicao, detalhe = "") {
       if (condicao) console.log(`      ok  ${nome}`);
       else {

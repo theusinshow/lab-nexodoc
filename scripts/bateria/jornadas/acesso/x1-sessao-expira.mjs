@@ -30,6 +30,12 @@ export default {
       JSON.stringify(bilhete),
     );
     if (!bilhete?.auditId) return;
+    // O F5 só prova a reconexão se a análise JÁ existe no servidor (ver o auxiliar).
+    ctx.verificar(
+      "a auditoria já está no servidor antes do F5",
+      await ctx.esperarAuditoriaNoServidor(bilhete.auditId),
+      bilhete.auditId,
+    );
 
     // Conta as perguntas por GET /api/audits/<id> a partir do F5 (a aba que
     // dispara não se reconecta a si mesma — antes do F5 não há pergunta
