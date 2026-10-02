@@ -51,6 +51,13 @@ export default {
     await ctx.login();
     const agora = Date.now();
     const semeadas = new Set();
+    // AS DO SERVIDOR NÃO SÃO FANTASMA (02/10/2026): o usuário da bateria é o
+    // mesmo em todas as jornadas, e a conversa que a c5 cria sobe para o
+    // servidor; a barra desta página a baixa para o disco quando a lista chega.
+    // Na corrida inteira isso caía antes ou depois da checagem conforme a carga,
+    // e a c6 acusava "uma conversa a mais" que não era dela. Um fantasma desta
+    // jornada nasce depois desta leitura, então continua sendo pego.
+    for (const c of await page.evaluate(async () => (await (await fetch("/api/nexo/conversas")).json()).conversas ?? [])) semeadas.add(c.id);
     const ultima = () => page.evaluate(() => localStorage.getItem("nexo:ultima-conversa"));
     const ler = async (id) => (await ctx.indexeddb.lerConversas()).find((c) => c.id === id);
     const extras = async () =>
