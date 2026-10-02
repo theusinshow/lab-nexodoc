@@ -159,9 +159,13 @@ if (QUAL === "volume" || QUAL === "tudo") {
     const habilitado = await montar.first().isEnabled();
     log(`  botão Montar volume habilitado=${habilitado}`);
     if (habilitado) {
-      const [baixa] = await Promise.all([p.waitForEvent("download", { timeout: 240_000 }).catch(() => null), montar.first().click()]);
-      const feito = baixa || (await esperar(async () => (await p.getByText(/Volume montado|volume montado/).count()) > 0, 120_000, 2000));
-      ok(Boolean(feito), "o volume foi montado", baixa ? `download ${baixa.suggestedFilename()}` : "");
+      // O volume montado fica no app (não baixa sozinho): olhar a tela e o download juntos.
+      let baixa = null;
+      p.once("download", (d) => (baixa = d));
+      const t0 = Date.now();
+      await montar.first().click();
+      const feito = await esperar(async () => baixa != null || (await p.getByText(/Volume montado|volume montado/).count()) > 0, 240_000, 1000);
+      ok(Boolean(feito), "o volume foi montado", `${Math.round((Date.now() - t0) / 1000)}s${baixa ? ` download ${baixa.suggestedFilename()}` : ""}`);
     }
   }
   await p.waitForTimeout(2000);

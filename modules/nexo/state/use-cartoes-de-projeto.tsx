@@ -27,6 +27,7 @@ import {
   type ConversaResumida,
 } from "../lib/cartoes-de-projeto";
 import type { ConversationSummary } from "../lib/nexo-db";
+import { useConversation } from "./conversation-store";
 
 /** O que o servidor sabe e o disco não: código, cliente, folhas, artefatos. */
 type ResumoDoServidor = ConversaResumida;
@@ -109,6 +110,17 @@ export function useCartoesDeProjeto(
     };
   }, [faltaCodigo, projetos]);
 
+  /*
+   * A CONVERSA ABERTA FALA POR SI (teste real de 02/10/2026). O resumo é uma
+   * foto do servidor tirada na montagem; a conversa em que se está trabalhando
+   * agora — 7 folhas lidas, LD, capa, volume montado — seguia "em branco" na
+   * barra até o F5, e a pasta contava as folhas de antes. Folhas e artefatos
+   * dela vêm do store, que é o que está na tela.
+   */
+  const { conversationId, seloResults, results } = useConversation();
+  const folhasDaAberta = seloResults.length;
+  const kindsDaAberta = useMemo(() => [...new Set(results.map((r) => r.kind))].sort().join(","), [results]);
+
   useEffect(() => {
     let vivo = true;
     buscarResumo().then((r) => {
@@ -147,10 +159,10 @@ export function useCartoesDeProjeto(
         tipo: c.tipo ?? null,
         updatedAt: c.updatedAt,
         auditoriaPendente: c.temAuditoriaPendente,
-        folhas: r?.folhas ?? 0,
-        kinds: r?.kinds ?? [],
+        folhas: c.id === conversationId ? folhasDaAberta : (r?.folhas ?? 0),
+        kinds: c.id === conversationId ? (kindsDaAberta ? kindsDaAberta.split(",") : []) : (r?.kinds ?? []),
       };
     });
     return cartoesDeProjeto(cruas);
-  }, [conversations, resumo, projetos]);
+  }, [conversations, resumo, projetos, conversationId, folhasDaAberta, kindsDaAberta]);
 }

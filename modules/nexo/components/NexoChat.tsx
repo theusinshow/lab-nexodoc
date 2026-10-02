@@ -729,7 +729,14 @@ export function NexoChat({
             selosLidos={selosLidos}
             lendo={Boolean(readStatus?.busy)}
           />
-          {readStatus && (
+          {/*
+            SÓ ENQUANTO LÊ (teste real de 02/10/2026). Depois da leitura, "7
+            folhas de selo lidas — pronto para gerar" ficava aqui com a LD, a
+            capa e o volume já prontos: a frase envelhecia no lugar mais visto
+            da coluna. O resultado da leitura já está no fio (a resposta do
+            Nexo) e no mapa; o memorial anexado, no chip dele.
+          */}
+          {readStatus?.busy && (
             <div className="mb-2 space-y-1.5 px-1">
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 {readStatus.busy && (
@@ -782,8 +789,13 @@ export function NexoChat({
   );
 }
 
-/** Acima disto a lista vira uma parede de chips e some com a conversa. */
-const ANEXOS_VISIVEIS = 4;
+/**
+ * Acima disto a lista vira uma parede de chips e some com a conversa. Três, e
+ * não quatro (teste real de 02/10/2026): na coluna do chat cabem dois chips por
+ * linha, e a bandeja tem duas linhas — com quatro, o "+N arquivos" caía numa
+ * terceira, cortada, e sete pranchas pareciam duas.
+ */
+const ANEXOS_VISIVEIS = 3;
 
 /**
  * Anexos do turno. Um projeto real chega com dezenas de PDFs (uma prancha por
@@ -863,14 +875,14 @@ function TitulosLidos({ selos }: { selos: SeloForLd[] }) {
     <div className="mb-2 space-y-0.5 px-1">
       {linhas.map(([titulo, folhas]) => (
         <div key={titulo || "(vazio)"} className="flex items-baseline gap-2 text-xs">
-          <span className="shrink-0 font-mono tabular-nums text-muted-foreground">
+          <span className="ds-num shrink-0 text-muted-foreground">
             {folhas} folha{folhas > 1 ? "s" : ""}
           </span>
           <span
             className={
               titulo
-                ? "truncate font-mono text-foreground"
-                : "truncate font-mono italic text-muted-foreground"
+                ? "truncate text-foreground"
+                : "truncate italic text-muted-foreground"
             }
             title={titulo || "sem título no selo"}
           >
