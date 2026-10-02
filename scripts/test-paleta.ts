@@ -78,7 +78,7 @@ test("normalizar tira acento e caixa", () => {
 
 test("G02: termos do trabalho acham a funcao ou dizem onde ela fica", () => {
   for (const [termo, id] of [
-    ["anexo", "onde:anexo"],
+    // "anexo" saiu com a montagem manual (/volumes, 01/10/2026)
     ["capa", "partida:capa"],
     ["LD", "partida:ld"],
     ["separatriz", "onde:separatriz"],
