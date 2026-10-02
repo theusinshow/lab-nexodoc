@@ -136,3 +136,6 @@
   transform-origin: top center;
 }
 .ds .cf-suspensa-painel .cf-corpo { height: 380px; }
+
+/* a barra inteira é o contexto do foco: sem anel solto no campo */
+.ds .cf-entrada input:focus-visible:focus-visible { box-shadow: none; }

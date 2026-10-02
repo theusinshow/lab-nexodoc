@@ -1,0 +1,27 @@
+/* Os esqueletos das telas: nas medidas das telas prontas (mp-* vem do mapa.css). Veio do lab: app/lab/telas/_comum/esqueletos.css. */
+
+.ds .sk { min-height: 100%; background: var(--ds-surface-page); }
+.ds .sk-pilha { display: grid; align-content: start; }
+.ds .sk-fila { display: flex; align-items: center; }
+.ds .sk-cartao { border-radius: 16px; background: var(--ds-surface-card); box-shadow: var(--ds-edge); }
+
+.ds .sk-linhas { display: grid; padding: 4px 0; }
+.ds .sk-linha { display: grid; align-items: center; gap: 16px; height: 40px; padding: 0 20px; border-top: 1px solid var(--ds-line-subtle); }
+.ds .sk-linha:first-child { border-top: 0; }
+.ds .sk-cartao .sk-linha { padding: 0; }
+.ds .sk-tile { display: grid; gap: 9px; padding: 16px 20px 18px; border-right: 1px solid var(--ds-line-subtle); flex: 0 0 260px; }
+
+.ds .sk-grade4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.ds .sk-grade5 { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+.ds .sk-colunas { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 12px; }
+
+.ds .sk-inicio { display: grid; gap: 16px; width: min(1040px, calc(100% - 64px)); margin: 0 auto; padding: 44px 0 40px; }
+.ds .sk-resultado { display: grid; gap: 22px; padding: 24px 80px 40px; }
+.ds .sk-resultado-grade { display: grid; grid-template-columns: minmax(0, 1fr) 240px; gap: 20px; align-items: start; }
+.ds .sk-auditoria { display: grid; gap: 12px; width: min(1120px, calc(100% - 64px)); margin: 0 auto; padding: 32px 0 40px; }
+
+.ds .sk-canvas { min-height: 480px; }
+.ds .sk-nexo { display: grid; grid-template-columns: 240px minmax(0, 1fr) 430px; height: calc(100vh - 64px); border-top: 1px solid var(--ds-line-subtle); }
+.ds .sk-nexo > aside:first-child { border-right: 1px solid var(--ds-line-subtle); }
+.ds .sk-nexo > aside:last-child { border-left: 1px solid var(--ds-line-subtle); }
+.ds .sk-conversa { display: grid; gap: 18px; justify-items: center; width: min(720px, calc(100% - 64px)); margin: 24vh auto 0; }

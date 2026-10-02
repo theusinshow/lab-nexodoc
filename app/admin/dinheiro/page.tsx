@@ -1,32 +1,28 @@
 "use client";
 
-import { formatarDiaDeCalendario, formatarEmBrasilia } from "@/lib/fuso-de-brasilia";
-import { Activity, BarChart3, Coins, Loader2, RefreshCcw, ShieldCheck, Sigma, Wallet } from "lucide-react";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { Info } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 
-import { AvisoDaCarga } from "@/components/admin/aviso-da-carga";
-import { classificarFalha, faseDaCarga, type FalhaDaCarga } from "@/lib/estado-da-carga";
-import {
-  AdminMetricStrip,
-  AdminPageHeader,
-  AdminPageShell,
-} from "@/components/admin/admin-page-shell";
 import { useAdminToken } from "@/components/admin/admin-token";
-import { CorpoDosControles } from "@/components/admin/conteudo/controles";
-import { CorpoDaCotacao } from "@/components/admin/conteudo/cotacao";
-import { TituloDaSecao } from "@/components/admin/admin-page-shell";
-import { Button } from "@/components/ui/button";
-import { Select } from "@/components/ui/select";
-import {
-  COTACAO_NAO_DECLARADA,
-  formatarReais,
-  procedenciaDaCotacao,
-  type CotacaoDeclarada,
-} from "@/lib/cambio";
+import { Segmento } from "@/components/ds/basicos";
+import { BarraDividida, BarraEmbutida, OndaDeGasto } from "@/components/ds/medidas";
+import { useCabecaDoAdmin } from "@/components/telas/admin/casca";
+import { BlocoDaCotacao } from "@/components/telas/admin/cotacao";
+import { AvisoDaCarga, Bloco, NumeroDoPeriodo } from "@/components/telas/admin/pecas";
+import { TetosDeGasto } from "@/components/telas/admin/tetos";
+import { COTACAO_NAO_DECLARADA, formatarReais, type CotacaoDeclarada } from "@/lib/cambio";
 import type { CustoDaObra } from "@/lib/custo-por-obra";
+import { classificarFalha, faseDaCarga, type FalhaDaCarga } from "@/lib/estado-da-carga";
+import { formatarDiaDeCalendario } from "@/lib/fuso-de-brasilia";
 import { plural } from "@/lib/plural";
-import { cn } from "@/lib/utils";
-import { ESCALA_DE_DADO as escalaDeDado } from "@/modules/nexo/lib/escala-de-dado";
+
+/** De onde vem a linha de uma obra — dito por extenso, nunca em cor de status. */
+const ORIGEM_DA_OBRA: Record<string, string> = {
+  pasta: "pasta",
+  conversa: "conversa avulsa",
+  "conversa-removida": "a conversa não existe mais",
+  "sem-vinculo": "consumo sem conversa (auditoria fora do Nexo, manutenção)",
+};
 
 type AdminUsageResponse = {
   range: {
@@ -74,6 +70,8 @@ type AdminUsageResponse = {
   };
   /** A cotação declarada em `/admin/config`; ausente = tela em dólar. */
   cotacao?: CotacaoDeclarada;
+  /** O gasto registrado no mês de Brasília (null sem banco), contra o teto do sistema. */
+  gastoDoMesUsd?: number | null;
   /**
    * Preenchido quando falta `OPENAI_ADMIN_KEY`: a fatura do provedor não vem,
    * mas o consumo interno e o custo por obra (que saem do banco) vêm.
@@ -161,18 +159,6 @@ function formatUsd(value: number | null | undefined) {
   return formatCurrency(value ?? 0, "usd");
 }
 
-function getMaxDailyValue(data: AdminUsageResponse | null) {
-  if (!data) {
-    return 1;
-  }
-
-  return Math.max(
-    1,
-    ...data.costs.daily.map((day) => day.amount),
-    ...data.usage.daily.map((day) => day.inputTokens + day.outputTokens),
-  );
-}
-
 function isErrorPayload(
   payload: AdminUsageResponse | { error?: string },
 ): payload is { error?: string } {
@@ -207,7 +193,6 @@ export default function AdminUsagePage() {
         ? "Não carregado — veja o aviso no topo."
         : "Carregando…";
   const apiUrl = getApiUrl();
-  const maxDailyValue = getMaxDailyValue(data);
   const cotacao = data?.cotacao ?? COTACAO_NAO_DECLARADA;
   const obras = data?.internalUsage?.obras ?? [];
   const totalTokens = useMemo(() => {
@@ -260,11 +245,6 @@ export default function AdminUsagePage() {
     setIsLoading(false);
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    void loadUsage();
-  }
-
   useEffect(() => {
     if (!restaurado || !token.trim()) return;
     /*
@@ -276,490 +256,272 @@ export default function AdminUsagePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, restaurado, recarga, days]);
 
+  const comChave = Boolean(data && !data.semChaveDaOpenAi);
+  const brl = (usd: number) => formatarReais(usd, cotacao);
+  const usd = (v: number) => formatUsd(v);
+  const custoDoDia = new Map((data?.costs.daily ?? []).map((d) => [d.date, d.amount]));
+  const diasDoUso = data?.usage.daily ?? [];
+  const interno = data?.internalUsage;
+  const maxObra = Math.max(0, ...obras.map((o) => o.estimatedCostUsd));
+  const maxFluxo = Math.max(0, ...(interno?.flows ?? []).map((x) => x.estimatedCostUsd));
+  const maxTarefa = Math.max(0, ...(interno?.tasks ?? []).map((x) => x.estimatedCostUsd));
+  const itens = [...(data?.costs.lineItems ?? [])].sort((a, b) => b.amount - a.amount);
+  const tokensDoModelo = (m: AdminUsageResponse["usage"]["models"][number]) => m.inputTokens + m.outputTokens;
+  const totais = data?.usage.totals;
+
+  useCabecaDoAdmin({
+    atualizadoEm: data?.generatedAt,
+    carregando: isLoading,
+    extra: <Segmento rotulo="Período" valor={String(days)} onTroca={(v) => setDays(Number(v))} opcoes={[7, 14, 30].map((p) => ({ valor: String(p), rotulo: `${p} dias` }))} />,
+  });
+
   return (
-    <AdminPageShell maxWidth="max-w-6xl">
-      <AdminPageHeader
-        icon={ShieldCheck}
-        title="Dinheiro"
-        description="Quanto custou, contra que teto, e por obra. A fatura do provedor e o consumo interno, que vem do nosso banco."
-        actions={
-          /*
-           * O SELETOR DE PERIODO FICA; o campo de token foi para o trilho.
-           * Eles viviam no mesmo formulario -- o token era obrigatorio e o
-           * periodo era passageiro dele --, e por isso o `AdminTokenForm`
-           * precisava carregar `children`. Separados, o controle principal
-           * desta tela ocupa o lugar que era do campo de senha.
-           *
-           * A troca de periodo nao busca a mao: o efeito de carga tem `days`
-           * nas dependencias.
-           */
-          <Select
-            value={days}
-            onChange={(event) => setDays(Number(event.target.value))}
-            className="h-9 w-[140px]"
-            aria-label="Periodo"
-          >
-            <option value={7}>7 dias</option>
-            <option value={14}>14 dias</option>
-            <option value={30}>30 dias</option>
-          </Select>
-        }
-      />
+    <>
+      <AvisoDaCarga fase={fase} erro={erro?.tipo} detalhe={erro?.detalhe} oque="o consumo e os custos" atualizadoEm={data?.generatedAt} onTentar={() => void loadUsage()} />
 
-        <AvisoDaCarga
-          fase={fase}
-          erro={erro?.tipo}
-          detalhe={erro?.detalhe}
-          oque="o consumo e os custos"
-          atualizadoEm={data?.generatedAt}
-          onTentar={() => void loadUsage()}
+      {/*
+        O TETO ABRE A TELA, e não fecha: o gasto do mês sem mostrar contra o quê
+        não responde "posso rodar mais uma auditoria profunda hoje?". A cotação
+        mora ao lado do consumo que ela converte.
+      */}
+      <div className="din-topo">
+        <TetosDeGasto gastoDoMesUsd={data?.gastoDoMesUsd ?? null} cotacao={cotacao} />
+        <BlocoDaCotacao onMudou={() => void loadUsage()} />
+      </div>
+
+      {/* A falta da chave da OpenAI é aviso, não erro: o que vem do banco continua na tela. */}
+      {data?.semChaveDaOpenAi && (
+        <div className="adm-aviso adm-aviso--info" role="status">
+          <Info size={15} aria-hidden />
+          <p>{data.semChaveDaOpenAi}</p>
+        </div>
+      )}
+
+      {/* O real vem colado no dólar, nunca no lugar dele; sem cotação, só dólar. */}
+      <section className="adm-numeros din-numeros" aria-label="Fatura do provedor no período">
+        <NumeroDoPeriodo
+          rotulo="Gasto"
+          valor={comChave && data ? formatCurrency(data.costs.total.amount, data.costs.total.currency) : "—"}
+          detalhe={comChave && data ? [brl(data.costs.total.amount), `últimos ${days} dias`].filter(Boolean).join(" · ") : data ? "sem a chave da OpenAI" : semResposta}
+          serie={comChave ? diasDoUso.map((d) => custoDoDia.get(d.date) ?? 0) : undefined}
         />
-
-        {/*
-          O TETO ABRE A TELA, e não fecha: o painel mostrava o gasto do mês sem
-          mostrar contra o quê. Um número sem régua ao lado não é resposta para
-          "posso rodar mais uma auditoria profunda hoje?".
-        */}
-        <section className="flex flex-col gap-4">
-          <TituloDaSecao
-            icon={Wallet}
-            titulo="Teto de gasto"
-            descricao="Barreira de entrada: mede o que já foi registrado, então não freia auditoria em voo. Vazio = sem teto."
-          />
-          <CorpoDosControles chaves={["teto.mensal.usd", "teto.global.usd"]} />
-        </section>
-
-        {/*
-          A COTAÇÃO VEIO DA CONFIG. Ela morava lá entre o teste de conectividade
-          e a lista de chaves, e não é configuração de motor: é o câmbio que
-          traduz a fatura no número que decide se vale rodar. Pertence ao lado do
-          consumo que ela converte.
-        */}
-        <CorpoDaCotacao />
-
-        {/*
-          A PROCEDÊNCIA DO REAL, acima de tudo que ele toca. Um número
-          convertido sem dizer por qual cotação e de quando é exatamente o tipo
-          de "quase certo" que este produto recusa em documento — não teria por
-          que aceitar no próprio painel.
-        */}
-        {/*
-          A falta da chave da OpenAI é AVISO, não erro: o que depende dela vem
-          vazio, o que vem do banco continua na tela.
-        */}
-        {data?.semChaveDaOpenAi ? (
-          <p className="nx-cut-6 bg-[var(--signal-info-bg)] px-3 py-2 font-mono text-[11px] text-[var(--signal-info)]">
-            {data.semChaveDaOpenAi}
-          </p>
-        ) : null}
-
-        {/*
-          A PROCEDÊNCIA FICA; O CONVITE SAIU. Ele mandava "declarar em
-          Configurações" — uma tela que deixou de existir, e cuja seção de
-          cotação agora está NESTA MESMA página, algumas dobras acima. Um link
-          que atravessa o painel para chegar onde a pessoa já está é pior que
-          nenhum.
-        */}
-        {/* Sem resposta, não há procedência a afirmar — nem "não declarada" (P02). */}
-        {data ? (
-          <p className="font-mono text-[11px] text-muted-foreground">
-            {procedenciaDaCotacao(cotacao, new Date())}
-          </p>
-        ) : null}
-
-        {/*
-          O REAL VEM COLADO NO DÓLAR, nunca no lugar dele: a fatura é em dólar e
-          continua sendo o número auditável. Sem cotação declarada,
-          `formatarReais` devolve "" e a linha volta a ser só o período — é
-          assim que a tela evita inventar um real.
-        */}
-        <AdminMetricStrip
-          columns="md:grid-cols-2 xl:grid-cols-4"
-          metrics={[
-            {
-              label: "Gasto",
-              icon: Coins,
-              value: data ? formatCurrency(data.costs.total.amount, data.costs.total.currency) : "—",
-              detail:
-                data && formatarReais(data.costs.total.amount, cotacao)
-                  ? `${formatarReais(data.costs.total.amount, cotacao)} · últimos ${days} dias`
-                  : `Últimos ${days} dias`,
-            },
-            {
-              label: "Tokens",
-              icon: Sigma,
-              value: data ? formatNumber(totalTokens) : "—",
-              detail: data
-                ? `${formatNumber(data.usage.totals.inputTokens)} entrada / ${formatNumber(data.usage.totals.outputTokens)} saída`
-                : "Aguardando consulta",
-            },
-            {
-              label: "Chamadas",
-              icon: Activity,
-              value: data ? formatNumber(data.usage.totals.requests) : "—",
-              detail: "Chamadas de modelo registradas pela OpenAI",
-            },
-            {
-              label: "Cache",
-              icon: BarChart3,
-              value: data ? formatNumber(data.usage.totals.cachedTokens) : "—",
-              detail: "Tokens de entrada com cache",
-            },
-          ]}
+        <NumeroDoPeriodo
+          rotulo="Tokens"
+          valor={comChave ? formatNumber(totalTokens) : "—"}
+          detalhe={comChave && totais ? `${formatNumber(totais.inputTokens)} entrada / ${formatNumber(totais.outputTokens)} saída` : data ? "sem a chave da OpenAI" : semResposta}
+          serie={comChave ? diasDoUso.map((d) => d.inputTokens + d.outputTokens) : undefined}
         />
+        <NumeroDoPeriodo
+          rotulo="Chamadas"
+          valor={comChave && totais ? formatNumber(totais.requests) : "—"}
+          detalhe="Chamadas de modelo registradas pela OpenAI"
+          serie={comChave ? diasDoUso.map((d) => d.requests) : undefined}
+        />
+        <NumeroDoPeriodo
+          rotulo="Cache"
+          valor={comChave && totais ? formatNumber(totais.cachedTokens) : "—"}
+          detalhe="Tokens de entrada com cache"
+          serie={comChave ? diasDoUso.map((d) => d.cachedTokens) : undefined}
+        />
+      </section>
 
-        <section className="grid gap-4 xl:grid-cols-[1.3fr_0.7fr]">
-          <article className="nx-edge-8 p-4">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <h2 className="text-sm font-semibold">Uso diario</h2>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Cada barra é um dia: a altura são os tokens. O custo aparece em USD.
-                </p>
+      <div className="adm-duas din-duas">
+        <Bloco id="din-dia" titulo="Uso diário" acoes={<span className="adm-fraco">cada coluna é um dia; a altura é o custo</span>}>
+          {comChave && data && totais && diasDoUso.length ? (
+            <div className="din-onda">
+              <OndaDeGasto
+                key={days}
+                dias={diasDoUso.map((d) => ({
+                  eixo: formatDate(d.date),
+                  valor: custoDoDia.get(d.date) ?? 0,
+                  rotulo: (
+                    <>
+                      <b className="ds-num">{usd(custoDoDia.get(d.date) ?? 0)}</b> em {formatDate(d.date)} · {formatNumber(d.inputTokens + d.outputTokens)} tokens · {formatNumber(d.requests)} chamadas
+                    </>
+                  ),
+                }))}
+                padrao={
+                  <>
+                    <b className="ds-num">{usd(data.costs.total.amount)}</b> em {days} dias · média de {usd(data.costs.total.amount / days)} por dia
+                  </>
+                }
+              />
+              <div className="din-tokens">
+                <p className="din-sub">Do que são feitos os tokens</p>
+                <BarraDividida
+                  key={days}
+                  partes={[
+                    { id: "entrada", rotulo: "Entrada, sem cache", valor: totais.inputTokens - totais.cachedTokens, texto: formatNumber(totais.inputTokens - totais.cachedTokens) },
+                    { id: "cache", rotulo: "Entrada com cache", valor: totais.cachedTokens, texto: formatNumber(totais.cachedTokens) },
+                    { id: "saida", rotulo: "Saída", valor: totais.outputTokens, texto: formatNumber(totais.outputTokens) },
+                  ]}
+                />
               </div>
-              {data ? (
-                <span className="font-mono text-xs text-muted-foreground">
-                  Atualizado {formatarEmBrasilia(data.generatedAt, { timeStyle: "medium" })}
-                </span>
-              ) : null}
             </div>
-
-            <div className="mt-5 grid min-h-[260px] items-end gap-3 sm:grid-cols-7">
-              {(data?.usage.daily ?? Array.from({ length: 7 })).map((day, index) => {
-                const usageDay = day as AdminUsageResponse["usage"]["daily"][number] | undefined;
-                const costDay = data?.costs.daily.find(
-                  (item) => item.date === usageDay?.date,
-                );
-                const tokenValue = usageDay
-                  ? usageDay.inputTokens + usageDay.outputTokens
-                  : 0;
-                const tokenHeight = `${Math.max(5, (tokenValue / maxDailyValue) * 100)}%`;
-
-                return (
-                  <div
-                    key={usageDay?.date ?? index}
-                    className="flex h-64 min-w-0 flex-col justify-end gap-2"
-                  >
-                    <div className="flex flex-1 items-end nx-edge-6 p-1 [--nx-fill:var(--nexodoc-recessed)]">
-                      <div
-                        /*
-                          A BARRA SAI DO TEAL.
-                          Era `bg-primary/80` — teal, que significa INTERATIVO
-                          (§2, Regra do Acento Único). Barra de gráfico não se
-                          clica. É a mesma violação que o anel de consumo tinha,
-                          e a rampa `--data-*` existe exatamente para isto.
-
-                          O rótulo dizia "barras azuis" enquanto elas eram teal:
-                          o texto descrevia o que o desenho deveria ser. Agora
-                          descreve o que ele é.
-                        */
-                        className={cn(
-                          "nx-cut-4 w-full transition-[height]",
-                          !usageDay && "opacity-20",
-                        )}
-                        style={{ height: tokenHeight, background: escalaDeDado[0] }}
-                        title={
-                          usageDay
-                            ? `${formatNumber(tokenValue)} tokens`
-                            : "Sem dados"
-                        }
-                      />
-                    </div>
-                    <div className="text-center">
-                      <p className="truncate font-mono text-xs text-muted-foreground">
-                        {usageDay ? formatDate(usageDay.date) : "--"}
-                      </p>
-                      <p className="truncate font-mono text-[11px] text-primary">
-                        {costDay
-                          ? formatCurrency(costDay.amount, costDay.currency)
-                          : "--"}
-                      </p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </article>
-
-          <article className="nx-edge-8 p-4">
-            <h2 className="text-sm font-semibold">Modelos</h2>
-            <div className="mt-4 space-y-2">
-              {data && data.usage.models.length > 0 ? (
-                data.usage.models.map((model) => {
-                  const modelTokens = model.inputTokens + model.outputTokens;
-
-                  return (
-                    <div
-                      key={model.model}
-                      className="nx-edge-7 px-3 py-3 [--nx-fill:var(--nexodoc-recessed)]"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <p className="break-all font-mono text-sm font-medium">{model.model}</p>
-                        <span className="nx-edge-6 px-2 py-1 font-mono text-xs text-muted-foreground">
-                          {formatNumber(model.requests)}
-                        </span>
-                      </div>
-                      <p className="mt-2 font-mono text-xs text-muted-foreground">
-                        {formatNumber(modelTokens)} tokens totais
-                      </p>
-                    </div>
-                  );
-                })
-              ) : (
-                <p className="nx-edge-7 px-3 py-3 [--nx-fill:var(--nexodoc-recessed)] text-sm text-muted-foreground">
-                  {data ? "Nenhum modelo retornado no período." : semResposta}
-                </p>
-              )}
-            </div>
-          </article>
-        </section>
-
-        <section className="nx-edge-8 p-4">
-          <h2 className="text-sm font-semibold">Itens de custo</h2>
-          <div className="mt-4 nx-edge-7">
-            <table className="w-full border-collapse text-sm">
-              <thead className="bg-[var(--nexodoc-recessed)] text-left font-mono text-xs uppercase tracking-[0.08em] text-muted-foreground">
-                <tr>
-                  <th className="px-3 py-3 font-medium">Item</th>
-                  <th className="px-3 py-3 text-right font-medium">Valor</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data && data.costs.lineItems.length > 0 ? (
-                  data.costs.lineItems.map((item) => (
-                    <tr key={item.lineItem} className="border-t">
-                      <td className="px-3 py-3">{item.lineItem}</td>
-                      <td className="px-3 py-3 text-right">
-                        {formatCurrency(item.amount, item.currency)}
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td
-                      className="px-3 py-6 text-center text-muted-foreground"
-                      colSpan={2}
-                    >
-                      {data ? "Nenhum custo retornado no período." : semResposta}
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        <section className="nx-edge-8 p-4">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <h2 className="text-sm font-semibold">Custo por obra</h2>
-              <p className="mt-1 max-w-2xl text-xs text-muted-foreground">
-                O mesmo consumo, cortado pela pergunta que o escritório faz:
-                quanto custou entregar este projeto. A obra é a pasta da conversa;
-                conversa fora de pasta conta como obra de uma conversa só.
-              </p>
-            </div>
-            {data?.internalUsage?.amostra?.truncado ? (
-              /*
-                O TETO DITO EM VOZ ALTA. A leitura de eventos para em 500 desde
-                antes desta tabela; uma tabela por obra montada sobre amostra sem
-                avisar leria como o período inteiro — e alguém precificaria em
-                cima dela.
-              */
-              <span className="nx-cut-6 bg-[var(--signal-info-bg)] px-2 py-1 font-mono text-[11px] text-[var(--signal-info)]">
-                amostra: os {data.internalUsage.amostra.limite} eventos mais recentes
-              </span>
-            ) : null}
-          </div>
-
-          {!data ? (
-            <p className="mt-4 nx-edge-7 px-3 py-3 [--nx-fill:var(--nexodoc-recessed)] text-sm text-muted-foreground">
-              {semResposta}
-            </p>
-          ) : !data.internalUsage?.enabled ? (
-            /* Só com RESPOSTA do servidor dizendo que o banco não está ligado. */
-            <p className="mt-4 nx-edge-7 px-3 py-3 [--nx-fill:var(--nexodoc-recessed)] text-sm text-muted-foreground">
-              Sem DATABASE_URL: o consumo por obra vem dos eventos gravados no banco.
-            </p>
-          ) : obras.length === 0 ? (
-            <p className="mt-4 nx-edge-7 px-3 py-3 [--nx-fill:var(--nexodoc-recessed)] text-sm text-muted-foreground">
-              Nenhum consumo registrado no período.
-            </p>
           ) : (
-            <div className="mt-4 nx-edge-8">
-              <div className="grid grid-cols-[1.6fr_0.6fr_0.7fr_0.9fr] border-b bg-[var(--nexodoc-recessed)] px-3 py-2 font-mono text-[11px] uppercase text-muted-foreground">
-                <span>Obra</span>
-                <span className="text-right">Conversas</span>
-                <span className="text-right">Tokens</span>
-                <span className="text-right">Custo</span>
-              </div>
-              {obras.map((obra) => {
-                const semObra =
-                  obra.origem === "sem-vinculo" || obra.origem === "conversa-removida";
-                return (
-                  <div
-                    key={obra.chave}
-                    className="grid grid-cols-[1.6fr_0.6fr_0.7fr_0.9fr] items-baseline gap-3 border-b px-3 py-3 text-sm last:border-b-0"
-                  >
-                    <div className="min-w-0">
-                      <p
-                        className={cn(
-                          "truncate",
-                          // A linha sem obra é informação, não alarme: fica
-                          // apagada, nunca em cor de status.
-                          semObra ? "text-muted-foreground" : "text-foreground",
-                        )}
-                      >
-                        {obra.obra}
-                      </p>
-                      <p className="mt-0.5 font-mono text-[11px] text-muted-foreground">
-                        {obra.origem === "pasta"
-                          ? "pasta"
-                          : obra.origem === "conversa"
-                            ? "conversa avulsa"
-                            : obra.origem === "conversa-removida"
-                              ? "a conversa não existe mais"
-                              : "consumo sem conversa (auditoria fora do Nexo, manutenção)"}
-                        {" · "}
-                        {plural(obra.requests, "chamada", "chamadas")}
-                      </p>
-                    </div>
-                    <span className="text-right font-mono text-xs text-muted-foreground">
-                      {obra.conversas || "--"}
-                    </span>
-                    <span className="text-right font-mono text-xs text-muted-foreground">
-                      {formatNumber(obra.totalTokens)}
-                    </span>
-                    <span className="text-right font-mono text-xs text-foreground">
-                      {formatUsd(obra.estimatedCostUsd)}
-                      {formatarReais(obra.estimatedCostUsd, cotacao) ? (
-                        <span className="block text-[11px] text-muted-foreground">
-                          {formatarReais(obra.estimatedCostUsd, cotacao)}
-                        </span>
-                      ) : null}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
+            <p className="adm-vazio">{!data ? semResposta : !comChave ? "Sem a chave da OpenAI, o uso diário do provedor não vem." : "Nenhum uso no período."}</p>
           )}
-        </section>
+        </Bloco>
 
-        <section className="nx-edge-8 p-4">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <h2 className="text-sm font-semibold">Uso interno por tarefa</h2>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Eventos gravados pelo Nexo por fluxo, tarefa e chamada de IA.
-              </p>
-            </div>
-            {data?.internalUsage?.enabled ? (
-              <span className="nx-edge-6 px-2 py-1 [--nx-fill:var(--nexodoc-recessed)] font-mono text-xs text-muted-foreground">
-                {formatNumber(data.internalUsage.totals.requests)} eventos ·{" "}
-                {/*
-                  As duas ressalvas convivem, e nenhuma pode calar a outra: o
-                  "≥" diz que há chamada SEM PREÇO na soma (vem da main), e o
-                  "≈" diz que o real é conversão por cotação declarada. Um valor
-                  pode ser as duas coisas — piso em dólar, aproximado em real.
-                */}
-                {data.internalUsage.totals.unpricedRequests > 0 ? "≥ " : ""}
-                {formatUsd(data.internalUsage.totals.estimatedCostUsd)}
-                {formatarReais(data.internalUsage.totals.estimatedCostUsd, cotacao)
-                  ? ` · ${formatarReais(data.internalUsage.totals.estimatedCostUsd, cotacao)}`
-                  : ""}
-              </span>
-            ) : null}
-          </div>
-
-          {/*
-            O total só pode se anunciar como fechado quando TODO evento tem
-            preço. Sem este aviso, um modelo fora da tabela vira desconto: foi o
-            que aconteceu com o `gpt-5.6-luna`, cujas chamadas somavam zero e
-            faziam a conta parecer menor do que era.
-          */}
-          {data?.internalUsage?.enabled && data.internalUsage.totals.unpricedRequests > 0 ? (
-            <p className="mt-3 nx-edge-6 px-3 py-2 [--nx-fill:var(--nexodoc-recessed)] text-xs text-muted-foreground">
-              <span className="font-medium text-foreground">Total parcial.</span>{" "}
-              {formatNumber(data.internalUsage.totals.unpricedRequests)} de{" "}
-              {formatNumber(data.internalUsage.totals.requests)} chamadas não têm preço na tabela e
-              entram como zero ({formatNumber(data.internalUsage.totals.unpricedTokens)} tokens fora
-              da conta). Sem preço não é de graça — some o modelo em{" "}
-              <span className="font-mono">lib/ai-precos.ts</span>:{" "}
-              <span className="font-mono">{data.internalUsage.unpricedModels.join(", ")}</span>.
-            </p>
-          ) : null}
-
-          {!data ? (
-            <p className="mt-4 nx-edge-7 px-3 py-3 [--nx-fill:var(--nexodoc-recessed)] text-sm text-muted-foreground">
-              {semResposta}
-            </p>
-          ) : !data.internalUsage?.enabled ? (
-            <p className="mt-4 nx-edge-7 px-3 py-3 [--nx-fill:var(--nexodoc-recessed)] text-sm text-muted-foreground">
-              Registro interno indisponível. Configure `DATABASE_URL` e aplique o schema do Prisma.
-            </p>
-          ) : (
-            <div className="mt-4 grid gap-4 xl:grid-cols-[0.8fr_1.2fr]">
-              <div className="space-y-2">
-                <h3 className="font-mono text-xs uppercase tracking-[0.08em] text-muted-foreground">
-                  Fluxos
-                </h3>
-                {data.internalUsage.flows.map((flow) => (
-                  <div key={flow.flow} className="nx-edge-7 px-3 py-3 [--nx-fill:var(--nexodoc-recessed)]">
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="font-mono text-sm font-medium">{flow.flow}</p>
-                      <span className="font-mono text-xs text-muted-foreground">
-                        {flow.unpricedRequests > 0 ? "≥ " : ""}
-                        {formatUsd(flow.estimatedCostUsd)}
-                      </span>
-                    </div>
-                    <p className="mt-1 font-mono text-xs text-muted-foreground">
-                      {formatNumber(flow.totalTokens)} tokens · {formatNumber(flow.requests)} chamadas
-                      {flow.unpricedRequests > 0
-                        ? ` · ${formatNumber(flow.unpricedRequests)} sem preço`
-                        : ""}
-                    </p>
+        <Bloco id="din-mod" titulo="Modelos" acoes={<span className="adm-fraco">tokens no período</span>}>
+          {comChave && data && data.usage.models.length ? (
+            <div className="din-modelos">
+              {data.usage.models.length <= 3 && (
+                <BarraDividida key={days} partes={data.usage.models.map((m) => ({ id: m.model, rotulo: m.model, valor: tokensDoModelo(m), texto: formatNumber(tokensDoModelo(m)) }))} />
+              )}
+              <div className="adm-tabela din-tabela--modelos">
+                {data.usage.models.map((m) => (
+                  <div key={m.model} className="adm-linha">
+                    <span className="mp-mono">{m.model}</span>
+                    <span className="adm-fraco ds-num din-direita">
+                      {formatNumber(tokensDoModelo(m))} tokens · {plural(m.requests, "chamada", "chamadas")}
+                    </span>
                   </div>
                 ))}
               </div>
-
-              <div className="min-w-0">
-                <h3 className="font-mono text-xs uppercase tracking-[0.08em] text-muted-foreground">
-                  Tarefas com maior consumo
-                </h3>
-                <div className="mt-2 nx-edge-7">
-                  <table className="w-full border-collapse text-sm">
-                    <thead className="bg-[var(--nexodoc-recessed)] text-left font-mono text-xs uppercase tracking-[0.08em] text-muted-foreground">
-                      <tr>
-                        <th className="px-3 py-3 font-medium">Tarefa</th>
-                        <th className="px-3 py-3 font-medium">Fluxo</th>
-                        <th className="px-3 py-3 text-right font-medium">Tokens</th>
-                        <th className="px-3 py-3 text-right font-medium">Custo est.</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {data.internalUsage.tasks.length > 0 ? (
-                        data.internalUsage.tasks.map((task) => (
-                          <tr key={`${task.flow}-${task.taskId || task.taskLabel}`} className="border-t">
-                            <td className="max-w-[280px] truncate px-3 py-3">{task.taskLabel || task.taskId || "-"}</td>
-                            <td className="px-3 py-3 font-mono text-xs text-muted-foreground">{task.flow}</td>
-                            <td className="px-3 py-3 text-right font-mono">{formatNumber(task.totalTokens)}</td>
-                            <td className="px-3 py-3 text-right font-mono">{formatUsd(task.estimatedCostUsd)}</td>
-                          </tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td className="px-3 py-6 text-center text-muted-foreground" colSpan={4}>
-                            Nenhum evento interno no período.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
             </div>
+          ) : (
+            <p className="adm-vazio">{!data ? semResposta : !comChave ? "Sem a chave da OpenAI." : "Nenhum modelo retornado no período."}</p>
           )}
-        </section>
-    </AdminPageShell>
+        </Bloco>
+      </div>
+
+      <Bloco id="din-itens" titulo="Itens de custo">
+        {comChave && itens.length ? (
+          <div className="adm-tabela din-tabela--itens">
+            {itens.map((i) => (
+              <div key={i.lineItem} className="adm-linha">
+                <span>{i.lineItem}</span>
+                <BarraEmbutida key={days} valor={i.amount} maximo={itens[0].amount} />
+                <span className="ds-num din-direita">{formatCurrency(i.amount, i.currency)}</span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="adm-vazio">{!data ? semResposta : !comChave ? "Sem a chave da OpenAI." : "Nenhum custo retornado no período."}</p>
+        )}
+      </Bloco>
+
+      <Bloco id="din-obra" titulo="Custo por obra" acoes={interno?.amostra?.truncado ? <span className="din-selo">amostra: os {interno.amostra.limite} eventos mais recentes</span> : undefined}>
+        <p className="din-lede">O mesmo consumo, cortado pela pergunta que o escritório faz: quanto custou entregar este projeto. A obra é a pasta da conversa; conversa fora de pasta conta como obra de uma conversa só.</p>
+        {!data ? (
+          <p className="adm-vazio">{semResposta}</p>
+        ) : !interno?.enabled ? (
+          <p className="adm-vazio">Sem DATABASE_URL: o consumo por obra vem dos eventos gravados no banco.</p>
+        ) : obras.length === 0 ? (
+          <p className="adm-vazio">Nenhum consumo registrado no período.</p>
+        ) : (
+          <div className="adm-tabela din-tabela--obras">
+            <div className="adm-linha din-cab">
+              <span>Obra</span>
+              <span />
+              <span className="din-direita">Conversas</span>
+              <span className="din-direita">Tokens</span>
+              <span className="din-direita">Custo</span>
+            </div>
+            {obras.map((o) => {
+              const semObra = o.origem === "sem-vinculo" || o.origem === "conversa-removida";
+              return (
+                <div key={o.chave} className="adm-linha">
+                  <span className="adm-tit">
+                    <b className={semObra ? "adm-fraco" : undefined}>{o.obra}</b>
+                    <small>
+                      {ORIGEM_DA_OBRA[o.origem] ?? o.origem} · {plural(o.requests, "chamada", "chamadas")}
+                    </small>
+                  </span>
+                  <BarraEmbutida key={days} valor={o.estimatedCostUsd} maximo={maxObra} />
+                  <span className="adm-fraco ds-num din-direita">{o.conversas || "—"}</span>
+                  <span className="adm-fraco ds-num din-direita">{formatNumber(o.totalTokens)}</span>
+                  <span className="ds-num din-direita din-custo">
+                    {usd(o.estimatedCostUsd)}
+                    {brl(o.estimatedCostUsd) && <small>{brl(o.estimatedCostUsd)}</small>}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </Bloco>
+
+      <Bloco
+        id="din-int"
+        titulo="Uso interno por tarefa"
+        acoes={
+          interno?.enabled ? (
+            <span className="ds-num din-interno-total">
+              {formatNumber(interno.totals.requests)} eventos · {interno.totals.unpricedRequests > 0 ? "≥ " : ""}
+              {usd(interno.totals.estimatedCostUsd)}
+              {brl(interno.totals.estimatedCostUsd) ? ` · ${brl(interno.totals.estimatedCostUsd)}` : ""}
+            </span>
+          ) : undefined
+        }
+      >
+        <p className="din-lede">Eventos gravados pelo Nexo por fluxo, tarefa e chamada de IA.</p>
+        {/* O total só se anuncia fechado quando todo evento tem preço: sem preço não é de graça. */}
+        {interno?.enabled && interno.totals.unpricedRequests > 0 && (
+          <p className="din-ressalva">
+            <Info size={14} aria-hidden />
+            <span>
+              {formatNumber(interno.totals.unpricedRequests)} de {formatNumber(interno.totals.requests)} chamadas não têm preço na tabela e entram como zero ({formatNumber(interno.totals.unpricedTokens)} tokens fora da conta). Sem preço não é de graça — some o modelo em <span className="mp-mono">lib/ai-precos.ts</span>:{" "}
+              <span className="mp-mono">{interno.unpricedModels.join(", ")}</span>.
+            </span>
+          </p>
+        )}
+        {!data ? (
+          <p className="adm-vazio">{semResposta}</p>
+        ) : !interno?.enabled ? (
+          <p className="adm-vazio">Registro interno indisponível. Configure DATABASE_URL e aplique o schema do Prisma.</p>
+        ) : (
+          <div className="din-colunas">
+            <div className="adm-tabela din-tabela--fluxos">
+              <div className="adm-linha din-cab">
+                <span>Fluxo</span>
+                <span />
+                <span className="din-direita">Custo est.</span>
+              </div>
+              {interno.flows.map((x) => (
+                <div key={x.flow} className="adm-linha">
+                  <span className="adm-tit">
+                    <b className="mp-mono">{x.flow}</b>
+                    <small className="ds-num">
+                      {formatNumber(x.totalTokens)} tokens · {formatNumber(x.requests)} chamadas
+                      {x.unpricedRequests > 0 ? ` · ${formatNumber(x.unpricedRequests)} sem preço` : ""}
+                    </small>
+                  </span>
+                  <BarraEmbutida key={days} valor={x.estimatedCostUsd} maximo={maxFluxo} />
+                  <span className="ds-num din-direita">
+                    {x.unpricedRequests > 0 ? "≥ " : ""}
+                    {usd(x.estimatedCostUsd)}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <div className="adm-tabela din-tabela--tarefas">
+              <div className="adm-linha din-cab">
+                <span>Tarefa</span>
+                <span />
+                <span className="din-direita">Custo est.</span>
+              </div>
+              {interno.tasks.length ? (
+                interno.tasks.map((x) => (
+                  <div key={`${x.flow}-${x.taskId || x.taskLabel}`} className="adm-linha">
+                    <span className="adm-tit">
+                      <b>{x.taskLabel || x.taskId || "—"}</b>
+                      <small>
+                        <span className="mp-mono">{x.flow}</span> · {formatNumber(x.totalTokens)} tokens
+                      </small>
+                    </span>
+                    <BarraEmbutida key={days} valor={x.estimatedCostUsd} maximo={maxTarefa} />
+                    <span className="ds-num din-direita">{usd(x.estimatedCostUsd)}</span>
+                  </div>
+                ))
+              ) : (
+                <p className="adm-vazio">Nenhum evento interno no período.</p>
+              )}
+            </div>
+          </div>
+        )}
+      </Bloco>
+    </>
   );
 }

@@ -125,17 +125,20 @@ export function Moldura({
   return (
     <ContextoDaMoldura.Provider value={contexto}>
       <div className={`ds ${FONTES_DS} md-raiz`}>
-        {aviso.mostrarTela ? (
-          <TelaDeAviso largura={aviso.largura} onContinuar={aviso.continuar} />
-        ) : (
-          <>
-            {aviso.mostrarFaixa && <FaixaDeAviso largura={aviso.largura} onFechar={aviso.fecharFaixa} />}
-            <Topo atual={atual} dados={dados} busca={!buscaPropria} trabalhando={trabalhando} />
-            <main id="conteudo" className="md-conteudo" tabIndex={-1}>
-              {children}
-            </main>
-          </>
-        )}
+        {/*
+          O AVISO COBRE, NÃO SUBSTITUI. A tela fica montada por baixo (inerte):
+          encolher a janela abaixo de 1024 e voltar — encaixá-la na metade de um
+          monitor, por exemplo — não pode desmontar a página e perder o que a
+          pessoa estava fazendo.
+        */}
+        {aviso.mostrarTela && <TelaDeAviso largura={aviso.largura} onContinuar={aviso.continuar} />}
+        <div className="md-tela" inert={aviso.mostrarTela} aria-hidden={aviso.mostrarTela || undefined}>
+          {aviso.mostrarFaixa && <FaixaDeAviso largura={aviso.largura} onFechar={aviso.fecharFaixa} />}
+          <Topo atual={atual} dados={dados} busca={!buscaPropria} trabalhando={trabalhando} />
+          <main id="conteudo" className="md-conteudo" tabIndex={-1}>
+            {children}
+          </main>
+        </div>
         <Paleta aberta={paleta} onFechar={() => setPaleta(false)} obras={dados.obras} recentes={dados.recentes} inicialQ={termo} />
         <Atalhos aberta={atalhos} onFechar={() => setAtalhos(false)} />
         <Avisos

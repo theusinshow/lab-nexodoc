@@ -1,49 +1,30 @@
 import { redirect } from "next/navigation";
 
-import { auth } from "@/auth";
-import { AdminTrilho } from "@/components/admin/admin-trilho";
 import { AdminTokenProvider } from "@/components/admin/admin-token";
-import { PortaoDeTelaLarga } from "@/components/ui/portao-de-tela-larga";
-import { getUserAccess } from "@/lib/access-control";
-import { redirectToLogin } from "@/lib/auth-redirect";
+import { Moldura } from "@/components/moldura/moldura";
+import { CascaDoAdmin } from "@/components/telas/admin/casca";
+import { carregarMoldura } from "@/lib/moldura";
 
-export default async function AdminLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
-  const session = await auth();
+/*
+ * O CENTRO DE CONTROLE no sistema novo: a moldura (Topo, busca, avisos) e,
+ * dentro dela, a casca do admin — cabeçalho, trilho com o veredito e o token, e
+ * o destino aberto.
+ *
+ * O PORTÃO DE TELA LARGA SAIU daqui: abaixo de 1024 px quem avisa é a moldura,
+ * com a mesma regra para o app inteiro (e a saída "continuar assim mesmo").
+ *
+ * O PROVEDOR DO TOKEN embrulha a casca e os destinos: o token é do painel, não
+ * da tela (ver [[components/admin/admin-token.tsx]]).
+ */
+export default async function AdminLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const dados = await carregarMoldura("/admin");
+  if (!dados.usuario.ehAdmin) redirect("/");
 
-  if (!session?.user) {
-    redirectToLogin("/admin");
-  }
-
-  const access = await getUserAccess(session.user.email, session.user.name);
-
-  if (!access.isActive || !access.isAdmin) {
-    redirect("/");
-  }
-
-  /*
-   * O TRILHO FICA FORA DO PORTAO, de proposito: ele é o caminho de volta.
-   * Recusar a tela e ao mesmo tempo tirar o "Voltar" seria prender a pessoa
-   * num aviso.
-   *
-   * O PROVEDOR DO TOKEN embrulha os dois. O token é do painel e não da tela
-   * (ver [[components/admin/admin-token.tsx]]): o trilho o pede uma vez, e as
-   * cinco telas o consomem. Antes, cada uma das sete tinha o seu campo de
-   * senha, e era a primeira coisa que se via em todas elas.
-   */
   return (
-    <AdminTokenProvider>
-      <div className="flex min-h-dvh bg-background text-foreground">
-        <AdminTrilho />
-        <div className="min-w-0 flex-1">
-          <PortaoDeTelaLarga titulo="O painel administrativo lê tabelas densas — pessoas, auditorias, custo por obra — e uma coluna estreita esconderia as colunas que decidem.">
-            {children}
-          </PortaoDeTelaLarga>
-        </div>
-      </div>
-    </AdminTokenProvider>
+    <Moldura dados={dados} atual="Administração">
+      <AdminTokenProvider>
+        <CascaDoAdmin>{children}</CascaDoAdmin>
+      </AdminTokenProvider>
+    </Moldura>
   );
 }

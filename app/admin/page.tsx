@@ -1,23 +1,14 @@
 "use client";
 
-import { formatarDataHora } from "@/lib/fuso-de-brasilia";
-import { AlertTriangle, BarChart3, CheckCircle2, Clock3, FileSpreadsheet, ListChecks, Settings2, ShieldCheck, UsersRound } from "lucide-react";
-import Link from "next/link";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { CircleAlert } from "lucide-react";
+import { useEffect, useState } from "react";
 
-import { EmptyState } from "@/components/ui/empty-state";
-import { cn } from "@/lib/utils";
-import { TUDO_EM_ORDEM } from "@/lib/atencao-do-admin";
-import { plural } from "@/lib/plural";
-
-import { AvisoDaCarga } from "@/components/admin/aviso-da-carga";
-import { classificarFalha, faseDaCarga, type FalhaDaCarga } from "@/lib/estado-da-carga";
-import {
-  AdminMetricStrip,
-  AdminPageHeader,
-  AdminPageShell,
-} from "@/components/admin/admin-page-shell";
 import { useAdminToken } from "@/components/admin/admin-token";
+import { useCabecaDoAdmin } from "@/components/telas/admin/casca";
+import { AvisoDaCarga, Bloco, Numero, quandoCurto, Situacao } from "@/components/telas/admin/pecas";
+import { TUDO_EM_ORDEM } from "@/lib/atencao-do-admin";
+import { classificarFalha, faseDaCarga, type FalhaDaCarga } from "@/lib/estado-da-carga";
+import { plural } from "@/lib/plural";
 
 type OverviewResponse = {
   /** O veredito derivado do estado do sistema (A.4). */
@@ -27,6 +18,8 @@ type OverviewResponse = {
     motivo: string;
   };
   atencao?: Array<{ chave: string; texto: string; gravidade: "critico" | "aviso" }>;
+  /** Uma contagem por dia de Brasília, os últimos 14 dias. */
+  series?: { dias: string[]; auditorias: number[]; falhas: number[]; lds: number[]; eventosLd: number[] };
   acoes?: Array<{
     id: string;
     quando: string;
@@ -69,10 +62,6 @@ type OverviewResponse = {
   }>;
   generatedAt: string;
 };
-
-function formatDate(value: string) {
-  return formatarDataHora(value);
-}
 
 function isErrorPayload(payload: OverviewResponse | { error?: string }): payload is { error?: string } {
   return "error" in payload;
@@ -149,11 +138,6 @@ export default function AdminHomePage() {
     setLoading(false);
   }
 
-  function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    void loadOverview();
-  }
-
   useEffect(() => {
     if (!restaurado || !token.trim()) return;
     /*
@@ -165,174 +149,131 @@ export default function AdminHomePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, restaurado, recarga]);
 
+  useCabecaDoAdmin({ atualizadoEm: data?.generatedAt, carregando: loading });
+  const t = data?.totals;
+  const sr = data?.series;
+
   return (
-    <AdminPageShell>
-      <AdminPageHeader
-        icon={ShieldCheck}
-        title="Centro de controle"
-        description="O que exige ação, quanto se gastou e o que rodou por último. Cada linha abre o dado."
+    <>
+      <AvisoDaCarga
+        fase={fase}
+        erro={erro?.tipo}
+        detalhe={erro?.detalhe}
+        oque="os números do painel"
+        atualizadoEm={data?.generatedAt}
+        onTentar={() => void loadOverview()}
       />
 
-        <AvisoDaCarga
-          fase={fase}
-          erro={erro?.tipo}
-          detalhe={erro?.detalhe}
-          oque="os números do painel"
-          atualizadoEm={data?.generatedAt}
-          onTentar={() => void loadOverview()}
-        />
-
-        {/*
-          O VEREDITO NÃO SE REPETE AQUI. Ele abria esta tela desde a A.4, e era
-          o certo enquanto era a única que o mostrava. Agora ele mora no trilho
-          e acompanha os cinco destinos — repeti-lo seria a mesma notícia duas
-          vezes na mesma dobra, e a segunda ensina a não ler a primeira.
-        */}
-
-        {/*
-          O QUE EXIGE AÇÃO, logo abaixo do veredito.
-          Isto vivia no topo da Config, e ficou lá enquanto a Config existia:
-          quem abria aquela tela quase sempre abria por causa de algo quebrado.
-          Mas a pergunta não é sobre configuração — é a PRIMEIRA pergunta do
-          painel, e agora ela abre o cockpit.
-
-          Só entra o que impede o produto de funcionar agora. O opcional
-          (cotação, metas) fica de fora de propósito: faixa que lista pendência
-          que ninguém precisa resolver é faixa que se aprende a ignorar. Ver
-          `lib/atencao-do-admin.ts`.
-        */}
-        {data ? (
-          <section className="nx-edge-8 px-4 py-3">
-            {(data.atencao ?? []).length === 0 ? (
-              <p className="inline-flex items-center gap-1.5 font-mono text-[11px] text-[var(--status-ok)]">
-                <CheckCircle2 className="size-3.5" />
-                {TUDO_EM_ORDEM}
-              </p>
-            ) : (
-              <ul className="grid gap-1.5">
-                {(data.atencao ?? []).map((item) => (
-                  <li
-                    key={item.chave}
-                    className={cn(
-                      "inline-flex items-start gap-1.5 font-mono text-[11px]",
-                      item.gravidade === "critico"
-                        ? "text-[var(--status-critical)]"
-                        : "text-[var(--status-warning)]",
-                    )}
-                  >
-                    <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
-                    {item.texto}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-        ) : null}
-
-
-        {/*
-          ZERO NAO E "NAO SEI".
-          Antes, `data?.totals.audits ?? 0` pintava zero enquanto o painel nunca
-          tinha carregado (sem token, a API responde 401) — e o operador lia
-          "nenhuma auditoria" num banco com dezenas delas. O `loading ? "--"`
-          cobria só o instante da consulta, não o estado de nunca ter havido
-          consulta nenhuma. A tela de Uso e custos, ao lado, já fazia certo com
-          "--" e "Aguardando consulta"; aqui é a mesma regra.
-        */}
-        <AdminMetricStrip
-          columns="md:grid-cols-2 xl:grid-cols-5"
-          metrics={[
-            { label: "Usuários ativos", value: data ? data.totals.activeUsers : "—", detail: data ? plural(data.totals.admins, "admin", "admins") : semDados, icon: UsersRound, href: "/admin/pessoas" },
-            { label: "Auditorias", value: data ? data.totals.audits : "—", detail: data ? `${data.totals.recentAudits} nos últimos 7 dias` : semDados, icon: ListChecks, href: "/admin/dados" },
-            { label: "Falhas", value: data ? data.totals.failedAudits : "—", detail: data ? "Auditorias com erro" : semDados, icon: AlertTriangle, href: "/admin/dados?status=FAILED", alerta: Boolean(data && data.totals.failedAudits > 0) },
-            { label: "LDs", value: data ? data.totals.ldDrafts : "—", detail: data ? `${plural(data.totals.generatedLds, "gerada", "geradas")} · ${data.totals.recentLds} nos últimos 7 dias` : semDados, icon: FileSpreadsheet, href: "/admin/dados" },
-            { label: "Eventos LD", value: data ? data.totals.ldEvents : "—", detail: data ? `${data.totals.recentLdEvents} nos últimos 7 dias` : semDados, icon: Clock3, href: "/admin/dados" },
-          ]}
-        />
-
-        <section className="grid gap-4 lg:grid-cols-2">
-          <article className="nx-edge-8">
-            <div className="border-b border-border px-4 py-3">
-              <h2 className="text-sm font-semibold">Auditorias recentes</h2>
-            </div>
-            <div className="divide-y divide-border">
-              {(data?.latestAudits ?? []).map((audit) => (
-                <div key={audit.id} className="grid gap-2 px-4 py-3 text-sm">
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="truncate font-medium">{audit.title}</p>
-                    <span className="font-mono text-xs text-muted-foreground">{audit.status}</span>
-                  </div>
-                  {/*
-                    O projeto só aparece quando ACRESCENTA algo. Derivados da
-                    mesma obra, título e projeto viram a mesma frase duas vezes
-                    por linha — repetição que ocupa a largura onde caberiam
-                    dados de verdade.
-                  */}
-                  <p className="truncate text-xs text-muted-foreground">
-                    {audit.projectName !== audit.title ? `${audit.projectName} · ` : ""}
-                    {audit.auditMode} · {plural(audit.totalFindings, "achado", "achados")} · {formatDate(audit.createdAt)}
-                  </p>
-                </div>
+      {/*
+        O QUE EXIGE AÇÃO abre o cockpit. Só entra o que impede o produto de
+        funcionar agora (`lib/atencao-do-admin.ts`): faixa que lista pendência
+        que ninguém precisa resolver é faixa que se aprende a ignorar. O
+        veredito não se repete aqui: ele mora no trilho.
+      */}
+      {data ? (
+        <section className={`adm-atencao${(data.atencao ?? []).length ? " adm-atencao--aviso" : ""}`} aria-label="O que exige ação">
+          {(data.atencao ?? []).length === 0 ? (
+            <p className="adm-atencao-ok">
+              <i aria-hidden />
+              {TUDO_EM_ORDEM}
+            </p>
+          ) : (
+            <ul>
+              {(data.atencao ?? []).map((item) => (
+                <li key={item.chave} className={`adm-atencao-item adm-atencao-item--${item.gravidade}`}>
+                  <CircleAlert size={14} aria-hidden />
+                  {item.texto}
+                </li>
               ))}
-              {/*
-                "Nenhuma auditoria registrada" só quando o servidor DISSE isso.
-                Sem consulta, a lista vazia não afirma nada — e afirmar vazio é
-                o mesmo erro dos zeros, escrito por extenso.
-              */}
-              {data && data.latestAudits.length === 0 ? <EmptyState description="Nenhuma auditoria registrada." className="py-10" /> : null}
-              {!data ? <EmptyState description={semResposta} className="py-10" /> : null}
-            </div>
-          </article>
-
-          <article className="nx-edge-8">
-            <div className="border-b border-border px-4 py-3">
-              <h2 className="text-sm font-semibold">LDs recentes</h2>
-            </div>
-            <div className="divide-y divide-border">
-              {(data?.latestLds ?? []).map((ld) => (
-                <div key={ld.id} className="grid gap-2 px-4 py-3 text-sm">
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="truncate font-medium">{ld.projectCode || ld.title}</p>
-                    <span className="font-mono text-xs text-muted-foreground">{ld.status}</span>
-                  </div>
-                  <p className="truncate text-xs text-muted-foreground">
-                    {ld.workName || "Obra não preenchida"} · {plural(ld.uploadedFileCount, "PDF não armazenado", "PDFs não armazenados")} · {formatDate(ld.updatedAt)}
-                  </p>
-                </div>
-              ))}
-              {data && data.latestLds.length === 0 ? <EmptyState description="Nenhuma LD registrada." className="py-10" /> : null}
-              {!data ? <EmptyState description={semResposta} className="py-10" /> : null}
-            </div>
-          </article>
+            </ul>
+          )}
         </section>
+      ) : null}
 
-        {/*
-          QUEM FEZ O QUÊ. Até agora nada era registrado — nem quem promoveu
-          alguém a admin, nem quem apagou cinquenta auditorias. Com o expurgo
-          isso deixou de ser desconforto e virou risco.
-        */}
-        <article className="nx-edge-8">
-          <div className="border-b border-border px-4 py-3">
-            <h2 className="text-sm font-semibold">Últimas ações administrativas</h2>
-          </div>
-          <div className="divide-y divide-border">
-            {(data?.acoes ?? []).map((acao) => (
-              <div key={acao.id} className="flex flex-wrap items-baseline justify-between gap-2 px-4 py-2.5 text-sm">
-                <span className="font-mono text-xs">
-                  {acao.acao}
-                  {acao.alcance ? ` · ${acao.alcance}` : ""}
-                </span>
-                <span className="font-mono text-[11px] text-muted-foreground">
-                  {acao.quem} · {formatDate(acao.quando)}
-                </span>
+      {/* ZERO NÃO É "NÃO SEI": sem resposta do servidor, o número é "—". */}
+      <section className="adm-numeros" aria-label="Números">
+        <Numero rotulo="Usuários ativos" valor={t ? t.activeUsers : "—"} detalhe={t ? plural(t.admins, "admin", "admins") : semDados} para="Pessoas" href="/admin/pessoas" />
+        <Numero rotulo="Auditorias" valor={t ? t.audits : "—"} detalhe={t ? `${t.recentAudits} nos últimos 7 dias` : semDados} para="Dados" href="/admin/dados" serie={sr?.auditorias} />
+        <Numero rotulo="Falhas" valor={t ? t.failedAudits : "—"} detalhe={t ? "auditorias com erro" : semDados} alerta={Boolean(t && t.failedAudits > 0)} para="as auditorias que falharam" href="/admin/dados?status=FAILED" serie={sr?.falhas} />
+        <Numero rotulo="LDs" valor={t ? t.ldDrafts : "—"} detalhe={t ? `${plural(t.generatedLds, "gerada", "geradas")} · ${t.recentLds} nos últimos 7 dias` : semDados} para="Dados" href="/admin/dados" serie={sr?.lds} />
+        <Numero rotulo="Eventos LD" valor={t ? t.ldEvents : "—"} detalhe={t ? `${t.recentLdEvents} nos últimos 7 dias` : semDados} para="Dados" href="/admin/dados" serie={sr?.eventosLd} />
+      </section>
+
+      <div className="adm-duas">
+        <Bloco id="adm-aud" titulo="Auditorias recentes">
+          {data ? (
+            data.latestAudits.length ? (
+              <div className="adm-tabela adm-tabela--aud">
+                {data.latestAudits.map((audit) => (
+                  <div key={audit.id} className="adm-linha">
+                    {/* o projeto só aparece quando acrescenta: derivados da mesma obra, título e projeto são a mesma frase */}
+                    <span className="adm-tit">
+                      <b>{audit.title}</b>
+                      {audit.projectName !== audit.title && <small>{audit.projectName}</small>}
+                    </span>
+                    <span className="adm-fraco">{audit.auditMode}</span>
+                    <span className={`adm-fraco ds-num${audit.status === "FAILED" ? " adm-nada" : ""}`}>{audit.status === "FAILED" ? "—" : plural(audit.totalFindings, "achado", "achados")}</span>
+                    <span className="adm-fraco ds-num">{quandoCurto(audit.createdAt)}</span>
+                    <Situacao status={audit.status} />
+                  </div>
+                ))}
               </div>
-            ))}
-            {data && (data.acoes ?? []).length === 0 ? (
-              <EmptyState description="Nenhuma ação registrada ainda." className="py-8" />
-            ) : null}
-            {!data ? <EmptyState description={semResposta} className="py-8" /> : null}
-          </div>
-        </article>
-    </AdminPageShell>
+            ) : (
+              <p className="adm-vazio">Nenhuma auditoria registrada.</p>
+            )
+          ) : (
+            <p className="adm-vazio">{semResposta}</p>
+          )}
+        </Bloco>
+
+        <Bloco id="adm-ld" titulo="LDs recentes">
+          {data ? (
+            data.latestLds.length ? (
+              <div className="adm-tabela adm-tabela--ld">
+                {data.latestLds.map((ld) => (
+                  <div key={ld.id} className="adm-linha">
+                    <span className="adm-tit">
+                      <b className="mp-mono">{ld.projectCode || ld.title || "sem código"}</b>
+                      <small>{ld.workName || "Obra não preenchida"}</small>
+                    </span>
+                    <span className="adm-fraco ds-num">{plural(ld.uploadedFileCount, "PDF não armazenado", "PDFs não armazenados")}</span>
+                    <span className="adm-fraco ds-num">{quandoCurto(ld.updatedAt)}</span>
+                    <Situacao status={ld.status} />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="adm-vazio">Nenhuma LD registrada.</p>
+            )
+          ) : (
+            <p className="adm-vazio">{semResposta}</p>
+          )}
+        </Bloco>
+      </div>
+
+      {/* QUEM FEZ O QUÊ: com o expurgo, não registrar deixou de ser desconforto e virou risco */}
+      <Bloco id="adm-acoes" titulo="Últimas ações administrativas">
+        {data ? (
+          (data.acoes ?? []).length ? (
+            <div className="adm-tabela adm-tabela--acoes">
+              {(data.acoes ?? []).map((acao) => (
+                <div key={acao.id} className="adm-linha">
+                  <span>
+                    {acao.acao}
+                    {acao.alcance && <span className="mp-mono adm-fraco"> · {acao.alcance}</span>}
+                  </span>
+                  <span className="mp-mono adm-fraco">{acao.quem}</span>
+                  <span className="adm-fraco ds-num">{quandoCurto(acao.quando)}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="adm-vazio">Nenhuma ação registrada ainda.</p>
+          )
+        ) : (
+          <p className="adm-vazio">{semResposta}</p>
+        )}
+      </Bloco>
+    </>
   );
 }

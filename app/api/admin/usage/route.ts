@@ -1,4 +1,4 @@
-import { chaveDiaUtc } from "@/lib/fuso-de-brasilia";
+import { chaveDiaUtc, inicioDoMesEmBrasilia } from "@/lib/fuso-de-brasilia";
 import { NextResponse } from "next/server";
 import { getOpenAiAdminKey } from "@/lib/ai-providers";
 import { getPrisma, isDatabaseConfigured } from "@/lib/db";
@@ -505,6 +505,21 @@ export async function GET(request: Request) {
   }
 
   const openAIAdminKey = getOpenAiAdminKey();
+  /*
+   * O GASTO DO MÊS (de Brasília), a mesma soma que o veredito do trilho usa
+   * (`lib/fatos-do-sistema.ts`): é o que o medidor do teto do sistema mostra
+   * contra o teto. Sai do banco, então vem mesmo sem a chave da OpenAI.
+   */
+  const gastoDoMesUsd = isDatabaseConfigured()
+    ? Number(
+        (
+          await getPrisma().aiUsageEvent.aggregate({
+            _sum: { estimatedCostUsd: true },
+            where: { createdAt: { gte: inicioDoMesEmBrasilia() } },
+          })
+        )._sum.estimatedCostUsd ?? 0,
+      )
+    : null;
 
   /*
    * SEM A CHAVE ADMIN DA OPENAI, A PÁGINA NÃO MORRE INTEIRA.
@@ -536,6 +551,7 @@ export async function GET(request: Request) {
           "OPENAI_ADMIN_KEY não configurada: a fatura do provedor não pode ser consultada. O consumo interno e o custo por obra abaixo vêm do banco e não dependem dela.",
         internalUsage,
         cotacao,
+        gastoDoMesUsd,
         generatedAt: new Date().toISOString(),
       }),
       request,
@@ -586,6 +602,7 @@ export async function GET(request: Request) {
         costs: summarizeCosts(costBuckets),
         internalUsage,
         cotacao,
+        gastoDoMesUsd,
         generatedAt: new Date().toISOString(),
       }),
       request,
