@@ -81,6 +81,18 @@ export async function getUserAccess(email: string | null | undefined, name?: str
     };
   }
 
+  /*
+   * GUARDADO POR ALGUNS SEGUNDOS (02/10/2026). Esta função roda em TODO pedido
+   * autenticado e fazia de 4 a 5 idas ao banco — duas delas gravações que quase
+   * nunca mudam nada. Com o servidor longe do banco, cada ação do Nexo pagava
+   * isso várias vezes ("10 segundos para qualquer clique"). O corte de acesso
+   * continua imediato: o vínculo com o escritório é conferido a cada pedido em
+   * `requireActor`, fora daqui.
+   */
+  const guardado = ACESSO_GUARDADO.get(normalizedEmail);
+  const nomeDaVez = name?.trim() || "";
+  if (guardado && guardado.ate > Date.now() && guardado.nome === nomeDaVez) return guardado.valor;
+
   const prisma = getPrisma();
   const existing = await prisma.user.findUnique({
     where: { email: normalizedEmail },
@@ -134,12 +146,23 @@ export async function getUserAccess(email: string | null | undefined, name?: str
   await ativarConvitePendente(user.id, normalizedEmail);
   await garantirEscritorioPadrao(user.id, normalizedEmail, name);
 
-  return {
+  const valor = {
     email: normalizedEmail,
     isActive: envAdmin || user.isActive,
     isAdmin: envAdmin || user.role === "ADMIN",
     source: envAdmin ? "env" as const : "database" as const,
   };
+  ACESSO_GUARDADO.set(normalizedEmail, { valor, nome: nomeDaVez, ate: Date.now() + VALIDADE_DO_ACESSO_MS });
+  return valor;
+}
+
+const VALIDADE_DO_ACESSO_MS = 20_000;
+const ACESSO_GUARDADO = new Map<string, { valor: { email: string; isActive: boolean; isAdmin: boolean; source: "env" | "database" }; nome: string; ate: number }>();
+
+/** Esquece o acesso guardado (de uma pessoa, ou de todas): quem muda papel ou conta chama. */
+export function esquecerAcessoGuardado(email?: string) {
+  if (email) ACESSO_GUARDADO.delete(normalizeEmail(email));
+  else ACESSO_GUARDADO.clear();
 }
 
 /**

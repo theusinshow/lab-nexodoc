@@ -326,3 +326,5 @@
 .ds .au-contas li[data-em-curso] b { font-size: 11px; color: var(--ds-nexo-soft); }
 .ds .au-contas-validacao { grid-template-columns: 150px 1fr !important; margin-top: 6px; padding-top: 8px; border-top: 1px solid var(--ds-line-subtle); }
 .ds .au-contas-validacao small { justify-self: end; font-size: var(--ds-text-xs); color: var(--ds-text-primary); }
+/* Mais estreita no palco largo (02/10/2026): a linha do tempo ficava longa demais na horizontal. */
+.ds .au--embutido .au-corpo { width: min(1000px, calc(100% - 32px)); }

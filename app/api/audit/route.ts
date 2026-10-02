@@ -768,7 +768,8 @@ export function tetoDeSaidaDaValidacao(achados: number) {
  * auditoria profunda típica (55 a 66 achados, três ou quatro lotes) quase de
  * uma vez, sem abrir mais conexões de fundo que a leitura por blocos abre.
  */
-const VALIDACAO_LOTES_EM_PARALELO = 3;
+// 4: com lotes de 12, um parecer de até ~48 achados é revisado numa rodada só.
+const VALIDACAO_LOTES_EM_PARALELO = 4;
 
 function getValidationTimeoutMs(analysisLevel: AnalysisLevel) {
   const value = Number(process.env.NEXODOC_VALIDATION_TIMEOUT_MS);
@@ -777,8 +778,15 @@ function getValidationTimeoutMs(analysisLevel: AnalysisLevel) {
     return Math.min(480_000, Math.floor(value));
   }
 
-  return analysisLevel === "deep" ? 300_000 : getChunkTimeoutMs();
+  /*
+   * A REVISÃO TEM TETO PRÓPRIO (02/10/2026). Herdava o de um bloco de leitura
+   * (120 s), e revisar um lote de achados com o documento ao lado leva mais que
+   * ler um capítulo: em produção um lote estourou e o parecer saiu incompleto.
+   */
+  return analysisLevel === "deep" ? 300_000 : Math.max(getChunkTimeoutMs(), VALIDACAO_TETO_PADRAO_MS);
 }
+
+const VALIDACAO_TETO_PADRAO_MS = 240_000;
 
 /*
  * COBERTURA TOTAL — o nível único que lê o documento inteiro DE VERDADE.

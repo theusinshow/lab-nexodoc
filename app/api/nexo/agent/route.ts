@@ -243,6 +243,29 @@ export async function POST(req: NextRequest) {
 
   const wantsStream = (req.headers.get("accept") ?? "").includes("text/event-stream");
 
+  /*
+   * O BOTÃO NÃO PRECISA DA IA. "Auditar o memorial" manda sempre a mesma frase,
+   * e a resposta é sempre a mesma proposta (auditoria padrão): esperar o modelo
+   * redigi-la custava segundos em produção para um cartão que já se sabe qual é.
+   * Só a frase exata do botão, só com memorial e sem pranchas — o que for
+   * digitado à mão continua indo ao agente.
+   */
+  if (memorial && !fatos.temSelos && ehOPedidoDoBotao(message)) {
+    const turn = {
+      reply: "Leio o memorial contra a obra declarada e aponto o que não fecha. Confirme para começar.",
+      proposals: [{ kind: "auditoria" as const, resumo: "Auditoria do memorial", params: { nivel: "standard" as const } }],
+    };
+    if (wantsStream) {
+      const corpo =
+        `data: ${JSON.stringify({ type: "delta", text: turn.reply })}\n\n` +
+        `data: ${JSON.stringify({ type: "done", proposals: turn.proposals, slotRequest: null, ldPreview: null })}\n\n`;
+      return new Response(corpo, {
+        headers: { "Content-Type": "text/event-stream; charset=utf-8", "Cache-Control": "no-cache, no-transform" },
+      });
+    }
+    return NextResponse.json({ turn: { ...turn, slotRequest: null }, ldPreview: null });
+  }
+
   // Caminho TRANSMITIDO: a prosa sai em deltas; propostas/slotRequest/ldPreview
   // só no `done` (dependem da cauda JSON, que chega no fim).
   if (wantsStream && providerSupportsStreaming()) {
@@ -333,4 +356,10 @@ export async function POST(req: NextRequest) {
       { status: 502 },
     );
   }
+}
+
+/** A frase que o botão "Auditar o memorial" envia (NexoWorkspace), sem acento nem pontuação. */
+function ehOPedidoDoBotao(mensagem: string) {
+  const limpa = mensagem.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z ]/g, "").trim();
+  return limpa === "audita o memorial";
 }
