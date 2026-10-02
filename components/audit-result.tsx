@@ -1231,7 +1231,7 @@ function downloadMarkdown(result: string, fileName = "nexodoc-auditoria.md") {
  * Devolve a mensagem de erro em vez de lançar: quem chama põe no pop, e uma
  * promessa rejeitada num `onClick` morreria no console.
  */
-async function abrirParecerEmPdf(report: AuditReport): Promise<string | null> {
+export async function abrirParecerEmPdf(report: AuditReport): Promise<string | null> {
   try {
     const res = await fetch("/api/nexo/parecer", {
       method: "POST",
@@ -3149,7 +3149,8 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
         Ver [[lib/auditoria-incompleta.ts]].
       */}
       <AvisoDeAuditoriaIncompleta report={report} className="mb-3" />
-      {verdict ? (
+      {/* No palco do Nexo o veredito mora no trilho da direita (Resultado E); aqui, só fora dele (gaveta do canvas). */}
+      {verdict && !controlado ? (
         <div
           data-tour="veredito-parecer"
           className={cn(

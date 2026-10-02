@@ -15,14 +15,10 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import {
-  FileText,
-  ListChecks,
-  MapPin,
   Maximize2,
   PanelLeftClose,
   PanelRightClose,
   RotateCw,
-  SquareStack,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -45,13 +41,13 @@ import { auditoriaParaBuscarArquivos } from "@/lib/fonte-do-documento";
 import { catalogoDoParecer, resolverFonte } from "@/lib/fonte-da-evidencia";
 
 import { useAreasRecolhidas } from "../lib/areas-recolhidas";
+import { TrilhoDoResultado } from "@/components/telas/resultado/trilho";
 import { AuditCanvas } from "./AuditCanvas";
 import { AuditoriaEmCurso } from "./AuditoriaEmCurso";
 import type { AberturaPorLink } from "./use-abrir-auditoria-por-link";
 import { useReconectarAuditoria } from "./use-reconectar-auditoria";
 import {
   detalheDoParecer,
-  incompletudeDoParecer,
   resumoDoParecer,
 } from "@/lib/auditoria-incompleta";
 import type { TextoCorrigido } from "@/lib/texto-corrigido";
@@ -60,11 +56,6 @@ import type { TextoCorrigido } from "@/lib/texto-corrigido";
  * As três vistas de LISTA do parecer. A quarta ("No documento") entra ao lado
  * delas na barra, mas não vive aqui: ela troca de componente, não de aba.
  */
-const VISTAS_DO_PARECER: { valor: AuditView; rotulo: string; Icone: typeof FileText }[] = [
-  { valor: "summary", rotulo: "Resumo", Icone: SquareStack },
-  { valor: "findings", rotulo: "Achados", Icone: ListChecks },
-  { valor: "report", rotulo: "Parecer", Icone: FileText },
-];
 
 export function PalcoDoNexo({
   mapa,
@@ -392,6 +383,11 @@ export function PalcoDoNexo({
       report?.incongruencias.filter((a) => classifyFindingTier(a) === "principal").length ?? 0,
     [report],
   );
+  /* Quantos dos principais já foram tratados nesta conversa: o anel do trilho. */
+  const tratadosDesta = useMemo(
+    () => report?.incongruencias.filter((a) => classifyFindingTier(a) === "principal" && resolvidosDesta.has(a.id)).length ?? 0,
+    [report, resolvidosDesta],
+  );
 
   /*
    * O MESMO parecer nas duas vistas: inteiro quando é a vista, e dentro do
@@ -495,68 +491,13 @@ export function PalcoDoNexo({
       </header>
 
       {/*
-        A BARRA DE VISTAS — o segundo degrau, e só ele.
-        Quatro leituras do MESMO parecer, irmãs entre si: três da lista e uma
-        sobre as páginas do memorial. Fica abaixo do módulo e acima do conteúdo,
-        que é onde uma troca de vista se lê como troca de vista.
-
-        `flex-wrap` e não breakpoint de janela: aqui o palco é estreito mesmo com
-        a janela larga (ver o parecer, que já apanhou disso).
+        AS NOTAS DO PARECER, numa linha fina acima do conteúdo: por que a vista
+        "No documento" não está aqui (botão ausente não se distingue de função
+        inexistente) e o que mudou desde a rodada anterior. A navegação entre
+        as vistas foi para o trilho da direita (Resultado E).
       */}
-      {mostrandoAuditoria && report && (
-        <div
-          /*
-           * GRUPO DE BOTÕES, não `role="tablist"`. A ARIA de abas promete
-           * navegação por setas, `aria-controls` e um `tabpanel` do outro lado —
-           * anunciar "aba" sem entregar isso é pior para quem usa leitor de tela
-           * do que o botão honesto que isto é. `aria-pressed` diz o que importa:
-           * qual vista está ligada.
-           */
-          role="group"
-          aria-label="Vistas da auditoria"
-          className="nx-vistas-do-parecer"
-        >
-          {VISTAS_DO_PARECER.map((v) => {
-            const ativa = !noDocumento && vistaDoParecer === v.valor;
-            return (
-              <button
-                key={v.valor}
-                type="button"
-                aria-pressed={ativa}
-                onClick={() => {
-                  setNoDocumento(false);
-                  setVistaDoParecer(v.valor);
-                }}
-                className="nx-vista"
-              >
-                <v.Icone size={14} aria-hidden />
-                {v.rotulo}
-                {/* A contagem mora na aba que a governa: é o número que decide
-                    se vale abrir a lista, e ele estava enterrado no subtítulo. */}
-                {v.valor === "findings" && totalDeAchados > 0 && (
-                  <span className="ds-num nx-vista-conta">{totalDeAchados}</span>
-                )}
-                {/* Número de auditoria incompleta não anda sem a ressalva. */}
-                {v.valor === "findings" && incompletudeDoParecer(report).incompleta && (
-                  <span className="nx-vista-incompleta">incompleta</span>
-                )}
-              </button>
-            );
-          })}
-          {podeVerNoDocumento && (
-            <button type="button" aria-pressed={noDocumento} data-tour="chip-no-documento" onClick={() => setNoDocumento(true)} className="nx-vista">
-              <MapPin size={14} aria-hidden />
-              No documento
-            </button>
-          )}
-          {/*
-            POR QUE A ABA NÃO ESTÁ AQUI, quando não está.
-
-            Some junto com a aba, e no lugar dela. Botão ausente não se distingue
-            de funcionalidade inexistente: quem recebeu um achado por e-mail
-            precisa saber se o documento não está guardado ou se o produto não
-            faz isso.
-          */}
+      {mostrandoAuditoria && report && !emCurso && ((fonte.tipo === "ausente" && !buscandoArquivos) || diffDoParecer) ? (
+        <div className="nx-notas-do-parecer">
           {report && fonte.tipo === "ausente" && !buscandoArquivos ? (
             <span className="nx-vistas-nota">
               {fonte.motivo}
@@ -582,7 +523,7 @@ export function PalcoDoNexo({
             </span>
           )}
         </div>
-      )}
+      ) : null}
 
       <div className="min-h-0 flex-1" data-tour="palco">
         {mostrandoAuditoria ? (
@@ -711,18 +652,38 @@ export function PalcoDoNexo({
               </div>
             </div>
           ) : report ? (
-            noDocumento ? (
-              <div className="h-full">
-                <AuditCanvas
-                  report={report}
-                  pdfUrl={documento?.url}
-                  // Montado no clique, já no achado que a pessoa apontou.
-                  parecer={(achadoEmFoco) => parecerCom({ controlado: false, achadoEmFoco })}
-                />
+            /*
+             * O RESULTADO E: o conteúdo à esquerda e o trilho à direita, com o
+             * veredito, o tratado e as quatro leituras do mesmo parecer.
+             */
+            <div className="nx-resultado">
+              <div className="nx-resultado-miolo">
+                {noDocumento ? (
+                  <AuditCanvas
+                    report={report}
+                    pdfUrl={documento?.url}
+                    // Montado no clique, já no achado que a pessoa apontou.
+                    parecer={(achadoEmFoco) => parecerCom({ controlado: false, achadoEmFoco })}
+                  />
+                ) : (
+                  <div className="h-full overflow-y-auto">{parecer}</div>
+                )}
               </div>
-            ) : (
-              <div className="h-full overflow-y-auto">{parecer}</div>
-            )
+              <TrilhoDoResultado
+                report={report}
+                total={totalDeAchados}
+                tratados={tratadosDesta}
+                vista={noDocumento ? "documento" : vistaDoParecer}
+                podeVerNoDocumento={podeVerNoDocumento}
+                onVista={(v) => {
+                  if (v === "documento") setNoDocumento(true);
+                  else {
+                    setNoDocumento(false);
+                    setVistaDoParecer(v);
+                  }
+                }}
+              />
+            </div>
           ) : null
         ) : (
           mapa
