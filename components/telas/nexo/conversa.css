@@ -1,0 +1,294 @@
+/*
+ * A CONVERSA COM O NEXO (veio do lab: app/lab/telas/conversa/conversa.css).
+ * Você: bloco suave à direita. Nexo: texto limpo, sem caixa, o orbe na margem.
+ */
+.ds .cx { position: relative; display: flex; flex-direction: column; min-height: 100%; background: var(--ds-surface-page); }
+
+/* ---------- cabeça: uma linha, sem cartão ---------- */
+.ds .cx-cabeca { display: flex; align-items: center; gap: 12px; width: min(760px, calc(100% - 48px)); margin: 18px auto 0; padding-bottom: 14px; border-bottom: 1px solid var(--ds-line-subtle); }
+.ds .cx-cabeca-obra { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; color: var(--ds-text-tertiary); }
+.ds .cx-cabeca-titulo { font-size: var(--ds-text-sm); color: var(--ds-text-primary); }
+.ds .cx-nova { margin-left: auto; }
+.ds .cx-mono { font-family: var(--ds-font-mono); font-size: 0.9em; }
+
+/* ---------- o fio ---------- */
+.ds .cx-fio { display: flex; flex-direction: column; gap: 40px; width: min(760px, calc(100% - 48px)); margin: 0 auto; padding: 36px 0 200px; flex: 1; }
+.ds .cx-fio--vazio { justify-content: center; padding-bottom: 12vh; }
+
+/* você: bloco suave à direita, cantos desiguais só no lado de quem fala */
+.ds .cx-voce { align-self: flex-end; display: grid; gap: 10px; max-width: 78%; padding: 12px 16px 13px; border-radius: 18px 18px 6px 18px; background: var(--ds-surface-raised); }
+.ds .cx-voce p { margin: 0; font-size: var(--ds-text-sm); line-height: 1.55; color: var(--ds-text-primary); }
+.ds .cx-voce-arquivos { display: flex; flex-wrap: wrap; gap: 6px; }
+
+/* nexo: texto limpo; o orbe fica na margem, fora do texto */
+.ds .cx-nexo { position: relative; display: flex; gap: 16px; }
+.ds .cx-nexo-marca { flex: none; padding-top: 2px; }
+/* O RITMO VERTICAL da resposta: 16 entre partes; a linha de estado cola no
+   que ela introduz (8); duas linhas de estado seguidas ficam juntas (6); as
+   saídas respiram do conteúdo (24), porque são outro tipo de coisa. */
+.ds .cx-nexo-corpo { display: grid; justify-items: start; gap: 16px; flex: 1; min-width: 0; }
+.ds .cx-parte { min-width: 0; max-width: 100%; }
+.ds .cx-parte:has(> .cx-texto), .ds .cx-parte:has(> .cx-frase), .ds .cx-parte:has(> .cx-plano), .ds .cx-parte:has(> .cx-diff), .ds .cx-parte:has(> .cx-conf) { justify-self: stretch; }
+.ds .cx-parte:has(> .cx-passo) + .cx-parte { margin-top: -8px; }
+.ds .cx-parte:has(> .cx-passo) + .cx-parte:has(> .cx-passo) { margin-top: -10px; }
+.ds .cx-parte:has(> .cx-saidas) { margin-top: 8px; }
+.ds .cx-parte:has(> .cx-fonte) { margin-top: -6px; }
+/* a troca em crossfade: os dois ocupam a mesma célula enquanto um some */
+.ds .cx-troca { display: inline-grid; }
+.ds .cx-troca > * { grid-area: 1 / 1; display: inline-flex; align-items: center; gap: 6px; }
+.ds .cx-texto, .ds .cx-frase { margin: 0; font-size: var(--ds-text-sm); line-height: 1.65; color: var(--ds-text-primary); }
+.ds .cx-texto b { font-weight: 500; }
+.ds .cx-frase { color: var(--ds-text-secondary); }
+
+/* o passo: o que o Nexo fez, numa linha discreta */
+.ds .cx-passo { display: inline-flex; align-items: center; gap: 8px; min-height: 20px; font-size: 12.5px; color: var(--ds-text-tertiary); }
+.ds .cx-passo-icone { width: 13px; justify-items: center; }
+.ds .cx-passo svg { color: var(--ds-state-ok); }
+.ds .cx-visto path { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.ds .cx-passo-aviso { width: 7px; height: 7px; margin: 0 2px; border-radius: 50%; background: var(--ds-sev-decide); }
+.ds .cx-passo--aviso { color: var(--ds-text-secondary); }
+.ds .cx-palavra { animation: cx-acender 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+@keyframes cx-acender { from { opacity: 0; } }
+/* pensando: três pontos que respiram em onda, antes da primeira palavra */
+.ds .cx-pensando { display: inline-flex; gap: 9px; align-items: center; height: 22px; font-size: 12.5px; color: var(--ds-text-secondary); }
+/* a linha do pensamento: os passos enquanto pensa, "Pensou por…" depois */
+.ds .cx-pensamento { display: grid; gap: 6px; }
+.ds .cx-pensou { display: inline-flex; align-items: center; gap: 6px; width: max-content; padding: 0; border: 0; background: none; font: inherit; font-size: 12.5px; color: var(--ds-text-tertiary); cursor: pointer; }
+.ds .cx-pensou:hover { color: var(--ds-text-secondary); }
+.ds .cx-pensou svg:first-child { color: var(--ds-state-ok); }
+.ds .cx-pensou-seta { display: inline-grid; }
+.ds .cx-pensamento-passos { display: grid; gap: 4px; margin: 0; padding: 0 0 0 2px; list-style: none; overflow: hidden; }
+.ds .cx-pensamento-passos li { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--ds-text-tertiary); }
+.ds .cx-pensamento-passos li svg { flex: none; color: var(--ds-text-tertiary); }
+.ds .cx-pensamento-passos li[data-da-vez] { color: var(--ds-text-secondary); }
+.ds .cx-pensamento-passos li[data-da-vez] i { width: 5px; height: 5px; margin: 0 3.5px; border-radius: 50%; background: var(--ds-nexo); }
+@keyframes cx-respirar { 0%, 80%, 100% { opacity: 0.25; } 40% { opacity: 1; } }
+/* copiar: aparece ao passar o mouse na resposta */
+.ds .cx-nexo-acoes { display: flex; margin-top: -8px; }
+.ds .cx-nexo-acoes button { display: inline-flex; height: 26px; padding: 0 8px; margin-left: -8px; border: 0; border-radius: 6px; background: none; font: inherit; font-size: 12px; color: var(--ds-text-tertiary); cursor: pointer; opacity: 0; transition: opacity 0.3s, background 0.2s, color 0.2s; }
+.ds .cx-nexo-acoes button > span { display: inline-flex; align-items: center; gap: 6px; }
+.ds .cx-nexo:hover .cx-nexo-acoes button, .ds .cx-nexo-acoes button:focus-visible { opacity: 1; }
+.ds .cx-nexo-acoes button:hover { background: rgb(255 255 255 / 0.05); color: var(--ds-text-primary); }
+/* em curso: o texto fica claro e parado; quem diz "trabalhando" é o orbe ao lado
+   (o brilho correndo pelo texto era o "pensando" de app de IA, e saiu) */
+.ds .cx-passo--curso .cx-passo-texto > span { color: var(--ds-text-secondary); }
+.ds .cx-passo-roda { width: 11px; height: 11px; border-radius: 50%; border: 1.5px solid var(--ds-nexo); border-right-color: transparent; animation: cx-girar 0.9s linear infinite; }
+@keyframes cx-girar { to { transform: rotate(360deg); } }
+/* o cursor pulsa em onda, não pisca em degrau */
+.ds .cx-cursor { display: inline-block; width: 2px; height: 1.1em; margin-left: 1px; vertical-align: -3px; border-radius: 1px; background: var(--ds-nexo); animation: cx-pulsar 1.1s ease-in-out infinite; }
+@keyframes cx-pulsar { 50% { opacity: 0.25; } }
+
+/* ---------- a peça de arquivo ---------- */
+.ds .cx-peca { display: inline-flex; align-items: center; gap: 8px; height: 30px; padding: 0 10px; border-radius: 8px; background: rgb(255 255 255 / 0.04); box-shadow: inset 0 0 0 1px var(--ds-line-subtle); font-size: 12px; color: var(--ds-text-secondary); max-width: 100%; }
+.ds .cx-peca svg { flex: none; color: var(--ds-text-tertiary); }
+.ds .cx-peca-nome { font-family: var(--ds-font-mono); font-size: 11.5px; color: var(--ds-text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ds .cx-peca-pag { color: var(--ds-text-tertiary); white-space: nowrap; }
+.ds .cx-peca--lendo .cx-peca-pag { color: var(--ds-nexo-soft); }
+.ds .cx-peca { position: relative; overflow: hidden; }
+/* lendo: uma barra fina corre no pé da peça enquanto o PDF é lido */
+.ds .cx-peca-barra { position: absolute; left: 0; bottom: 0; width: 40%; height: 1.5px; background: var(--ds-nexo); animation: cx-ler 1.6s cubic-bezier(0.45, 0, 0.55, 1) infinite; }
+@keyframes cx-ler { from { transform: translateX(-100%); } to { transform: translateX(260%); } }
+/* nova: um brilho atravessa a peça uma vez, quando ela acaba de sair */
+.ds .cx-peca--nova::after { content: ""; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 30%, color-mix(in srgb, var(--ds-nexo) 18%, transparent) 50%, transparent 70%); transform: translateX(-100%); animation: cx-brilho 1.2s cubic-bezier(0.22, 1, 0.36, 1) 0.25s forwards; pointer-events: none; }
+@keyframes cx-brilho { to { transform: translateX(100%); } }
+/* em coluna, as peças têm a mesma largura: abrir e baixar alinham numa vertical */
+.ds .cx-pecas--coluna { display: grid; width: max-content; max-width: 100%; gap: 6px; }
+.ds .cx-gerando-linha .cx-peca { width: 100%; }
+.ds .cx-pecas--coluna .cx-peca-nome, .ds .cx-gerando-linha .cx-peca-nome { flex: 1 0 auto; min-width: 240px; }
+.ds .cx-gerando-linha { min-height: 36px; align-items: center; }
+.ds .cx-fila { font-size: 12.5px; color: var(--ds-text-tertiary); }
+.ds .cx-peca--gerada { height: 36px; padding-right: 4px; background: var(--ds-surface-card); box-shadow: var(--ds-edge); }
+.ds .cx-peca-acoes { display: inline-flex; margin-left: 6px; }
+.ds .cx-peca-acoes button { display: grid; place-items: center; width: 28px; height: 28px; border: 0; border-radius: 6px; background: none; color: var(--ds-text-tertiary); cursor: pointer; }
+.ds .cx-peca-acoes button:hover { background: rgb(255 255 255 / 0.06); color: var(--ds-text-primary); }
+.ds .cx-pecas { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* ---------- a lacuna: a decisão no meio da frase ---------- */
+.ds .cx-lacuna-caixa { position: relative; display: inline-block; }
+.ds .cx-lacuna { display: inline-flex; align-items: center; gap: 3px; padding: 0 1px; border: 0; background: none; font: inherit; color: var(--ds-text-primary); text-decoration: underline; text-decoration-style: dotted; text-decoration-color: var(--ds-text-tertiary); text-underline-offset: 4px; cursor: pointer; }
+.ds .cx-lacuna { position: relative; transition: text-decoration-color 0.25s, color 0.25s; }
+.ds .cx-lacuna:hover, .ds .cx-lacuna--aberta { text-decoration-color: var(--ds-text-primary); }
+.ds .cx-lacuna-valor { vertical-align: bottom; }
+.ds .cx-lacuna-valor > span { white-space: nowrap; }
+/* trocou: o sublinhado acende em violeta e some, da esquerda para a direita */
+.ds .cx-lacuna-acende { position: absolute; left: 0; right: 0; bottom: -3px; height: 1.5px; background: var(--ds-nexo); transform-origin: left; }
+.ds .cx-lacuna--vazia { animation: cx-chamar 2.8s ease-in-out 1.2s 2; }
+@keyframes cx-chamar { 50% { text-decoration-color: transparent; } }
+.ds .cx-lacuna-marca { display: inline-grid; width: 14px; margin-right: 6px; color: var(--ds-nexo); vertical-align: -2px; }
+.ds .cx-lacuna svg { color: var(--ds-text-tertiary); }
+.ds .cx-lacuna--vazia { color: var(--ds-sev-decide); text-decoration-color: var(--ds-sev-decide); text-decoration-style: solid; }
+.ds .cx-lacuna-menu { position: absolute; left: 0; top: calc(100% + 6px); z-index: 10; display: grid; min-width: 160px; padding: 4px; border-radius: 10px; background: var(--ds-surface-overlay); box-shadow: var(--ds-shadow-overlay); transform-origin: top left; }
+.ds .cx-lacuna-menu button { height: 30px; padding: 0 10px; border: 0; border-radius: 7px; background: none; font: inherit; font-size: var(--ds-text-xs); color: var(--ds-text-primary); text-align: left; cursor: pointer; }
+.ds .cx-lacuna-menu button:hover, .ds .cx-lacuna-menu button[aria-selected="true"] { background: rgb(255 255 255 / 0.06); }
+
+/* ---------- o plano ---------- */
+.ds .cx-plano { display: grid; gap: 16px; }
+.ds .cx-frases { display: grid; gap: 6px; }
+.ds .cx-plano ol { list-style: none; margin: 0; padding: 0; counter-reset: plano; }
+.ds .cx-plano li { display: grid; grid-template-columns: 22px 170px minmax(0, 1fr); gap: 8px; padding: 7px 0; font-size: var(--ds-text-xs); counter-increment: plano; border-top: 1px solid var(--ds-line-subtle); }
+.ds .cx-plano li:last-child { border-bottom: 1px solid var(--ds-line-subtle); }
+.ds .cx-plano li::before { content: counter(plano); font-family: var(--ds-font-mono); font-size: 11px; color: var(--ds-text-tertiary); }
+.ds .cx-plano li b { font-weight: 400; color: var(--ds-text-primary); }
+.ds .cx-plano li span { color: var(--ds-text-tertiary); }
+.ds .cx-plano--falta span { color: var(--ds-sev-decide) !important; }
+.ds .cx-aviso { margin: 0; font-size: 12.5px; color: var(--ds-sev-decide); }
+
+/* ---------- as saídas: empilhadas, largura do texto, cada uma com a tecla ---------- */
+.ds .cx-saidas { display: grid; gap: 6px; justify-items: start; }
+.ds .cx-saida { display: inline-flex; align-items: center; gap: 14px; height: 34px; padding: 0 8px 0 14px; border: 0; border-radius: 10px; background: none; box-shadow: inset 0 0 0 1px var(--ds-line-default); font: inherit; font-size: var(--ds-text-xs); color: var(--ds-text-secondary); cursor: pointer; transition: box-shadow 0.2s, color 0.2s, background 0.2s; }
+.ds .cx-saida:hover { color: var(--ds-text-primary); box-shadow: inset 0 0 0 1px var(--ds-line-strong); }
+.ds .cx-saida .ds-kbd { transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1); }
+.ds .cx-saida:hover .ds-kbd { transform: translateX(2px); }
+.ds .cx-saida--principal { background: var(--ds-p-paper); box-shadow: none; color: var(--ds-text-on-paper); font-weight: 500; }
+.ds .cx-saida--principal:hover { background: #fff; box-shadow: none; color: var(--ds-text-on-paper); }
+.ds .cx-saida--principal .ds-kbd { background: rgb(0 0 0 / 0.08); color: rgb(0 0 0 / 0.55); box-shadow: none; }
+
+/* ---------- a diferença ---------- */
+.ds .cx-diff { display: grid; gap: 8px; }
+.ds .cx-diff-arquivo { font-size: 11px; color: var(--ds-text-tertiary); }
+.ds .cx-diff ol { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--ds-line-subtle); }
+.ds .cx-diff li { display: flex; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--ds-line-subtle); font-size: var(--ds-text-xs); color: var(--ds-text-secondary); }
+.ds .cx-diff--sai { align-items: center; color: var(--ds-text-primary) !important; }
+.ds .cx-diff--sai small { margin-left: 6px; font-size: 11px; color: var(--ds-sev-block); opacity: 0; animation: cx-aparecer 0.4s ease-out 1.55s forwards; }
+/* o risco se desenha da esquerda para a direita, depois que a linha já foi lida */
+.ds .cx-diff-risco { position: relative; display: inline-flex; gap: 10px; }
+.ds .cx-diff-risco::after { content: ""; position: absolute; left: -2px; right: -2px; top: 52%; height: 1.5px; background: var(--ds-sev-block); transform: scaleX(0); transform-origin: left; animation: cx-riscar 0.7s cubic-bezier(0.65, 0, 0.35, 1) 0.9s forwards; }
+@keyframes cx-riscar { to { transform: scaleX(1); } }
+@keyframes cx-aparecer { to { opacity: 1; } }
+
+/* ---------- erro ---------- */
+.ds .cx-erro { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin: 0; font-size: var(--ds-text-xs); color: var(--ds-text-secondary); }
+.ds .cx-erro::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--ds-state-error); }
+.ds .cx-erro-botao { display: inline-flex; align-items: center; gap: 6px; padding: 0; border: 0; background: none; font: inherit; color: var(--ds-text-primary); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--ds-text-tertiary); cursor: pointer; }
+
+/* ---------- o campo ---------- */
+.ds .cx-rodape { position: sticky; bottom: 0; padding: 0 0 20px; background: linear-gradient(transparent, var(--ds-surface-page) 30%); }
+.ds .cx-campo { display: grid; gap: 4px; width: min(760px, calc(100% - 48px)); margin: 0 auto; padding: 12px 12px 10px 16px; border-radius: var(--ds-radius-composer); background: var(--ds-surface-card); box-shadow: var(--ds-edge-strong), 0 16px 40px rgb(0 0 0 / 0.35); }
+.ds .cx-campo textarea { min-height: 28px; max-height: 180px; padding: 4px 0; border: 0; background: none; font: inherit; font-size: var(--ds-text-sm); line-height: 1.5; color: var(--ds-text-primary); resize: none; }
+.ds .cx textarea:focus-visible:focus-visible { box-shadow: none; }
+.ds .cx-campo textarea::placeholder { color: var(--ds-text-tertiary); }
+.ds .cx-campo-arquivos { display: flex; flex-wrap: wrap; gap: 6px; padding-bottom: 6px; }
+.ds .cx-campo-peca { position: relative; display: inline-flex; }
+.ds .cx-campo-peca > button { transition: opacity 0.2s !important; position: absolute; top: -6px; right: -6px; display: grid; place-items: center; width: 18px; height: 18px; border: 0; border-radius: 50%; background: var(--ds-surface-overlay); box-shadow: var(--ds-edge-strong); color: var(--ds-text-secondary); cursor: pointer; opacity: 0; transition: opacity var(--ds-dur-feedback); }
+.ds .cx-campo-peca:hover > button { opacity: 1; }
+.ds .cx-campo-pe { display: flex; align-items: center; gap: 6px; margin-left: -6px; }
+.ds .cx-campo-botao { display: grid; place-items: center; width: 32px; height: 32px; border: 0; border-radius: 50%; background: none; color: var(--ds-text-secondary); cursor: pointer; }
+.ds .cx-campo-botao:hover { background: rgb(255 255 255 / 0.06); color: var(--ds-text-primary); }
+.ds .cx-modo { display: inline-flex; align-items: center; gap: 4px; height: 28px; padding: 0 10px; border: 0; border-radius: 999px; background: none; box-shadow: inset 0 0 0 1px var(--ds-line-subtle); font: inherit; font-size: 12px; color: var(--ds-text-secondary); cursor: pointer; }
+.ds .cx-modo:hover { color: var(--ds-text-primary); }
+.ds .cx-enviar { display: grid; place-items: center; width: 32px; height: 32px; margin-left: auto; border: 0; border-radius: 50%; background: var(--ds-p-paper); color: var(--ds-text-on-paper); cursor: pointer; }
+.ds .cx-enviar:disabled { background: rgb(255 255 255 / 0.08); color: var(--ds-text-tertiary); cursor: default; }
+.ds .cx-enviar--parar { background: rgb(255 255 255 / 0.1); color: var(--ds-text-primary); box-shadow: inset 0 0 0 1px var(--ds-line-strong); }
+
+/* ---------- a conversa nova ---------- */
+.ds .cx-vazio { display: grid; gap: 20px; justify-items: center; }
+.ds .cx-vazio-campo { width: 100%; }
+.ds .cx-vazio h2 { margin: 0 0 4px; font-size: 26px; font-weight: 300; letter-spacing: -0.02em; }
+.ds .cx-vazio .cx-campo { width: 100%; }
+.ds .cx-atalhos { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+.ds .cx-atalhos button { height: 30px; padding: 0 12px; border: 0; border-radius: 999px; background: none; box-shadow: inset 0 0 0 1px var(--ds-line-default); font: inherit; font-size: 12.5px; color: var(--ds-text-secondary); cursor: pointer; }
+.ds .cx-atalhos button:hover { color: var(--ds-text-primary); box-shadow: inset 0 0 0 1px var(--ds-line-strong); }
+
+/* ---------- a obra na frase e a fonte da leitura ---------- */
+.ds .cx-fonte { margin: 0; font-size: 12px; color: var(--ds-text-tertiary); }
+
+/* ---------- conferência do selo ---------- */
+.ds .cx-conf { display: grid; border-top: 1px solid var(--ds-line-subtle); }
+.ds .cx-conf-linha { display: grid; grid-template-columns: 96px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--ds-line-subtle); font-size: var(--ds-text-xs); color: var(--ds-text-secondary); }
+.ds .cx-conf-rotulo { color: var(--ds-text-tertiary); }
+.ds .cx-conf-ok { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--ds-state-ok); }
+.ds .cx-conf-revisar { font-size: 12px; color: var(--ds-sev-decide); }
+.ds .cx-conf-linha--revisar > span:nth-child(2) { color: var(--ds-text-primary); }
+
+/* ---------- voltar ao fim ---------- */
+.ds .cx-descer { position: absolute; left: 50%; bottom: calc(100% + 10px); display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; border: 0; border-radius: 999px; background: var(--ds-surface-overlay); box-shadow: var(--ds-edge-strong), var(--ds-shadow-overlay); font: inherit; font-size: 12px; color: var(--ds-text-secondary); cursor: pointer; }
+.ds .cx-descer:hover { color: var(--ds-text-primary); }
+.ds .cx-rodape { z-index: 2; }
+.ds .cx-rodape-dentro { position: relative; }
+
+/* ---------- o campo: foco acende a borda, enviar pronto ganha peso ---------- */
+.ds .cx-campo { transition: box-shadow 0.35s cubic-bezier(0.22, 1, 0.36, 1); }
+.ds .cx-campo:focus-within { box-shadow: 0 0 0 1px color-mix(in srgb, var(--ds-nexo) 35%, transparent), 0 16px 40px rgb(0 0 0 / 0.35); }
+.ds .cx-enviar { transition: background 0.25s, color 0.25s; }
+.ds .cx-enviar-caixa { display: inline-grid; margin-left: auto; }
+.ds .cx-enviar-caixa > * { grid-area: 1 / 1; margin-left: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ds .cx-diff-risco::after { animation: none; transform: scaleX(1); }
+  .ds .cx-diff--sai small { animation: none; opacity: 1; }
+  .ds .cx-peca--nova::after, .ds .cx-peca-barra, .ds .cx-palavra, .ds .cx-lacuna--vazia, .ds .cx-cursor { animation: none; }
+  .ds .cx-pensando i { animation-duration: 2.4s; }
+}
+
+/* ---------- como o Nexo trabalha: o seletor do campo ---------- */
+.ds .cx-modo-raiz { position: relative; display: inline-flex; }
+.ds .cx-modo-painel {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  z-index: 40;
+  display: grid;
+  gap: 2px;
+  width: 300px;
+  padding: 8px;
+  border-radius: 12px;
+  background: var(--ds-surface-overlay);
+  box-shadow: inset 0 0 0 1px var(--ds-line-default), 0 16px 36px -12px rgb(0 0 0 / 0.75);
+  transform-origin: bottom left;
+}
+.ds .cx-modo-titulo { margin: 2px 6px 6px; font-size: 11.5px; color: var(--ds-text-tertiary); }
+.ds .cx-modo-opcao { display: grid; gap: 3px; padding: 8px 10px; border: 0; border-radius: 8px; background: none; font: inherit; text-align: left; color: var(--ds-text-secondary); cursor: pointer; }
+.ds .cx-modo-opcao:hover { background: var(--ds-surface-raised); }
+.ds .cx-modo-opcao[aria-checked="true"] { background: var(--ds-surface-raised); box-shadow: inset 0 0 0 1px var(--ds-nexo-line); color: var(--ds-text-primary); }
+.ds .cx-modo-nome { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.ds .cx-modo-nome b { font-weight: 500; color: var(--ds-text-primary); }
+.ds .cx-modo-nome .ds-num { margin-left: auto; font-size: 11.5px; color: var(--ds-text-tertiary); }
+.ds .cx-modo-custo { display: inline-flex; gap: 2px; }
+.ds .cx-modo-custo i { width: 4px; height: 9px; border-radius: 1px; background: var(--ds-line-default); }
+.ds .cx-modo-custo i[data-aceso] { background: var(--ds-text-secondary); }
+.ds .cx-modo-faz { font-size: 12px; line-height: 1.45; color: var(--ds-text-tertiary); }
+
+/* ---------- enviando o arquivo (ref.: Call Chip) ----------
+   Ao anexar, o fundo da peça enche da esquerda (o envio) e o clipe vira visto:
+   resposta ao gesto de anexar, uma vez, e pronto. */
+.ds .cx-campo-peca { position: relative; isolation: isolate; }
+.ds .cx-campo-peca::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--ds-nexo) 14%, transparent);
+  transform: scaleX(0);
+  transform-origin: left;
+  animation: cx-enviar 1.4s cubic-bezier(0.3, 0, 0.2, 1) 0.2s forwards, cx-enviado 0.4s ease-out 1.6s forwards;
+  pointer-events: none;
+}
+@keyframes cx-enviar { to { transform: scaleX(1); } }
+@keyframes cx-enviado { to { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .ds .cx-campo-peca::before { animation: none; } }
+
+/* ------------------------------------------------------------------ */
+/* No app (migração, passo 5): o chat do Nexo no desenho da Conversa v2. */
+/* ------------------------------------------------------------------ */
+.ds .nx-chat { min-height: 0; background: transparent; }
+.ds .nx-fio { flex: none; gap: 28px; width: min(760px, calc(100% - 40px)); padding: 20px 0 72px; }
+.ds .nx-turno { min-width: 0; }
+.ds .nx-turno--voce { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+.ds .nx-voce { max-width: 88%; }
+.ds .nx-voce p, .ds .nx-texto { white-space: pre-wrap; overflow-wrap: anywhere; }
+.ds .nx-resposta { display: grid; gap: 12px; max-width: 72ch; }
+.ds .nx-turno-nota { font-size: 11.5px; color: var(--ds-text-tertiary); }
+.ds .nx-chat-pe { padding: 8px 14px 14px; }
+.ds .nx-chat-pe-dentro { width: min(760px, 100%); margin: 0 auto; }
+.ds .nx-chat-erro { width: min(760px, calc(100% - 28px)); margin: 0 auto 8px; }
+.ds .nx-descer { position: sticky; left: auto; bottom: 12px; display: flex; width: max-content; margin: 0 auto; }
+.ds .nx-campo textarea { outline: none; }
+.ds .nx-campo textarea:disabled { cursor: not-allowed; opacity: 0.6; }
+.ds .nx-campo-dica { margin: 2px 0 0; font-size: 12px; color: var(--ds-text-tertiary); }
+.ds .nx-chat-cabeca { align-items: center; gap: 8px; height: 44px; padding: 0 16px; }
+.ds .nx-chat-orbe { display: grid; place-items: center; width: 26px; height: 26px; padding: 0; border: 0; border-radius: 50%; background: none; cursor: pointer; }
+.ds .nx-chat-orbe:hover { background: rgb(255 255 255 / 0.06); }
+.ds .nx-chat-estado { margin-left: auto; font-size: 12px; color: var(--ds-text-tertiary); }
+.ds .nx-chat-estado--trabalhando { color: var(--ds-text-secondary); }
+.ds .nx-proximo { display: grid; gap: 6px; }
