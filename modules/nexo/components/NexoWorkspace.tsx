@@ -10,6 +10,7 @@ import { flushSync } from "react-dom";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { plural } from "@/lib/plural";
+import { retirarEntrega } from "@/lib/entrega-ao-nexo";
 import type { NexoDossieDraft, NexoSlotSuggestion } from "../types";
 import { vincularProjetoDaConversa } from "../lib/projeto-da-auditoria";
 import {
@@ -1103,7 +1104,7 @@ function NexoWorkspaceInner({
     await lerPranchas(pendente.arquivos, pendente.imagens, null, jaLidas);
   }
 
-  async function readSelos(list: FileList | null) {
+  async function readSelos(list: FileList | File[] | null) {
     const all = list ? Array.from(list) : [];
     const pdfsSoltos = all.filter((f) => /\.pdf$/i.test(f.name));
     const images = all.filter(isImageFile);
@@ -2303,6 +2304,20 @@ function NexoWorkspaceInner({
   useEffect(() => {
     readSelosRef.current = readSelos;
   });
+  /*
+   * O ARQUIVO QUE VEIO DO PAINEL (lib/entrega-ao-nexo.ts): solto ou escolhido
+   * lá, lido aqui, pelo mesmo caminho do soltar na janela. Retirado DENTRO do
+   * quadro, como a intenção do link: retirado antes, a montagem dupla do
+   * StrictMode esvaziaria a caixa na primeira passada e a leitura nunca
+   * aconteceria.
+   */
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => {
+      const entregues = retirarEntrega();
+      if (entregues) void readSelosRef.current(entregues);
+    });
+    return () => cancelAnimationFrame(raf);
+  }, []);
   useEffect(() => {
     let depth = 0;
     const hasFiles = (e: DragEvent) =>

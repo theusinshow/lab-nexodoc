@@ -159,6 +159,29 @@ const telas = [
     await p.waitForTimeout(3000);
     ok(new URL(p.url()).pathname === "/nexo", "projeto: a tarefa Auditoria leva ao Nexo", p.url().replace(BASE, ""));
   }],
+  ["painel", async () => {
+    await abrir("/");
+    ok((await p.locator(".md-raiz .d2").count()) === 1, "painel: a tela nova dentro da moldura");
+    ok(/^(Bom dia|Boa tarde|Boa noite), /.test(await p.locator(".d2-cabeca h1").innerText()), "painel: a saudação pela hora de Brasília", await p.locator(".d2-cabeca h1").innerText());
+    ok((await p.locator(".d2-tarefa").count()) === 4, "painel: as quatro tarefas");
+    ok((await p.locator(".d2-tabela tbody tr").count()) >= 1, "painel: Continuar com as conversas", String(await p.locator(".d2-tabela tbody tr").count()));
+    ok((await p.locator(".d2-achados li").count()) >= 1, "painel: Com você com os achados", String(await p.locator(".d2-achados li").count()));
+    await p.waitForTimeout(2000);
+    ok((await p.locator(".d2-resumo .d2-menor").count()) === 4, "painel: o Nexo no escritório, com números reais", (await p.locator(".d2-menor-num").allInnerTexts()).join(" "));
+    await p.screenshot({ path: `${OUT}/painel-inicio-${LARGURA}.png`, fullPage: true });
+    await p.keyboard.press("Control+k");
+    await p.waitForTimeout(400);
+    ok(await p.evaluate(() => document.activeElement?.closest(".bc, [class*=barra]") !== null || document.activeElement?.tagName === "INPUT"), "painel: Ctrl K vai à barra da própria tela");
+    await p.keyboard.press("Escape");
+    await abrir("/?tarefa=auditar");
+    ok((await p.locator(".d2-tarefa[data-tarefa=auditar][aria-pressed=true]").count()) === 1 && (await p.locator(".d2-soltar").count()) === 1, "painel: ?tarefa=auditar abre a tarefa (Nova auditoria de Achados)");
+    await p.locator("input[type=file]").first().setInputFiles("tests/117_25_md_geral_a.pdf");
+    await p.waitForTimeout(6000);
+    ok(new URL(p.url()).pathname === "/nexo", "painel: o arquivo escolhido leva ao Nexo", p.url().replace(BASE, ""));
+    const corpo = await p.locator("body").innerText();
+    ok(/117_25_md_geral_a/.test(corpo), "painel: o Nexo recebeu o arquivo do Painel");
+    await p.screenshot({ path: `${OUT}/painel-entregou-${LARGURA}.png` });
+  }],
 ];
 
 for (const [nome, rodar] of telas) {

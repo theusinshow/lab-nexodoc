@@ -1,78 +1,106 @@
-import { redirect } from "next/navigation";
-
-import { auth } from "@/auth";
-import { PainelDoUsuario } from "@/components/home/painel-do-usuario";
-import { getUserAccess } from "@/lib/access-control";
-import { redirectToLogin } from "@/lib/auth-redirect";
+import { Moldura } from "@/components/moldura/moldura";
+import { TelaPainel, type AchadoComVoce, type IdTarefa, type TrabalhoParaContinuar } from "@/components/telas/painel/tela-painel";
+import { comVoce } from "@/lib/achados-em-aberto";
+import { requireActor } from "@/lib/access-control";
+import { cidadeDoCliente } from "@/lib/cliente-do-projeto";
+import { getPrisma } from "@/lib/db";
+import { partesEmBrasilia } from "@/lib/fuso-de-brasilia";
+import { carregarMoldura } from "@/lib/moldura";
+import { resumoDoEscritorio, type DiaDoEscritorio } from "@/lib/resumo-do-escritorio";
 
 /*
- * A RAIZ É O PAINEL.
+ * A RAIZ É O PAINEL, no sistema novo (Início D2 aprovado em 30/09/2026).
  *
- * Ela era uma grade de cartões de módulo, e antes disso um redirecionamento
- * para o Nexo. O comentário que ficava aqui dizia que "um menu com um item só é
- * uma parada no caminho, então quem entra já entra trabalhando" — e continua
- * verdade. O que mudou é o que significa "trabalhando": com projeto nascendo de
- * documento e achado virando pendência de alguém, a primeira pergunta de quem
- * entra deixou de ser "qual ferramenta" e passou a ser "onde eu estava".
+ * O que saiu do Painel antigo, por decisão do Matheus em 01/10 ("pode
+ * retirar"): Foco, Rascunho, Personalizar, os filtros e as ordens da lista de
+ * projetos e a atividade do escritório. O Nexo é aberto para uma tarefa e
+ * fechado — não é painel de acompanhamento diário. Obra parada mora em
+ * Projetos ("paradas há mais de 20 dias").
  *
- * Os três módulos que restavam não sumiram, mudaram de lugar: o Nexo é o orbe
- * do centro, e Volumes e Projetos vivem no menu da conta — são LUGARES, e
- * lugar não merece cartão na primeira tela.
- *
- * Desenho: `Nexo - Painel v2.dc.html`, do projeto "Design de interface Nexo".
- * Descrição: `docs/superpowers/specs/2026-08-14-painel-do-usuario-design.md`.
+ * "Continuar" são as conversas mais recentes de quem lê (as mesmas sete
+ * colunas de [[lib/trabalho-recente.ts]], sem abrir o JSON da conversa); "Com
+ * você", os achados atribuídos ([[lib/achados-em-aberto.ts]]).
  */
-export default async function PainelPage() {
-  const session = await auth();
 
-  if (!session?.user) {
-    redirectToLogin("/");
+const TAREFAS: IdTarefa[] = ["auditar", "volume", "ld", "conferir"];
+const QUANTOS_CONTINUAR = 5;
+const QUANTOS_COM_VOCE = 4;
+
+function saudacaoDe(agora: Date) {
+  const { hora } = partesEmBrasilia(agora);
+  return hora < 5 ? "Boa noite" : hora < 12 ? "Bom dia" : hora < 18 ? "Boa tarde" : "Boa noite";
+}
+
+function primeiroNome(nome: string) {
+  const local = nome.includes("@") ? nome.split("@")[0] : nome;
+  return local.trim().split(/[\s._-]+/)[0] || nome;
+}
+
+export default async function PainelPage({ searchParams }: { searchParams: Promise<{ tarefa?: string }> }) {
+  const { tarefa } = await searchParams;
+  const dados = await carregarMoldura("/");
+
+  let continuar: TrabalhoParaContinuar[] = [];
+  let achados: AchadoComVoce[] = [];
+  let totalComVoce = 0;
+  let resumo: DiaDoEscritorio[] = [];
+
+  if (!dados.semBanco) {
+    const actor = await requireActor();
+    const prisma = getPrisma();
+    const [conversas, pareceres, serie] = await Promise.all([
+      prisma.nexoConversation.findMany({
+        where: { userEmail: actor.email },
+        orderBy: { updatedAt: "desc" },
+        take: QUANTOS_CONTINUAR,
+        select: { id: true, title: true, tipo: true, auditoriaPendente: true, updatedAt: true, project: { select: { code: true, client: true } } },
+      }),
+      comVoce(actor.email, actor.userId, actor.organizationId),
+      resumoDoEscritorio(actor.organizationId),
+    ]);
+
+    continuar = conversas.map((c) => ({
+      conversaId: c.id,
+      codigo: c.project?.code ?? null,
+      cliente: c.project ? cidadeDoCliente(c.project.client) || c.project.client : "",
+      trabalho: c.title || "Conversa sem título",
+      estado: c.auditoriaPendente ? "auditoria em curso" : c.tipo === "auditoria" ? "auditoria" : c.tipo === "volume" ? "volume" : "conversa",
+      tom: c.auditoriaPendente ? "decide" : null,
+      quando: c.updatedAt.toISOString(),
+    }));
+
+    totalComVoce = pareceres.reduce((n, p) => n + p.achados.length, 0);
+    achados = pareceres
+      .flatMap((p) =>
+        p.achados.map((a) => ({
+          auditId: p.auditId,
+          chave: `${p.chave}:${a.id}`,
+          titulo: a.titulo,
+          codigo: p.codigo,
+          nivel: a.nivel,
+          pagina: a.pagina,
+          de: p.pessoa,
+        })),
+      )
+      // o que impede a entrega primeiro
+      .sort((a, b) => Number(b.nivel === "block") - Number(a.nivel === "block"))
+      .slice(0, QUANTOS_COM_VOCE);
+    resumo = serie;
   }
-
-  const access = await getUserAccess(session.user.email, session.user.name);
-
-  if (!access.isActive) {
-    redirect("/sem-acesso");
-  }
-
-  /*
-   * `access.email` e nao `session.user.email`: o do portao ja veio normalizado e
-   * NAO e anulavel. O da sessao e `string | null | undefined`, e cair para ""
-   * aqui produziria as iniciais "?" para quem tem conta legitima.
-   */
-  const nome = session.user.name?.trim() || access.email;
 
   return (
-    <PainelDoUsuario
-      nome={primeiroNome(nome)}
-      iniciais={iniciaisDe(nome)}
-      escritorio="PROSUL"
-      ehAdmin={access.isAdmin}
-    />
+    <Moldura dados={dados} atual="Painel" buscaPropria>
+      <TelaPainel
+        nome={primeiroNome(dados.usuario.nome)}
+        saudacao={saudacaoDe(new Date())}
+        tarefaInicial={TAREFAS.includes(tarefa as IdTarefa) ? (tarefa as IdTarefa) : null}
+        obras={dados.obras}
+        recentes={dados.recentes}
+        continuar={continuar}
+        comVoce={achados}
+        totalComVoce={totalComVoce}
+        resumo={resumo}
+      />
+    </Moldura>
   );
-}
-
-/*
- * O cabeçalho tem espaço para um nome, e não para um endereço.
- *
- * Quem entra por Google sem nome no perfil cai no e-mail — e
- * `matheusmendes077@gmail.com` estourou a linha e empurrou o avatar. O primeiro
- * nome basta para a pessoa reconhecer que a sessão é dela, que é a única
- * pergunta que este texto responde.
- */
-function primeiroNome(valor: string) {
-  const local = valor.includes("@") ? valor.split("@")[0] : valor;
-
-  return local.trim().split(/\s+/)[0] || valor;
-}
-
-function iniciaisDe(valor: string) {
-  const local = valor.includes("@") ? valor.split("@")[0] : valor;
-  // Só letras: `matheusmendes077` não pode virar as iniciais "M7".
-  const partes = local.split(/[\s._-]+/).filter((p) => /^\p{L}/u.test(p));
-
-  if (partes.length === 0) return "?";
-  if (partes.length === 1) return partes[0].slice(0, 2).toUpperCase();
-
-  return (partes[0][0] + partes[partes.length - 1][0]).toUpperCase();
 }

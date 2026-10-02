@@ -1,0 +1,180 @@
+/* O PAINEL (veio do lab: app/lab/telas/inicio-d2/inicio-d2.css). Técnico e compacto. Só tokens --ds-*. */
+
+.ds .d2 { position: relative; min-height: 100%; padding-bottom: 64px; background: var(--ds-surface-page); }
+.ds .d2-centro { width: min(1040px, calc(100% - 64px)); margin: 0 auto; }
+.ds .d2-cabeca { display: flex; align-items: center; gap: 14px; margin: 48px 0 18px; }
+.ds .d2-cabeca h1 { margin: 0; font-size: 30px; font-weight: 300; letter-spacing: -0.035em; line-height: 1.1; }
+
+/* ---------- tarefas em fileira ---------- */
+.ds .d2-tarefas { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 14px; }
+.ds .d2-tarefa {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-height: 64px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: var(--ds-radius-row);
+  background: var(--ds-surface-card);
+  box-shadow: var(--ds-edge);
+  color: var(--ds-text-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: box-shadow var(--ds-dur-feedback), background var(--ds-dur-feedback), transform var(--ds-dur-press);
+}
+.ds .d2-tarefa:hover { box-shadow: var(--ds-edge-strong); }
+.ds .d2-tarefa:active { transform: scale(0.98); }
+.ds .d2-tarefa > :not(.d2-tarefa-fundo) { position: relative; }
+.ds .d2-tarefa-fundo { position: absolute; inset: 0; border-radius: var(--ds-radius-row); background: var(--ds-surface-raised); box-shadow: inset 0 0 0 1px var(--ds-nexo-line); }
+.ds .d2-tarefa-icone { display: grid; place-items: center; width: 32px; height: 32px; flex: none; border-radius: 9px; background: var(--ds-surface-overlay); box-shadow: var(--ds-edge); color: var(--ds-text-secondary); }
+.ds .d2-tarefa--ativa .d2-tarefa-icone { color: var(--ds-nexo); }
+.ds .d2-tarefa-texto { display: grid; gap: 1px; min-width: 0; }
+.ds .d2-tarefa-texto b { font-weight: 500; font-size: var(--ds-text-xs); }
+.ds .d2-tarefa-texto > span { font-size: 11.5px; color: var(--ds-text-tertiary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ds .d2-tarefa--alvo { box-shadow: inset 0 0 0 1px var(--ds-line-strong); }
+.ds .d2-tarefa--sobre { background: var(--ds-nexo-wash); box-shadow: inset 0 0 0 1px var(--ds-nexo-line); }
+.ds .d2-tarefa--sobre .d2-tarefa-texto > span { color: var(--ds-nexo-soft); }
+
+/* ---------- a tarefa aberta ---------- */
+.ds .d2-painel { overflow: hidden; }
+.ds .d2-painel-dentro { margin-top: 8px; border-radius: var(--ds-radius-card); background: var(--ds-surface-card); box-shadow: var(--ds-edge-strong); }
+.ds .d2-soltar {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 12px;
+  align-items: center;
+  width: calc(100% - 16px);
+  margin: 8px;
+  padding: 18px 18px;
+  border: 1.5px dashed var(--ds-line-strong);
+  border-radius: var(--ds-radius-row);
+  background: none;
+  color: var(--ds-text-secondary);
+  font: inherit;
+  font-size: var(--ds-text-xs);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--ds-dur-feedback), background var(--ds-dur-feedback);
+}
+.ds .d2-soltar:hover { border-color: var(--ds-nexo-line); background: color-mix(in srgb, var(--ds-nexo) 3%, transparent); }
+.ds .d2-soltar svg { grid-row: 1 / 3; color: var(--ds-text-primary); }
+.ds .d2-soltar b { color: var(--ds-text-primary); font-weight: 500; }
+.ds .d2-soltar u { color: var(--ds-nexo); text-underline-offset: 3px; }
+.ds .d2-nota { font-size: 11.5px; color: var(--ds-text-tertiary); }
+.ds .d2-recebido { display: grid; gap: 12px; padding: 12px; }
+.ds .d2-ficha { margin: 0; display: grid; }
+.ds .d2-ficha > div { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: 14px; padding: 8px 4px; border-top: 1px solid var(--ds-line-subtle); font-size: var(--ds-text-xs); }
+.ds .d2-ficha > div:first-child { border-top: 0; }
+.ds .d2-ficha dt { color: var(--ds-text-tertiary); }
+.ds .d2-ficha dd { margin: 0; display: flex; align-items: center; flex-wrap: wrap; gap: 8px; color: var(--ds-text-primary); }
+
+/* ---------- colunas de baixo ---------- */
+.ds .d2-colunas { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 12px; margin-top: 32px; }
+.ds .d2-bloco { border-radius: var(--ds-radius-card); background: var(--ds-surface-card); box-shadow: var(--ds-edge); padding: 6px 6px 8px; min-width: 0; }
+.ds .d2-bloco h2 { display: flex; align-items: center; gap: 8px; margin: 8px 10px 6px; font-size: var(--ds-text-xs); font-weight: 500; }
+.ds .d2-conta { padding: 0 6px; border-radius: 999px; background: var(--ds-nexo-wash); color: var(--ds-nexo); font-size: 11px; line-height: 18px; }
+.ds .d2-vazio { margin: 4px 10px 10px; font-size: var(--ds-text-2xs); color: var(--ds-text-tertiary); }
+
+.ds .d2-tabela { width: 100%; border-collapse: separate; border-spacing: 0; font-size: var(--ds-text-xs); }
+.ds .d2-tabela th { padding: 6px 10px; text-align: left; font-weight: 400; font-size: 11.5px; color: var(--ds-text-tertiary); border-bottom: 1px solid var(--ds-line-subtle); }
+.ds .d2-tabela td { padding: 0 10px; height: 42px; border-bottom: 1px solid var(--ds-line-subtle); white-space: nowrap; }
+.ds .d2-tabela tbody tr:last-child td { border-bottom: 0; }
+.ds .d2-tabela tbody tr { cursor: pointer; transition: background var(--ds-dur-feedback); }
+.ds .d2-tabela tbody tr:hover { background: rgb(255 255 255 / 0.03); }
+.ds .d2-tabela tbody tr td:first-child { border-radius: 8px 0 0 8px; }
+.ds .d2-tabela tbody tr td:last-child { border-radius: 0 8px 8px 0; }
+.ds .d2-obra { display: inline-flex; align-items: center; gap: 8px; }
+.ds .d2-obra .ds-code { font-size: 11px; padding: 0 5px; }
+.ds .d2-trabalho { max-width: 220px; overflow: hidden; text-overflow: ellipsis; }
+.ds .d2-estado { font-size: var(--ds-text-2xs); }
+.ds .d2-estado--block { color: var(--ds-sev-block); }
+.ds .d2-estado--decide { color: var(--ds-sev-decide); }
+.ds .d2-estado--ok { color: var(--ds-state-ok); }
+.ds .d2-dir { text-align: right; }
+.ds .d2-quando { color: var(--ds-text-tertiary); font-size: var(--ds-text-2xs); font-variant-numeric: tabular-nums; }
+.ds .d2-seta { width: 24px; color: var(--ds-text-tertiary); }
+.ds .d2-tabela tbody tr:hover .d2-seta { color: var(--ds-text-primary); }
+
+.ds .d2-achados { list-style: none; margin: 0; padding: 0; }
+.ds .d2-achados li {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-height: 50px;
+  padding: 6px 10px;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: background var(--ds-dur-feedback);
+}
+.ds .d2-achados li:hover { background: rgb(255 255 255 / 0.03); }
+.ds .d2-achados li + li { box-shadow: 0 -1px 0 var(--ds-line-subtle); }
+.ds .d2-grav { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+.ds .d2-grav--block { background: var(--ds-sev-block); }
+.ds .d2-grav--decide { background: var(--ds-sev-decide); }
+/* os outros dois níveis, como no Resultado; sem nível (sem relatório), só o contorno apagado */
+.ds .d2-grav--note { box-shadow: inset 0 0 0 1.4px var(--ds-text-secondary); }
+.ds .d2-grav--texto { background: var(--ds-sev-texto); }
+.ds .d2-grav:not([class*="d2-grav--"]) { box-shadow: inset 0 0 0 1.4px var(--ds-text-tertiary); }
+.ds .d2-achado-texto { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.ds .d2-achado-texto b { font-weight: 400; font-size: var(--ds-text-xs); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ds .d2-achado-texto > span { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--ds-text-tertiary); }
+.ds .d2-achado-texto .ds-code { font-size: 10.5px; padding: 0 4px; }
+.ds .d2-abrir { font-size: var(--ds-text-2xs); color: var(--ds-text-tertiary); opacity: 0; transition: opacity var(--ds-dur-feedback); }
+.ds .d2-achados li:hover .d2-abrir, .ds .d2-achados li:focus-visible .d2-abrir { opacity: 1; color: var(--ds-nexo); }
+.ds .d2-todos {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 6px 10px 2px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ds-text-secondary);
+  font: inherit;
+  font-size: var(--ds-text-2xs);
+  cursor: pointer;
+}
+.ds .d2-todos:hover { color: var(--ds-text-primary); }
+
+/* ---------- o Nexo no escritório ---------- */
+.ds .d2-resumo { margin-top: 12px; padding: 14px 16px 16px; border-radius: var(--ds-radius-card); box-shadow: var(--ds-edge); background: rgb(255 255 255 / 0.012); }
+.ds .d2-resumo-cabeca { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.ds .d2-resumo-cabeca h2 { margin: 0; font-size: var(--ds-text-xs); font-weight: 500; }
+.ds .d2-resumo-cabeca h2 span { margin-left: 6px; font-weight: 400; color: var(--ds-text-tertiary); }
+.ds .d2-resumo-grade { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.ds .d2-num { display: grid; gap: 4px; align-content: start; padding: 0 16px; border-left: 1px solid var(--ds-line-subtle); }
+.ds .d2-num:first-child { padding-left: 0; border-left: 0; }
+.ds .d2-num b { font-size: 28px; font-weight: 300; letter-spacing: -0.03em; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.ds .d2-num > span { font-size: 11.5px; color: var(--ds-text-tertiary); line-height: 1.4; }
+.ds .d2-num-barra { display: block; height: 3px; margin-top: 4px; border-radius: 999px; background: rgb(255 255 255 / 0.07); overflow: hidden; }
+.ds .d2-num-barra i { display: block; height: 100%; border-radius: 999px; background: var(--ds-state-ok); transform-origin: left; }
+
+/* gráficos no idioma da Matos UI */
+.ds .d2-resumo-graficos { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 28px; }
+.ds .d2-resumo-achados { display: grid; gap: 14px; align-content: start; min-width: 0; }
+.ds .d2-resumo-numeros { display: flex; align-items: flex-end; gap: 28px; }
+.ds .d2-resumo-numeros .d2-num { padding: 0; border: 0; }
+.ds .d2-resumo-legenda { margin-left: auto; display: flex; align-items: center; gap: 6px; padding-bottom: 2px; font-size: 11.5px; color: var(--ds-text-tertiary); }
+.ds .d2-leg { width: 8px; height: 14px; border-radius: 999px; margin-left: 8px; }
+.ds .d2-leg--parte { background: #c9ccd4; }
+.ds .d2-leg--total { background: #5b5f6b; }
+.ds .d2-resumo-uso { display: grid; gap: 10px; align-content: start; min-width: 0; padding-left: 28px; border-left: 1px solid var(--ds-line-subtle); }
+.ds .d2-resumo-uso h3 { margin: 0; font-size: 11.5px; font-weight: 400; color: var(--ds-text-tertiary); }
+.ds .d2-resumo-menores { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--ds-line-subtle); }
+.ds .d2-menor { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: end; gap: 16px; padding: 0 20px; border-left: 1px solid var(--ds-line-subtle); }
+.ds .d2-menor:first-child { padding-left: 0; border-left: 0; }
+.ds .d2-menor .d2-num { padding: 0; border: 0; }
+.ds .d2-menor .d2-num b { font-size: 22px; }
+
+/* compacto: o resumo acompanha, não disputa com as tarefas */
+.ds .d2-resumo { padding: 12px 16px 14px; background: none; }
+.ds .d2-resumo-cabeca { margin-bottom: 12px; }
+.ds .d2-resumo-menores { grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 0; padding-top: 0; border-top: 0; }
+.ds .d2-menor { gap: 12px; padding: 0 16px; }
+.ds .d2-menor { grid-template-columns: auto minmax(0, 1fr); row-gap: 4px; }
+.ds .d2-menor-num { font-size: 20px; font-weight: 300; letter-spacing: -0.03em; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.ds .d2-menor-rotulo { grid-column: 1 / -1; font-size: 11px; color: var(--ds-text-tertiary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ds .d2-menor > :nth-child(2) { opacity: 0.85; align-self: end; }
