@@ -17,13 +17,11 @@ import Link from "next/link";
 import {
   FileText,
   ListChecks,
-  Map,
   MapPin,
   Maximize2,
-  MessageSquare,
-  PanelLeft,
+  PanelLeftClose,
+  PanelRightClose,
   RotateCw,
-  ShieldCheck,
   SquareStack,
 } from "lucide-react";
 
@@ -32,7 +30,6 @@ import { Button } from "@/components/ui/button";
 import { AuditResult, type AuditView } from "@/components/audit-result";
 import { classifyFindingTier } from "@/lib/audit-report";
 import { compararPareceres, resumoDoDiff } from "@/lib/diff-de-pareceres";
-import { Chip } from "@/components/ui/chip";
 import {
   auditoriaMaisRecente,
   consultarAuditoria,
@@ -80,9 +77,12 @@ export function PalcoDoNexo({
    * que está sempre montado, e o palco só desenha o que ele apurou.
    */
   aberturaPorLink,
+  obra,
 }: {
   mapa: ReactNode;
   aberturaPorLink: AberturaPorLink;
+  /** De que obra é a conversa (BarraDoNexo): o começo do cabeçalho do palco. */
+  obra?: ReactNode;
 }) {
   const {
     results,
@@ -473,36 +473,26 @@ export function PalcoDoNexo({
   });
 
   return (
-    <div className="relative flex h-full w-full flex-col">
+    <div className="nw-palco nx-palco relative flex h-full w-full flex-col">
       {/*
         O seletor só aparece quando há duas vistas de fato. Com uma só, ele seria
         um controle que não controla nada.
       */}
-      <div className="flex shrink-0 flex-wrap items-center gap-1 px-1 pb-2">
+      <header className="nw-palco-cabeca nx-palco-cabeca">
+        {obra}
+        {/* As vistas só aparecem quando há duas de fato: com uma, seriam um controle que não controla nada. */}
         {temAuditoria && (
-          <>
-          <Chip
-            data-tour="chip-mapa"
-            variant={mostrandoAuditoria ? "quiet" : "default"}
-            onClick={() => escolher("mapa")}
-            className="min-h-7 px-2.5 py-0.5 text-[11px]"
-          >
-            <Map aria-hidden />
-            Mapa do volume
-          </Chip>
-          <Chip
-            data-tour="chip-auditoria"
-            variant={mostrandoAuditoria ? "default" : "quiet"}
-            onClick={() => escolher("auditoria")}
-            className="min-h-7 px-2.5 py-0.5 text-[11px]"
-          >
-            <ShieldCheck aria-hidden />
-            Auditoria
-          </Chip>
-          </>
+          <span className="nw-vistas" role="group" aria-label="Vistas do palco">
+            <button type="button" data-tour="chip-auditoria" aria-pressed={mostrandoAuditoria} onClick={() => escolher("auditoria")}>
+              Auditoria
+            </button>
+            <button type="button" data-tour="chip-mapa" aria-pressed={!mostrandoAuditoria} onClick={() => escolher("mapa")}>
+              Mapa do volume
+            </button>
+          </span>
         )}
         <EspacoDaRevisao />
-      </div>
+      </header>
 
       {/*
         A BARRA DE VISTAS — o segundo degrau, e só ele.
@@ -524,50 +514,40 @@ export function PalcoDoNexo({
            */
           role="group"
           aria-label="Vistas da auditoria"
-          className="flex shrink-0 flex-wrap items-center gap-1 border-b border-border/60 px-1 pb-2"
+          className="nx-vistas-do-parecer"
         >
           {VISTAS_DO_PARECER.map((v) => {
             const ativa = !noDocumento && vistaDoParecer === v.valor;
             return (
-              <Chip
+              <button
                 key={v.valor}
+                type="button"
                 aria-pressed={ativa}
-                variant={ativa ? "default" : "quiet"}
                 onClick={() => {
                   setNoDocumento(false);
                   setVistaDoParecer(v.valor);
                 }}
-                className="min-h-8 px-3 text-xs"
+                className="nx-vista"
               >
-                <v.Icone aria-hidden />
+                <v.Icone size={14} aria-hidden />
                 {v.rotulo}
                 {/* A contagem mora na aba que a governa: é o número que decide
                     se vale abrir a lista, e ele estava enterrado no subtítulo. */}
                 {v.valor === "findings" && totalDeAchados > 0 && (
-                  <span className="font-mono tabular-nums text-muted-foreground">
-                    {totalDeAchados}
-                  </span>
+                  <span className="ds-num nx-vista-conta">{totalDeAchados}</span>
                 )}
                 {/* Número de auditoria incompleta não anda sem a ressalva. */}
                 {v.valor === "findings" && incompletudeDoParecer(report).incompleta && (
-                  <span className="font-mono text-[11px] font-semibold uppercase text-[var(--status-critical)]">
-                    incompleta
-                  </span>
+                  <span className="nx-vista-incompleta">incompleta</span>
                 )}
-              </Chip>
+              </button>
             );
           })}
           {podeVerNoDocumento && (
-            <Chip
-              aria-pressed={noDocumento}
-              data-tour="chip-no-documento"
-              variant={noDocumento ? "default" : "quiet"}
-              onClick={() => setNoDocumento(true)}
-              className="min-h-8 px-3 text-xs"
-            >
-              <MapPin aria-hidden />
+            <button type="button" aria-pressed={noDocumento} data-tour="chip-no-documento" onClick={() => setNoDocumento(true)} className="nx-vista">
+              <MapPin size={14} aria-hidden />
               No documento
-            </Chip>
+            </button>
           )}
           {/*
             POR QUE A ABA NÃO ESTÁ AQUI, quando não está.
@@ -578,7 +558,7 @@ export function PalcoDoNexo({
             faz isso.
           */}
           {report && fonte.tipo === "ausente" && !buscandoArquivos ? (
-            <span className="text-[11.5px] leading-5 text-muted-foreground">
+            <span className="nx-vistas-nota">
               {fonte.motivo}
             </span>
           ) : null}
@@ -595,7 +575,7 @@ export function PalcoDoNexo({
           {diffDoParecer && (
             <span
               data-diff-do-parecer
-              className="ml-auto truncate font-mono text-[11px] text-muted-foreground"
+              className="nx-vistas-diff"
               title="Comparado com a auditoria anterior desta conversa"
             >
               {diffDoParecer}
@@ -757,37 +737,26 @@ export function PalcoDoNexo({
  * a lista de projetos, o chat, ou os dois ("Foco na revisão"). A escolha fica
  * guardada e volta na próxima visita; o chat recolhido continua montado.
  */
+/**
+ * O ESPAÇO DA REVISÃO: foco (palco sozinho), recolher as conversas, recolher o
+ * chat. Ícones com nome (aria-label e title): ícone sem nome é adivinhação.
+ */
 function EspacoDaRevisao() {
   const areas = useAreasRecolhidas();
+  const foco = areas.foco ? "Sair do foco" : "Foco na revisão";
+  const projetos = areas.projetos ? "Mostrar conversas" : "Ocultar conversas";
+  const chat = areas.chat ? "Mostrar chat" : "Ocultar chat";
   return (
-    <div role="group" aria-label="Espaço da revisão" className="ml-auto flex flex-wrap items-center gap-1 max-lg:hidden" data-espaco-da-revisao>
-      <Chip
-        aria-pressed={areas.foco}
-        variant={areas.foco ? "default" : "quiet"}
-        onClick={areas.alternarFoco}
-        className="min-h-7 px-2.5 py-0.5 text-[11px]"
-      >
-        <Maximize2 aria-hidden />
-        {areas.foco ? "Sair do foco" : "Foco na revisão"}
-      </Chip>
-      <Chip
-        aria-pressed={!areas.projetos}
-        variant="quiet"
-        onClick={areas.alternarProjetos}
-        className="min-h-7 px-2.5 py-0.5 text-[11px]"
-      >
-        <PanelLeft aria-hidden />
-        {areas.projetos ? "Mostrar projetos" : "Ocultar projetos"}
-      </Chip>
-      <Chip
-        aria-pressed={!areas.chat}
-        variant="quiet"
-        onClick={areas.alternarChat}
-        className="min-h-7 px-2.5 py-0.5 text-[11px]"
-      >
-        <MessageSquare aria-hidden />
-        {areas.chat ? "Mostrar chat" : "Ocultar chat"}
-      </Chip>
-    </div>
+    <span role="group" aria-label="Espaço da revisão" className="nw-espaco nx-espaco" data-espaco-da-revisao>
+      <button type="button" aria-pressed={areas.foco} onClick={areas.alternarFoco} aria-label={foco} title={foco}>
+        <Maximize2 size={15} aria-hidden />
+      </button>
+      <button type="button" aria-pressed={areas.projetos} onClick={areas.alternarProjetos} aria-label={projetos} title={projetos}>
+        <PanelLeftClose size={15} aria-hidden />
+      </button>
+      <button type="button" aria-pressed={areas.chat} onClick={areas.alternarChat} aria-label={chat} title={chat}>
+        <PanelRightClose size={15} aria-hidden />
+      </button>
+    </span>
   );
 }

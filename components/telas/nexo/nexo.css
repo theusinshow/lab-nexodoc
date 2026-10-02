@@ -117,3 +117,23 @@
 .ds .nx-gravacao--grave svg { color: var(--ds-sev-block); }
 .ds .nx-tour { display: inline-flex; align-items: center; gap: 6px; align-self: flex-start; padding: 6px; border: 0; border-radius: 7px; background: none; font: inherit; font-size: 12px; color: var(--ds-text-tertiary); cursor: pointer; }
 .ds .nx-tour:hover { color: var(--ds-text-primary); }
+
+/* o palco no app: cabeçalho de uma linha (obra, estado, vistas, espaço) */
+.ds .nx-palco { background: transparent; }
+.ds .nx-palco-cabeca { flex: none; height: 44px; padding: 0 4px 0 6px; background: transparent; }
+.ds .nx-obra { display: inline-flex; align-items: center; gap: 8px; min-width: 0; overflow: hidden; font-size: 12.5px; color: var(--ds-text-secondary); }
+.ds .nx-obra .mp-mono { flex: none; color: var(--ds-text-primary); }
+.ds .nx-obra-nome { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: var(--ds-text-primary); }
+.ds .nx-obra-orgao { overflow: hidden; text-overflow: ellipsis; }
+.ds .nw-vistas button[aria-pressed="true"] { background: rgb(255 255 255 / 0.08); color: var(--ds-text-primary); }
+.ds .nx-espaco { flex: none; }
+.ds .nw-vistas + .nx-espaco, .ds .nx-palco-cabeca > .nx-espaco:only-child { margin-left: 0; }
+.ds .nx-palco-cabeca > .nx-obra + .nx-espaco, .ds .nx-palco-cabeca > .nx-espaco:first-child { margin-left: auto; }
+.ds .nx-vistas-do-parecer { display: flex; flex: none; flex-wrap: wrap; align-items: center; gap: 2px; padding: 8px 4px; border-bottom: 1px solid var(--ds-line-subtle); }
+.ds .nx-vista { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px; border: 0; border-radius: 8px; background: none; font: inherit; font-size: 12.5px; color: var(--ds-text-tertiary); cursor: pointer; }
+.ds .nx-vista:hover { color: var(--ds-text-primary); }
+.ds .nx-vista[aria-pressed="true"] { background: rgb(255 255 255 / 0.08); color: var(--ds-text-primary); }
+.ds .nx-vista-conta { font-size: 11.5px; color: var(--ds-text-tertiary); }
+.ds .nx-vista-incompleta { font-size: 11px; color: var(--ds-sev-block); }
+.ds .nx-vistas-nota { padding-left: 8px; font-size: 12px; color: var(--ds-text-tertiary); }
+.ds .nx-vistas-diff { margin-left: auto; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-family: var(--ds-font-mono); font-size: 11px; color: var(--ds-text-tertiary); }

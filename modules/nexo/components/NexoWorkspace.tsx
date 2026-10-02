@@ -2930,7 +2930,6 @@ function NexoWorkspaceInner({
         started={started}
         leitura={aberturaPorLink.pedida}
         abrindo={abrindo !== null && abrindo !== conv.conversationId}
-        barra={<BarraDoNexo projetoPedido={projetoPedido} />}
         sidebar={
           <NexoSidebar
             onNewConversation={reset}
@@ -2945,6 +2944,7 @@ function NexoWorkspaceInner({
         stage={
           <PalcoDoNexo
             aberturaPorLink={aberturaPorLink}
+            obra={<BarraDoNexo projetoPedido={projetoPedido} />}
             mapa={
           <NexoCanvas
             folhas={selos}
