@@ -21,6 +21,7 @@ import { corDaDisciplina, siglaDaDisciplina } from "../lib/disciplina-cor";
 import type { DivergenciaDaFolha } from "../lib/conferencia-por-folha";
 import { densidadeDoZoom, oQueMostrar } from "../lib/densidade-do-canvas";
 import { AcaoDoNo } from "./AcaoDoNo";
+import "@/components/telas/nexo/cartao-da-folha.css";
 
 export type FolhaNodeData = {
   id: FolhaId;
@@ -160,13 +161,6 @@ export function FolhaNode({ data, selected }: NodeProps<Node<FolhaNodeData>>) {
    * ele veio de uma pessoa em vez do carimbo. Era âmbar, e âmbar aqui dizia
    * "atenção, tem algo errado com esta folha", que é justamente o contrário.
    */
-  /* A cor do contorno vira --nx-edge: com chanfro, a borda e o FUNDO do
-     elemento e o miolo e o ::before -- `border` seria cortada nas diagonais. */
-  const borda = selected
-    ? "[--nx-edge:var(--ring)]"
-    : data.editado
-      ? "[--nx-edge:var(--nexodoc-tertiary-strong)]"
-      : "[--nx-edge:var(--border)]";
 
   /*
    * A DENSIDADE, e não o zoom.
@@ -209,174 +203,92 @@ export function FolhaNode({ data, selected }: NodeProps<Node<FolhaNodeData>>) {
    */
   const semCodigo = data.avulsa === true && !data.arquivo?.trim();
 
-  const corpo = (
-    <div
-      className={`nx-edge-6 w-[120px] overflow-hidden ${borda} transition-colors duration-[var(--duration-fast)] ease-[var(--ease-feedback)]`}
-    >
-      {/*
-       * O fio de 2px no topo é a disciplina — a ÚNICA cor do nó, e secundária à
-       * sigla: quem não distingue matiz continua lendo "ARQ". Disciplina fora
-       * das oito famílias não ganha cor: sem cor é melhor que cor errada.
-       */}
-      <div
-        className="h-0.5 w-full"
-        style={{ background: cor ?? "transparent" }}
-        aria-hidden
-      />
-      <div className="px-2 py-1.5">
-      <div className="flex items-center gap-1">
-        {/* O travessão em rust marca a AUSÊNCIA do número sem chamar de erro:
-            a folha continua arrastável e continua entrando no volume. */}
-        <span
-          title={fonteDoNumero}
-          className={`font-mono text-[10px] tabular-nums ${
-            semNumero
-              ? "text-[var(--nexodoc-tertiary-strong)]"
-              : "text-muted-foreground"
-          }`}
-        >
-          {semNumero ? "—" : String(data.numero).padStart(2, "0")}
-          {data.total ? `/${String(data.total).padStart(2, "0")}` : ""}
-          {/*
-            O ANEL VAZIO do número deduzido — e SÓ dele.
-            Marcar as quatro origens encheria o nó de pontos e apagaria o único
-            que muda o que se faz: os outros três são leituras de algum lugar;
-            este é posição. Anel vazio, e não ponto cheio: a forma diz "falta
-            miolo aqui" sem gastar uma cor do sistema.
-          */}
-          {data.origemDoNumero === "ordem" && (
-            <span
-              aria-label="número deduzido pela ordem das páginas"
-              className="ml-1 inline-block size-1.5 rounded-full border border-muted-foreground align-middle"
-            />
-          )}
-        </span>
-        {sigla && mostrar.sigla && (
-          <span className="font-mono text-[10px] tracking-[0.05em] text-muted-foreground">
-            · {sigla}
-          </span>
-        )}
-        {data.editado && (
-          <span
-            className="h-1.5 w-1.5 rounded-full bg-[var(--nexodoc-tertiary-strong)]"
-            title="corrigido à mão"
-            aria-label="corrigido à mão"
-          />
-        )}
-        {/*
-          A MARCA DA CONFERÊNCIA, e ela sobrevive aos três níveis de zoom pelo
-          mesmo motivo da marca de "corrigido à mão": é sinal de DEFEITO, e a
-          varredura de conjunto é exatamente aquela em que ele passaria batido.
-
-          Sem verde. "Sem divergência" é o normal, e o normal é mudo — duzentos
-          pontos verdes apagariam os três coloridos que importam.
-        */}
-        {data.divergencia && (
-          <span
-            className="h-1.5 w-1.5 shrink-0 rounded-full"
-            style={{
-              background:
-                data.divergencia.severidade === "critico"
-                  ? "var(--status-critical)"
-                  : data.divergencia.severidade === "aviso"
-                    ? "var(--status-warning)"
-                    : "var(--muted-foreground)",
-            }}
-            title={data.divergencia.motivos.join(" · ")}
-            aria-label={`conferência: ${data.divergencia.motivos.join(". ")}`}
-          />
-        )}
-      </div>
-      {/*
-        CINCO LINHAS, não duas.
-        Com 44 folhas na tela, conferir o título era abrir cada uma — e conferir
-        é justamente o que se vai fazer ali. Pior: o corte do carimbo devolvia
-        "PLANTA DE" onde o desenho diz "PLANTA DE IMPLANTAÇÃO", e um clamp de
-        duas linhas fazia esse pedaço parecer um título completo. O defeito se
-        escondia atrás do próprio recorte da tela.
-
-        CINCO é medido, não escolhido: as descrições reais dos quatro projetos
-        têm mediana de 37 caracteres e p90 de 97, e num nó de 120px a 10px isso
-        cabe em cinco linhas. O que passa disso é raro e continua com o texto
-        inteiro no `title`.
-
-        NÃO É ROLAGEM INTERNA, e a razão é o canvas: um `overflow-y-auto` aqui
-        exigiria `nowheel` do React Flow, e com quarenta e quatro nós metade da
-        tela viraria zona morta de zoom. Altura fixa mantém a grade regular —
-        cartão de altura variável vira escada e destrói a varredura, que é a
-        razão desta tela existir.
-      */}
-      {mostrar.titulo && (
-        <p
-          className="mt-0.5 line-clamp-5 min-h-[3.6em] text-[10px] leading-tight"
-          title={data.titulo}
-        >
-          {data.titulo || "—"}
-        </p>
+  /*
+   * O CARTÃO CARIMBO (desenho aprovado no lab, 01/10/2026: "já tem a
+   * disciplina e ajuda quando monta volume com várias disciplinas"). A folha
+   * se lê como o selo da prancha: células com fio, rótulo pequeno e valor.
+   *
+   * A DENSIDADE SEGUE O ZOOM (`oQueMostrar`): de longe só o número grande e
+   * as marcas; no meio, folha, disciplina e título; de perto, o código do
+   * arquivo também. As MARCAS sobrevivem aos três níveis — são sinal de
+   * defeito, e a varredura de conjunto é onde ele passaria batido:
+   *  - ponto coral/âmbar: a conferência divergiu (sem verde: o normal é mudo);
+   *  - quadrado: corrigida à mão;
+   *  - anel vazio ao lado do número: número deduzido pela ordem, ninguém leu;
+   *  - travessão no lugar do número: a folha não tem número.
+   */
+  const distancia = !mostrar.titulo ? "longe" : mostrar.carimbo ? "perto" : "media";
+  const numeroTexto = semNumero ? "—" : String(data.numero).padStart(2, "0");
+  const marcas = (
+    <>
+      {data.divergencia && (
+        <i
+          className={`ct-marca mp-tom--${data.divergencia.severidade === "critico" ? "critico" : data.divergencia.severidade === "aviso" ? "aviso" : "neutro"}`}
+          title={data.divergencia.motivos.join(" · ")}
+          aria-label={`conferência: ${data.divergencia.motivos.join(". ")}`}
+        />
       )}
-      {/*
-        O CARIMBO INTEIRO só de perto — e é aqui que o zoom semântico paga.
-        Código do arquivo e disciplina por extenso são o que se confere contra a
-        prancha, folha a folha; de longe eles são ruído sobre duzentos nós, e no
-        meio do caminho competiriam com o título.
-      */}
-      {mostrar.carimbo && (data.arquivo?.trim() || data.disciplina?.trim()) && (
-        <div className="mt-1 grid gap-0.5 border-t border-[var(--border)] pt-1">
-          {data.arquivo?.trim() && (
-            <p
-              className="truncate font-mono text-[9px] text-muted-foreground"
-              title={data.arquivo}
-            >
-              {data.arquivo}
-            </p>
-          )}
-          {data.disciplina?.trim() && (
-            <p className="truncate text-[9px] text-muted-foreground" title={data.disciplina}>
-              {data.disciplina}
-            </p>
+      {data.editado && !data.divergencia && <i className="ct-marca mp-tom--mao" title="corrigido à mão" aria-label="corrigido à mão" />}
+    </>
+  );
+  const anelDaOrdem =
+    data.origemDoNumero === "ordem" ? <span className="nx-folha-ordem" aria-label="número deduzido pela ordem das páginas" /> : null;
+
+  const corpo = (
+    <div className={`ct ct--carimbo ct--${distancia} nx-folha${selected ? " ct--sel" : ""}${data.editado ? " nx-folha--editada" : ""}`}>
+      {distancia === "longe" ? (
+        <div className="ct-carimbo-longe">
+          <span className={`ct-grande${semNumero ? " ct-falta" : ""}`} title={fonteDoNumero}>
+            {numeroTexto}
+          </span>
+          {marcas}
+        </div>
+      ) : (
+        <div className={`ct-tabela${distancia === "perto" ? " nx-tabela--perto" : ""}`}>
+          <div className="ct-cel">
+            <small>folha</small>
+            <b className={`ct-mono${semNumero ? " ct-falta" : ""}`} title={fonteDoNumero}>
+              {numeroTexto}
+              {data.total ? `/${String(data.total).padStart(2, "0")}` : ""}
+              {anelDaOrdem}
+            </b>
+          </div>
+          <div className="ct-cel">
+            <small>disc.</small>
+            <b>
+              {sigla ? (
+                <span className="ct-sigla" style={{ ["--dc-cor" as string]: cor ?? "var(--ds-text-tertiary)" }} title={data.disciplina ?? undefined}>
+                  <i />
+                  {sigla}
+                </span>
+              ) : (
+                <span className="ct-sigla">—</span>
+              )}
+            </b>
+            {marcas}
+          </div>
+          <div className="ct-cel ct-cel--titulo nx-cel-titulo">
+            <small>título</small>
+            <b title={data.titulo}>{data.titulo || "—"}</b>
+          </div>
+          {distancia === "perto" && data.arquivo?.trim() && (
+            <div className="ct-cel ct-cel--titulo ct-cel--codigo">
+              <b className="ct-mono" title={data.arquivo}>
+                {data.arquivo}
+              </b>
+            </div>
           )}
         </div>
       )}
       {/*
-        A folha sem PDF é DIFERENTE das outras e precisa parecer diferente: ela
-        entra na lista de documentos e não entra no volume montado. Quem for
-        montar tem de saber disso olhando, não descobrindo no PDF final.
+        A folha sem PDF é DIFERENTE e precisa parecer diferente: entra na LD e
+        não entra no volume montado. Quem for montar tem de saber olhando.
       */}
-      {data.avulsa && !mostrar.titulo && (
-        /*
-         * DE LONGE O AVISO VIRA PONTO, e não desaparece: "sem código · não sai
-         * na LD" é um defeito de verdade, e uma varredura que o esconde no zoom
-         * de conjunto é justamente a varredura em que ele passaria batido.
-         */
-        <span
-          className={
-            semCodigo
-              ? "mt-1 block h-1.5 w-1.5 rounded-full bg-[var(--status-warning)]"
-              : "mt-1 block h-1.5 w-1.5 rounded-full bg-muted-foreground"
-          }
-          title={semCodigo ? "sem código · não sai na LD" : "sem PDF · só na LD"}
-          aria-label={semCodigo ? "sem código, não sai na LD" : "sem PDF, só na LD"}
-        />
-      )}
-      {data.avulsa && mostrar.titulo && (
-        <p
-          className={
-            semCodigo
-              ? "mt-1 font-mono text-[9px] uppercase tracking-[0.06em] text-[var(--status-warning)]"
-              : "mt-1 font-mono text-[9px] uppercase tracking-[0.06em] text-muted-foreground"
-          }
-        >
-          {semCodigo ? "sem código · não sai na LD" : "sem PDF · só na LD"}
+      {data.avulsa && (
+        <p className={`nx-folha-avulsa${semCodigo ? " nx-folha-avulsa--sem-codigo" : ""}`} title={semCodigo ? "sem código · não sai na LD" : "sem PDF · só na LD"}>
+          {distancia === "longe" ? "" : semCodigo ? "sem código · não sai na LD" : "sem PDF · só na LD"}
         </p>
       )}
-      {/* As ações só no nó SELECIONADO: com 200 folhas na tela, botões em todas
-          seriam ruído maior que o conteúdo.
-
-          E SÓ ONDE DÁ PARA LÊ-LAS. No zoom de conjunto os rótulos viram fiapo
-          de 4px, e o nó selecionado ficava três vezes mais alto que os vizinhos
-          — a escada que o comentário das cinco linhas existe para evitar, agora
-          criada pela própria seleção. Quem navega por teclado não perde nada:
-          `E` e `Enter` fazem o mesmo sem os botões. */}
       {selected && !confirmando && mostrar.titulo && (
         <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
           <AcaoDoNo
@@ -443,7 +355,6 @@ export function FolhaNode({ data, selected }: NodeProps<Node<FolhaNodeData>>) {
       )}
       <Handle type="target" position={Position.Left} className="!opacity-0" />
       <Handle type="source" position={Position.Right} className="!opacity-0" />
-      </div>
     </div>
   );
 

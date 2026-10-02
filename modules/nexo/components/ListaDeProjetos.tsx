@@ -1,94 +1,43 @@
 "use client";
 
 /**
- * A LISTA DE PROJETOS da barra lateral — o miolo do desenho aprovado.
+ * AS PASTAS DA COLUNA DE CONVERSAS: uma por obra (projeto vinculado, pasta
+ * legada ou "A endereçar"), a mais recente aberta. O agrupamento e o filtro
+ * moram em [[../lib/cartoes-de-projeto.ts]]; aqui é só a lista.
  *
- * Substitui as três abas (Tudo / Volumes / Auditorias) e a lista de conversas.
- * As abas saíram porque a terceira não cabia em 300px (aparecia cortada como
- * "\UDITORIAS 17") e porque filtrar por TIPO responde uma pergunta que ninguém
- * faz: quem procura, procura a obra. A lista de conversas saiu porque quatro
- * linhas "MET" na mesma pasta não distinguiam nada.
- *
- * O ESTADO DO CARTÃO É DO PROJETO, NÃO DA SESSÃO: abre o do projeto em que se
- * está, e abrir outro fecha esse. Voltar para a conversa reabre o cartão dela.
- *
- * O RESUMO É BEST-EFFORT. Enquanto ele não chega — ou se a rota falhar — a
- * lista se desenha com o que as sete colunas já têm: os cartões existem, sem as
- * etiquetas e sem a contagem de folhas. Uma barra que só aparece depois de uma
- * segunda chamada seria pior que uma barra incompleta.
+ * Abre sozinha a pasta da conversa ativa; sem ativa, a mais recente. Abrir
+ * outra fecha a anterior — a coluna é estreita, e duas pastas abertas
+ * empurrariam a conversa que se procura para fora da tela.
  */
 
 import { useMemo, useState } from "react";
-import { CopyPlus, Eraser, Trash2 } from "lucide-react";
 
-import { cn } from "@/lib/utils";
-import {
-  filtrarCartoes,
-  type CartaoDeProjeto as Cartao,
-} from "../lib/cartoes-de-projeto";
+import { filtrarCartoes } from "../lib/cartoes-de-projeto";
 import { useCartoesDeProjeto } from "../state/use-cartoes-de-projeto";
 import type { ConversationSummary } from "../lib/nexo-db";
 import { CartaoDeProjeto } from "./CartaoDeProjeto";
-import { LimpezaDaPasta } from "./LimpezaDaPasta";
 
 export function ListaDeProjetos({
   conversations,
   query,
   activeId,
   onSelect,
-  onDeleteFolder,
-  onDuplicate,
 }: {
   conversations: readonly ConversationSummary[];
   query: string;
   activeId?: string;
   onSelect?: (id: string) => void;
-  onDeleteFolder?: (ids: string[]) => void;
-  onDuplicate?: (id: string) => void;
 }) {
   const [aberto, setAberto] = useState<string | null>(null);
-  const [limpando, setLimpando] = useState<string | null>(null);
-  const [confirmando, setConfirmando] = useState<string | null>(null);
-  /*
-   * OS CARTÕES ESTENDIDOS — os que mostram também as conversas de fora do
-   * corte. Estender não é o mesmo que abrir: fechar o cartão não deve esquecer
-   * que a pessoa pediu as antigas.
-   */
   const [estendidos, setEstendidos] = useState<ReadonlySet<string>>(() => new Set());
 
-  /*
-   * A MONTAGEM SAIU DAQUI, e é o ponto da mudança: barra e paleta liam listas
-   * diferentes com o mesmo texto. Ver [[use-cartoes-de-projeto.tsx]].
-   */
   const cartoes = useCartoesDeProjeto(conversations);
-
   const filtrados = useMemo(() => filtrarCartoes(cartoes, query), [cartoes, query]);
 
-  /*
-   * O CARTÃO DA CONVERSA ABERTA nasce aberto. É a regra "fechar não perde o
-   * lugar": voltar para o trabalho reabre o projeto dele, sem clique.
-   */
   const doAtivo = useMemo(
-    () =>
-      cartoes.find((c) => [...c.conversas, ...c.ocultas].some((x) => x.id === activeId))
-        ?.chave ?? null,
+    () => cartoes.find((c) => [...c.conversas, ...c.ocultas].some((x) => x.id === activeId))?.chave ?? null,
     [cartoes, activeId],
   );
-
-  /*
-   * SEM CONVERSA ATIVA, ABRE O CARTÃO DO TRABALHO MAIS RECENTE — e isto conserta
-   * uma regressão que este arquivo criou.
-   *
-   * A auditoria de um memorial cuja prefeitura não foi lida fica SEM PASTA
-   * (`pastaDoProjeto` exige código E prefeitura). Na lista de projetos ela cai
-   * no cartão "SEM CÓDIGO NO CARIMBO" — fechado, no fim da lista. Depois de um
-   * F5, quem tinha acabado de auditar não achava o parecer e refazia a
-   * auditoria inteira, pagando de novo pelo trabalho que estava gravado.
-   *
-   * A regra "o cartão do projeto em que se está nasce aberto" já cobria o caso
-   * COM conversa ativa. Este degrau cobre o sem: o mais recente é o que se
-   * estava fazendo, com pasta ou sem.
-   */
   const doMaisRecente = useMemo(() => {
     let melhor: { chave: string; quando: number } | null = null;
     for (const c of cartoes) {
@@ -97,175 +46,40 @@ export function ListaDeProjetos({
     }
     return melhor?.chave ?? null;
   }, [cartoes]);
-
   const abertoAgora = aberto ?? doAtivo ?? doMaisRecente;
 
   if (filtrados.length === 0) {
     return (
-      <p className="px-1 py-6 text-[11.5px] leading-5 text-muted-foreground">
-        {query.trim()
-          ? `Nenhum projeto com “${query.trim()}”.`
-          : "Nenhum projeto ainda. Solte as pranchas na conversa e o projeto nasce do carimbo."}
+      <p className="nx-conversas-vazio">
+        {query.trim() ? `Nenhuma obra com “${query.trim()}”.` : "Nenhuma conversa ainda. Solte as pranchas ou o memorial na conversa e a obra nasce do carimbo."}
       </p>
     );
   }
 
-  // "TRABALHANDO NO" só quando há conversa ATIVA de verdade: dizer isso do
-  // cartão que abriu por ser o mais recente afirmaria uma coisa que não
-  // aconteceu — ninguém abriu nada ainda.
-  const trabalhandoEm = cartoes.find((c) => c.chave === doAtivo);
-
   return (
-    <>
-      {/*
-        EM QUE PROJETO SE ESTÁ, dito antes da lista.
-
-        Sem isto a barra mostra dez cartões iguais e nenhum deles diz "é aqui".
-        O cartão aberto responde por posição; esta linha responde por nome, que
-        é o que sobrevive a rolar a lista.
-      */}
-      {trabalhandoEm && !trabalhandoEm.aEnderecar && !query.trim() ? (
-        <p className="m-0 px-1 pb-1 font-mono text-[10.5px] uppercase tracking-[0.12em] text-muted-foreground">
-          Trabalhando no{" "}
-          <span className="text-[var(--primary)]">
-            {/* Nunca o id cru do banco: sem código conhecido, "projeto vinculado". */}
-            {trabalhandoEm.codigo ||
-              (/^c[a-z0-9]{20,}$/.test(trabalhandoEm.chave) ? "projeto vinculado" : trabalhandoEm.chave)}
-          </span>
-        </p>
-      ) : null}
-
-      <ul className="m-0 flex list-none flex-col gap-0.5 p-0">
+    <ul className="nx-lista-de-pastas">
       {filtrados.map((c) => {
-        /*
-         * TODAS as conversas do projeto, e não só as visíveis. Com só as
-         * visíveis, "Apagar 28 conversas" apagava quatro e deixava 24 órfãs.
-         */
-        const ids = [...c.conversas, ...c.ocultas].map((x) => x.id);
-        // A conversa ativa escondida no corte estende o cartão sozinha: abrir
-        // uma antiga e não vê-la marcada na barra desorienta.
-        const estendido =
-          estendidos.has(c.chave) || c.ocultas.some((x) => x.id === activeId);
+        const estendido = estendidos.has(c.chave) || c.ocultas.some((x) => x.id === activeId);
         return (
-          <div key={c.chave || "sem-codigo"} className="group/p relative">
-            <CartaoDeProjeto
-              cartao={c}
-              aberto={abertoAgora === c.chave}
-              {...(activeId ? { conversaAtiva: activeId } : {})}
-              onAlternar={() => {
-                setAberto((atual) => (atual === c.chave ? "" : c.chave));
-                setLimpando(null);
-                setConfirmando(null);
-              }}
-              onAbrirConversa={(id) => onSelect?.(id)}
-              estendido={estendido}
-              onVerTudo={(chave) =>
-                setEstendidos((atual) => {
-                  const proximo = new Set(atual);
-                  if (estendido) proximo.delete(chave);
-                  else proximo.add(chave);
-                  return proximo;
-                })
-              }
-            />
-
-            {/*
-              AS AÇÕES DA PASTA, no hover do cabeçalho. A contagem some enquanto
-              elas entram — não há largura para as duas coisas em 300px, e
-              reservar espaço fixo para o que quase nunca aparece encolheria o
-              nome da obra o tempo todo.
-            */}
-            {(onDuplicate || onDeleteFolder) && c.chave !== "" ? (
-              <span className="absolute right-2 top-1.5 flex items-center gap-0.5 opacity-0 transition-opacity duration-[var(--duration-fast)] group-hover/p:opacity-100 group-focus-within/p:opacity-100">
-                {onDuplicate ? (
-                  <button
-                    type="button"
-                    onClick={() => onDuplicate(c.conversas[0].id)}
-                    aria-label={`Nova conversa a partir da mais recente de ${c.codigo || c.chave}`}
-                    className="nx-edge-4 bg-[var(--card)] p-1 text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none [--nx-edge:transparent] [--nx-fill:var(--card)]"
-                  >
-                    <CopyPlus className="h-3.5 w-3.5" strokeWidth={1.5} />
-                  </button>
-                ) : null}
-                {onDeleteFolder ? (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setLimpando((a) => (a === c.chave ? null : c.chave));
-                        setConfirmando(null);
-                      }}
-                      aria-label={`Procurar o que dá para apagar em ${c.codigo || c.chave}`}
-                      title="Limpar o projeto"
-                      className="nx-edge-4 bg-[var(--card)] p-1 text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none [--nx-edge:transparent] [--nx-fill:var(--card)]"
-                    >
-                      <Eraser className="h-3.5 w-3.5" strokeWidth={1.5} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setConfirmando((a) => (a === c.chave ? null : c.chave));
-                        setLimpando(null);
-                      }}
-                      aria-label={`Apagar o projeto ${c.codigo || c.chave} inteiro`}
-                      className="nx-edge-4 bg-[var(--card)] p-1 text-muted-foreground transition-colors hover:text-[var(--status-critical)] focus-visible:outline-none [--nx-edge:transparent] [--nx-fill:var(--card)]"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" strokeWidth={1.5} />
-                    </button>
-                  </>
-                ) : null}
-              </span>
-            ) : null}
-
-            {confirmando === c.chave && onDeleteFolder ? (
-              <div className="nx-cut-6 mt-1 bg-[var(--status-critical-tint)] px-2.5 py-2">
-                <p className="m-0 text-[11.5px] leading-5 text-foreground">
-                  Apagar {c.conversas.length + c.restantes} conversa
-                  {c.conversas.length + c.restantes === 1 ? "" : "s"} de{" "}
-                  {c.codigo || "sem código"}? Não há desfazer.
-                </p>
-                <div className="mt-2 flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      onDeleteFolder(ids);
-                      setConfirmando(null);
-                    }}
-                    className={cn(
-                      "nx-edge-5 border-0 px-2 py-1 font-mono text-[11.5px] uppercase tracking-[0.05em]",
-                      "text-[var(--status-critical)] [--nx-edge:var(--status-critical)]",
-                      "[--nx-fill:color-mix(in_oklab,var(--status-critical)_16%,var(--card))]",
-                    )}
-                  >
-                    Apagar
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setConfirmando(null)}
-                    className="nx-edge-5 px-1.5 py-1 font-mono text-[11.5px] uppercase tracking-[0.05em] text-muted-foreground hover:text-foreground [--nx-edge:transparent] [--nx-fill:transparent]"
-                  >
-                    Cancelar
-                  </button>
-                </div>
-              </div>
-            ) : null}
-
-            {limpando === c.chave && onDeleteFolder ? (
-              <LimpezaDaPasta
-                key={c.chave}
-                pasta={c.chave || null}
-                {...(activeId ? { idAberta: activeId } : {})}
-                onFechar={() => setLimpando(null)}
-                onApagar={(apagar) => {
-                  onDeleteFolder(apagar);
-                  setLimpando(null);
-                }}
-              />
-            ) : null}
-          </div>
+          <CartaoDeProjeto
+            key={c.chave || "sem-codigo"}
+            cartao={c}
+            aberto={abertoAgora === c.chave}
+            {...(activeId ? { conversaAtiva: activeId } : {})}
+            onAlternar={() => setAberto((atual) => (atual === c.chave ? "" : c.chave))}
+            onAbrirConversa={(id) => onSelect?.(id)}
+            estendido={estendido}
+            onVerTudo={(chave) =>
+              setEstendidos((atual) => {
+                const proximo = new Set(atual);
+                if (estendido) proximo.delete(chave);
+                else proximo.add(chave);
+                return proximo;
+              })
+            }
+          />
         );
-        })}
-      </ul>
-    </>
+      })}
+    </ul>
   );
 }

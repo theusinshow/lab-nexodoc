@@ -32,12 +32,12 @@ import { cn } from "@/lib/utils";
 
 function ajuste(size: number) {
   if (size >= 96) {
-    return { miolo: "#1a5450", meio: "#0e2a2e", fora: "#08171a", borda: 1, no: 1.6, brilho: 0.9 };
+    return { miolo: "#4a3470", meio: "#22183a", fora: "#120d1c", borda: 1, no: 1.6, brilho: 0.9 };
   }
   if (size >= 40) {
-    return { miolo: "#23706a", meio: "#103036", fora: "#0a1f24", borda: 1.2, no: 1.9, brilho: 0.95 };
+    return { miolo: "#5a3f86", meio: "#281c44", fora: "#160f22", borda: 1.2, no: 1.9, brilho: 0.95 };
   }
-  return { miolo: "#2a7a72", meio: "#12343a", fora: "#0b2126", borda: 1.6, no: 2.9, brilho: 1 };
+  return { miolo: "#64468f", meio: "#2c1f4a", fora: "#181126", borda: 1.6, no: 2.9, brilho: 1 };
 }
 
 const NO_24 =
@@ -82,27 +82,27 @@ export function LogoNexo({
           <circle cx="50" cy="50" r="48" />
         </clipPath>
 
-        {/* Fundo de vidro escura do Orbe (corpo #0c1518) */}
+        {/* Fundo de vidro escuro do Orbe (corpo #140f1a, CORES_DO_ORBE) */}
         <radialGradient id={`${id}-orb-bg`} cx="38%" cy="30%" r="85%">
-          <stop offset="0%" stopColor="#142328" />
-          <stop offset="50%" stopColor="#0c1518" />
-          <stop offset="100%" stopColor="#04090b" />
+          <stop offset="0%" stopColor="#21192b" />
+          <stop offset="50%" stopColor="#140f1a" />
+          <stop offset="100%" stopColor="#08060b" />
         </radialGradient>
 
-        {/* Alma interna translúcida (teal #00a693 e #5bdac6) */}
+        {/* Alma interna translúcida: violeta no fundo, coral nas pontas */}
         <radialGradient id={`${id}-orb-soul`} cx="50%" cy="50%" r="60%">
           <stop offset="0%" stopColor="#ffffff" stopOpacity="0.9" />
-          <stop offset="25%" stopColor="#eafffb" stopOpacity="0.8" />
-          <stop offset="60%" stopColor="#5bdac6" stopOpacity="0.45" />
-          <stop offset="100%" stopColor="#00a693" stopOpacity="0" />
+          <stop offset="25%" stopColor="#fff6f4" stopOpacity="0.8" />
+          <stop offset="60%" stopColor="#ffa293" stopOpacity="0.45" />
+          <stop offset="100%" stopColor="#9a6cf0" stopOpacity="0" />
         </radialGradient>
 
-        {/* Luz de Aresta / Fresnel do Vidro (#5bdac6) */}
+        {/* Luz de Aresta / Fresnel do Vidro (aro #c3a3ff) */}
         <linearGradient id={`${id}-orb-rim`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#7af7e1" stopOpacity={a.brilho} />
-          <stop offset="35%" stopColor="#5bdac6" stopOpacity="0.8" />
-          <stop offset="80%" stopColor="#00a693" stopOpacity="0.3" />
-          <stop offset="100%" stopColor="#5bdac6" stopOpacity="0.6" />
+          <stop offset="0%" stopColor="#e2d4ff" stopOpacity={a.brilho} />
+          <stop offset="35%" stopColor="#c3a3ff" stopOpacity="0.8" />
+          <stop offset="80%" stopColor="#9a6cf0" stopOpacity="0.3" />
+          <stop offset="100%" stopColor="#c3a3ff" stopOpacity="0.6" />
         </linearGradient>
 
         {/* Brilho Especular Superior do Vidro Curvo */}
@@ -115,8 +115,8 @@ export function LogoNexo({
         {/* Luz do Nó Nexo central */}
         <linearGradient id={`${id}-orb-node-light`} x1="0" y1="0" x2="1" y2="1">
           <stop offset="0%" stopColor="#ffffff" />
-          <stop offset="50%" stopColor="#eafffb" />
-          <stop offset="100%" stopColor="#5bdac6" />
+          <stop offset="50%" stopColor="#fff6f4" />
+          <stop offset="100%" stopColor="#ffa293" />
         </linearGradient>
       </defs>
 

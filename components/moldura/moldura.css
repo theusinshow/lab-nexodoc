@@ -1,0 +1,3 @@
+/* A raiz de toda tela migrada: a página inteira no fundo do sistema novo. */
+.ds.md-raiz { min-height: var(--ds-altura-da-janela); background: var(--ds-surface-page); color: var(--ds-text-primary); }
+.ds .md-conteudo { outline: none; }

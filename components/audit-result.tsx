@@ -63,6 +63,7 @@ import {
   classifyFindingDiscipline,
   classifyFindingErrorType,
   classifyFindingImpact,
+  achadosConfirmados,
   classifyFindingTier,
   getDisciplineLabel,
   avaliarEmissao,
@@ -575,6 +576,18 @@ function getSeverityVariant(
   return "ok";
 }
 
+/**
+ * A COR DA PÍLULA SEGUE O QUE ELA DIZ (teste real de 02/10/2026). A pílula
+ * mostra a faixa de impacto, mas a cor vinha da severidade do modelo: um
+ * "Técnico/contratual" de severidade alta saía no vermelho do bloqueio, ao lado
+ * do trilho dizendo "exige decisão" em âmbar. Com faixa, a cor é da faixa.
+ */
+function getImpactVariant(impact: FindingImpact): "critical" | "warning" | "ok" {
+  if (impact === "critico_documental") return "critical";
+  if (impact === "tecnico_contratual") return "warning";
+  return "ok";
+}
+
 function parseProjectFields(project: string): ProjectField[] {
   return project
     .split("\n")
@@ -1071,6 +1084,30 @@ function reportFindingToStructured(finding: AuditFinding): StructuredFinding {
  * banco chama aquilo de `conflito`; precisa saber que pergunta aquele parágrafo
  * responde. Ver `docs/superpowers/specs/2026-08-14-tela-de-achados-design.md`.
  */
+/**
+ * O TEXTO DOS ACHADOS NA VISTA PARECER. Ele é o mesmo de "Copiar achados", e lá
+ * as seções vêm marcadas com `## ` para quem cola num e-mail ou num editor. Na
+ * tela, o `## ` aparecia cru ("## BLOQUEIA A EMISSÃO (7)" — achado no teste
+ * real de 02/10/2026): aqui a linha marcada vira título, e o resto fica texto.
+ */
+function TextoDoRelatorio({ texto }: { texto: string }) {
+  return (
+    <div className="nx-relatorio mt-1 break-words text-sm leading-6">
+      {texto.split("\n").map((linha, i) =>
+        linha.startsWith("## ") ? (
+          <h3 key={i} className="nx-relatorio-secao">
+            {linha.slice(3)}
+          </h3>
+        ) : (
+          <p key={i} className={linha.trim() ? "nx-relatorio-linha" : "nx-relatorio-vazia"}>
+            {linha}
+          </p>
+        ),
+      )}
+    </div>
+  );
+}
+
 function BlocoDeTexto({
   titulo,
   children,
@@ -1231,7 +1268,7 @@ function downloadMarkdown(result: string, fileName = "nexodoc-auditoria.md") {
  * Devolve a mensagem de erro em vez de lançar: quem chama põe no pop, e uma
  * promessa rejeitada num `onClick` morreria no console.
  */
-async function abrirParecerEmPdf(report: AuditReport): Promise<string | null> {
+export async function abrirParecerEmPdf(report: AuditReport): Promise<string | null> {
   try {
     const res = await fetch("/api/nexo/parecer", {
       method: "POST",
@@ -1930,7 +1967,7 @@ export function AuditResult({
     report && emissao?.estado === "incompleto" && incompletudeDoParecer(report).incompleta,
   );
   const groupedReportFindings = report
-    ? groupFindingsByImpact(report.incongruencias)
+    ? groupFindingsByImpact(achadosConfirmados(report.incongruencias))
     : null;
   const groupedStructuredFindings = {
     critico_documental: findingsWithPdf.filter(
@@ -1947,8 +1984,13 @@ export function AuditResult({
         (!finding.impacto && finding.severity !== "critical"),
     ),
   };
-  const findingsText = buildFindingsText(findingsWithPdf);
-  const actionsText = buildActionsText(findingsWithPdf);
+  /*
+   * O TEXTO DO PARECER conta e lista só os confirmados (`camada-do-achado.ts`),
+   * como o PDF. Somava as sugestões: "BLOQUEIA A EMISSÃO (7) · EXIGE DECISÃO
+   * (41) · REVISÃO (14)" dava 62 ao lado do "56 achados".
+   */
+  const findingsText = buildFindingsText(principalFindingsWithPdf);
+  const actionsText = buildActionsText(principalFindingsWithPdf);
   const uniqueDocumentCount = countUniqueDocuments(findingsWithPdf);
   const evidenceLinkCount = findingsWithPdf.filter(
     (finding) => finding.pdfUrl,
@@ -2003,7 +2045,7 @@ export function AuditResult({
         },
         {
           label: "Total de achados",
-          value: String(report.total_incongruencias),
+          value: String(achadosConfirmados(report.incongruencias).length),
         },
       ]
     : parseProjectFields(parsed.project);
@@ -3149,7 +3191,8 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
         Ver [[lib/auditoria-incompleta.ts]].
       */}
       <AvisoDeAuditoriaIncompleta report={report} className="mb-3" />
-      {verdict ? (
+      {/* No palco do Nexo o veredito mora no trilho da direita (Resultado E); aqui, só fora dele (gaveta do canvas). */}
+      {verdict && !controlado ? (
         <div
           data-tour="veredito-parecer"
           className={cn(
@@ -4548,7 +4591,7 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
                               alcança sem sair do cartão.
                             */}
                                 <Badge
-                                  variant={getSeverityVariant(finding.severity)}
+                                  variant={finding.impacto ? getImpactVariant(finding.impacto) : getSeverityVariant(finding.severity)}
                                   title={finding.severityReason}
                                   data-motivo-severidade={
                                     finding.severityReason || undefined
@@ -5895,17 +5938,13 @@ function porQue(falharam: readonly { email: string; erro?: string }[]): string {
                 <p className="font-mono text-xs font-medium uppercase text-muted-foreground">
                   Achados
                 </p>
-                <pre className="mt-1 whitespace-pre-wrap break-words font-sans text-sm leading-6">
-                  {findingsText}
-                </pre>
+                <TextoDoRelatorio texto={findingsText} />
               </div>
               <div>
                 <p className="font-mono text-xs font-medium uppercase text-muted-foreground">
                   Ações recomendadas
                 </p>
-                <pre className="mt-1 whitespace-pre-wrap break-words font-sans text-sm leading-6">
-                  {actionsText}
-                </pre>
+                <TextoDoRelatorio texto={actionsText} />
               </div>
               <div>
                 <p className="font-mono text-xs font-medium uppercase text-muted-foreground">

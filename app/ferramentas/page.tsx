@@ -1,13 +1,9 @@
 import { redirect } from "next/navigation";
 
 /**
- * FERRAMENTAS ANTIGAS — agora um redirecionamento (auditoria UX/UI, G01).
- *
- * A página listava uma única tela, a montagem manual de volumes, com selo de
- * "ferramenta antiga". Ela não é legado: monta o projeto inteiro a partir de
- * PDFs prontos, o que o Nexo não faz. Virou "Montar volumes" na navegação
- * principal; o endereço antigo continua funcionando e leva para lá.
+ * `/ferramentas` — ENDEREÇO ANTIGO. Levava a `/volumes`, que saiu em
+ * 01/10/2026; agora vai direto ao Nexo, onde montar volume mora.
  */
 export default function FerramentasAntigasPage() {
-  redirect("/volumes");
+  redirect("/nexo?intencao=montar");
 }

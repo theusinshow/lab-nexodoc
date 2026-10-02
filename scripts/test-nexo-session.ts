@@ -15,6 +15,7 @@ import {
   removerResultado,
   tomoDoArtefato,
   agruparPorTomo,
+  tomosDeFileira,
 } from "../modules/nexo/lib/results.ts";
 import {
   descreverMudanca,
@@ -486,6 +487,24 @@ test("orfaosAposDivisao: dividir o que era unico orfana os sem-tomo", () => {
 
 test("orfaosAposDivisao: voltar para um tomo so orfana os numerados", () => {
   assert.equal(orfaosAposDivisao([1, 2], 1, 1), 2);
+});
+
+test("tomosDeFileira: volume unico (numTomos 1) com LD sem sufixo nao cria fileira de tomo", () => {
+  // Teste real de 02/10/2026: a LD recem-gerada aparecia "fora da divisao" e desatualizada.
+  assert.deepEqual(tomosDeFileira([1], ["ld:777-26:0:arquitetonico", "ld:777-26:0:estrutural"]), []);
+  assert.deepEqual(agruparPorTomo([{ id: "ld:777-26:0:arquitetonico" }], tomosDeFileira([1], ["ld:777-26:0:arquitetonico"])).map((g) => g.tomo), [0]);
+});
+
+test("tomosDeFileira: sem documento gerado, o tomo 1 continua (a fileira das folhas lidas)", () => {
+  assert.deepEqual(tomosDeFileira([1], []), [1]);
+});
+
+test("tomosDeFileira: divisao de verdade (2 tomos) mantem o resto separado", () => {
+  assert.deepEqual(tomosDeFileira([1, 2], ["ld:x:0:arq"]), [1, 2]);
+});
+
+test("tomosDeFileira: documento ja com sufixo de tomo mantem a fileira", () => {
+  assert.deepEqual(tomosDeFileira([1], ["ld:x:0:arq:t01", "ld:x:0:arq"]), [1]);
 });
 
 console.log(`\n${passed} teste(s) passaram.`);

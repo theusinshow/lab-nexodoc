@@ -1,0 +1,37 @@
+/* AVISO DE TELA PEQUENA — a tela (fundo líquido + texto curto) e a faixa. */
+
+.ds .at { position: fixed; inset: 0; z-index: 80; overflow-y: auto; isolation: isolate; display: grid; align-items: end; min-height: 100dvh; padding: 32px 24px 96px; overflow-x: hidden; background: var(--ds-surface-page); }
+.ds .at-fundo { position: absolute; inset: 0; z-index: -1; }
+.ds .ds-fundo-liquido { position: absolute; inset: 0; overflow: hidden; pointer-events: none; touch-action: none; opacity: 1; }
+/* com movimento reduzido: o mesmo par de cores, parado */
+.ds .at-fundo-parado {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(60% 45% at 78% 22%, rgb(154 108 240 / 0.38), transparent 70%),
+    radial-gradient(50% 40% at 18% 40%, rgb(255 162 147 / 0.22), transparent 70%);
+}
+/* o véu escurece embaixo, onde mora o texto: o fluido fica em cima e nas bordas */
+.ds .at-veu { position: absolute; inset: 0; background: linear-gradient(180deg, rgb(8 9 11 / 0.05) 0%, rgb(8 9 11 / 0.4) 42%, rgb(8 9 11 / 0.9) 76%); }
+
+.ds .at-conteudo { display: grid; gap: 14px; width: 100%; max-width: 440px; }
+.ds .at-marca { display: inline-flex; align-items: center; gap: 8px; margin: 0 0 18px; font-size: var(--ds-text-xs); font-weight: 500; color: var(--ds-text-primary); }
+.ds .at h1 { margin: 0; font-size: 26px; font-weight: 500; line-height: 1.18; letter-spacing: -0.02em; color: var(--ds-text-primary); text-wrap: balance; }
+.ds .at-texto { margin: 0; font-size: var(--ds-text-md); line-height: 1.55; color: var(--ds-text-secondary); }
+.ds .at-texto b { font-weight: 500; color: var(--ds-text-primary); }
+.ds .at-texto--fraco { font-size: var(--ds-text-xs); color: var(--ds-text-tertiary); }
+.ds .at-acoes { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.ds .at-acoes .ds-btn { min-height: 44px; }
+.ds .at-medida { display: inline-flex; align-items: center; gap: 6px; margin: 8px 0 0; font-size: 11.5px; color: var(--ds-text-tertiary); }
+
+@media (min-width: 640px) {
+  .ds .at { align-items: center; padding: 48px; }
+  .ds .at h1 { font-size: 30px; }
+}
+
+/* a faixa de quem continuou: fina, em cima de tudo, fecha e não volta na sessão */
+.ds .at-faixa { position: sticky; top: 0; z-index: 40; display: flex; align-items: center; gap: 10px; min-height: 36px; padding: 6px 8px 6px 14px; background: var(--ds-surface-raised); box-shadow: inset 0 -1px 0 var(--ds-line-subtle); font-size: 12.5px; color: var(--ds-text-secondary); }
+.ds .at-faixa > i { flex: none; width: 6px; height: 6px; border-radius: 50%; background: var(--ds-state-attention); }
+.ds .at-faixa p { flex: 1; margin: 0; line-height: 1.4; }
+.ds .at-faixa button { flex: none; display: grid; place-items: center; width: 28px; height: 28px; border: 0; border-radius: 8px; background: none; color: var(--ds-text-tertiary); cursor: pointer; }
+.ds .at-faixa button:hover { background: rgb(255 255 255 / 0.06); color: var(--ds-text-primary); }

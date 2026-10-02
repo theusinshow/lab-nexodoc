@@ -23,10 +23,8 @@ fs.mkdirSync(OUT, { recursive: true });
 /** As telas que sobraram, na ordem em que alguém as encontra. */
 const TELAS = [
   { rota: "/", nome: "home" },
-  { rota: "/ferramentas", nome: "ferramentas-antigas" },
   { rota: "/nexo", nome: "nexo-boas-vindas" },
   { rota: "/projetos", nome: "projetos" },
-  { rota: "/volumes", nome: "volumes" },
   { rota: "/admin", nome: "admin" },
   { rota: "/admin/usuarios", nome: "admin-usuarios" },
   { rota: "/admin/lds", nome: "admin-lds" },

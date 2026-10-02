@@ -12,7 +12,7 @@ const LARGURAS = [
   { nome: "390", viewport: { width: 390, height: 844 }, dpr: 3 },
   { nome: "zoom200", viewport: { width: 640, height: 400 }, dpr: 2 },
 ];
-const ROTAS = ["/", "/projetos", "/achados", "/ajuda", "/volumes"];
+const ROTAS = ["/", "/projetos", "/achados", "/ajuda"];
 
 for (const l of LARGURAS) {
   const browser = await chromium.launch();

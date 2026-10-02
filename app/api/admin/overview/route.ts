@@ -8,6 +8,7 @@ import { listarFluxosDeIa } from "@/lib/fluxos-de-ia";
 import { resumoDeAtencao } from "@/lib/atencao-do-admin";
 import { ultimasAcoes } from "@/lib/trilha-administrativa";
 import { checkAdminRequest } from "@/lib/admin-gate";
+import { diaEmBrasilia, somarDiasNaChave } from "@/lib/fuso-de-brasilia";
 
 export const runtime = "nodejs";
 
@@ -136,10 +137,38 @@ export async function GET(request: Request) {
   // cockpit é onde "quem apagou o quê" precisa aparecer sem ninguém procurar.
   const acoes = await ultimasAcoes(5);
 
+  /*
+   * A SÉRIE DOS ÚLTIMOS 14 DIAS, uma contagem por dia de Brasília, para a
+   * linha de tendência embaixo de cada número do cockpit. O número diz quanto
+   * há; a linha diz se está subindo — a falha que dobrou ontem não aparece num
+   * total histórico.
+   */
+  const quatorzeDias = sinceDate(14);
+  const [auditsDaJanela, ldsDaJanela, eventosDaJanela] = await Promise.all([
+    prisma.audit.findMany({ where: { createdAt: { gte: quatorzeDias } }, select: { createdAt: true, status: true } }),
+    prisma.ldDraft.findMany({ where: { updatedAt: { gte: quatorzeDias } }, select: { updatedAt: true } }),
+    prisma.ldDraftEvent.findMany({ where: { createdAt: { gte: quatorzeDias } }, select: { createdAt: true } }),
+  ]);
+  const hoje = diaEmBrasilia(new Date());
+  const dias = Array.from({ length: 14 }, (_, i) => somarDiasNaChave(hoje, i - 13));
+  const porDia = (datas: Date[]) => {
+    const conta = new Map<string, number>();
+    for (const d of datas) conta.set(diaEmBrasilia(d), (conta.get(diaEmBrasilia(d)) ?? 0) + 1);
+    return dias.map((dia) => conta.get(dia) ?? 0);
+  };
+  const series = {
+    dias,
+    auditorias: porDia(auditsDaJanela.map((a) => a.createdAt)),
+    falhas: porDia(auditsDaJanela.filter((a) => a.status === "FAILED").map((a) => a.createdAt)),
+    lds: porDia(ldsDaJanela.map((l) => l.updatedAt)),
+    eventosLd: porDia(eventosDaJanela.map((e) => e.createdAt)),
+  };
+
   return NextResponse.json({
     status,
     atencao,
     acoes,
+    series,
     totals: {
       users,
       activeUsers,

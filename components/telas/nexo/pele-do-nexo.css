@@ -1,0 +1,117 @@
+/*
+ * A PELE DO NEXO (migração, passo 5).
+ *
+ * O Nexo de verdade tem ~25 mil linhas no tema antigo: Tailwind lendo as
+ * variáveis de `app/globals.css` (teal, IBM Plex, chanfro). Redesenhar peça a
+ * peça leva várias fatias; esta pele faz o resto da tela falar a mesma língua
+ * ENQUANTO isso — as variáveis antigas apontam para os tokens do ds, só
+ * quando a página tem o Nexo (`:root:has(.nexo-shell)`). Assim popovers e
+ * diálogos, que abrem fora da árvore (portal no `body`), também mudam.
+ *
+ * Cor só para sinal: o "primário" antigo (teal) vira o papel claro do botão
+ * principal do ds, e o acento vira o violeta do Nexo, que é o mesmo do aro do
+ * orbe. O chanfro vira canto arredondado sem mexer em nenhum componente: o
+ * recorte continua, só que `inset(0 round …)`.
+ *
+ * Cada peça redesenhada passa a usar o ds direto e deixa de depender daqui.
+ */
+
+:root:has(.nexo-shell) {
+  --font-plex-sans: var(--font-ds-sans);
+  --font-plex-mono: var(--font-ds-mono);
+
+  --radius: 10px;
+  --background: var(--ds-surface-page);
+  --foreground: var(--ds-text-primary);
+  --card: var(--ds-surface-card);
+  --card-foreground: var(--ds-text-primary);
+  --popover: var(--ds-surface-raised);
+  --popover-foreground: var(--ds-text-primary);
+  --primary: var(--ds-action-bg);
+  --primary-foreground: var(--ds-action-fg);
+  --primary-hover: var(--ds-action-bg-hover);
+  --primary-active: #d9dbe0;
+  --secondary: var(--ds-surface-raised);
+  --secondary-foreground: var(--ds-text-primary);
+  --muted: var(--ds-surface-raised);
+  --muted-foreground: var(--ds-text-secondary);
+  --accent: var(--ds-surface-overlay);
+  --accent-foreground: var(--ds-text-primary);
+  --destructive: var(--ds-state-error);
+  --border: var(--ds-line-subtle);
+  --input: var(--ds-line-default);
+  --ring: var(--ds-focus-ring);
+
+  --nexodoc-surface: var(--ds-surface-card);
+  --nexodoc-panel: var(--ds-surface-card);
+  --nexodoc-panel-foreground: var(--ds-text-primary);
+  --nexodoc-accent: var(--ds-nexo);
+  --nexodoc-accent-foreground: var(--ds-action-fg);
+  --nexodoc-raised: var(--ds-surface-raised);
+  --nexodoc-recessed: var(--ds-surface-sunken);
+  --nexodoc-grid: rgb(255 255 255 / 0.05);
+
+  --status-ok: var(--ds-state-ok);
+  --status-ok-bg: var(--ds-state-ok-wash);
+  --status-warning: var(--ds-sev-decide);
+  --status-warning-bg: var(--ds-sev-decide-wash);
+  --status-critical: var(--ds-sev-block);
+  --status-critical-bg: var(--ds-sev-block-wash);
+  --signal-info: var(--ds-state-info);
+  --signal-info-bg: var(--ds-state-info-wash);
+
+  --edge-highlight: inset 0 0 0 1px var(--ds-line-subtle);
+  --shadow-overlay: var(--ds-shadow-overlay);
+  --glass-tint: color-mix(in srgb, var(--ds-surface-card) 86%, transparent);
+  --glass-tint-weak: color-mix(in srgb, var(--ds-surface-card) 92%, transparent);
+  --glass-edge: inset 0 0 0 1px var(--ds-line-subtle);
+  --glass-ring: var(--ds-nexo-line);
+
+  --blade: rgb(255 255 255 / 0.22);
+  --blade-on-primary: rgb(0 0 0 / 0.12);
+  --blade-on-secondary: rgb(255 255 255 / 0.1);
+
+  --discipline-arq: var(--ds-disc-arq);
+  --discipline-est: var(--ds-disc-est);
+  --discipline-hid: var(--ds-disc-hid);
+  --discipline-ele: var(--ds-disc-ele);
+  --discipline-pci: var(--ds-disc-pci);
+  --discipline-cli: var(--ds-disc-cli);
+  --discipline-ter: var(--ds-disc-ter);
+  --discipline-pai: var(--ds-disc-pai);
+
+  /* o chanfro vira canto: mesmo recorte, outra forma */
+  --cut-4: inset(0 round 6px);
+  --cut-5: inset(0 round 7px);
+  --cut-6: inset(0 round 8px);
+  --cut-7: inset(0 round 9px);
+  --cut-8: inset(0 round 10px);
+  --cut-12: inset(0 round 14px);
+}
+
+/* A mesa: a altura da janela que sobra embaixo do Topo (64px). */
+.ds .nx-mesa {
+  height: calc(var(--ds-altura-da-janela) - 64px);
+  padding: 0 16px 16px;
+}
+
+/*
+ * O texto do tema antigo: rótulos em maiúsculas espaçadas e botões em mono
+ * caixa-alta. O ds escreve em frase, em Geist. Só o desenho muda; o texto no
+ * DOM é o mesmo (as jornadas leem o texto, não o caso).
+ */
+:root:has(.nexo-shell) .uppercase {
+  text-transform: none;
+  letter-spacing: normal;
+}
+:root:has(.nexo-shell) .nx-ctl {
+  font-family: var(--font-ds-sans), ui-sans-serif, system-ui, sans-serif;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
+}
+/* O rótulo do tema antigo é mono + caixa-alta (`font-mono uppercase`). No ds,
+   rótulo é texto; mono fica para código e número, que não levam `uppercase`. */
+:root:has(.nexo-shell) .font-mono.uppercase {
+  font-family: var(--font-ds-sans), ui-sans-serif, system-ui, sans-serif;
+}

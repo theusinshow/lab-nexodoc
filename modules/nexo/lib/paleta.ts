@@ -65,12 +65,17 @@ export const ACOES_DA_PALETA: readonly AcaoDaPaleta[] = [
     href: "/projetos",
     sinonimos: ["obras", "arquivados", "arquivar", "reativar"],
   },
+  /*
+   * A MONTAGEM MANUAL (/volumes) SAIU em 01/10/2026, por decisão do Matheus:
+   * montar volume é no Nexo, a partir das pranchas. Os sinônimos antigos
+   * ficam, para quem procura pelo nome de antes cair no lugar novo.
+   */
   {
     id: "ir:volumes",
-    rotulo: "Montar volumes com PDFs existentes",
+    rotulo: "Montar volume",
     grupo: "Ir para",
-    href: "/volumes",
-    sinonimos: ["mesa de volumes", "montar volume de PDFs soltos", "juntar pdf", "ferramentas"],
+    href: "/nexo?intencao=montar",
+    sinonimos: ["mesa de volumes", "montar volumes com pdfs existentes", "juntar pdf", "ferramentas"],
   },
   {
     id: "ir:achados",
@@ -97,28 +102,20 @@ export const ACOES_DA_PALETA: readonly AcaoDaPaleta[] = [
     requisito: "Precisa das pranchas anexadas na conversa do Nexo.",
   })),
   {
-    id: "onde:anexo",
-    rotulo: "Anexos de um volume",
-    grupo: "Onde fica",
-    href: "/volumes",
-    sinonimos: ["anexo", "apendice", "anexar pdf"],
-    requisito: "Em Montar volumes: cada grupo tem a seção Anexos.",
-  },
-  {
     id: "onde:separatriz",
     rotulo: "Separatriz",
     grupo: "Onde fica",
     href: "/ajuda#separatriz",
     sinonimos: ["separadora", "folha de rosto do grupo"],
-    requisito: "Gerada no Nexo com as pranchas; na montagem manual, é automática por grupo.",
+    requisito: "Gerada no Nexo com as pranchas, uma por grupo.",
   },
   {
     id: "onde:exportar-volume",
     rotulo: "Exportar volume (PDF ou ZIP)",
     grupo: "Onde fica",
-    href: "/volumes",
+    href: "/nexo?intencao=montar",
     sinonimos: ["exportar", "baixar volume", "gerar pdf", "zip"],
-    requisito: "Em Montar volumes, área Conferência — sem pendências bloqueantes.",
+    requisito: "No Nexo, com o volume montado: o ZIP dos editáveis sai antes do PDF do volume.",
   },
   {
     id: "onde:exportar-parecer",
@@ -132,9 +129,9 @@ export const ACOES_DA_PALETA: readonly AcaoDaPaleta[] = [
     id: "onde:reordenar",
     rotulo: "Reordenar pranchas, grupos e volumes",
     grupo: "Onde fica",
-    href: "/volumes",
+    href: "/nexo?intencao=montar",
     sinonimos: ["reordenar", "ordem", "mover", "subir", "descer"],
-    requisito: "Em Montar volumes: botões Mover em cada item (também por teclado).",
+    requisito: "No Nexo, com as pranchas lidas: arraste a folha no Mapa do volume.",
   },
   {
     id: "onde:corrigir-carimbo",

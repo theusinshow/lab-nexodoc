@@ -1,27 +1,20 @@
 "use client";
 
 /**
- * A barra do topo: em repouso diz de QUAL OBRA é esta conversa; enquanto uma
- * auditoria roda, cede o lugar ao progresso dela.
+ * DE QUE OBRA É ESTA CONVERSA, e o que está acontecendo nela — o começo do
+ * cabeçalho do palco (desenho do lab: `nw-obra` + `nw-estado`). Era uma faixa
+ * atravessando as três colunas; no sistema novo ela mora no palco, porque é do
+ * trabalho do palco que ela fala.
  *
- * Existe porque a faixa que estava aqui mostrava a palavra "NEXO" e nada mais —
- * resíduo do AppShell genérico. Marca e conta não cabiam: a barra lateral já faz
- * as duas coisas, e melhor. O que sobra para uma faixa horizontal é o que muda
- * com a conversa (a obra) e o que muda com o tempo (o trabalho pesado).
- *
- * NÃO RENDERIZA quando não há nem obra nem auditoria. Uma faixa dizendo "nenhum
- * documento lido ainda" passaria a maior parte do tempo declarando ignorância,
- * que é justamente o defeito que ela veio corrigir. O preço é o layout deslocar
- * quando ela nasce, e esse preço foi aceito no spec.
- *
- * O progresso de capas/LD/volume NÃO entra aqui: aquele `busy` é `useState`
- * dentro de cada cartão e morre com ele. Elevá-lo é outro trabalho — e prometer
- * na barra o que não se sabe seria pior do que não prometer.
+ * Duas camadas. Em REPOUSO: a marca da prefeitura, o código e a obra (lidos
+ * dos selos ou do projeto pedido por link). TRABALHANDO: a auditoria em curso,
+ * a etapa e Cancelar — a marca sai, porque identidade ao lado de progresso
+ * disputa o olho com o único campo que muda ali.
  */
 
-import { Loader2, X } from "lucide-react";
+import { X } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { Botao, Girando } from "@/components/ds/basicos";
 import { contextoDaBarra } from "../lib/contexto-da-barra";
 import { resumoDaAuditoria } from "../lib/resumo-da-auditoria";
 import { auditoriaDaConversa, useAuditoria } from "../state/auditoria-store";
@@ -29,106 +22,60 @@ import { useConversation } from "../state/conversation-store";
 import type { ProjetoPedido } from "../lib/projeto-pedido";
 import { MarcaDaPrefeitura } from "./MarcaDaPrefeitura";
 
-export function BarraDoNexo({
-  projetoPedido = null,
-}: {
-  /**
-   * O projeto que o link pediu e o servidor conferiu (G03). Só aparece quando a
-   * conversa aberta é MESMO desse projeto — dizer "Projeto X" sobre uma conversa
-   * de outro projeto seria a troca silenciosa que o contrato proíbe.
-   */
-  projetoPedido?: ProjetoPedido | null;
-} = {}) {
+export function BarraDoNexo({ projetoPedido = null }: { projetoPedido?: ProjetoPedido | null } = {}) {
   const { conversationId, identidade, seloResults, projectId } = useConversation();
   const { emCurso } = useAuditoria();
 
   const auditando = auditoriaDaConversa(emCurso, conversationId);
   const contexto = contextoDaBarra({ identidade, seloResults });
-  const projeto =
-    projetoPedido?.estado === "ok" && projectId === projetoPedido.id ? projetoPedido : null;
+  const projeto = projetoPedido?.estado === "ok" && projectId === projetoPedido.id ? projetoPedido : null;
 
-  // Nada a afirmar: a barra não existe, e o palco fica com a altura inteira.
   if (!auditando && !contexto && !projeto) return null;
 
   if (auditando) {
     const { rotulo, contagem } = resumoDaAuditoria(auditando.marcos);
     return (
-      <div className="nexo-barra" data-camada="trabalho" role="status" aria-live="polite">
-        <Loader2
-          className="size-3.5 shrink-0 animate-spin text-primary"
-          strokeWidth={1.8}
-          aria-hidden
-        />
-        {/* Um nível só desde 17/08/2026 — ver `requirements.ts`. */}
-        <span className="nexo-barra__rotulo">Auditoria</span>
-        <span className="nexo-barra__obra" title={auditando.arquivo}>
+      <span className="mp-trilha nw-obra nx-obra" data-camada="trabalho" role="status" aria-live="polite">
+        <Girando tamanho={12} />
+        <span>Auditoria</span>
+        <span className="nx-obra-nome" title={auditando.arquivo}>
           {auditando.arquivo}
         </span>
-        <span className="nexo-barra__etapa">
+        <span className="nw-estado">
           {rotulo}
-          {contagem ? ` — ${contagem}` : ""}
+          {contagem ? `, ${contagem}` : ""}
         </span>
         {auditando.cancelar && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="ml-auto shrink-0"
-            onClick={auditando.cancelar}
-          >
-            <X />
-            Cancelar
-          </Button>
+          <Botao variante="quiet" tamanho="sm" onClick={auditando.cancelar}>
+            <X size={13} aria-hidden /> Cancelar
+          </Botao>
         )}
-      </div>
+      </span>
     );
   }
 
-  /*
-   * SÓ O PROJETO, antes de qualquer leitura: quem chegou por "Gerar capas" do
-   * projeto vê em qual projeto está trabalhando ANTES de anexar e gastar.
-   */
   if (!contexto) {
     return (
-      <div className="nexo-barra" data-camada="repouso" data-projeto-da-conversa={projeto!.id}>
-        <span className="nexo-barra__rotulo">Projeto</span>
-        <span className="nexo-barra__obra" title={projeto!.nome}>
+      <span className="mp-trilha nw-obra nx-obra" data-camada="repouso" data-projeto-da-conversa={projeto!.id}>
+        <span className="mp-mono">{projeto!.codigo}</span>
+        <span className="nx-obra-nome" title={projeto!.nome}>
           {projeto!.nome}
         </span>
-        {projeto!.arquivado && <span className="nexo-barra__orgao">arquivado</span>}
-        <span className="nexo-barra__codigo">{projeto!.codigo}</span>
-      </div>
+        {projeto!.arquivado && <span className="nw-estado">arquivado</span>}
+      </span>
     );
   }
 
-  // Repouso com obra lida.
   const { obra, orgao, codigo } = contexto;
   return (
-    <div
-      className="nexo-barra"
-      data-camada="repouso"
-      data-projeto-da-conversa={projeto?.id}
-    >
-      {projeto && <span className="nexo-barra__rotulo">Projeto {projeto.codigo}</span>}
-      {/*
-        O SELO, e não o sinal: a faixa é uma SUPERFÍCIE LARGA, e ali os 31px do
-        sinal se perderiam entre o nome da obra e o código.
-
-        Ele só existe na camada de REPOUSO. Enquanto a auditoria roda, a faixa
-        deixa de falar da obra e passa a falar do trabalho — e marca de
-        identidade ao lado de barra de progresso disputa o olho com o único
-        campo que muda ali.
-
-        A COR VEM DO ÓRGÃO, que é opcional: sem órgão, marca cinza. Não é
-        degradação — a faixa nasce da leitura dos selos, e "ainda não sei de
-        quem é esta obra" é um estado real do minuto zero.
-      */}
-      <MarcaDaPrefeitura prefeitura={orgao} forma="selo" />
-      <span className="nexo-barra__obra" title={obra}>
+    <span className="mp-trilha nw-obra nx-obra" data-camada="repouso" data-projeto-da-conversa={projeto?.id}>
+      {/* A cor vem do órgão, que é opcional: sem órgão, marca cinza — "ainda não sei de quem é esta obra" é estado real. */}
+      <MarcaDaPrefeitura prefeitura={orgao} forma="sinal" />
+      {(codigo || projeto?.codigo) && <span className="mp-mono">{codigo || projeto?.codigo}</span>}
+      <span className="nx-obra-nome" title={obra}>
         {obra}
       </span>
-      {orgao && <span className="nexo-barra__orgao">{orgao}</span>}
-      {codigo && <span className="nexo-barra__codigo">{codigo}</span>}
-    </div>
+      {orgao && <span className="nw-estado nx-obra-orgao">{orgao}</span>}
+    </span>
   );
 }

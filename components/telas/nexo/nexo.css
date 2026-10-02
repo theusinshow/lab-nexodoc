@@ -1,0 +1,140 @@
+/*
+ * O NEXO (veio do lab: app/lab/telas/nexo/nexo.css): conversas | palco | chat.
+ * As regras de .nw-mesa são do lab; no app a mesa ainda é o NexoShell.
+ */
+.ds .nw { min-height: 100%; }
+.ds .nw-mesa { --nw-conversas: 240px; --nw-chat: 430px; display: grid; grid-template-columns: var(--nw-conversas) minmax(0, 1fr) var(--nw-chat); height: calc(100vh - 64px); min-height: 640px; border-top: 1px solid var(--ds-line-subtle); }
+
+/* conversas */
+.ds .nw-conversas { display: flex; flex-direction: column; gap: 10px; min-width: 0; padding: 14px 12px; border-right: 1px solid var(--ds-line-subtle); overflow: auto; }
+.ds .nw-nova { justify-content: flex-start; }
+.ds .nw-busca { width: auto; }
+.ds .nw-pastas { display: grid; gap: 4px; margin-top: 6px; }
+.ds .nw-pasta-cabeca { display: flex; align-items: center; gap: 7px; min-width: 0; margin: 0; padding: 7px 6px; border-radius: 7px; font-size: 12px; color: var(--ds-text-secondary); cursor: pointer; }
+.ds .nw-pasta-cabeca:hover { background: rgb(255 255 255 / 0.03); }
+.ds .nw-pasta-cabeca .mp-mono { flex: none; font-size: 11px; color: var(--ds-text-primary); }
+.ds .nw-pasta-nome { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.ds .nw-pasta-cabeca .ds-num { margin-left: auto; font-size: 11px; }
+.ds .nw-pasta ul { display: grid; gap: 1px; margin: 0 0 6px; padding: 0 0 0 14px; list-style: none; }
+.ds .nw-pasta li { display: grid; gap: 1px; padding: 7px 10px; border-radius: 7px; cursor: pointer; transition: background 0.2s; }
+.ds .nw-pasta li:hover { background: rgb(255 255 255 / 0.03); }
+.ds .nw-ativa { background: rgb(255 255 255 / 0.06) !important; }
+.ds .nw-conversa-titulo { overflow: hidden; font-size: 13px; white-space: nowrap; text-overflow: ellipsis; color: var(--ds-text-primary); }
+.ds .nw-conversa-meta { display: flex; justify-content: space-between; font-size: 11px; color: var(--ds-text-tertiary); }
+
+/* palco */
+.ds .nw-palco { display: flex; flex-direction: column; min-width: 0; background: rgb(0 0 0 / 0.12); }
+.ds .nw-palco-cabeca { display: flex; align-items: center; gap: 12px; height: 48px; padding: 0 10px 0 16px; border-bottom: 1px solid var(--ds-line-subtle); background: var(--ds-surface-page); }
+.ds .nw-obra { margin: 0; min-width: 0; }
+.ds .nw-estado { padding-left: 10px; border-left: 1px solid var(--ds-line-subtle); color: var(--ds-text-secondary); white-space: nowrap; }
+.ds .nw-vistas { display: inline-flex; gap: 2px; margin-left: auto; padding: 3px; border-radius: 9px; box-shadow: inset 0 0 0 1px var(--ds-line-subtle); }
+.ds .nw-vistas button { height: 26px; padding: 0 10px; border: 0; border-radius: 6px; background: none; font: inherit; font-size: 12px; color: var(--ds-text-tertiary); cursor: pointer; }
+.ds .nw-vistas button[aria-selected="true"] { background: rgb(255 255 255 / 0.08); color: var(--ds-text-primary); }
+.ds .nw-espaco { display: inline-flex; gap: 2px; }
+.ds .nw-espaco button { display: grid; place-items: center; width: 30px; height: 30px; border: 0; border-radius: 7px; background: none; color: var(--ds-text-tertiary); cursor: pointer; }
+.ds .nw-espaco button:hover { background: rgb(255 255 255 / 0.06); color: var(--ds-text-primary); }
+.ds .nw-canvas { position: relative; flex: 1; min-height: 0; }
+.ds .nw-canvas .react-flow { --xy-background-color: transparent; background: transparent; }
+.ds .nw-canvas .react-flow__pane { cursor: grab; }
+
+/* chat docado */
+.ds .nw-chat { display: flex; flex-direction: column; min-width: 0; min-height: 0; border-left: 1px solid var(--ds-line-subtle); }
+.ds .nw-chat-cabeca { display: flex; align-items: baseline; gap: 10px; height: 48px; padding: 16px 20px 0; border-bottom: 1px solid var(--ds-line-subtle); }
+.ds .nw-chat-titulo { font-size: 13.5px; color: var(--ds-text-primary); }
+.ds .nw-chat-cabeca .mp-g-fraco { font-family: var(--ds-font-mono); font-size: 11px; }
+.ds .nw-fio { flex: 1; width: auto; margin: 0; padding: 20px 20px 24px; gap: 28px; overflow: auto; }
+.ds .nw-fio .cx-voce { max-width: 88%; }
+.ds .nw-campo { padding: 0 14px 14px; }
+.ds .nw-campo .cx-campo { width: 100%; }
+/* no chat docado a coluna é estreita: o nome do arquivo encolhe com reticências em vez de vazar */
+.ds .nw-fio .cx-pecas--coluna { width: 100%; }
+.ds .nw-fio .cx-pecas--coluna .cx-peca-nome, .ds .nw-fio .cx-gerando-linha .cx-peca-nome { flex: 1 1 auto; min-width: 0; }
+.ds .nw-fio .cx-gerando-linha, .ds .nw-fio .cx-gerando-linha > * { min-width: 0; }
+
+/* o palco aparece já enquadrado (sem um quadro no zoom errado antes) */
+.ds .nw-canvas .react-flow { opacity: 0; }
+.ds .nw-canvas--pronto .react-flow { opacity: 1; }
+
+/* depois de soltar uma folha: o bloco que nasceu aparece, o que sumiu se apaga (só opacidade) */
+.ds .nw-canvas .react-flow__node.nw-nasce > * { animation: mp-aparece 0.24s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.ds .nw-canvas .react-flow__node.nw-sai > * { animation: nw-sai 0.16s ease-in both; }
+@keyframes nw-sai { to { opacity: 0; } }
+
+/* o aviso do que o arrasto fez, com Desfazer: no pé do palco, sem cobrir o mapa */
+.ds .nw-feito { position: absolute; left: 50%; bottom: 16px; z-index: 5; display: flex; align-items: center; gap: 12px; height: 38px; padding: 0 6px 0 14px; border-radius: 10px; background: var(--ds-surface-overlay); box-shadow: var(--ds-shadow-overlay); font-size: 12.5px; color: var(--ds-text-secondary); white-space: nowrap; transform: translateX(-50%); }
+.ds .nw-feito b { font-weight: 400; font-family: var(--ds-font-mono); font-size: 12px; color: var(--ds-text-primary); }
+.ds .nw-feito button { display: inline-flex; align-items: center; gap: 8px; height: 28px; padding: 0 8px 0 10px; border: 0; border-radius: 7px; background: rgb(255 255 255 / 0.06); font: inherit; font-size: 12.5px; color: var(--ds-text-primary); cursor: pointer; transition: background 0.16s; }
+.ds .nw-feito button:hover { background: rgb(255 255 255 / 0.1); }
+
+/* a leitura no chat: barra fina e a conta, no ritmo das folhas */
+.ds .nw-progresso { display: flex; align-items: center; gap: 10px; width: 240px; font-size: 12px; color: var(--ds-text-tertiary); }
+.ds .nw-progresso-barra { position: relative; flex: 1; height: 3px; overflow: hidden; border-radius: 3px; background: rgb(255 255 255 / 0.07); }
+.ds .nw-progresso-barra i { position: absolute; inset: 0; border-radius: inherit; background: var(--ds-nexo); transform-origin: left center; transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1); }
+.ds .nw-progresso .ds-num { min-width: 76px; text-align: right; }
+
+/* a peça gerada do tomo 01 com o "+1" do tomo 02 ao lado */
+.ds .nw-peca-e-mais { display: flex; align-items: center; gap: 8px; width: 100%; min-width: 0; }
+.ds .nw-peca-e-mais .cx-peca { flex: 1; min-width: 0; }
+.ds .nw-mais { flex: none; font-size: 11.5px; color: var(--ds-text-tertiary); }
+
+@media (prefers-reduced-motion: reduce) { .ds .nw-canvas .react-flow__node.nw-nasce > *, .ds .nw-canvas .react-flow__node.nw-sai > * { animation: none; } }
+.ds .nw-fio .cx-gerando-linha, .ds .nw-fio .cx-gerando-linha > span { width: 100%; }
+/* a barra do canvas flutua no pé, ao centro (como num quadro de nós); o aviso do arrasto sobe acima dela */
+.ds .nw-canvas .mp-zoom { left: 50%; transform: translateX(-50%); }
+.ds .nw-feito { bottom: 64px; }
+/* recolher conversas e chat: o palco fica com a largura (o mesmo par do Nexo: a auditoria) */
+.ds .nw-mesa { transition: grid-template-columns var(--ds-dur-layout) var(--ds-ease-out); }
+.ds .nw-mesa.nw-mesa--sem-conversas { --nw-conversas: 0px; }
+.ds .nw-mesa.nw-mesa--sem-chat { --nw-chat: 0px; }
+.ds .nw-mesa--sem-conversas > .nw-conversas,
+.ds .nw-mesa--sem-chat > .nw-chat { overflow: hidden; padding-left: 0; padding-right: 0; border: 0; visibility: hidden; }
+.ds .nw-espaco button[aria-pressed="true"] { background: rgb(255 255 255 / 0.08); color: var(--ds-text-primary); }
+
+/* ------------------------------------------------------------------ */
+/* No app (migração, passo 5): a coluna de conversas dentro do NexoShell. */
+/* ------------------------------------------------------------------ */
+.ds .nx-conversas { height: 100%; padding: 14px 12px 12px 2px; overflow: hidden; }
+.ds .nx-pastas { flex: 1; min-height: 0; margin-top: 2px; overflow-y: auto; align-content: start; }
+.ds .nx-lista-de-pastas { display: grid; gap: 2px; margin: 0; padding: 0; list-style: none; }
+.ds .nx-pasta-cabeca { width: 100%; border: 0; background: none; font: inherit; text-align: left; }
+.ds .nx-pasta-cabeca:focus-visible { outline: 2px solid var(--ds-focus-ring); outline-offset: -2px; }
+.ds .nx-pasta-seta { flex: none; color: var(--ds-text-tertiary); transition: transform var(--ds-dur-feedback) var(--ds-ease-out); }
+.ds .nw-pasta--aberta .nx-pasta-seta { transform: rotate(90deg); }
+.ds .nx-pasta-quando { flex: none; margin-left: auto; font-size: 11px; color: var(--ds-text-tertiary); }
+.ds .nx-pasta-tem { display: flex; align-items: center; gap: 4px; margin: -3px 0 2px; padding: 0 6px 4px 25px; font-size: 11px; color: var(--ds-text-tertiary); }
+.ds .nx-pasta-peca { padding: 0 5px; border-radius: 4px; background: rgb(255 255 255 / 0.05); font-family: var(--ds-font-mono); font-size: 10px; line-height: 16px; color: var(--ds-text-secondary); }
+.ds .nx-pasta-peca--final { background: rgb(255 255 255 / 0.1); color: var(--ds-text-primary); }
+.ds .nx-pasta-folhas { margin-left: auto; }
+.ds .nx-pasta li { padding: 0; }
+.ds .nx-conversa { display: grid; gap: 1px; width: 100%; padding: 7px 10px; border: 0; border-radius: 7px; background: none; font: inherit; text-align: left; cursor: pointer; }
+.ds .nx-conversa:focus-visible { outline: 2px solid var(--ds-focus-ring); outline-offset: -2px; }
+.ds .nx-conversa--mais .nw-conversa-meta { gap: 8px; }
+.ds .nx-conversas-vazio { margin: 0; padding: 8px 6px; font-size: 12px; line-height: 1.5; color: var(--ds-text-tertiary); }
+.ds .nx-gravacao { display: flex; align-items: flex-start; gap: 8px; padding: 8px 10px; border-radius: 10px; background: var(--ds-sev-decide-wash); font-size: 12px; line-height: 1.4; color: var(--ds-text-primary); }
+.ds .nx-gravacao svg { flex: none; margin-top: 2px; color: var(--ds-sev-decide); }
+.ds .nx-gravacao small { display: block; color: var(--ds-text-secondary); font-size: 11.5px; }
+.ds .nx-gravacao--grave { background: var(--ds-sev-block-wash); }
+.ds .nx-gravacao--grave svg { color: var(--ds-sev-block); }
+.ds .nx-tour { display: inline-flex; align-items: center; gap: 6px; align-self: flex-start; padding: 6px; border: 0; border-radius: 7px; background: none; font: inherit; font-size: 12px; color: var(--ds-text-tertiary); cursor: pointer; }
+.ds .nx-tour:hover { color: var(--ds-text-primary); }
+
+/* o palco no app: cabeçalho de uma linha (obra, estado, vistas, espaço) */
+.ds .nx-palco { background: transparent; }
+.ds .nx-palco-cabeca { flex: none; height: 44px; padding: 0 4px 0 6px; background: transparent; }
+.ds .nx-obra { display: inline-flex; align-items: center; gap: 8px; min-width: 0; overflow: hidden; font-size: 12.5px; color: var(--ds-text-secondary); }
+.ds .nx-obra .mp-mono { flex: none; color: var(--ds-text-primary); }
+.ds .nx-obra-nome { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: var(--ds-text-primary); }
+.ds .nx-obra-orgao { overflow: hidden; text-overflow: ellipsis; }
+.ds .nw-vistas button[aria-pressed="true"] { background: rgb(255 255 255 / 0.08); color: var(--ds-text-primary); }
+.ds .nx-espaco { flex: none; }
+.ds .nw-vistas + .nx-espaco, .ds .nx-palco-cabeca > .nx-espaco:only-child { margin-left: 0; }
+.ds .nx-palco-cabeca > .nx-obra + .nx-espaco, .ds .nx-palco-cabeca > .nx-espaco:first-child { margin-left: auto; }
+.ds .nx-vistas-do-parecer { display: flex; flex: none; flex-wrap: wrap; align-items: center; gap: 2px; padding: 8px 4px; border-bottom: 1px solid var(--ds-line-subtle); }
+.ds .nx-vista { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px; border: 0; border-radius: 8px; background: none; font: inherit; font-size: 12.5px; color: var(--ds-text-tertiary); cursor: pointer; }
+.ds .nx-vista:hover { color: var(--ds-text-primary); }
+.ds .nx-vista[aria-pressed="true"] { background: rgb(255 255 255 / 0.08); color: var(--ds-text-primary); }
+.ds .nx-vista-conta { font-size: 11.5px; color: var(--ds-text-tertiary); }
+.ds .nx-vista-incompleta { font-size: 11px; color: var(--ds-sev-block); }
+.ds .nx-vistas-nota { padding-left: 8px; font-size: 12px; color: var(--ds-text-tertiary); }
+.ds .nx-vistas-diff { margin-left: auto; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-family: var(--ds-font-mono); font-size: 11px; color: var(--ds-text-tertiary); }
+.ds .nx-palco-cabeca .nw-vistas { flex: none; } .ds .nx-palco-cabeca .nw-vistas button { white-space: nowrap; }

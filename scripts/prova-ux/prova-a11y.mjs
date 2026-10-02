@@ -4,7 +4,6 @@
 import fs from "node:fs";
 import { BASE, abrir, login, checar, fim } from "./lib.mjs";
 import { simular } from "./achados-simulados.mjs";
-import { pdfIdentificado } from "./fixtures.mjs";
 
 const AXE = fs.readFileSync("node_modules/axe-core/axe.min.js", "utf8");
 const REGRAS = ["button-name", "link-name", "label", "select-name", "input-button-name", "aria-allowed-attr", "aria-valid-attr-value", "aria-required-attr", "aria-toggle-field-name", "nested-interactive", "color-contrast"];
@@ -32,19 +31,7 @@ for (const rota of ["/", "/projetos", "/achados", "/ajuda"]) {
   await varrer(page, rota);
 }
 
-// mesa com conteúdo
-await page.goto(`${BASE}/volumes`, { waitUntil: "domcontentloaded" });
-await page.evaluate(() => new Promise((ok) => { const r = indexedDB.deleteDatabase("nexodoc-mesa"); r.onsuccess = r.onerror = r.onblocked = () => ok(null); }));
-await page.goto(`${BASE}/volumes`, { waitUntil: "domcontentloaded" });
-await page.waitForFunction(() => document.querySelector("[data-gravacao]")?.getAttribute("data-gravacao") !== "carregando", null, { timeout: 60000 });
-const pr = await pdfIdentificado("PRANCHAS A11Y", 2);
-await page.locator("[data-entrada-de-arquivos]").setInputFiles([{ name: "p.pdf", mimeType: "application/pdf", buffer: pr.bytes }]);
-await page.waitForSelector('[data-fila="importado"]', { timeout: 30000 });
-await page.getByRole("button", { name: "Adicionar volume" }).first().click();
-await page.getByRole("checkbox", { name: "Selecionar página 1 de p.pdf" }).check();
-await page.getByRole("button", { name: /^Adicionar 1 página como Pranchas em/ }).click();
-await page.waitForTimeout(1500);
-await varrer(page, "/volumes (montagem)");
+// a mesa de montagem (/volumes) saiu em 01/10/2026: não há mais o que varrer lá
 
 // parecer com fila e detalhe (foco na revisão para a fila aparecer ao lado)
 await simular(page);

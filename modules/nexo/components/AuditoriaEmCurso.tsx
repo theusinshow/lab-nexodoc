@@ -21,12 +21,12 @@
  */
 
 import { useEffect, useState } from "react";
-import { Check, Loader2, X } from "lucide-react";
+import { Check, X } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { Botao, Orbe } from "@/components/ds/basicos";
 import { NOME_DA_PASSADA, type PassadaDaAuditoria } from "@/lib/audit-progress";
 import { etapasDosMarcos, type MarcoRecebido } from "../lib/etapas-da-auditoria";
-import { cn } from "@/lib/utils";
+import "@/components/telas/nexo/auditoria-em-curso.css";
 
 /** O que cada passada faz, em uma linha. Só aparece na etapa em curso. */
 const DETALHE: Record<PassadaDaAuditoria, string> = {
@@ -89,91 +89,57 @@ export function AuditoriaEmCurso({
   const estourou =
     emCurso?.orcamentoMs !== undefined && agora - emCurso.inicioMs > emCurso.orcamentoMs;
 
+  /*
+   * O PAINEL DA AUDITORIA RODANDO (desenho do lab: Auditoria, "em curso"):
+   * o estado e o arquivo em cima, o cronômetro ao lado, Cancelar discreto, e
+   * as etapas como o registro do Nexo — visto quando acabou, o orbe girando
+   * na que está em curso. O detalhe é o FATO que o motor mediu; só sem ele
+   * entra a frase genérica da etapa.
+   */
+  const concluidas = etapas.filter((e) => e.concluida).length;
   return (
-    <section
-      className="w-full max-w-[560px] overflow-hidden rounded-md border border-border bg-card"
-      aria-live="polite"
-      aria-busy="true"
-    >
-      <header className="flex items-start justify-between gap-3 border-b border-border px-4 py-3">
-        <div className="min-w-0">
-          {/*
-            Sem adjetivo de nível: há um só desde 17/08/2026. "Auditoria padrão
-            em curso" descrevia uma escolha que o usuário não fez mais — e a
-            conversa antiga, restaurada, traria o rótulo de um nível aposentado.
-          */}
-          <p className="font-mono text-[11px] uppercase tracking-[0.07em] text-muted-foreground">
+    <section className="nx-aud" aria-live="polite" aria-busy="true">
+      <header className="nx-aud-cabeca">
+        <div className="nx-aud-texto">
+          {/* Sem adjetivo de nível: há um só desde 17/08/2026. */}
+          <span className="nx-aud-estado">
+            <i aria-hidden />
             Auditoria em curso
-          </p>
-          <p className="mt-0.5 truncate text-sm text-foreground" title={arquivo}>
+          </span>
+          <p className="nx-aud-arquivo" title={arquivo}>
             {arquivo}
           </p>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
-          <span className="rounded-md border border-border bg-[var(--nexodoc-recessed)] px-2 py-1 font-mono text-xs tabular-nums text-muted-foreground">
-            {formatarTempo(decorrido)}
-          </span>
-          {onCancelar && (
-            <Button type="button" variant="outline" size="sm" onClick={onCancelar}>
-              <X />
-              Cancelar
-            </Button>
-          )}
+        <div className="nx-aud-relogio">
+          <b className="ds-num">{formatarTempo(decorrido)}</b>
+          <small>{etapas.length ? `${concluidas} de ${etapas.length} etapas` : "decorrido"}</small>
         </div>
+        {onCancelar && (
+          <Botao variante="quiet" tamanho="sm" onClick={onCancelar}>
+            <X size={13} aria-hidden />
+            Cancelar
+          </Botao>
+        )}
       </header>
 
       {etapas.length === 0 ? (
-        // Antes do primeiro marco não há o que afirmar sobre o trabalho.
-        <p className="px-4 py-4 text-[13px] text-muted-foreground">
-          {retomada
-            ? "Esta análise já estava rodando no servidor. O resultado aparece aqui quando ela terminar."
-            : "Enviando o documento para análise…"}
+        <p className="nx-aud-espera">
+          {retomada ? "Esta análise já estava rodando no servidor. O resultado aparece aqui quando ela terminar." : "Enviando o documento para análise…"}
         </p>
       ) : (
-        <ol className="divide-y divide-border/60">
+        <ol className="nx-aud-etapas">
           {etapas.map((etapa) => {
             const atual = etapa === emCurso;
-            const contagem =
-              etapa.total !== undefined && etapa.indice !== undefined && !etapa.concluida
-                ? ` — ${etapa.indice} de ${etapa.total}`
-                : "";
+            const contagem = etapa.total !== undefined && etapa.indice !== undefined && !etapa.concluida ? ` — ${etapa.indice} de ${etapa.total}` : "";
             return (
-              <li
-                key={etapa.passada}
-                className={cn(
-                  "flex gap-3 px-4 py-2.5 transition-colors duration-150",
-                  atual && "bg-[var(--nexodoc-raised)]",
-                )}
-              >
-                <span className="mt-0.5 flex size-4 shrink-0 items-center justify-center">
-                  {etapa.concluida ? (
-                    <Check className="size-3.5 text-[var(--status-ok)]" aria-hidden />
-                  ) : (
-                    <Loader2 className="size-3.5 animate-spin text-primary" aria-hidden />
-                  )}
-                </span>
-                <div className="min-w-0">
-                  <p
-                    className={cn(
-                      "text-[13px] leading-5",
-                      atual
-                        ? "font-medium text-foreground"
-                        : "text-foreground/70",
-                    )}
-                  >
+              <li key={etapa.passada} className={atual ? "nx-aud-etapa nx-aud-etapa--atual" : "nx-aud-etapa"}>
+                <span className="nx-aud-icone">{etapa.concluida ? <Check size={13} aria-hidden /> : <Orbe tamanho={11} estado="trabalhando" />}</span>
+                <div>
+                  <p className="nx-aud-nome">
                     {NOME_DA_PASSADA[etapa.passada]}
                     {contagem}
                   </p>
-                  {/*
-                    O detalhe é o FATO que o motor mediu ("132 páginas, 314848
-                    caracteres", "3 descartados por falta de evidência"). Só
-                    quando ele não existe é que cabe a frase genérica.
-                  */}
-                  {(atual || etapa.detalhe) && (
-                    <p className="mt-0.5 text-[11px] leading-4 text-muted-foreground">
-                      {etapa.detalhe ?? DETALHE[etapa.passada]}
-                    </p>
-                  )}
+                  {(atual || etapa.detalhe) && <p className="nx-aud-detalhe">{etapa.detalhe ?? DETALHE[etapa.passada]}</p>}
                 </div>
               </li>
             );
@@ -181,24 +147,14 @@ export function AuditoriaEmCurso({
         </ol>
       )}
 
-      <footer className="border-t border-border px-4 py-2.5">
+      <footer className="nx-aud-pe">
         {estourou ? (
-          <p className="text-[11px] leading-4 text-[var(--status-warning)]">
-            Esta etapa passou do tempo previsto; pode voltar incompleta. A análise
-            continua rodando no servidor.
-          </p>
+          <p className="nx-aud-nota nx-aud-nota--aviso">Esta etapa passou do tempo previsto; pode voltar incompleta. A análise continua rodando no servidor.</p>
         ) : retomada ? (
-          /* Retomada pós-F5 é INFORMAÇÃO: explica o estado do software sem
-             pedir ação. Em `muted` sumia, e o engenheiro não entendia por que
-             as etapas não apareciam. */
-          <p className="text-[11px] leading-4 text-[var(--signal-info)]">
-            Reconectada a uma análise já em curso — sem as etapas, que se perderam
-            com a conexão anterior.
-          </p>
+          /* Informativo, não alarme: sem esta linha o engenheiro não entendia por que as etapas não apareciam. */
+          <p className="nx-aud-nota nx-aud-nota--info">Reconectada a uma análise já em curso — sem as etapas, que se perderam com a conexão anterior.</p>
         ) : (
-          <p className="text-[11px] leading-4 text-muted-foreground">
-            As etapas são relatadas pelo motor conforme acontecem.
-          </p>
+          <p className="nx-aud-nota">As etapas são relatadas pelo motor conforme acontecem.</p>
         )}
       </footer>
     </section>

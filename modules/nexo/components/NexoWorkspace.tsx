@@ -10,6 +10,7 @@ import { flushSync } from "react-dom";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { plural } from "@/lib/plural";
+import { retirarEntrega } from "@/lib/entrega-ao-nexo";
 import type { NexoDossieDraft, NexoSlotSuggestion } from "../types";
 import { vincularProjetoDaConversa } from "../lib/projeto-da-auditoria";
 import {
@@ -60,6 +61,7 @@ const CONTEXTO_VAZIO: ContextoDaUrl = {
   auditoria: null,
   achado: null,
   intencao: null,
+  mensagem: null,
 };
 import {
   ultimaConversaLembrada,
@@ -1102,7 +1104,7 @@ function NexoWorkspaceInner({
     await lerPranchas(pendente.arquivos, pendente.imagens, null, jaLidas);
   }
 
-  async function readSelos(list: FileList | null) {
+  async function readSelos(list: FileList | File[] | null) {
     const all = list ? Array.from(list) : [];
     const pdfsSoltos = all.filter((f) => /\.pdf$/i.test(f.name));
     const images = all.filter(isImageFile);
@@ -1734,8 +1736,9 @@ function NexoWorkspaceInner({
   const intencaoAplicada = useRef(false);
   useEffect(() => {
     if (intencaoAplicada.current || typeof window === "undefined") return;
-    const partida = partidaPorId(contexto.intencao);
-    if (!partida) return;
+    // A mensagem escrita na busca do topo ganha da intenção: é o mais específico.
+    const frase = contexto.mensagem ?? partidaPorId(contexto.intencao)?.frase;
+    if (!frase) return;
     /*
      * `requestAnimationFrame` porque o composer só se registra depois de o
      * NexoChat montar — sem a espera, `fill` cairia no controle de mentira que
@@ -1748,10 +1751,10 @@ function NexoWorkspaceInner({
      */
     const raf = requestAnimationFrame(() => {
       intencaoAplicada.current = true;
-      composer.fill(partida.frase);
+      composer.fill(frase);
     });
     return () => cancelAnimationFrame(raf);
-  }, [composer, contexto.intencao]);
+  }, [composer, contexto.intencao, contexto.mensagem]);
 
   const [started, setStarted] = useState(false);
   const start = () => {
@@ -2032,29 +2035,10 @@ function NexoWorkspaceInner({
   }, []);
 
   /*
-   * Apagar a PASTA inteira, do cabeçalho do grupo na barra lateral.
-   *
-   * Se a conversa aberta estava no meio, a tela volta ao começo — seguir
-   * mostrando o canvas de uma conversa que não existe mais em lugar nenhum
-   * seria uma tela que mente. E volta DESCARTANDO a gravação pendente: o flush
-   * de sempre escreveria de volta, meio segundo depois, o que se acabou de
-   * mandar apagar.
+   * O MENU DA OBRA (apagar a pasta, nova conversa a partir da mais recente,
+   * limpar) saiu em 01/10/2026, por decisão do Matheus. Expurgar conversas é do
+   * Centro de controle (Dados).
    */
-  const apagarPasta = async (ids: string[]) => {
-    const levouAAtiva = ids.includes(conv.conversationId);
-    await conv.removeConversations(ids);
-    if (levouAAtiva) reset({ descartar: true });
-  };
-
-  /*
-   * Nova conversa A PARTIR de outra. O registro nasce no disco com os selos já
-   * lidos, e a tela o abre pelo MESMO caminho do clique no histórico — sem um
-   * segundo jeito de restaurar o shell, que é onde os dois divergiriam.
-   */
-  const duplicarConv = async (id: string) => {
-    const novo = await conv.duplicarConversa(id);
-    if (novo) await selectConv(novo);
-  };
 
   /*
    * Ao abrir, retoma a conversa que tem AUDITORIA EM VOO.
@@ -2301,6 +2285,20 @@ function NexoWorkspaceInner({
   useEffect(() => {
     readSelosRef.current = readSelos;
   });
+  /*
+   * O ARQUIVO QUE VEIO DO PAINEL (lib/entrega-ao-nexo.ts): solto ou escolhido
+   * lá, lido aqui, pelo mesmo caminho do soltar na janela. Retirado DENTRO do
+   * quadro, como a intenção do link: retirado antes, a montagem dupla do
+   * StrictMode esvaziaria a caixa na primeira passada e a leitura nunca
+   * aconteceria.
+   */
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => {
+      const entregues = retirarEntrega();
+      if (entregues) void readSelosRef.current(entregues);
+    });
+    return () => cancelAnimationFrame(raf);
+  }, []);
   useEffect(() => {
     let depth = 0;
     const hasFiles = (e: DragEvent) =>
@@ -2932,35 +2930,21 @@ function NexoWorkspaceInner({
         started={started}
         leitura={aberturaPorLink.pedida}
         abrindo={abrindo !== null && abrindo !== conv.conversationId}
-        barra={<BarraDoNexo projetoPedido={projetoPedido} />}
         sidebar={
           <NexoSidebar
             onNewConversation={reset}
             conversations={conv.conversations}
             activeId={abrindo ?? conv.conversationId}
             onSelect={abrirPelaBarra}
-            onDelete={conv.removeConversation}
-            onDeleteFolder={apagarPasta}
-            onDuplicate={duplicarConv}
-            isAdmin={isAdmin}
             onVerTour={iniciarTour}
-            /* O bloco da conta, no rodapé: nome e e-mail vêm da SESSÃO, pelo
-               servidor. Sem sessão o bloco não renderiza. */
-            nome={nome}
-            email={email}
             sincronizacao={conv.sincronizacao}
             gravacaoLocal={conv.gravacaoLocal}
-            /*
-             * A marca da barra lateral respira enquanto o agente trabalha. Ela
-             * está sempre visível, e o orbe grande não: sai de vista quando se
-             * rola a conversa ou se olha o canvas.
-             */
-            trabalhando={agentState !== "idle" && agentState !== "complete"}
           />
         }
         stage={
           <PalcoDoNexo
             aberturaPorLink={aberturaPorLink}
+            obra={<BarraDoNexo projetoPedido={projetoPedido} />}
             mapa={
           <NexoCanvas
             folhas={selos}

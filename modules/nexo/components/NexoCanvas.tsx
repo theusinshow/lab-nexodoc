@@ -36,7 +36,7 @@ import type { NexoArtifactKind } from "../types";
 import { useArtifactStore, type CanvasArtifact } from "../state/artifact-store";
 import { useComposer } from "../state/composer-controller";
 import { useConversation } from "../state/conversation-store";
-import { agruparPorTomo, tomoDoArtefato } from "../lib/results";
+import { agruparPorTomo, tomoDoArtefato, tomosDeFileira } from "../lib/results";
 import { orfaosAposDivisao } from "../lib/edicao";
 import { camposDoArtefato, aplicarEdicaoNoNo } from "../lib/editar-artefato";
 import { aplicarIdentidade, separarIdentidade } from "../lib/identidade";
@@ -63,6 +63,7 @@ import {
   alvoDoDrop,
   posicaoDaFresta,
   assinaturaDoTomo,
+  documentoEnvelheceu,
   type FileiraDoDrop,
   type GradeDoDrop,
 } from "../lib/drop-folhas";
@@ -575,7 +576,9 @@ function CanvasInterno({
     // por existirem vazios que há para onde arrastar.
     for (let t = 1; t <= Math.min(99, tomosDeclarados); t++) declarados.add(t);
 
-    const grupos = agruparPorTomo(artifacts, [...declarados]);
+    // Um tomo só não é divisão (ver `tomosDeFileira`): sem isto a LD de um
+    // volume único aparecia "fora da divisão" e desatualizada.
+    const grupos = agruparPorTomo(artifacts, tomosDeFileira([...declarados], artifacts.map((a) => a.id)));
     const fileiras: FileiraNavegavel[] = [];
     const tomosReais = grupos.filter((g) => g.tomo > 0).length;
 
@@ -632,7 +635,8 @@ function CanvasInterno({
       // marca para ele — uma marca que acende à toa vira ruído que se ignora.
       if (typeof gravada !== "string") return false;
       const tomo = tomoDoArtefato(id);
-      return assinaturaDoTomo(porTomo.get(tomo) ?? folhas) !== gravada;
+      // O mesmo recorte que o documento descreve (a LD de um bloco é só da disciplina dele).
+      return documentoEnvelheceu(gravada, porTomo.get(tomo) ?? folhas, codigoDaFolha);
     };
 
     const nodes: Node[] = [];

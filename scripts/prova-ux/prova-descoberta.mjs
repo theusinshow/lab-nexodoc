@@ -67,7 +67,7 @@ for (const vp of [{ width: 1280, height: 800 }, { width: 1920, height: 1080 }]) 
   await page.goto(`${BASE}/ajuda`, { waitUntil: "domcontentloaded" });
   checar(await page.locator("#separatriz").count() === 1 && (await page.getByRole("heading", { name: "Onde fica" }).count()) === 1, "/ajuda: glossário com âncoras e 'Onde fica'");
   await page.goto(`${BASE}/ferramentas`, { waitUntil: "domcontentloaded" });
-  checar(page.url().endsWith("/volumes"), "/ferramentas leva a Montar volumes");
+  checar(page.url().includes("/nexo?intencao=montar"), "/ferramentas leva ao Nexo, montando");
 
   // P01
   await page.goto(`${BASE}/projetos`, { waitUntil: "domcontentloaded" });

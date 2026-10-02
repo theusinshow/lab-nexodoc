@@ -11,6 +11,7 @@
 
 import { useState } from "react";
 
+import { Orbe } from "@/components/ds/basicos";
 import { cn } from "@/lib/utils";
 import type { SeloForLd } from "@/server/nexo/build-ld-proposal";
 import { AgentPopover } from "@/components/ui/agent-popover";
@@ -152,59 +153,53 @@ export function NexoCopilot({
                   ? `${fileCount} folha${fileCount > 1 ? "s" : ""} no contexto`
                   : "pronto";
 
-  return (
-    <div
-      className={cn(
-        "flex h-full min-h-0 flex-col gap-3",
-        started ? "pt-[50px]" : "justify-center",
-      )}
-    >
-      <div
-        data-tour="orbe"
-        className="flex shrink-0 flex-col items-center gap-2 pt-1 text-center"
-      >
-        <AgentPopover
-          open={popoverOpen && temFatos}
-          onClose={() => setPopoverOpen(false)}
-          label="Status do Nexo"
-          anchor={
-            <AgentOrb
-              state={orbState}
-              ouvindo={ouvindo}
-              fileCount={fileCount}
-              activity={orbActivity}
-              size={started ? "compact" : "hero"}
-              interactive
-              onActivate={ativarOrbe}
-            />
-          }
-        >
-          {/* O mesmo `activity` que move o orbe alimenta a barra do cartão: um
-              número só, duas leituras — a física e a numérica. */}
-          <AgentStatusPopover
-            state={agentState}
-            context={context}
-            progresso={activity}
-          />
-        </AgentPopover>
-        {started ? (
-          <p
-            className={cn(
-              "font-mono text-[11px] tracking-[0.04em]",
-              working ? "nexo-status-working" : "text-muted-foreground",
-            )}
-            aria-live="polite"
-          >
-            {statusLabel}
-            {working && <span className="nexo-ellipsis" aria-hidden />}
-          </p>
+  /*
+   * O ESTADO DO NEXO, numa linha só no alto do chat docado (Conversa v2): o
+   * orbe pequeno do ds — trabalhando, ele gira — e o que está fazendo, em
+   * texto. Tocar no orbe abre o cartão de status (o que ele sabe da conversa);
+   * sem fatos ainda, leva ao campo. Na entrada (sem conversa) o orbe grande
+   * continua: é a presença do Nexo, a exceção à regra do movimento.
+   */
+  const orbe = (
+    <AgentPopover
+      open={popoverOpen && temFatos}
+      onClose={() => setPopoverOpen(false)}
+      label="Status do Nexo"
+      anchor={
+        started ? (
+          <button type="button" className="nx-chat-orbe" onClick={ativarOrbe} aria-label={`Nexo: ${statusLabel}`}>
+            <Orbe tamanho={18} estado={working ? "trabalhando" : "repouso"} />
+          </button>
         ) : (
-          /*
+          <AgentOrb state={orbState} ouvindo={ouvindo} fileCount={fileCount} activity={orbActivity} size="hero" interactive onActivate={ativarOrbe} />
+        )
+      }
+    >
+      {/* O mesmo `activity` que move o orbe alimenta a barra do cartão: um
+          número só, duas leituras — a física e a numérica. */}
+      <AgentStatusPopover state={agentState} context={context} progresso={activity} />
+    </AgentPopover>
+  );
+
+  return (
+    <div className={cn("flex h-full min-h-0 flex-col", started ? "" : "justify-center gap-3")}>
+      {started ? (
+        <header data-tour="orbe" className="nw-chat-cabeca nx-chat-cabeca">
+          {orbe}
+          <span className="nw-chat-titulo">Nexo</span>
+          <span className={working ? "nx-chat-estado nx-chat-estado--trabalhando" : "nx-chat-estado"} aria-live="polite">
+            {statusLabel}
+          </span>
+        </header>
+      ) : (
+        <div data-tour="orbe" className="flex shrink-0 flex-col items-center gap-2 pt-1 text-center">
+          {orbe}
+          {/*
             A ENTRADA. As DUAS portas continuam nomeadas — a tela dizia só
             "montar" e falava só de pranchas, e quem chegava com um memorial na
             mão não sabia que a auditoria mora aqui —, mas agora quem as nomeia é
             o próprio Nexo, escrevendo.
-          */
+          */}
           <>
             <SaudacaoDoNexo nome={nome} onDigitando={setSaudando} />
             {/*
@@ -218,8 +213,8 @@ export function NexoCopilot({
               onAnexar={onAttach}
             />
           </>
-        )}
-      </div>
+        </div>
+      )}
 
       <div
         className={cn(

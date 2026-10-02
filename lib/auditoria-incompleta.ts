@@ -17,6 +17,7 @@
 import { plural } from "./plural.ts";
 import { paginasMudasPendentes } from "./resumo-do-esforco.ts";
 import type { CoberturaDoArquivo } from "./audit-report.ts";
+import { achadosConfirmados, type AchadoComCamada } from "./camada-do-achado.ts";
 
 type PassadaIncompleta = { passada: string; motivo?: string };
 
@@ -46,8 +47,18 @@ export function ehLeituraDoDocumentoPelaIa(passada: string) {
   return passada.toLowerCase().includes("global");
 }
 
+/**
+ * Só os CONFIRMADOS (`camada-do-achado.ts`). Com a lista em mãos, conta a
+ * lista: `total_incongruencias` é o total cru da corrida, sugestões incluídas,
+ * e era ele que fazia o aviso dizer "8 achados" ao lado do trilho com 6. Sem a
+ * lista (parecer antigo, resumo), o total gravado é o que há.
+ */
 function totalDeAchados(p: ParecerParaIncompletude) {
-  return p.total_incongruencias ?? p.incongruencias?.length ?? 0;
+  if (Array.isArray(p.incongruencias)) {
+    const lista = p.incongruencias.filter((a): a is AchadoComCamada => typeof a === "object" && a !== null);
+    return achadosConfirmados(lista).length;
+  }
+  return p.total_incongruencias ?? 0;
 }
 
 export function incompletudeDoParecer(p: ParecerParaIncompletude): Incompletude {

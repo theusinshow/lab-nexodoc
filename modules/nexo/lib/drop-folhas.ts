@@ -79,6 +79,26 @@ export function assinaturaDoTomo(doTomo: readonly Folha[]): string {
 }
 
 /**
+ * O DOCUMENTO ENVELHECEU? — comparando com o MESMO recorte que ele descreve.
+ *
+ * Num volume de várias disciplinas a LD é uma por bloco: a assinatura gravada
+ * é a das folhas DAQUELA disciplina. O mapa comparava com o tomo inteiro, e
+ * toda LD de volume misto nascia "Desatualizado" (teste real de 02/10/2026,
+ * 4 ARQ + 3 EST). O recorte sai da própria assinatura: se as folhas dela são
+ * todas de uma disciplina e o tomo tem mais de uma, compara-se com as folhas
+ * daquela disciplina no tomo — o que a LD do bloco lista, e o que muda quando
+ * alguém arrasta ou corrige uma folha dela.
+ */
+export function documentoEnvelheceu(gravada: string, doTomo: readonly Folha[], codigoDe: (folha: Folha) => string): boolean {
+  const idsGravados = new Set(gravada.split("\u001f").filter((_, i) => i % 2 === 0));
+  const codigo = (f: Folha) => codigoDe(f).trim().toLowerCase();
+  const codigosDaAssinatura = new Set(doTomo.filter((f) => idsGravados.has(f.id)).map(codigo));
+  const codigosDoTomo = new Set(doTomo.map(codigo));
+  const recorte = codigosDaAssinatura.size === 1 && codigosDoTomo.size > 1 ? doTomo.filter((f) => codigo(f) === [...codigosDaAssinatura][0]) : doTomo;
+  return assinaturaDoTomo(recorte) !== gravada;
+}
+
+/**
  * Alguma folha deste tomo foi reordenada à mão?
  *
  * Quando não, a montagem deve continuar ordenando pelo número do carimbo — é o

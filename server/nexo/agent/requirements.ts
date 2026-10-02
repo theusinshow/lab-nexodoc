@@ -480,9 +480,16 @@ const volumeSlot: SlotDef = {
   prompt: "Qual o número do volume?",
   deriveFrom: () => null,
   suggest: () =>
+    /*
+     * O VALOR É A FRASE, não o número: "1" sozinho no campo de mensagem chegava
+     * ao modelo sem dizer a que se referia ("Não identifiquei a que o '1' se
+     * refere", teste real de 02/10/2026). O plano tem os mesmos botões, que
+     * decidem o campo direto (PlanoDeGeracao); estes ficam para quem prefere
+     * pedir pelo chat.
+     */
     [1, 2, 3, 4].map((n) => ({
       label: `Volume ${n}`,
-      value: String(n),
+      value: `o número do volume é ${n}`,
       commit: "fill" as const,
     })),
 };

@@ -1,0 +1,207 @@
+/* O TOPO das telas do Nexo (sistema ds). Veio do laboratório: a base estava
+   no Painel (painel.css, arquivado) e o resto em _comum/topo.css. */
+
+.ds .pn-topo {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  height: 64px;
+  padding: 0 28px;
+}
+.ds .pn-marca {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 500;
+  font-size: var(--ds-text-md);
+  letter-spacing: -0.01em;
+}
+.ds .pn-nav {
+  display: flex;
+  gap: 2px;
+  margin-left: 18px;
+}
+.ds .pn-nav a {
+  padding: 6px 12px;
+  border-radius: var(--ds-radius-pill);
+  color: var(--ds-text-secondary);
+  font-size: var(--ds-text-xs);
+  cursor: pointer;
+  transition: color var(--ds-dur-feedback) var(--ds-ease-feedback), background var(--ds-dur-feedback);
+}
+.ds .pn-nav a:hover { color: var(--ds-text-primary); }
+.ds .pn-nav a[aria-current="page"] { color: var(--ds-text-primary); background: rgb(255 255 255 / 0.06); }
+.ds .pn-busca {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 280px;
+  height: 34px;
+  padding: 0 8px 0 13px;
+  border: 0;
+  border-radius: var(--ds-radius-pill);
+  background: var(--ds-surface-card);
+  box-shadow: var(--ds-edge);
+  color: var(--ds-text-tertiary);
+  font: inherit;
+  font-size: var(--ds-text-xs);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: box-shadow var(--ds-dur-feedback);
+}
+.ds .pn-busca:hover { box-shadow: var(--ds-edge-strong); }
+.ds .pn-busca .ds-kbd { margin-left: auto; }
+.ds .pn-sino { position: relative; }
+.ds .pn-sino i {
+  position: absolute;
+  top: 8px;
+  right: 9px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ds-nexo);
+  box-shadow: 0 0 0 2px var(--ds-surface-page);
+}
+.ds .pn-quem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 10px 4px 4px;
+  border: 0;
+  border-radius: var(--ds-radius-pill);
+  background: none;
+  box-shadow: var(--ds-edge);
+  color: var(--ds-text-primary);
+  font: inherit;
+  font-size: var(--ds-text-xs);
+  text-align: left;
+  cursor: pointer;
+}
+.ds .pn-quem small { display: block; color: var(--ds-text-tertiary); font-size: 11.5px; line-height: 1.15; }
+
+
+/* O TOPO se mede pela caixa: as mesmas regras valem na tela cheia e na vitrine. */
+.ds .pn-topo-caixa { container-type: inline-size; container-name: topo; position: relative; z-index: 30; }
+.ds .pn-topo { min-width: 0; }
+.ds .pn-marca { flex: none; }
+.ds .pn-nav { flex: none; }
+.ds .pn-nav a { white-space: nowrap; }
+.ds .pn-busca { flex: none; width: auto; min-width: 280px; }
+.ds .pn-busca-texto { overflow: hidden; text-overflow: ellipsis; }
+.ds .pn-sino { flex: none; }
+.ds .pn-conta { position: relative; flex: none; }
+.ds .pn-quem { white-space: nowrap; transition: background var(--ds-dur-feedback); }
+.ds .pn-quem:hover, .ds .pn-quem[aria-expanded="true"] { background: rgb(255 255 255 / 0.05); }
+.ds .pn-quem-seta { display: inline-flex; color: var(--ds-text-tertiary); }
+
+/* pular para o conteúdo: invisível até o primeiro Tab */
+.ds .pn-pular { position: absolute; top: 12px; left: 16px; z-index: 50; display: inline-flex; align-items: center; gap: 10px; padding: 8px 10px 8px 14px; border-radius: 10px; background: var(--ds-text-primary); color: var(--ds-p-ink, #0b0c0e); font-size: 13px; font-weight: 500; text-decoration: none; transform: translateY(-140%); opacity: 0; transition: transform 0.18s, opacity 0.18s; }
+.ds .pn-pular .ds-kbd { background: rgb(0 0 0 / 0.08); color: inherit; box-shadow: none; }
+.ds .pn-pular:focus-visible, .ds .pn-pular--visivel { transform: none; opacity: 1; outline: 2px solid var(--ds-text-primary); outline-offset: 3px; }
+
+/* os painéis que crescem do topo (sino e conta) */
+.ds .pn-painel { position: absolute; top: calc(100% + 8px); right: 0; z-index: 40; display: grid; padding: 6px; border-radius: 14px; background: var(--ds-surface-overlay, var(--ds-surface-card)); box-shadow: var(--ds-edge-strong), 0 18px 48px rgb(0 0 0 / 0.5); transform-origin: top right; }
+.ds .pn-painel button { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 34px; padding: 0 10px; border: 0; border-radius: 8px; background: none; font: inherit; font-size: 13px; color: var(--ds-text-secondary); text-align: left; cursor: pointer; transition: background 0.15s, color 0.15s; }
+.ds .pn-painel button:hover, .ds .pn-painel button:focus-visible { outline: none; background: rgb(255 255 255 / 0.06); color: var(--ds-text-primary); }
+.ds .pn-painel button[aria-current="page"] { color: var(--ds-text-primary); }
+.ds .pn-painel button .ds-kbd { margin-left: auto; }
+.ds .pn-painel-pe { display: grid; margin-top: 4px; padding-top: 4px; border-top: 1px solid var(--ds-line-subtle); }
+.ds .pn-painel-pe button { justify-content: space-between; }
+
+/* o menu da conta */
+.ds .pn-menu { width: 296px; }
+.ds .pn-menu-quem { display: flex; align-items: center; gap: 12px; padding: 12px 10px 10px; }
+.ds .pn-menu-avatar { display: grid; place-items: center; flex: none; width: 40px; height: 40px; border-radius: 50%; background: rgb(255 255 255 / 0.08); font-size: 13px; font-weight: 500; letter-spacing: 0.02em; }
+.ds .pn-menu-nome { display: grid; gap: 2px; min-width: 0; }
+.ds .pn-menu-nome b { font-weight: 500; font-size: 14px; }
+.ds .pn-menu-nome small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11.5px; color: var(--ds-text-tertiary); }
+.ds .pn-menu-alcada { display: grid; gap: 2px; margin: 0 4px 6px; padding: 8px 10px; border-radius: 10px; background: rgb(255 255 255 / 0.03); box-shadow: inset 0 0 0 1px var(--ds-line-subtle); }
+.ds .pn-menu-alcada > div { display: flex; align-items: center; justify-content: space-between; min-height: 24px; font-size: 12px; }
+.ds .pn-menu-alcada dt { color: var(--ds-text-tertiary); }
+.ds .pn-menu-alcada dd { display: flex; align-items: center; gap: 6px; margin: 0; font-family: var(--ds-font-mono); font-size: 11.5px; color: var(--ds-text-secondary); }
+.ds .pn-menu-alcada em { padding: 1px 7px; border-radius: 5px; background: var(--ds-nexo-wash); font-family: var(--ds-font-sans, inherit); font-style: normal; font-size: 11.5px; color: var(--ds-nexo-soft); }
+.ds .pn-menu-papel { font-family: var(--ds-font-sans, inherit); color: var(--ds-text-tertiary); }
+.ds .pn-menu-destinos { display: none; padding: 6px 0; border-top: 1px solid var(--ds-line-subtle); }
+.ds .pn-menu-grupo { display: grid; padding: 4px 0; border-top: 1px solid var(--ds-line-subtle); }
+.ds .pn-menu-sair:hover, .ds .pn-menu-sair:focus-visible { color: var(--ds-state-error) !important; }
+.ds .pn-menu-nota { margin: 2px 10px 6px; font-size: 11px; line-height: 1.45; color: var(--ds-text-tertiary); }
+
+/* o sino: com você */
+.ds .pn-sino-painel { width: 360px; }
+.ds .pn-sino-cabeca { display: flex; align-items: baseline; justify-content: space-between; padding: 10px 10px 8px; }
+.ds .pn-sino-cabeca b { font-weight: 500; font-size: 13.5px; }
+.ds .pn-sino-cabeca span { font-size: 12px; color: var(--ds-text-tertiary); }
+.ds .pn-painel .pn-sino-item { display: grid; gap: 3px; padding: 9px 10px; }
+.ds .pn-sino-linha { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.ds .pn-sino-linha b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 450; color: var(--ds-text-primary); }
+.ds .pn-sino-sub, .ds .pn-sino-conta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; font-size: 11.5px; color: var(--ds-text-tertiary); }
+.ds .pn-sino-conta { color: var(--ds-text-secondary); }
+.ds .pn-sino-parado { font-style: normal; color: var(--ds-state-attention); }
+.ds .pn-sino-bloq { display: inline-flex; align-items: center; gap: 6px; }
+.ds .pn-sino-bloq i { width: 6px; height: 6px; border-radius: 2px; background: var(--ds-state-error); transform: rotate(45deg); }
+.ds .pn-sino-vazio { margin: 0; padding: 10px; font-size: 12.5px; color: var(--ds-text-tertiary); }
+
+/* ---------- o cartão de navegação (ref.: Card Nav) ---------- */
+.ds .pn-marca--botao { display: none; gap: 8px; padding: 4px 8px 4px 4px; margin-left: -4px; border: 0; border-radius: 10px; background: none; font: inherit; color: inherit; cursor: pointer; transition: background var(--ds-dur-feedback); }
+.ds .pn-marca--botao:hover, .ds .pn-marca--botao[aria-expanded="true"] { background: rgb(255 255 255 / 0.05); }
+.ds .pn-marca-raiz { flex: none; }
+.ds .pn-cartao-nav { left: 0; right: auto; width: min(560px, calc(100vw - 32px)); padding: 8px; transform-origin: top left; }
+.ds .pn-cartao-grade { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.ds .pn-painel .pn-cartao-destino {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas: "icone nome" "linha linha";
+  align-items: center;
+  gap: 8px 10px;
+  min-height: 78px;
+  padding: 12px;
+  border-radius: 10px;
+  background: rgb(255 255 255 / 0.025);
+  box-shadow: inset 0 0 0 1px var(--ds-line-subtle);
+  text-align: left;
+}
+.ds .pn-painel .pn-cartao-destino:hover,
+.ds .pn-painel .pn-cartao-destino:focus-visible { background: var(--ds-surface-raised); box-shadow: inset 0 0 0 1px var(--ds-line-strong); }
+.ds .pn-painel .pn-cartao-destino[aria-current="page"] { background: var(--ds-nexo-wash); box-shadow: inset 0 0 0 1px var(--ds-nexo-line); }
+.ds .pn-cartao-icone { grid-area: icone; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 8px; background: rgb(255 255 255 / 0.05); color: var(--ds-text-secondary); }
+.ds .pn-cartao-destino[aria-current="page"] .pn-cartao-icone { color: var(--ds-nexo); }
+.ds .pn-cartao-destino b { grid-area: nome; font-weight: 500; font-size: 13.5px; color: var(--ds-text-primary); }
+.ds .pn-cartao-linha { grid-area: linha; overflow: hidden; font-size: 11.5px; line-height: 1.4; color: var(--ds-text-tertiary); white-space: nowrap; text-overflow: ellipsis; }
+.ds .pn-cartao-linha .ds-code { font-size: 10.5px; }
+.ds .pn-cartao-sinal { display: inline-flex; align-items: center; white-space: pre; }
+.ds .pn-cartao-sinal em { display: inline-flex; align-items: center; gap: 5px; margin-left: 8px; font-style: normal; color: var(--ds-text-secondary); }
+.ds .pn-cartao-sinal em i { width: 6px; height: 6px; border-radius: 2px; background: var(--ds-state-error); transform: rotate(45deg); }
+
+/* abaixo de 1280: os destinos saem da barra e a marca abre o cartão */
+@container topo (max-width: 1279px) {
+  .ds .pn-nav { display: none; }
+  .ds .pn-marca--link { display: none; }
+  .ds .pn-marca--botao { display: inline-flex; align-items: center; }
+}
+@container topo (max-width: 599px) {
+  .ds .pn-cartao-grade { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+/* abaixo de 900: a busca vira o ícone com o atalho */
+@container topo (max-width: 899px) {
+  .ds .pn-busca { min-width: 0; padding: 0 8px 0 11px; }
+  .ds .pn-busca-texto { display: none; }
+}
+/* abaixo de 600: só o avatar; abaixo de 420, a marca sem a palavra */
+@container topo (max-width: 599px) {
+  .ds .pn-topo { gap: 8px; padding: 0 16px; }
+  .ds .pn-quem-texto, .ds .pn-quem-seta { display: none; }
+  .ds .pn-quem { padding: 4px; }
+  .ds .pn-busca .ds-kbd { display: none; }
+  .ds .pn-busca { padding: 0 10px; }
+}
+@container topo (max-width: 419px) {
+  .ds .pn-marca-nome { display: none; }
+  .ds .pn-menu, .ds .pn-sino-painel { width: min(320px, calc(100cqw - 32px)); }
+  .ds .pn-sino-painel { right: -48px; }
+}
+.ds a.pn-marca { color: inherit; text-decoration: none; }
+
+/* mono do sistema (a mesma regra de mapa.css: as telas de lista a repetem) */
+.ds .mp-mono { font-family: var(--ds-font-mono); font-size: 0.92em; }

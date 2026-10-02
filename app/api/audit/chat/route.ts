@@ -23,6 +23,7 @@ import {
 } from "@/lib/ai-providers";
 import { executeOpenAiResponse } from "@/lib/ai-runner";
 import type { AuditReport } from "@/lib/audit-report";
+import { achadosConfirmados } from "@/lib/camada-do-achado";
 import type { Actor } from "@/lib/actor";
 import { getPrisma, isDatabaseConfigured } from "@/lib/db";
 import { carregarMemoriaDoDocumento } from "@/lib/memoria-do-documento";
@@ -124,7 +125,7 @@ async function gravarAchadoNoParecer(auditId: string, report: AuditReport, actor
       where: auditByIdWhereForActor(auditId, actor),
       data: {
         report: report as never,
-        totalFindings: report.total_incongruencias,
+        totalFindings: achadosConfirmados(report.incongruencias).length,
       },
     });
   } catch (error) {
@@ -289,7 +290,9 @@ export async function POST(request: Request) {
           model,
           error,
         );
-        console.error(`[audit-chat] falha (${failure.category})`);
+        // A mensagem junto da categoria: "unknown" sozinho não diz onde quebrou
+        // (achado no teste real de 02/10/2026, com a resposta sumindo na tela).
+        console.error(`[audit-chat] falha (${failure.category}): ${error instanceof Error ? error.message : String(error)}`);
         /*
          * O erro viaja DENTRO do SSE, com status 200: o fluxo já começou, e
          * trocar o status a essa altura não chega ao cliente.

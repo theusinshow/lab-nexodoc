@@ -20,11 +20,12 @@ export type DestinoPrincipal = {
 export const DESTINOS_PRINCIPAIS: readonly DestinoPrincipal[] = [
   { rotulo: "Painel", href: "/", resumo: "Onde você parou e o que está com você.", ativoEm: ["/"] },
   { rotulo: "Projetos", href: "/projetos", resumo: "Todos os projetos do escritório, ativos e arquivados.", ativoEm: ["/projetos"] },
+  // A montagem manual (/volumes) saiu em 01/10/2026: montar volume é no Nexo.
   {
-    rotulo: "Montar volumes",
-    href: "/volumes",
-    resumo: "Gerar a partir das pranchas (no Nexo) ou montar com PDFs existentes.",
-    ativoEm: ["/volumes"],
+    rotulo: "Montar volume",
+    href: "/nexo?intencao=montar",
+    resumo: "No Nexo, a partir das pranchas: capa, LD, separatrizes e o volume.",
+    ativoEm: [],
   },
   { rotulo: "Achados", href: "/achados", resumo: "Achados de auditoria com você e os que você atribuiu.", ativoEm: ["/achados"] },
   { rotulo: "Ajuda", href: "/ajuda", resumo: "Glossário e onde fica cada função.", ativoEm: ["/ajuda"] },

@@ -1,0 +1,141 @@
+/* A BARRA DE COMANDO (Ctrl K e a busca do Painel). Veio de inicio-f.css do laboratório. */
+
+/* INÍCIO F — a barra de comando. Denso de propósito: é ferramenta, não vitrine. */
+.ds .cf-painel {
+  border-radius: var(--ds-radius-panel);
+  background: var(--ds-surface-card);
+  box-shadow: var(--ds-shadow-overlay);
+  overflow: hidden;
+  transition: box-shadow var(--ds-dur-state) var(--ds-ease-feedback);
+}
+/* ---------- a entrada ---------- */
+.ds .cf-entrada {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 58px;
+  padding: 0 16px 0 18px;
+  border-bottom: 1px solid var(--ds-line-subtle);
+}
+.ds .cf-entrada input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  outline: none;
+  background: none;
+  color: var(--ds-text-primary);
+  font: inherit;
+  font-size: var(--ds-text-lg);
+  letter-spacing: -0.01em;
+}
+.ds .cf-entrada input:focus-visible { outline: none; }
+.ds .cf-entrada input::placeholder { color: var(--ds-text-tertiary); }
+.ds .cf-arquivo {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 4px 0 9px;
+  border-radius: 7px;
+  background: var(--ds-nexo-wash);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ds-nexo) 25%, transparent);
+  color: var(--ds-nexo-soft);
+  font-family: var(--ds-font-mono);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.ds .cf-arquivo button { display: grid; place-items: center; width: 18px; height: 18px; border: 0; border-radius: 5px; background: none; color: inherit; cursor: pointer; }
+.ds .cf-arquivo button:hover { background: rgb(255 255 255 / 0.08); }
+/* ---------- lista + detalhe ---------- */
+.ds .cf-corpo { display: grid; grid-template-columns: minmax(0, 1fr) 320px; height: 432px; }
+.ds .cf-lista { list-style: none; margin: 0; padding: 6px; overflow-y: auto; border-right: 1px solid var(--ds-line-subtle); }
+.ds .cf-grupo { padding: 10px 10px 4px; font-size: 11.5px; color: var(--ds-text-tertiary); }
+.ds .cf-vazio { padding: 14px 10px; font-size: var(--ds-text-xs); color: var(--ds-text-secondary); }
+.ds .cf-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  height: 38px;
+  padding: 0 10px;
+  border-radius: var(--ds-radius-control);
+  font-size: var(--ds-text-xs);
+  color: var(--ds-text-primary);
+  cursor: pointer;
+}
+.ds .cf-item > :not(.cf-destaque) { position: relative; }
+.ds .cf-destaque { position: absolute; inset: 0; border-radius: var(--ds-radius-control); background: var(--ds-surface-overlay); box-shadow: var(--ds-edge-strong); }
+.ds .cf-item--recuo { padding-left: 30px; color: var(--ds-text-secondary); }
+.ds .cf-item--recuo[aria-selected="true"] { color: var(--ds-text-primary); }
+/* Largura mínima, não fixa: a marca da prefeitura (31 px) não pode invadir o nome. */
+.ds .cf-item-icone { display: grid; place-items: center; min-width: 18px; flex: none; color: var(--ds-text-tertiary); }
+.ds .cf-item[aria-selected="true"] .cf-item-icone { color: var(--ds-text-primary); }
+.ds .cf-item-titulo { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.ds .cf-item-sub { flex: none; max-width: 40%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--ds-text-tertiary); font-size: var(--ds-text-2xs); }
+.ds .cf-item-direita { margin-left: auto; display: flex; align-items: center; gap: 6px; flex: none; }
+.ds .cf-item-direita .ds-code { font-size: 11px; padding: 0 5px; }
+.ds .cf-quando { font-size: var(--ds-text-2xs); color: var(--ds-text-tertiary); font-variant-numeric: tabular-nums; }
+.ds .cf-citacao { color: var(--ds-nexo-soft); }
+.ds .cf-item--nexo .cf-item-titulo { color: var(--ds-text-secondary); }
+.ds .cf-comecando {
+  font-size: var(--ds-text-2xs);
+  background: linear-gradient(90deg, var(--ds-nexo) 0%, var(--ds-nexo-soft) 40%, var(--ds-nexo) 80%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: ds-varrer 1.8s linear infinite;
+}
+.ds .cf-detalhe { padding: 18px 20px; overflow: hidden; background: rgb(0 0 0 / 0.12); }
+.ds .cf-detalhe h3 { margin: 10px 0 14px; font-size: var(--ds-text-md); font-weight: 500; letter-spacing: -0.01em; line-height: 1.3; }
+.ds .cf-detalhe dl { margin: 0; display: grid; gap: 0; }
+.ds .cf-detalhe dl > div { display: grid; grid-template-columns: 104px minmax(0, 1fr); gap: 10px; padding: 7px 0; border-top: 1px solid var(--ds-line-subtle); font-size: var(--ds-text-2xs); }
+.ds .cf-detalhe dt { color: var(--ds-text-tertiary); }
+.ds .cf-detalhe dd { margin: 0; color: var(--ds-text-primary); line-height: 1.45; }
+.ds .cf-nota { margin: 14px 0 0; padding: 10px 12px; border-radius: var(--ds-radius-control); background: var(--ds-surface-sunken); font-size: var(--ds-text-2xs); line-height: 1.5; color: var(--ds-text-secondary); }
+/* ---------- rodapé de teclas ---------- */
+.ds .cf-rodape {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  height: 40px;
+  padding: 0 16px;
+  border-top: 1px solid var(--ds-line-subtle);
+  font-size: 11.5px;
+  color: var(--ds-text-tertiary);
+}
+.ds .cf-rodape > span { display: inline-flex; align-items: center; gap: 5px; }
+.ds .cf-rodape-dir { margin-left: auto; }
+/* O quadro em volta já mostra o foco; o campo dentro dele não repete o anel. */
+.ds .cf-entrada input:focus-visible:focus-visible { box-shadow: none; }
+/* ---------- modo suspenso: só a entrada; a lista abre por cima ---------- */
+.ds .cf-suspensa { position: relative; z-index: 20; }
+.ds .cf-suspensa > .cf-entrada {
+  height: 52px;
+  border-bottom: 0;
+  border-radius: var(--ds-radius-composer);
+  background: var(--ds-surface-card);
+  box-shadow: inset 0 0 0 1px var(--ds-line-default), 0 18px 50px -24px rgb(0 0 0 / 0.8);
+  transition: box-shadow var(--ds-dur-state) var(--ds-ease-feedback);
+}
+.ds .cf-suspensa > .cf-entrada input { font-size: var(--ds-text-md); }
+.ds .cf-suspensa > .cf-entrada:focus-within,
+.ds .cf-suspensa--aberta > .cf-entrada {
+  box-shadow: inset 0 0 0 1px var(--ds-nexo-line), 0 0 0 4px color-mix(in srgb, var(--ds-nexo) 8%, transparent), 0 18px 50px -24px rgb(0 0 0 / 0.8);
+}
+.ds .cf-suspensa-painel {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  border-radius: var(--ds-radius-panel);
+  background: var(--ds-surface-card);
+  box-shadow: var(--ds-shadow-overlay);
+  overflow: hidden;
+  transform-origin: top center;
+}
+.ds .cf-suspensa-painel .cf-corpo { height: 380px; }
+
+/* a barra inteira é o contexto do foco: sem anel solto no campo */
+.ds .cf-entrada input:focus-visible:focus-visible { box-shadow: none; }

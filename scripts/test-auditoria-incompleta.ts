@@ -32,12 +32,17 @@ function test(name: string, fn: () => void) {
 
 const GLOBAL_ABORTADA = [{ passada: "Leitura global do documento", motivo: "Request was aborted." }];
 
+/** N achados confirmados (de regra, que nunca viram sugestão). */
+function achados(n: number, extra: Record<string, unknown> = {}) {
+  return Array.from({ length: n }, (_, i) => ({ id: `INC-${String(i + 1).padStart(3, "0")}`, origem: "regra", ...extra }));
+}
+
 function parecer(over: Record<string, unknown> = {}) {
   return {
     status_analise: "concluida" as const,
     status_geral: "revisão obrigatória antes de emissão",
     total_incongruencias: 10,
-    incongruencias: [],
+    incongruencias: achados(10),
     runtime: { passadas_incompletas: [] as { passada: string; motivo?: string }[] },
     ...over,
   };
@@ -100,6 +105,7 @@ test("folhas mudas não transcritas: diz QUANTAS páginas a IA não leu e como r
   const p = parecer({
     status_analise: "parcial",
     total_incongruencias: 52,
+    incongruencias: achados(52),
     arquivos_analisados: [
       {
         arquivo: "117_25_md_geral_a.pdf",
@@ -130,6 +136,24 @@ test("folhas mudas transcritas não acendem aviso", () => {
     ],
   });
   assert.equal(incompletudeDoParecer(p).incompleta, false);
+});
+
+test("a contagem é só de confirmados: sugestões da IA ficam fora do número", () => {
+  // O 991-26 de 02/10/2026: 6 confirmados e 2 sugestões. O trilho dizia 6, o
+  // cartão do chat e o aviso diziam 8 — o total cru da corrida.
+  const p = parecer({
+    total_incongruencias: 8,
+    incongruencias: [
+      ...achados(6),
+      { id: "INC-007", origem: "ia", tier: "sugestao" },
+      { id: "INC-008", origem: "ia", confianca: "baixa" },
+    ],
+  });
+  assert.equal(rotuloDaContagem(p), "6 achados");
+});
+
+test("sem a lista, vale o total gravado", () => {
+  assert.equal(rotuloDaContagem({ total_incongruencias: 4 }), "4 achados");
 });
 
 test("parecer antigo sem runtime não quebra e não inventa aviso", () => {

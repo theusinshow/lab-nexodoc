@@ -169,13 +169,11 @@ try {
 
   // --- telas de apoio -------------------------------------------------------
   for (const [rota, nome] of [
-    ["/ferramentas", "ferramentas-antigas"],
     ["/projetos", "projetos"],
     ["/admin", "admin"],
     ["/ld", "legado-ld"],
     ["/capas", "legado-capas"],
     ["/separatrizes", "legado-separatrizes"],
-    ["/volumes", "legado-volumes"],
   ]) {
     await page.goto(`${BASE}${rota}`, { waitUntil: "domcontentloaded" });
     await page.waitForLoadState("networkidle").catch(() => {});

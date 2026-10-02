@@ -28,6 +28,9 @@ interface EstadoDoToken {
    * e o que impede o recolhimento quando o acesso foi negado.
    */
   aceito: boolean;
+  /** O servidor RECUSOU este token (uma tela recebeu 401/403 com ele). Distinto
+   *  de "ainda não testado": é o que deixa o campo dizer que foi recusado. */
+  recusado: boolean;
   /** O token já foi procurado no `sessionStorage`? Antes disso, ninguém busca. */
   restaurado: boolean;
   /**
@@ -47,6 +50,7 @@ const Contexto = createContext<EstadoDoToken | null>(null);
 export function AdminTokenProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState("");
   const [aceito, setAceito] = useState(false);
+  const [recusado, setRecusado] = useState(false);
   const [restaurado, setRestaurado] = useState(false);
   const [recarga, setRecarga] = useState(0);
 
@@ -72,6 +76,7 @@ export function AdminTokenProvider({ children }: { children: React.ReactNode }) 
 
   const definirToken = useCallback((valor: string) => {
     setToken(valor);
+    setRecusado(false);
     /*
      * Token novo é token não apurado. Sem isto, trocar um token que funcionava
      * por um errado manteria o campo recolhido afirmando "sessão admin".
@@ -81,6 +86,7 @@ export function AdminTokenProvider({ children }: { children: React.ReactNode }) 
 
   const registrarResposta = useCallback((ok: boolean) => {
     setAceito(ok);
+    setRecusado(!ok);
 
     if (!ok) return;
 
@@ -104,6 +110,7 @@ export function AdminTokenProvider({ children }: { children: React.ReactNode }) 
   const sair = useCallback(() => {
     setToken("");
     setAceito(false);
+    setRecusado(false);
     try {
       sessionStorage.removeItem(ADMIN_TOKEN_STORAGE_KEY);
     } catch {
@@ -115,6 +122,7 @@ export function AdminTokenProvider({ children }: { children: React.ReactNode }) 
     () => ({
       token,
       aceito,
+      recusado,
       restaurado,
       recarga,
       definirToken,
@@ -122,7 +130,7 @@ export function AdminTokenProvider({ children }: { children: React.ReactNode }) 
       recarregar,
       sair,
     }),
-    [token, aceito, restaurado, recarga, definirToken, registrarResposta, recarregar, sair],
+    [token, aceito, recusado, restaurado, recarga, definirToken, registrarResposta, recarregar, sair],
   );
 
   return <Contexto.Provider value={valor}>{children}</Contexto.Provider>;

@@ -102,6 +102,10 @@ data/nexodoc-learnings.json
 # -- o script as refaz a cada investigacao -- e sem esta regra reapareciam em
 # todo `git status`, prontas para entrar de carona em commit alheio.
 /prova-css-rodada-*.png
+# As capturas das provas da migracao (prova-moldura.mjs, prova-admin.mjs):
+# mostram a tela logada, com nome e e-mail de quem rodou -- e o repo e publico.
+/prova-moldura/
+/prova-admin/
 # Capturas dos portoes de UI: prova de uma rodada, nao artefato do projeto.
 # Regravadas a cada execucao e pesadas -- versiona-las so engorda o historico.
 /docs/provas/
@@ -118,3 +122,5 @@ data/nexodoc-learnings.json
 # pagou caro para evitar.
 /design-system/
 .playwright-mcp/
+/prova-telas/
+/prova-real/

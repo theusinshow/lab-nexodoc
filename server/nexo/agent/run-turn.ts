@@ -229,7 +229,7 @@ Formato da resposta, nesta ordem:
       "mes": "", "ano": "" },
     { "kind": "separatriz", "resumo": "Separatriz <prefeitura>",
       "templateId": "<id>", "numTomos": 1, "titulos": [] },
-    { "kind": "auditoria", "resumo": "Auditoria <disciplina>",
+    { "kind": "auditoria", "resumo": "Auditoria do memorial",
       "nivel": "standard" },
     { "kind": "conferencia", "resumo": "Conferência <disciplina>" },
     { "kind": "volume", "resumo": "Volume <disciplina>" }

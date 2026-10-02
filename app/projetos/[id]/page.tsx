@@ -1,365 +1,210 @@
-import { formatarEmBrasilia } from "@/lib/fuso-de-brasilia";
 import { notFound, redirect } from "next/navigation";
-import Link from "next/link";
-import { ArrowLeft, BookOpenCheck, FileArchive, FileText, Layers3, TableProperties } from "lucide-react";
 
-import { auth } from "@/auth";
-import { PageHeader } from "@/components/layout/page-header";
-import { ProjectDetailActions } from "@/components/projects/project-detail-actions";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { EmptyState } from "@/components/ui/empty-state";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { getUserAccess } from "@/lib/access-control";
+import { Moldura } from "@/components/moldura/moldura";
+import { TelaProjeto, type ItemDaObra, type ObraAberta, type TarefaDaObra } from "@/components/telas/projeto/tela-projeto";
+import { cidadeDoCliente } from "@/lib/cliente-do-projeto";
 import { linkDoNexo } from "@/lib/contexto-da-url";
-import { redirectToLogin } from "@/lib/auth-redirect";
-import { getPrisma, isDatabaseConfigured } from "@/lib/db";
+import { getPrisma } from "@/lib/db";
+import { carregarMoldura } from "@/lib/moldura";
+import { plural } from "@/lib/plural";
 import { assertProjectAccess, getUserActor, normalizeEmail } from "@/lib/project-store";
 
-export default async function ProjectDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+/*
+ * O PROJETO no sistema novo: tudo de uma obra. As quatro tarefas em tiles no
+ * topo, com o estado lido dos artefatos (o mesmo critério da página de antes:
+ * módulo ou prefixo do tipo), um painel com abas para documentos, arquivos,
+ * gerados e eventos, e o lado com o que fazer agora ou o item escolhido.
+ *
+ * MONTAR VOLUME LEVA AO NEXO: a montagem manual (/volumes) saiu.
+ */
+
+const ROTULO_DO_EVENTO: Record<string, string> = {
+  PROJECT_CREATED: "projeto",
+  PROJECT_UPDATED: "projeto",
+  STATUS_CHANGED: "situação",
+  PROJECT_ARCHIVED: "situação",
+  PROJECT_DELETED: "situação",
+  DOCUMENT_ADDED: "documento",
+  DOCUMENT_ARCHIVED: "documento",
+  INPUT_UPLOADED: "arquivo",
+  AUDIT_CREATED: "auditoria",
+  AUDIT_COMPLETED: "auditoria",
+  LD_DRAFT_CREATED: "LD",
+  LD_GENERATED: "LD",
+  COVER_GENERATED: "capa",
+  VOLUME_GENERATED: "volume",
+  ARTIFACT_CREATED: "gerado",
+  NOTE_ADDED: "nota",
+};
+
+const ROTULO_DO_GERADO: Record<string, string> = {
+  COVER_ODT: "Capa editável",
+  COVER_PDF: "Capa",
+  COVER_ZIP: "Capas (ZIP)",
+  LD_ODT: "LD editável",
+  LD_PDF: "Lista de documentos",
+  LD_REPORT: "Relatório da LD",
+  LD_ZIP: "LD (ZIP)",
+  AUDIT_MARKDOWN: "Parecer (texto)",
+  AUDIT_PDF: "Parecer",
+  VOLUME_REPORT: "Relatório do volume",
+  VOLUME_PDF: "Volume",
+  VOLUME_ZIP: "Volume (ZIP)",
+  OTHER: "Outro",
+};
+
+function tamanho(bytes: number | null) {
+  if (!bytes) return undefined;
+  if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1).replace(".", ",")} MB`;
+}
+
+const iso = (d: Date) => d.toISOString();
+const primeiroNome = (nome: string | null | undefined, email: string) => (nome?.trim() || email.split("@")[0]).split(/\s+/)[0];
+
+export default async function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const session = await auth();
+  const dados = await carregarMoldura(`/projetos/${encodeURIComponent(id)}`);
+  if (dados.semBanco) redirect("/projetos");
 
-  if (!session?.user) {
-    redirectToLogin(`/projetos/${encodeURIComponent(id)}`);
-  }
-
-  const access = await getUserAccess(session.user.email, session.user.name);
-
-  if (!access.isActive || !isDatabaseConfigured()) {
-    redirect("/projetos");
-  }
-
-  const actor = await getUserActor(normalizeEmail(session.user.email ?? ""), session.user.name);
-
+  const actor = await getUserActor(normalizeEmail(dados.usuario.email), dados.usuario.nome);
   try {
     await assertProjectAccess(id, actor);
   } catch {
     notFound();
   }
 
-  const project = await getPrisma().project.findUnique({
+  const prisma = getPrisma();
+  const projeto = await prisma.project.findUnique({
     where: { id },
     include: {
-      documents: { orderBy: { createdAt: "desc" }, take: 20 },
-      uploads: { orderBy: { createdAt: "desc" }, take: 20 },
-      artifacts: { orderBy: { createdAt: "desc" }, take: 30 },
-      events: { orderBy: { createdAt: "desc" }, take: 30 },
-      _count: {
-        select: {
-          documents: true,
-          uploads: true,
-          artifacts: true,
-          events: true,
-        },
-      },
+      documents: { orderBy: { createdAt: "desc" }, take: 60, include: { user: { select: { name: true } } } },
+      uploads: { orderBy: { createdAt: "desc" }, take: 60, include: { user: { select: { name: true } } } },
+      artifacts: { orderBy: { createdAt: "desc" }, take: 60, include: { user: { select: { name: true } } } },
+      events: { orderBy: { createdAt: "desc" }, take: 60 },
+      audits: { orderBy: { createdAt: "desc" }, take: 1, select: { id: true, title: true, createdAt: true } },
+      _count: { select: { documents: true, uploads: true, artifacts: true, events: true, audits: true } },
     },
   });
+  if (!projeto || projeto.deletedAt) notFound();
 
-  if (!project || project.deletedAt) {
-    notFound();
-  }
-
-  const hasAuditOutput = project.artifacts.some((artifact) =>
-    artifact.module === "audit" || artifact.kind.toString().startsWith("AUDIT_"),
-  );
-  const hasLdOutput =
-    project.artifacts.some((artifact) =>
-      artifact.module === "ld" || artifact.kind.toString().startsWith("LD_"),
-    ) || project.documents.some((document) => document.module === "ld");
-  const hasCoverOutput = project.artifacts.some((artifact) =>
-    artifact.module === "capas" || artifact.kind.toString().startsWith("COVER_"),
-  );
-  const hasVolumeOutput = project.artifacts.some((artifact) =>
-    artifact.module === "volumes" || artifact.kind.toString().startsWith("VOLUME_"),
-  );
-
-  const moduleLinks = [
-    {
-      label: "Auditoria",
-      action: "Auditar documentos",
-      description: "Checar memoriais, capas, LDs, pranchas e divergencias documentais.",
-      href: linkDoNexo({ projeto: project.id, intencao: "auditar" }),
-      icon: BookOpenCheck,
-      completed: hasAuditOutput,
-    },
-    {
-      label: "LD",
-      action: "Montar LD",
-      description: "Ler selos, revisar pranchas, ajustar tomos e gerar pacote final.",
-      href: linkDoNexo({ projeto: project.id, intencao: "ld" }),
-      icon: TableProperties,
-      completed: hasLdOutput,
-    },
-    {
-      label: "Capas",
-      action: "Gerar capas",
-      description: "Gerar capas tecnicas a partir dos dados confirmados do projeto.",
-      href: linkDoNexo({ projeto: project.id, intencao: "capa" }),
-      icon: FileText,
-      completed: hasCoverOutput,
-    },
-    {
-      label: "Volumes",
-      action: "Montar volume",
-      description: "Classificar arquivos, organizar paginas, conferir e exportar o volume.",
-      href: `/volumes?project=${project.id}`,
-      icon: Layers3,
-      completed: hasVolumeOutput,
-    },
-  ] as const;
-  const nextModule = moduleLinks.find((item) => !item.completed) ?? moduleLinks[0];
-  const NextIcon = nextModule.icon;
-
-  return (
-    <main className="mx-auto max-w-7xl space-y-6 px-5 py-6 sm:px-7">
-      <PageHeader
-        navegacao={{ ehAdmin: access.isAdmin }}
-        title={project.name}
-        description={`${project.code} · ${project.ownerEmail}`}
-      >
-        <Button asChild variant="outline" size="sm">
-          <Link href="/projetos">
-            <ArrowLeft className="size-4" />
-            Projetos
-          </Link>
-        </Button>
-      </PageHeader>
-
-      {project.status === "ARCHIVED" ? (
-        <p role="status" className="nx-cut-6 bg-[var(--status-warning-bg)] px-3 py-2 text-sm text-foreground">
-          Projeto arquivado. Para voltar a trabalhar nele, use Reativar em{" "}
-          <a href="#configuracoes-do-projeto" className="underline underline-offset-4">Configurações do projeto</a>.
-        </p>
-      ) : null}
-
-      <section className="grid gap-3 md:grid-cols-4">
-        <Metric label="Documentos" value={project._count.documents} />
-        <Metric label="Arquivos enviados" value={project._count.uploads} />
-        <Metric label="Artefatos" value={project._count.artifacts} />
-        <Metric label="Eventos" value={project._count.events} />
-      </section>
-
-      <section className="rounded-sm border bg-card px-4 py-4">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="min-w-0">
-            <p className="font-mono text-[11px] uppercase text-muted-foreground">Próxima ação</p>
-            <h2 className="mt-1 flex items-center gap-2 text-base font-semibold">
-              <NextIcon className="size-4 text-primary" />
-              {nextModule.action}
-            </h2>
-            <p className="mt-1 max-w-3xl text-sm text-muted-foreground">{nextModule.description}</p>
-          </div>
-          <Button asChild size="sm" className="shrink-0">
-            <Link href={nextModule.href}>
-              Abrir
-              <NextIcon className="size-4" />
-            </Link>
-          </Button>
-        </div>
-      </section>
-
-      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        {moduleLinks.map((item) => {
-          const Icon = item.icon;
-          return (
-            <Card key={item.href}>
-              <CardContent className="flex h-full flex-col gap-4 py-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex size-9 shrink-0 items-center justify-center rounded-sm border bg-muted text-primary">
-                    <Icon className="size-4" />
-                  </div>
-                  <Badge variant={item.completed ? "secondary" : "outline"}>
-                    {item.completed ? "Com registros" : "Pendente"}
-                  </Badge>
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h2 className="text-base font-semibold">{item.label}</h2>
-                  <p className="mt-1 text-sm leading-5 text-muted-foreground">{item.description}</p>
-                </div>
-                <Button asChild variant="outline" size="sm" className="w-full justify-between">
-                  <Link href={item.href}>
-                    {item.action}
-                    <Icon className="size-4" />
-                  </Link>
-                </Button>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </section>
-
-      <DataTable
-        title="Artefatos"
-        empty="Nenhum artefato registrado."
-        headers={["Arquivo", "Modulo", "Tipo", "Storage", "Data"]}
-        rows={project.artifacts.map((artifact) => [
-          artifact.fileName,
-          artifact.module,
-          artifact.kind,
-          artifact.storageProvider,
-          formatDate(artifact.createdAt),
-        ])}
-      />
-
-      <div className="grid gap-6 xl:grid-cols-2">
-        <DataTable
-          title="Arquivos enviados"
-          empty="Nenhum arquivo enviado ainda."
-          headers={["Arquivo", "Modulo", "Origem", "Tamanho", "Data"]}
-          rows={project.uploads.map((upload) => [
-            upload.fileName,
-            upload.module,
-            upload.source,
-            formatBytes(upload.sizeBytes),
-            formatDate(upload.createdAt),
-          ])}
-        />
-        <DataTable
-          title="Documentos"
-          empty="Nenhum documento registrado."
-          headers={["Arquivo", "Modulo", "Tipo", "Status", "Data"]}
-          rows={project.documents.map((document) => [
-            document.fileName,
-            document.module,
-            document.documentType,
-            document.status,
-            formatDate(document.createdAt),
-          ])}
-        />
-      </div>
-
-      <Card>
-        <CardContent className="space-y-4 py-5">
-          <div className="flex items-center gap-2">
-            <FileArchive className="size-4 text-primary" />
-            <h2 className="text-base font-semibold">Eventos recentes</h2>
-          </div>
-          <div className="divide-y divide-border">
-            {project.events.length === 0 ? (
-              <EmptyState description="Nenhum evento registrado." className="py-8" />
-            ) : (
-              project.events.map((event) => (
-                <div key={event.id} className="grid gap-1 py-3 md:grid-cols-[180px_1fr_auto] md:items-center">
-                  <Badge variant="outline">{event.type}</Badge>
-                  <div>
-                    <p className="text-sm font-medium">{event.title}</p>
-                    <p className="text-xs text-muted-foreground">{event.summary || "Sem resumo"}</p>
-                  </div>
-                  <span className="text-xs text-muted-foreground">{formatDate(event.createdAt)}</span>
-                </div>
-              ))
-            )}
-          </div>
-        </CardContent>
-      </Card>
-      {/* P01: manutenção (dados, arquivar, reativar, excluir) DEPOIS do trabalho —
-          o detalhe começa pelo contexto e pela próxima ação. */}
-      <section id="configuracoes-do-projeto" className="scroll-mt-24">
-        <ProjectDetailActions
-        project={{
-          id: project.id,
-          code: project.code,
-          name: project.name,
-          client: project.client,
-          description: project.description,
-          status: project.status === "ARCHIVED" ? "ARCHIVED" : "ACTIVE",
-        }}
-      />
-      </section>
-    </main>
-  );
-}
-
-function Metric({ label, value }: { label: string; value: number }) {
-  return (
-    <Card>
-      <CardContent className="py-4">
-        <p className="font-mono text-[11px] uppercase text-muted-foreground">{label}</p>
-        <p className="mt-2 font-mono text-2xl font-semibold">{value}</p>
-      </CardContent>
-    </Card>
-  );
-}
-
-function DataTable({
-  title,
-  empty,
-  headers,
-  rows,
-}: {
-  title: string;
-  empty: string;
-  headers: string[];
-  rows: string[][];
-}) {
-  return (
-    <Card>
-      <CardContent className="space-y-4 py-5">
-        <h2 className="text-base font-semibold">{title}</h2>
-        {rows.length === 0 ? (
-          <EmptyState description={empty} className="py-8" />
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                {headers.map((header) => (
-                  <TableHead key={header}>{header}</TableHead>
-                ))}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map((row, rowIndex) => (
-                <TableRow key={`${title}-${rowIndex}`}>
-                  {row.map((cell, cellIndex) => (
-                    <TableCell key={`${title}-${rowIndex}-${cellIndex}`} className="max-w-[260px] truncate">
-                      {cell || "-"}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-function formatDate(value: Date) {
-  return formatarEmBrasilia(value, {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
+  const primeiro = await prisma.projectEvent.findFirst({ where: { projectId: projeto.id }, orderBy: { createdAt: "asc" }, select: { createdAt: true } });
+  const abertos = await prisma.auditFeedback.findMany({
+    where: { resolvedAt: null, assigneeEmail: { not: null }, audit: { projectId: projeto.id } },
+    select: { assigneeEmail: true, audit: { select: { id: true, title: true } } },
   });
-}
+  const comVoce = abertos.filter((a) => a.assigneeEmail?.toLowerCase() === actor.email.toLowerCase());
 
-function formatBytes(value: number | null) {
-  if (!value) {
-    return "-";
-  }
+  const de = (modulo: string, prefixo: string) => projeto.artifacts.filter((a) => a.module === modulo || a.kind.startsWith(prefixo));
+  const lds = de("ld", "LD_");
+  const capas = de("capas", "COVER_");
+  const volumes = de("volumes", "VOLUME_");
+  const ultimaAuditoria = projeto.audits[0] ?? null;
 
-  if (value < 1024) {
-    return `${value} B`;
-  }
+  const tarefas: TarefaDaObra[] = [
+    {
+      id: "auditoria",
+      nome: "Auditoria",
+      feito: Boolean(ultimaAuditoria),
+      estado: abertos.length ? plural(abertos.length, "aberto", "abertos") : ultimaAuditoria ? plural(projeto._count.audits, "parecer", "pareceres") : "ainda não",
+      detalhe: ultimaAuditoria ? ultimaAuditoria.title : "nenhum memorial auditado",
+      quando: ultimaAuditoria ? iso(ultimaAuditoria.createdAt) : null,
+      acao: ultimaAuditoria ? "Abrir o resultado" : "Auditar documentos",
+      href: ultimaAuditoria ? `/nexo?auditoria=${encodeURIComponent(ultimaAuditoria.id)}` : linkDoNexo({ projeto: projeto.id, intencao: "auditar" }),
+      aviso: abertos.length > 0,
+    },
+    {
+      id: "ld",
+      nome: "Lista de documentos",
+      feito: lds.length > 0,
+      estado: lds.length ? plural(lds.length, "arquivo", "arquivos") : "ainda não",
+      detalhe: lds.length ? lds[0].fileName : "nenhuma prancha lida",
+      quando: lds.length ? iso(lds[0].createdAt) : null,
+      acao: lds.length ? "Ver no Nexo" : "Montar LD",
+      href: linkDoNexo({ projeto: projeto.id, intencao: "ld" }),
+      aviso: false,
+    },
+    {
+      id: "capas",
+      nome: "Capas",
+      feito: capas.length > 0,
+      estado: capas.length ? plural(capas.length, "arquivo", "arquivos") : "ainda não",
+      detalhe: capas.length ? capas[0].fileName : "nenhuma capa gerada",
+      quando: capas.length ? iso(capas[0].createdAt) : null,
+      acao: capas.length ? "Ver no Nexo" : "Gerar capas",
+      href: linkDoNexo({ projeto: projeto.id, intencao: "capa" }),
+      aviso: false,
+    },
+    {
+      id: "volume",
+      nome: "Volume",
+      feito: volumes.length > 0,
+      estado: volumes.length ? plural(volumes.length, "arquivo", "arquivos") : "não montado",
+      detalhe: volumes.length ? volumes[0].fileName : lds.length ? "a LD existe; falta juntar" : "nada para juntar",
+      quando: volumes.length ? iso(volumes[0].createdAt) : null,
+      acao: "Montar volume",
+      href: linkDoNexo({ projeto: projeto.id, intencao: "montar" }),
+      aviso: false,
+    },
+  ];
 
-  if (value < 1024 * 1024) {
-    return `${(value / 1024).toFixed(1)} KB`;
-  }
+  const documentos: ItemDaObra[] = projeto.documents.map((d) => ({
+    id: d.id,
+    nome: d.fileName,
+    tipo: d.documentType || d.module,
+    situacao: d.status === "ARCHIVED" ? "arquivado" : d.pageCount ? plural(d.pageCount, "página", "páginas") : undefined,
+    tamanho: tamanho(d.sizeBytes),
+    quando: d.createdAt.toISOString(),
+    quem: primeiroNome(d.user?.name, d.userEmail),
+  }));
+  const arquivos: ItemDaObra[] = projeto.uploads.map((u) => ({
+    id: u.id,
+    nome: u.fileName,
+    tipo: u.mimeType === "application/pdf" ? "PDF" : u.mimeType.split("/").pop() || u.mimeType,
+    tamanho: tamanho(u.sizeBytes),
+    origem: u.source === "manual" ? u.module : u.source,
+    quando: u.createdAt.toISOString(),
+    quem: primeiroNome(u.user?.name, u.userEmail),
+  }));
+  const gerados: ItemDaObra[] = projeto.artifacts.map((a) => ({
+    id: a.id,
+    nome: a.fileName,
+    tipo: ROTULO_DO_GERADO[a.kind] ?? a.kind,
+    situacao: a.status === "AVAILABLE" ? tamanho(a.sizeBytes) : "indisponível",
+    tom: a.status === "AVAILABLE" ? undefined : "aviso",
+    quando: a.createdAt.toISOString(),
+    quem: primeiroNome(a.user?.name, a.userEmail),
+    baixar: a.downloadUrl ?? undefined,
+    parecer: a.auditId ?? undefined,
+  }));
+  const eventos: ItemDaObra[] = projeto.events.map((e) => ({
+    id: e.id,
+    nome: e.title,
+    tipo: ROTULO_DO_EVENTO[e.type] ?? e.type,
+    situacao: e.summary || undefined,
+    quando: e.createdAt.toISOString(),
+    quem: primeiroNome(e.actorName, e.actorEmail),
+  }));
 
-  return `${(value / 1024 / 1024).toFixed(1)} MB`;
+  const obra: ObraAberta = {
+    id: projeto.id,
+    codigo: projeto.code,
+    nome: projeto.name,
+    cliente: projeto.client,
+    cidade: cidadeDoCliente(projeto.client),
+    observacoes: projeto.description,
+    arquivada: projeto.status === "ARCHIVED",
+    arquivadaEm: projeto.archivedAt?.toISOString() ?? null,
+    contagens: { documentos: projeto._count.documents, arquivos: projeto._count.uploads, gerados: projeto._count.artifacts, eventos: projeto._count.events },
+    primeiroEvento: primeiro?.createdAt.toISOString() ?? null,
+    comVoce: comVoce.length,
+    parecerComVoce: comVoce[0]?.audit.id ?? null,
+    tituloDoParecerComVoce: comVoce[0]?.audit.title ?? null,
+  };
+
+  return (
+    <Moldura dados={dados} atual="Projetos">
+      <TelaProjeto obra={obra} tarefas={tarefas} itens={{ documentos, arquivos, gerados, eventos }} />
+    </Moldura>
+  );
 }
