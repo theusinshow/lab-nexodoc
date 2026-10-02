@@ -1,0 +1,14 @@
+/* VERSÃO D, ENXUTA: uma cor por vez, linha com o essencial, um card só à direita. */
+.ds .rd .rd-porque { margin: 0; font-size: var(--ds-text-xs); color: var(--ds-text-secondary); }
+.ds .rd .rs-painel-texto { gap: 6px; }
+.ds .rd .dc--neutro { --dc-cor: var(--ds-text-tertiary); }
+.ds .rd .dc--neutro i { opacity: 0.7; }
+.ds .rd .rd-ponto-neutro { background: var(--ds-text-tertiary); opacity: 0.6; }
+/* a linha do Resumo: título, disciplina, dono */
+.ds .rd .rc-linha .rc-linha-corpo { grid-template-columns: minmax(0, 1fr) 36px auto; padding-left: 18px; }
+.ds .rd .rs-linha-corpo { grid-template-columns: 58px minmax(0, 1fr) auto; }
+.ds .rd .rd-distribuicao { gap: 14px; }
+.ds .rd .rd-distribuicao .ds-seg { width: 100%; }
+.ds .rd .rd-distribuicao .ds-seg button { flex: 1; }
+.ds .rd .rd-paginas { display: grid; gap: 10px; }
+.ds .rd .rd-paginas .rs-link { justify-self: start; }

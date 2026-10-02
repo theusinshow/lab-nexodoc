@@ -12,6 +12,8 @@
  * disciplina e as duas camadas de confiança — o que dá credibilidade ao parecer.
  */
 
+import { ResultadoDoParecer } from "@/components/telas/resultado/resultado";
+import { useParecerVivo } from "@/components/telas/resultado/use-parecer-vivo";
 import { compactarParaOPalco, soltarDoPalco } from "../lib/largura-do-copiloto";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
@@ -24,7 +26,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 
-import { AuditResult, type AuditView } from "@/components/audit-result";
+import type { AuditView } from "@/components/audit-result";
 import { classifyFindingTier } from "@/lib/audit-report";
 import { compararPareceres, resumoDoDiff } from "@/lib/diff-de-pareceres";
 import {
@@ -43,7 +45,6 @@ import { catalogoDoParecer, resolverFonte } from "@/lib/fonte-da-evidencia";
 
 import { useAreasRecolhidas } from "../lib/areas-recolhidas";
 import { TrilhoDoResultado } from "@/components/telas/resultado/trilho";
-import { AuditCanvas } from "./AuditCanvas";
 import { AuditoriaEmCurso } from "./AuditoriaEmCurso";
 import type { AberturaPorLink } from "./use-abrir-auditoria-por-link";
 import { useReconectarAuditoria } from "./use-reconectar-auditoria";
@@ -416,6 +417,15 @@ export function PalcoDoNexo({
   }, [salvo?.auditId, marcarAchadoResolvido]);
 
   /*
+   * O PARECER VIVO (02/10/2026): os achados com o que o escritório já fez com
+   * eles — desfecho, responsável, conversa —, lidos e gravados na rota de
+   * feedback. Mora aqui, e não dentro do resultado, porque o anel do trilho
+   * conta os mesmos desfechos que a fila mostra.
+   */
+  const parecerVivo = useParecerVivo({ auditId: salvo?.auditId ?? null, report: report ?? null, aoMudarResolvido: aoAlternarResolvido });
+  const tratadosNoServidor = parecerVivo.achados.filter((a) => a.confirmado && a.desfecho).length;
+
+  /*
    * O TEXTO CORRIGIDO NO NAVEGADOR. O servidor já gravou no `Audit.report`;
    * aqui o artefato é regravado NO LUGAR (mesmo `artifactId`), como o chat faz
    * com o achado que nasce na conversa — o parecer persiste em dois lugares e
@@ -441,27 +451,6 @@ export function PalcoDoNexo({
     });
   };
 
-  const parecerCom = (opts: { controlado: boolean; achadoEmFoco?: string }) =>
-    report ? (
-      <AuditResult
-        content={salvo?.texto ?? ""}
-        report={report}
-        auditId={salvo?.auditId ?? undefined}
-        pdfSources={catalogo.map((f) => ({ name: f.nome, url: f.url }))}
-        fontes={catalogo}
-        resolvidos={resolvidosDesta}
-        onToggleResolvido={aoAlternarResolvido}
-        /*
-         * Na vista inteira quem manda na aba é a BARRA aqui de cima; dentro do
-         * drawer do canvas não há barra por perto, então o parecer volta a ser
-         * dono da própria vista e desenha o controle segmentado.
-         */
-        view={opts.controlado ? vistaDoParecer : undefined}
-        onViewChange={opts.controlado ? setVistaDoParecer : undefined}
-        achadoEmFoco={opts.achadoEmFoco}
-        onTextoCorrigido={aoGerarTextoCorrigido}
-      />
-    ) : null;
 
   /*
    * O ACHADO PEDIDO PELO LINK vai para a vista INTEIRA — que é onde quem chega
@@ -472,10 +461,6 @@ export function PalcoDoNexo({
    * card. São duas origens diferentes para a mesma prop, e misturá-las faria um
    * clique no canvas ser desfeito pelo parâmetro da URL a cada render.
    */
-  const parecer = parecerCom({
-    controlado: true,
-    achadoEmFoco: aberturaPorLink.achadoEmFoco ?? undefined,
-  });
 
   return (
     <div className="nw-palco nx-palco relative flex h-full w-full flex-col">
@@ -665,23 +650,33 @@ export function PalcoDoNexo({
              * O RESULTADO E: o conteúdo à esquerda e o trilho à direita, com o
              * veredito, o tratado e as quatro leituras do mesmo parecer.
              */
-            <div className="nx-resultado">
+            <div className="nx-resultado re-corpo--compacto">
               <div className="nx-resultado-miolo">
-                {noDocumento ? (
-                  <AuditCanvas
+                <div className="h-full overflow-y-auto">
+                  <ResultadoDoParecer
                     report={report}
-                    pdfUrl={documento?.url}
-                    // Montado no clique, já no achado que a pessoa apontou.
-                    parecer={(achadoEmFoco) => parecerCom({ controlado: false, achadoEmFoco })}
+                    parecer={parecerVivo}
+                    auditId={salvo?.auditId ?? null}
+                    catalogo={catalogo}
+                    vista={noDocumento ? "documento" : vistaDoParecer}
+                    onVista={(v) => {
+                      if (v === "documento") setNoDocumento(true);
+                      else {
+                        setNoDocumento(false);
+                        setVistaDoParecer(v);
+                      }
+                    }}
+                    podeVerNoDocumento={podeVerNoDocumento}
+                    achadoEmFoco={aberturaPorLink.achadoEmFoco ?? null}
+                    aoGerarTexto={aoGerarTextoCorrigido}
                   />
-                ) : (
-                  <div className="h-full overflow-y-auto">{parecer}</div>
-                )}
+                </div>
               </div>
               <TrilhoDoResultado
+                compacto
                 report={report}
                 total={totalDeAchados}
-                tratados={tratadosDesta}
+                tratados={salvo?.auditId ? tratadosNoServidor : tratadosDesta}
                 vista={noDocumento ? "documento" : vistaDoParecer}
                 podeVerNoDocumento={podeVerNoDocumento}
                 onVista={(v) => {
