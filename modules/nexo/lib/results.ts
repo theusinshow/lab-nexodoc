@@ -77,3 +77,24 @@ export function agruparPorTomo<T extends { id: string }>(
     // Sem-tomo por último: é resto, não é o trabalho atual.
     .sort((a, b) => (a.tomo === 0 ? 1 : b.tomo === 0 ? -1 : a.tomo - b.tomo));
 }
+
+/**
+ * OS TOMOS QUE VIRAM FILEIRA, depois de tirar o falso "Tomo 01".
+ *
+ * Um volume de documento único grava `numTomos: 1` no plano, e os documentos
+ * dele saem SEM sufixo de tomo (`ld:…`, não `ld:…:t01`). Declarar o tomo 1
+ * nesse caso criava uma fileira vazia "Tomo 01" e jogava a LD recém-gerada no
+ * grupo do resto: o canvas dizia "Fora da divisão — gerado antes de dividir"
+ * e marcava a LD como desatualizada (a assinatura era comparada com a fileira
+ * vazia), sem divisão nenhuma ter acontecido. Medido no teste real de 02/10/2026.
+ *
+ * Um tomo só não é divisão: se o único declarado é o 1 e nenhum documento tem
+ * sufixo de tomo, não há fileira de tomo — os documentos sem sufixo SÃO o
+ * volume. Com dois tomos declarados (ou um documento já com sufixo), a regra
+ * de antes vale: o sem-sufixo sobrou de antes da divisão.
+ */
+export function tomosDeFileira(declarados: readonly number[], idsDosArtefatos: readonly string[]): number[] {
+  const unicos = [...new Set(declarados.filter((t) => t > 0))];
+  const semDivisao = unicos.length === 1 && unicos[0] === 1 && idsDosArtefatos.length > 0 && idsDosArtefatos.every((id) => tomoDoArtefato(id) === 0);
+  return semDivisao ? [] : unicos;
+}

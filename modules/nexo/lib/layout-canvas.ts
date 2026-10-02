@@ -32,12 +32,17 @@ export function colunasDaGrade(quantidade: number): number {
 }
 /** Largura do nó da folha. */
 export const LARGURA_FOLHA = 120;
-/** Altura do nó da folha. */
-export const ALTURA_FOLHA = 56;
+/**
+ * Altura do nó da folha. Era 56, para o cartão antigo (número + título); o
+ * cartão Carimbo do sistema novo (02/10/2026) tem a fileira de células e o
+ * título embaixo, e com 56 de passo a segunda linha da grade caía por cima da
+ * primeira — achado no teste real com 7 pranchas.
+ */
+export const ALTURA_FOLHA = 88;
 /** Largura do nó da folha + respiro. */
 export const PASSO_X = 128;
 /** Altura do nó da folha + respiro. */
-export const PASSO_Y = 64;
+export const PASSO_Y = 96;
 /**
  * Altura de uma fileira sem folhas — o bastante para o nó de DOCUMENTO, que é o
  * mais alto do canvas: miniatura 200×267 (aspecto 3/4) + rótulo + título de até

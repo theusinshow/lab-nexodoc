@@ -21,6 +21,7 @@ import {
   alvoDoDrop,
   posicaoDaFresta,
   assinaturaDoTomo,
+  documentoEnvelheceu,
   folhasDoTomo,
   ordensEntre,
   precisaRespeitarOrdem,
@@ -379,6 +380,21 @@ test("a assinatura muda quando o título de uma folha é corrigido", () => {
   const base = assinaturaDoTomo(PROJETADAS.slice(0, 3));
   const comTitulo = folhas(SELOS, { "a.pdf#1": { titulo: "OUTRO TITULO" } });
   assert.notEqual(base, assinaturaDoTomo(comTitulo.slice(0, 3)));
+});
+
+test("documentoEnvelheceu: a LD do bloco de uma disciplina nao envelhece por causa das outras", () => {
+  // Teste real de 02/10/2026: 4 ARQ + 3 EST, toda LD nascia "Desatualizado".
+  type F = Parameters<typeof assinaturaDoTomo>[0][number];
+  const mk = (id: string, disc: string, conteudo: string) => ({ id, conteudo, disc }) as unknown as F;
+  const tomo = [mk("a1", "arq", "PLANTA A"), mk("a2", "arq", "PLANTA B"), mk("e1", "est", "FORMAS A")];
+  const codigo = (f: F) => (f as unknown as { disc: string }).disc;
+  const ldArq = assinaturaDoTomo(tomo.slice(0, 2));
+  assert.equal(documentoEnvelheceu(ldArq, tomo, codigo), false, "a LD de ARQ descreve as folhas de ARQ");
+  const tomoMudado = [mk("a1", "arq", "PLANTA A"), mk("a2", "arq", "PLANTA B REVISADA"), mk("e1", "est", "FORMAS A")];
+  assert.equal(documentoEnvelheceu(ldArq, tomoMudado, codigo), true, "mudar uma folha de ARQ envelhece a LD de ARQ");
+  const ldDoTomo = assinaturaDoTomo(tomo);
+  assert.equal(documentoEnvelheceu(ldDoTomo, tomo, codigo), false, "a LD do tomo inteiro continua comparada com o tomo");
+  assert.equal(documentoEnvelheceu(ldDoTomo, tomoMudado, codigo), true);
 });
 
 console.log(`\n${passed} teste(s) do drop OK`);

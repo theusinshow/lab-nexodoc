@@ -31,16 +31,21 @@
 .ds .ct-cel--codigo b { color: var(--ds-text-tertiary); }
 .ds .ct-carimbo-longe { display: grid; place-items: center; height: 100%; }
 
-/* No app: a grade do mapa tem 120px de largura (layout-canvas.ts, com testes),
-   e a folha cresce para baixo com o título e, escolhida, com as ações. */
-.ds .nx-folha { width: 120px; height: auto; min-height: 56px; }
-.ds .nx-folha.ct--longe { height: 56px; }
-.ds .nx-folha .ct-grande { font-size: 26px; }
+/* No app: a grade do mapa (layout-canvas.ts, com testes) tem 120px de largura
+   e passo vertical de 96; o cartão tem altura FIXA de 88 em todas as
+   densidades, para a grade ficar regular. Escolhida, a folha cresce com as
+   ações (só ela, e só onde dá para lê-las). O título inteiro fica no `title`. */
+.ds .nx-folha { width: 120px; height: 88px; }
+.ds .nx-folha.ct--sel { height: auto; min-height: 88px; z-index: 1; }
+.ds .nx-folha .ct-grande { font-size: 30px; }
 .ds .nx-folha .ct-tabela { height: auto; }
-.ds .nx-folha .nx-cel-titulo b { -webkit-line-clamp: 5; min-height: 2.5em; }
 .ds .nx-folha .ct-cel { padding: 4px 6px; }
+.ds .nx-folha .ct-cel small { font-size: 8px; }
+.ds .nx-folha .ct-cel b { font-size: 10.5px; line-height: 1.2; }
+.ds .nx-folha .nx-cel-titulo b { -webkit-line-clamp: 3; font-size: 10px; }
+.ds .nx-folha.ct--perto .nx-cel-titulo b { -webkit-line-clamp: 2; }
 .ds .nx-folha .ct-cel--codigo b { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 9.5px; }
 .ds .nx-folha-ordem { display: inline-block; width: 6px; height: 6px; margin-left: 4px; border-radius: 50%; box-shadow: inset 0 0 0 1.2px var(--ds-text-tertiary); vertical-align: 1px; }
-.ds .nx-folha-avulsa { margin: 0; padding: 3px 6px 4px; font-family: var(--ds-font-mono); font-size: 9px; color: var(--ds-text-tertiary); }
+.ds .nx-folha-avulsa { margin: 0; padding: 2px 6px 3px; font-family: var(--ds-font-mono); font-size: 9px; color: var(--ds-text-tertiary); }
 .ds .nx-folha-avulsa--sem-codigo { color: var(--ds-sev-decide); }
-.ds .nx-folha > .mt-1 { margin: 0; padding: 4px 6px 6px; }
+.ds .nx-folha > .mt-1 { margin: 0; padding: 4px 6px 6px; background: var(--ds-surface-raised); }

@@ -1175,6 +1175,25 @@ export function PlanoDeGeracao({
               {motivoDeBloqueio}
             </span>
           )}
+          {/*
+            O NÚMERO DO VOLUME SE DECIDE AQUI, no próprio plano.
+
+            As sugestões "Volume 1–4" do chat só escreviam "1" no campo de
+            mensagem; enviado, o modelo respondia que não sabia a que o "1" se
+            referia — e mesmo com "volume 1" ele anotava na conversa sem refazer
+            o plano. O Gerar ficava travado sem saída. Medido no teste real de
+            02/10/2026. Escolher aqui é o mesmo que editar VOLUME em "Ver como
+            sai": uma decisão do cartão, que o plano lê na hora.
+          */}
+          {podeGastar && motivoDeEspera == null && motivoDoVolume && (
+            <span className="cx-saidas nx-escolha-do-volume" role="group" aria-label="Número do volume">
+              {[1, 2, 3, 4].map((n) => (
+                <button key={n} type="button" className="cx-saida" onClick={() => decidir("volume", String(n), paramsDoAgente.volume ?? "")}>
+                  Volume {n}
+                </button>
+              ))}
+            </span>
+          )}
           {podeGastar &&
             !motivoDeBloqueio &&
             (semTitulo || problemaDePrefeitura) && (

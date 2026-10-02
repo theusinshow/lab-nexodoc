@@ -808,7 +808,7 @@ function Anexos({
   const mostrados = expandido ? attachments : attachments.slice(0, ANEXOS_VISIVEIS);
 
   return (
-    <div className="mb-2 flex flex-wrap items-center gap-2 px-1">
+    <div className="nx-anexos mb-2 flex flex-wrap items-center gap-2 px-1">
       {mostrados.map((a) => (
         <AttachmentChip
           key={a.id}
@@ -892,7 +892,7 @@ function AttachmentChip({
   const viraMemorial = att.papel === "prancha";
   const indeciso = att.papel === "indeciso";
   return (
-    <div className="nexodoc-enter nx-edge-6 flex items-center gap-2 py-1 pl-1 pr-1.5 [--nx-fill:var(--nexodoc-recessed)]">
+    <div className="nx-anexo nexodoc-enter nx-edge-6 flex items-center gap-2 py-1 pl-1 pr-1.5 [--nx-fill:var(--nexodoc-recessed)]">
       {att.kind === "image" && att.url ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img

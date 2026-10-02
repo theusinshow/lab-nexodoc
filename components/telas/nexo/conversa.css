@@ -300,3 +300,13 @@
 .ds .nx-zona--arrastando { opacity: 0; }
 .ds .nx-zona-titulo { margin: 0; font-size: var(--ds-text-sm); color: var(--ds-text-primary); }
 .ds .nx-zona-texto { max-width: 38ch; margin: 0; font-size: 12.5px; line-height: 1.55; color: var(--ds-text-secondary); }
+
+/* os anexos acima do campo: peças de 28px (cx-peca), não cartões de 40px —
+   na coluna docada, sete anexos empilhados espremiam a conversa */
+.ds .nx-anexos { gap: 6px; max-height: 64px; overflow-y: auto; }
+.ds .nx-anexo { gap: 6px; height: 28px; padding: 0 4px 0 6px; border-radius: 8px; }
+.ds .nx-anexo > span:first-child, .ds .nx-anexo > img { width: 16px; height: 16px; background: none; clip-path: none; }
+.ds .nx-anexo > span:first-child::before { display: none; }
+.ds .nx-anexo .truncate { max-width: 9.5rem; font-size: 11px; }
+.ds .nx-anexos > button { height: 28px; padding: 0 10px; border-radius: 8px; font-size: 11px; }
+.ds .nx-escolha-do-volume { display: flex; flex-wrap: wrap; gap: 6px; width: 100%; }
