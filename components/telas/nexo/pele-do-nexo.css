@@ -110,3 +110,8 @@
   text-transform: none;
   letter-spacing: 0;
 }
+/* O rótulo do tema antigo é mono + caixa-alta (`font-mono uppercase`). No ds,
+   rótulo é texto; mono fica para código e número, que não levam `uppercase`. */
+:root:has(.nexo-shell) .font-mono.uppercase {
+  font-family: var(--font-ds-sans), ui-sans-serif, system-ui, sans-serif;
+}

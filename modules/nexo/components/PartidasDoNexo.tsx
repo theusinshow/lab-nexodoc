@@ -18,7 +18,6 @@
  * aplique. O gesto seguinte é sempre anexar, então ele vem junto.
  */
 
-import { Chip } from "@/components/ui/chip";
 import { PARTIDAS, faltaInsumo } from "../lib/partidas";
 import { useComposer } from "../state/composer-controller";
 
@@ -34,33 +33,19 @@ export function PartidasDoNexo({
 }) {
   const composer = useComposer();
 
+  /* Os atalhos da conversa nova (Conversa v2): escrevem o pedido no campo; Enter envia. */
   return (
-    <div
-      data-partidas
-      className="flex flex-wrap gap-1.5"
-      /*
-       * `group` não: as partidas não escondem nada no hover. Elas são o
-       * conteúdo da entrada, e conteúdo que só aparece no hover não é oferta —
-       * é adivinhação.
-       */
-    >
+    <div data-partidas className="cx-atalhos">
       {PARTIDAS.map((partida) => {
-        const falta = faltaInsumo(partida, {
-          pranchas: temPranchas,
-          memorial: temMemorial,
-        });
+        const falta = faltaInsumo(partida, { pranchas: temPranchas, memorial: temMemorial });
         return (
-          <Chip
+          <button
             key={partida.id}
-            variant={falta ? "default" : "suggest"}
+            type="button"
             data-partida={partida.id}
             title={
               falta
-                ? `Escreve o pedido e abre o seletor — falta ${
-                    partida.precisa === "pranchas"
-                      ? "anexar as pranchas"
-                      : "anexar o memorial"
-                  }.`
+                ? `Escreve o pedido e abre o seletor — falta ${partida.precisa === "pranchas" ? "anexar as pranchas" : "anexar o memorial"}.`
                 : "Escreve o pedido no campo abaixo. Enter envia."
             }
             onClick={() => {
@@ -69,7 +54,7 @@ export function PartidasDoNexo({
             }}
           >
             {partida.rotulo}
-          </Chip>
+          </button>
         );
       })}
     </div>

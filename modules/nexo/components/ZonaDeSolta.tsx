@@ -21,7 +21,7 @@
 
 import { FileUp } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { Botao } from "@/components/ds/basicos";
 
 export function ZonaDeSolta({
   onAnexar,
@@ -33,41 +33,18 @@ export function ZonaDeSolta({
   arrastando?: boolean;
 }) {
   return (
-    <div
-      className={
-        /* Raio de 4px, nao chanfro: tracejado nao sobrevive ao recorte (a borda
-           sumiria nas duas diagonais). Mesmo tratamento que a spec da aos campos
-           tracejados do carimbo e ao estado vazio da lateral. */
-        "flex h-full flex-col items-center justify-center gap-4 rounded-[4px] " +
-        "border border-dashed border-border px-6 text-center " +
-        "transition-colors duration-[var(--duration-fast)] " +
-        (arrastando ? "opacity-0" : "hover:border-[var(--ring)]/40")
-      }
-    >
-      <FileUp
-        className="h-5 w-5 text-muted-foreground"
-        strokeWidth={1.5}
-        aria-hidden
-      />
-
-      <div className="space-y-1.5">
-        <p className="font-mono text-[11px] uppercase tracking-[0.07em] text-muted-foreground">
-          Solte os arquivos aqui
-        </p>
-        {/*
-          As DUAS portas nomeadas, com o que cada uma produz. Quem chega com um
-          memorial na mão precisa saber que a auditoria mora aqui — e quem chega
-          com pranchas precisa saber que não vai precisar preencher formulário.
-        */}
-        <p className="mx-auto max-w-[34ch] text-sm leading-6 text-muted-foreground">
-          Pranchas em PDF viram LD, capa, separatriz e volume. O memorial vira
-          auditoria contra a obra declarada.
-        </p>
-      </div>
-
-      <Button variant="outline" size="sm" onClick={onAnexar}>
+    <div className={`nx-zona${arrastando ? " nx-zona--arrastando" : ""}`}>
+      <FileUp size={18} strokeWidth={1.5} aria-hidden />
+      {/*
+        As DUAS portas nomeadas, com o que cada uma produz: quem chega com um
+        memorial precisa saber que a auditoria mora aqui, e quem chega com
+        pranchas, que não vai preencher formulário.
+      */}
+      <p className="nx-zona-titulo">Solte os arquivos aqui</p>
+      <p className="nx-zona-texto">Pranchas em PDF viram LD, capa, separatriz e volume. O memorial vira auditoria contra a obra declarada.</p>
+      <Botao variante="ghost" tamanho="sm" onClick={onAnexar}>
         Anexar arquivos
-      </Button>
+      </Botao>
     </div>
   );
 }
