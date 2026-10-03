@@ -277,9 +277,23 @@ test("disciplina vazia não vira sigla nem cor", () => {
 });
 
 test("famílias afins caem na mesma cor (agrupamento por família)", () => {
-  // Fôrmas e fundações são estrutura; drenagem e pavimentação são terra.
-  assert.equal(corDaDisciplina("Fundacoes"), corDaDisciplina("Estrutural"));
+  // Fôrmas são estrutura; drenagem e pavimentação são terra.
+  assert.equal(corDaDisciplina("Formas"), corDaDisciplina("Estrutural"));
   assert.equal(corDaDisciplina("Drenagem"), corDaDisciplina("Terraplenagem"));
+});
+
+test("fundações têm cor própria, separada do estrutural (03/10/2026)", () => {
+  // O volume do estrutural abre com as fundações: com a mesma cor, os blocos
+  // não se separavam no mapa.
+  assert.equal(corDaDisciplina("Fundacoes"), "var(--discipline-fnd)");
+  assert.notEqual(corDaDisciplina("Fundacoes"), corDaDisciplina("Estrutural"));
+});
+
+test("a sigla do carimbo dá a cor, mas não troca o nome", () => {
+  // O quadradinho saía cinza com só "EST"/"FND"; o nome continua o do carimbo.
+  assert.equal(corDaDisciplina("est"), "var(--discipline-est)");
+  assert.equal(corDaDisciplina("fnd"), "var(--discipline-fnd)");
+  assert.equal(corDaDisciplina("met"), corDaDisciplina("Estrutural"));
 });
 
 console.log(`\n${passed} teste(s) passaram.`);

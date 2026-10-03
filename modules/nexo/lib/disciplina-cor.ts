@@ -72,8 +72,14 @@ const FAMILIAS: { sigla: string; token: string; termos: string[]; siglas?: strin
 export function siglaDaDisciplina(disciplina: string | null | undefined): string {
   const valor = normalizar(disciplina ?? "");
   if (!valor) return "";
+  /*
+   * As `siglas` da família NÃO entram aqui, só na cor: o código do carimbo
+   * ("met", "his", "inc") é o que a barra lateral e o canvas mostram, e casá-lo
+   * na família trocaria o nome do volume ("MET · HIS · INC" virava
+   * "EST · HID · PCI"). Ver `scripts/test-pasta-do-projeto.ts`.
+   */
   for (const familia of FAMILIAS) {
-    if (familia.siglas?.includes(valor) || familia.termos.some((t) => valor.startsWith(t) || valor.includes(t))) {
+    if (familia.termos.some((t) => valor.startsWith(t) || valor.includes(t))) {
       return familia.sigla;
     }
   }
