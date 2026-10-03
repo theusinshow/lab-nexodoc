@@ -113,6 +113,24 @@ export function Prototipo() {
   const [atalhos, setAtalhos] = useState(false);
   const [avisos, setAvisos] = useState<Aviso[]>([]);
   const [rede, setRede] = useState<Rede>("normal");
+  /*
+   * A BARRA DO TOPO em comparação (03/10/2026): a pílula é a proposta nova e o
+   * protótipo abre nela; "Atual" volta à faixa. Lembrada por navegador, só
+   * por conveniência de quem testa.
+   */
+  const [barra, setBarra] = useState<"faixa" | "pilula">("pilula");
+  useEffect(() => {
+    try {
+      const salva = localStorage.getItem("prototipo.barra");
+      if (salva === "faixa" || salva === "pilula") setBarra(salva);
+    } catch {}
+  }, []);
+  const trocarBarra = (b: "faixa" | "pilula") => {
+    setBarra(b);
+    try {
+      localStorage.setItem("prototipo.barra", b);
+    } catch {}
+  };
   const [carregando, setCarregando] = useState(false);
   const relogio = useRef<ReturnType<typeof setTimeout> | null>(null);
   const telaAtual = useRef<IdTela>(tela);
@@ -180,8 +198,9 @@ export function Prototipo() {
     () => ({
       onBusca: () => (setAtalhos(false), setPaleta(true)),
       onAtalhos: () => (setPaleta(false), setAtalhos(true)),
+      estilo: barra,
     }),
-    [setPaleta, setAtalhos],
+    [setPaleta, setAtalhos, barra],
   );
   const noPrototipo = useMemo(() => ({ ir, avisar }), [ir, avisar]);
   // tela pequena: a Entrada cabe em qualquer largura; o resto avisa antes
@@ -253,6 +272,8 @@ export function Prototipo() {
             onAvisar={avisar}
             rede={rede}
             onRede={trocarRede}
+            barra={barra}
+            onBarra={trocarBarra}
           />
         </div>
       </ControleDoTopo.Provider>
@@ -275,6 +296,8 @@ function PainelDoPrototipo({
   onAvisar,
   rede,
   onRede,
+  barra,
+  onBarra,
 }: {
   aberto: boolean;
   onAbrir: (v: boolean) => void;
@@ -285,6 +308,8 @@ function PainelDoPrototipo({
   onAvisar: (m: ModeloDeAviso) => void;
   rede: Rede;
   onRede: (r: Rede) => void;
+  barra: "faixa" | "pilula";
+  onBarra: (b: "faixa" | "pilula") => void;
 }) {
   const def = TELAS[tela];
   const sit = def.situacoes.find((s) => s.id === situacao);
@@ -362,6 +387,24 @@ function PainelDoPrototipo({
                 ))}
               </div>
               {rede === "travada" && <p className="pt-dica">A próxima tela fica no esqueleto até você escolher outra rede.</p>}
+            </section>
+
+            <section className="pt-sec">
+              <h2>
+                Barra do topo <span>· a proposta em pílula ou a atual</span>
+              </h2>
+              <div className="pt-chips" role="radiogroup" aria-label="Barra do topo">
+                {(
+                  [
+                    ["pilula", "Pílula (nova)"],
+                    ["faixa", "Atual"],
+                  ] as const
+                ).map(([id, nome]) => (
+                  <button key={id} type="button" role="radio" aria-checked={barra === id} onClick={() => onBarra(id)}>
+                    {nome}
+                  </button>
+                ))}
+              </div>
             </section>
 
             <section className="pt-sec">
