@@ -21,7 +21,7 @@
 .ds .sk-auditoria { display: grid; gap: 12px; width: min(1120px, calc(100% - 64px)); margin: 0 auto; padding: 32px 0 40px; }
 
 .ds .sk-canvas { min-height: 480px; }
-.ds .sk-nexo { display: grid; grid-template-columns: 240px minmax(0, 1fr) 430px; height: calc(var(--ds-altura-da-janela) - 64px); border-top: 1px solid var(--ds-line-subtle); }
+.ds .sk-nexo { display: grid; grid-template-columns: 240px minmax(0, 1fr) 430px; height: calc(var(--ds-altura-da-janela) - var(--md-altura-do-topo, 76px)); border-top: 1px solid var(--ds-line-subtle); }
 .ds .sk-nexo > aside:first-child { border-right: 1px solid var(--ds-line-subtle); }
 .ds .sk-nexo > aside:last-child { border-left: 1px solid var(--ds-line-subtle); }
 .ds .sk-conversa { display: grid; gap: 18px; justify-items: center; width: min(720px, calc(100% - 64px)); margin: 24vh auto 0; }

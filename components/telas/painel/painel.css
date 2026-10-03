@@ -175,6 +175,11 @@
 .ds .d2-resumo-menores { grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 0; padding-top: 0; border-top: 0; }
 .ds .d2-menor { gap: 12px; padding: 0 16px; }
 .ds .d2-menor { grid-template-columns: auto minmax(0, 1fr); row-gap: 4px; }
+/* OS NÚMEROS NA MESMA BASE (auditoria de espaçamento, 03/10/2026): a linha do
+   número ocupa o que sobra acima do rótulo, em todas as colunas. Antes ela tinha
+   a altura do gráfico ao lado, e as barras de LDs empurravam o "0" para baixo
+   do "550". */
+.ds .d2-menor { grid-template-rows: minmax(0, 1fr) auto; }
 .ds .d2-menor-num { font-size: 20px; font-weight: 300; letter-spacing: -0.03em; line-height: 1.1; font-variant-numeric: tabular-nums; }
 .ds .d2-menor-rotulo { grid-column: 1 / -1; font-size: 11px; color: var(--ds-text-tertiary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ds .d2-menor > :nth-child(2) { opacity: 0.85; align-self: end; }

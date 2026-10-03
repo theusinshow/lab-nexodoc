@@ -90,9 +90,9 @@
   --cut-12: inset(0 round 14px);
 }
 
-/* A mesa: a altura da janela que sobra embaixo do Topo (64px). */
+/* A mesa: a altura da janela que sobra embaixo do Topo (--md-altura-do-topo). */
 .ds .nx-mesa {
-  height: calc(var(--ds-altura-da-janela) - 64px);
+  height: calc(var(--ds-altura-da-janela) - var(--md-altura-do-topo, 76px));
   padding: 0 16px 16px;
 }
 
