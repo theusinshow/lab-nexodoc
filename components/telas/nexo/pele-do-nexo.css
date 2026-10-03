@@ -79,6 +79,7 @@
   --discipline-cli: var(--ds-disc-cli);
   --discipline-ter: var(--ds-disc-ter);
   --discipline-pai: var(--ds-disc-pai);
+  --discipline-fnd: var(--ds-disc-fnd);
 
   /* o chanfro vira canto: mesmo recorte, outra forma */
   --cut-4: inset(0 round 6px);

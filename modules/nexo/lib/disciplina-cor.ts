@@ -24,21 +24,33 @@ function normalizar(valor: string): string {
 }
 
 /** Famílias, na ordem de teste. A primeira que casar vence. */
-const FAMILIAS: { sigla: string; token: string; termos: string[] }[] = [
+/*
+ * `siglas`: o carimbo muitas vezes traz SÓ a sigla ("EST", "FND"), e nenhum dos
+ * termos por extenso casava — o quadradinho da disciplina saía cinza (03/10/2026).
+ * A sigla exata casa a família.
+ *
+ * FUNDAÇÕES TEM COR PRÓPRIA (03/10/2026): é do grupo estrutural, mas o volume
+ * do estrutural abre com ela (017-26: 4 de FND e 24 de EST no mesmo PDF), e com
+ * a mesma cor os dois blocos não se separavam no mapa.
+ */
+const FAMILIAS: { sigla: string; token: string; termos: string[]; siglas?: string[] }[] = [
   { sigla: "ARQ", token: "arq", termos: ["arquitet"] },
+  { sigla: "FND", token: "fnd", termos: ["fundac"], siglas: ["fnd"] },
   {
     sigla: "EST",
     token: "est",
-    termos: ["estrutur", "forma", "fundac", "metalic"],
+    termos: ["estrutur", "forma", "metalic"],
+    siglas: ["est", "met", "cnc"],
   },
-  { sigla: "HID", token: "hid", termos: ["hidro", "hidros", "agua", "sanitar"] },
+  { sigla: "HID", token: "hid", termos: ["hidro", "hidros", "agua", "sanitar"], siglas: ["hid", "his"] },
   {
     sigla: "ELE",
     token: "ele",
     termos: ["eletric", "eletr", "cabeament", "cftv", "spda"],
+    siglas: ["ele", "elt", "spd", "cft"],
   },
-  { sigla: "PCI", token: "pci", termos: ["incendio", "preventivo", "ppci"] },
-  { sigla: "CLI", token: "cli", termos: ["climatiz", "gases", "medicinais"] },
+  { sigla: "PCI", token: "pci", termos: ["incendio", "preventivo", "ppci"], siglas: ["pci", "inc"] },
+  { sigla: "CLI", token: "cli", termos: ["climatiz", "gases", "medicinais"], siglas: ["cli"] },
   {
     sigla: "TER",
     token: "ter",
@@ -51,8 +63,9 @@ const FAMILIAS: { sigla: string; token: string; termos: string[] }[] = [
       "geometric",
       "levantament",
     ],
+    siglas: ["ter", "dre", "pav", "top", "snd", "gmt"],
   },
-  { sigla: "PAI", token: "pai", termos: ["paisag", "urbanis"] },
+  { sigla: "PAI", token: "pai", termos: ["paisag", "urbanis"], siglas: ["pai"] },
 ];
 
 /** Sigla de três letras. Sem família conhecida, as três primeiras do rótulo. */
@@ -60,7 +73,7 @@ export function siglaDaDisciplina(disciplina: string | null | undefined): string
   const valor = normalizar(disciplina ?? "");
   if (!valor) return "";
   for (const familia of FAMILIAS) {
-    if (familia.termos.some((t) => valor.startsWith(t) || valor.includes(t))) {
+    if (familia.siglas?.includes(valor) || familia.termos.some((t) => valor.startsWith(t) || valor.includes(t))) {
       return familia.sigla;
     }
   }
@@ -77,7 +90,7 @@ export function corDaDisciplina(
   const valor = normalizar(disciplina ?? "");
   if (!valor) return null;
   for (const familia of FAMILIAS) {
-    if (familia.termos.some((t) => valor.startsWith(t) || valor.includes(t))) {
+    if (familia.siglas?.includes(valor) || familia.termos.some((t) => valor.startsWith(t) || valor.includes(t))) {
       return `var(--discipline-${familia.token})`;
     }
   }

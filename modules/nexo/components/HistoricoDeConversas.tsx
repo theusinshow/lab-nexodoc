@@ -38,11 +38,11 @@ const GRUPOS: { id: Grupo; nome: string }[] = [
   { id: "antes", nome: "Antes" },
 ];
 
-/** A cor de cada disciplina (os tokens --ds-disc-*); fundações é do grupo estrutural. */
+/** A cor de cada disciplina (os tokens --ds-disc-*); fundações tem a sua desde 03/10/2026. */
 const COR_DA_DISCIPLINA: Record<string, string> = {
   ARQ: "var(--ds-disc-arq)",
   EST: "var(--ds-disc-est)",
-  FND: "var(--ds-disc-est)",
+  FND: "var(--ds-disc-fnd)",
   MET: "var(--ds-disc-est)",
   HID: "var(--ds-disc-hid)",
   HIS: "var(--ds-disc-hid)",
