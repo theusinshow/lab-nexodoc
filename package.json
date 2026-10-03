@@ -22,7 +22,7 @@
     "convidar": "node scripts/convidar.ts",
     "diag:cc": "node scripts/diagnostico-de-centros-de-custo.ts",
     "backfill:escritorio": "node scripts/backfill-escritorio.ts",
-    "test:pdf-concorrente": "node scripts/test-pdf-concorrente.ts",
+    "prova:pdf-concorrente": "node scripts/prova-pdf-concorrente.ts",
     "test:auditoria-incompleta": "node scripts/test-auditoria-incompleta.ts",
     "test:auditoria-da-proposta": "node scripts/test-auditoria-da-proposta.ts",
     "test:agenda-de-gravacao": "node scripts/test-agenda-de-gravacao.ts",

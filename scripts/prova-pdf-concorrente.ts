@@ -8,9 +8,10 @@
  *
  * Converte o mesmo modelo N vezes em paralelo e exige N PDFs válidos.
  *
- *   node scripts/test-pdf-concorrente.ts [N]      (padrão: 6)
+ *   node scripts/prova-pdf-concorrente.ts [N]     (padrão: 6)
  *
- * Precisa de `LIBREOFFICE_PATH` (no `.env.local` ou no ambiente).
+ * Precisa de `LIBREOFFICE_PATH` (no `.env.local` ou no ambiente). É `prova-`, não
+ * `test-`, porque a bateria roda todo `test-*.ts` e o CI não tem LibreOffice.
  */
 import { readFileSync } from "node:fs";
 import nextEnv from "@next/env";

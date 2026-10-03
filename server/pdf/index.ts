@@ -120,7 +120,7 @@ async function converterAgora(odtBuffer: Buffer): Promise<ConvertToPdfResult> {
  * Sem `-env:UserInstallation`, todo `soffice` usa o MESMO perfil (um por HOME),
  * e duas conversões simultâneas disputam a trava dele: a segunda se entrega à
  * primeira ou sai com erro, sem PDF. Medido com
- * `scripts/test-pdf-concorrente.ts`: 3 de 6 conversões simultâneas falhavam.
+ * `scripts/prova-pdf-concorrente.ts`: 3 de 6 conversões simultâneas falhavam.
  * Com o perfil dentro da pasta temporária de cada conversão, elas não se veem
  * — e o `rm` do `finally` leva o perfil junto.
  *
