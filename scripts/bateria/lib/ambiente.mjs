@@ -55,6 +55,9 @@ export function ambienteDoServidor(porta) {
     // O modo mock antigo desviaria a auditoria antes do executor, e a
     // bateria estaria testando o mock, não o fluxo.
     NEXODOC_MOCK_MODE: "false",
+    // O `.env.local` de quem desenvolve pode liberar a auditoria repetida; a
+    // bateria prova a recusa do documento idêntico (a5), então fica desligada.
+    NEXODOC_AUDIT_PERMITIR_REPETIDA: "false",
     NEXODOC_DEV_AUTH: "true",
     NEXODOC_DEV_AUTH_EMAIL: EMAIL_DA_BATERIA,
     NEXODOC_DEV_AUTH_NAME: "Bateria",

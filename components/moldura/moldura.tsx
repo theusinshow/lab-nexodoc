@@ -75,8 +75,9 @@ export function Moldura({
       abrirBusca: (t?: string) => (buscaPorEvento ? window.dispatchEvent(new Event(buscaPorEvento)) : (setTermo(t ?? ""), setAtalhos(false), setPaleta(true))),
       abrirAtalhos: () => (setPaleta(false), setAtalhos(true)),
       avisar,
+      primeiroNome: dados.usuario.nome.trim().split(/\s+/)[0] ?? "",
     }),
-    [avisar, buscaPorEvento],
+    [avisar, buscaPorEvento, dados.usuario.nome],
   );
 
   // Ctrl K e ? em qualquer tela

@@ -70,9 +70,12 @@ export function FilaDeAchados({
   auditId,
   catalogo,
   inicial,
+  nivelInicial,
   onVerNoMemorial,
   aoGerarTexto,
 }: {
+  /** Abre já filtrada num nível (o clique no nível do resumo completo). */
+  nivelInicial?: Nivel | null;
   parecer: ParecerVivo;
   auditId?: string | null;
   catalogo: FonteDoCatalogo[];
@@ -95,7 +98,7 @@ export function FilaDeAchados({
   const [marcados, setMarcados] = useState<string[]>([]);
   const [aba, setAba] = useState<Aba>("evidencia");
   const [ultimo, setUltimo] = useState<string | null>(null);
-  const [niveis, setNiveis] = useState<Nivel[]>([]);
+  const [niveis, setNiveis] = useState<Nivel[]>(nivelInicial ? [nivelInicial] : []);
   const [discs, setDiscs] = useState<FindingDiscipline[]>([]);
   const [tipos, setTipos] = useState<FindingErrorType[]>([]);
   const [responsavel, setResponsavel] = useState("qualquer");
@@ -281,7 +284,7 @@ export function FilaDeAchados({
               </span>
             ) : (
               <>
-                {agrupar === "disciplina" ? <i className={`rs-ponto rs-ponto--${a.nivel}`} title={NIVEIS.find((n) => n.id === a.nivel)?.nome} /> : <SeloDaDisciplina disc={a.disc} neutro />}
+                {agrupar === "disciplina" ? <i className={`rs-ponto rs-ponto--${a.nivel}`} title={NIVEIS.find((n) => n.id === a.nivel)?.nome} /> : <SeloDaDisciplina disc={a.disc} />}
                 {a.comentarios > 0 && <span className="rs-linha-conversa ds-num" title={conta(a.comentarios, "comentário", "comentários")}>{a.comentarios}</span>}
                 {a.responsavel ? <Avatar iniciais={iniciais(a.responsavel.nome)} pequeno /> : <span className="rs-sem-dono">sem dono</span>}
               </>

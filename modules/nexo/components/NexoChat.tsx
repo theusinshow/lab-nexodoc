@@ -23,6 +23,7 @@ import {
   type NexoTemplateOption,
 } from "./ConfirmationCard";
 import { PlanoDeGeracao } from "./PlanoDeGeracao";
+import { LinhaDoPensamento, type PensamentoDoTurno } from "./LinhaDoPensamento";
 import { VolumesDesatualizados } from "./VolumesDesatualizados";
 import { FichaDoDropCard } from "./FichaDoDrop";
 import { FichaDoMemorialCard } from "./FichaDoMemorial";
@@ -179,6 +180,18 @@ export function NexoChat({
   // restauradas do histórico têm id != revealId → aparecem inteiras. Só uma por
   // vez (o envio é bloqueado enquanto `busy`).
   const [revealId, setRevealId] = useState<string | null>(null);
+  /*
+   * O PENSAMENTO DE CADA TURNO desta sessão (a Linha do Pensamento do lab):
+   * quando saiu, quando chegou a primeira palavra e os passos que de fato
+   * aconteceram. Só na memória: uma conversa reaberta mostra a resposta, não o
+   * pensamento de ontem.
+   */
+  const [pensamentos, setPensamentos] = useState<Record<string, PensamentoDoTurno>>({});
+  const [idDaVez, setIdDaVez] = useState<string | null>(null);
+  const passoDoTurno = (id: string, texto: string) =>
+    setPensamentos((p) => (p[id] ? { ...p, [id]: { ...p[id], passos: [...p[id].passos, texto] } } : p));
+  const primeiraPalavra = (id: string) =>
+    setPensamentos((p) => (p[id] && !p[id].primeira ? { ...p, [id]: { ...p[id], primeira: Date.now() } } : p));
   const registerComposer = useRegisterComposer();
   const publicarFoco = usePublicarFocoDoComposer();
   /*
@@ -294,8 +307,11 @@ export function NexoChat({
           | { type: "error"; error: string };
 
         if (event.type === "delta") {
+          primeiraPalavra(args.assistantId);
           appendDelta(args.assistantId, event.text);
         } else if (event.type === "ferramenta") {
+          // O que ele está lendo agora vira um passo do pensamento.
+          if (event.resumo?.trim()) passoDoTurno(args.assistantId, event.resumo.trim());
           onTurnStatus?.({ thinking: true, error: false, responding: false });
         } else if (event.type === "achado") {
           /*
@@ -375,6 +391,8 @@ export function NexoChat({
 
     const assistantId = crypto.randomUUID();
     let started = false;
+    setIdDaVez(assistantId);
+    setPensamentos((p) => ({ ...p, [assistantId]: { inicio: Date.now(), passos: ["Lendo a pergunta"] } }));
 
     try {
       /*
@@ -385,6 +403,7 @@ export function NexoChat({
        * cartão. Ver `pedeNovaAuditoria`.
        */
       if (auditoriaAtual?.salvo.report && !forcarNexo && !pedeNovaAuditoria(text)) {
+        passoDoTurno(assistantId, "Consultando o parecer desta auditoria");
         await perguntarSobreAuditoria({
           text,
           history,
@@ -404,6 +423,9 @@ export function NexoChat({
        * transparência ao contrário.
        */
       const inicioDoTurno = Date.now();
+      // O que vai junto com a pergunta: são os fatos sobre os quais ele responde.
+      if (selos.length > 0) passoDoTurno(assistantId, `Juntando os ${selos.length} carimbos lidos`);
+      if (memorialFatos) passoDoTurno(assistantId, "Juntando o memorial anexado");
       const res = await fetch("/api/nexo/agent", {
         method: "POST",
         headers: {
@@ -440,6 +462,7 @@ export function NexoChat({
         if (!res.ok || !payload?.turn) {
           throw new Error(payload?.error ?? "Falha ao conversar com o Nexo.");
         }
+        primeiraPalavra(assistantId);
         setRevealId(assistantId); // sem streaming, o typewriter ainda vale
         const trace = traceDoTurno({
           selosLidos: selos.length,
@@ -491,6 +514,7 @@ export function NexoChat({
             | { type: "error"; error: string };
 
           if (event.type === "delta") {
+            primeiraPalavra(assistantId);
             appendDelta(assistantId, event.text);
           } else if (event.type === "done") {
             // O trace fecha JUNTO com a mensagem: no `done` o turno inteiro já
@@ -524,6 +548,9 @@ export function NexoChat({
     } finally {
       abortRef.current = null;
       setBusy(false);
+      // Sem palavra nenhuma (só cartão, erro ou parada), o pensamento fecha no fim.
+      primeiraPalavra(assistantId);
+      setIdDaVez(null);
       refreshUsage();
     }
   }
@@ -616,9 +643,13 @@ export function NexoChat({
                   {/* Resposta antiga do Nexo cita INC-014; a sigla que se lê é ACH (lib/rotulo-do-achado.ts). */}
                   {/* A resposta já nasceu e a primeira palavra ainda não chegou: o turno não fica mudo. */}
                   {busy && idx === messages.length - 1 && !m.content.trim() ? (
-                    <Pensando />
+                    pensamentos[m.id] ? <LinhaDoPensamento pensamento={pensamentos[m.id]} pensando /> : <Pensando />
                   ) : (
-                    <MessageBubble role="assistant" content={textoComRotulos(m.content)} reveal={m.id === revealId} />
+                    <>
+                      {/* Depois da resposta: "Pensou por 1,8 s", que abre nos passos. */}
+                      {pensamentos[m.id]?.primeira && <LinhaDoPensamento pensamento={pensamentos[m.id]} pensando={false} />}
+                      <MessageBubble role="assistant" content={textoComRotulos(m.content)} reveal={m.id === revealId} />
+                    </>
                   )}
                   {m.interrupted && <span className="nx-turno-nota">interrompido</span>}
                   {/* A ficha do anexo: de que projeto são as folhas que entraram.
@@ -681,9 +712,8 @@ export function NexoChat({
                 <Orbe tamanho={16} estado="trabalhando" />
               </span>
               <div className="cx-nexo-corpo">
-                <span className="cx-pensando" role="status" aria-label="Nexo está pensando">
-                  pensando…
-                </span>
+                {/* A mesma linha de quando a resposta já nasceu vazia: a espera tem um desenho só. */}
+                {idDaVez && pensamentos[idDaVez] ? <LinhaDoPensamento pensamento={pensamentos[idDaVez]} pensando /> : <Pensando />}
               </div>
             </div>
           )}

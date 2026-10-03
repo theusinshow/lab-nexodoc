@@ -14,6 +14,8 @@ export const ContextoDaMoldura = createContext<{
   abrirBusca: (termo?: string) => void;
   abrirAtalhos: () => void;
   avisar: (a: ModeloDeAviso, onAcao?: () => void) => void;
-}>({ abrirBusca: () => {}, abrirAtalhos: () => {}, avisar: () => {} });
+  /** O primeiro nome de quem está na sessão ("Victor, às 21:08"); vazio fora da moldura. */
+  primeiroNome: string;
+}>({ abrirBusca: () => {}, abrirAtalhos: () => {}, avisar: () => {}, primeiroNome: "" });
 
 export const useMoldura = () => useContext(ContextoDaMoldura);

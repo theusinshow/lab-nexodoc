@@ -761,7 +761,18 @@ export function ColunasPorNivel({
  * compõem, a contagem e uma pílula por achado. O mouse numa linha acende o
  * trecho dela na faixa, e vice-versa.
  */
-export function NiveisEmFaixa({ niveis, semFaixa, onAbrir }: { niveis: GrupoDoMapa[]; semFaixa?: boolean; onAbrir?: (id: string) => void }) {
+export function NiveisEmFaixa({
+  niveis,
+  semFaixa,
+  onAbrir,
+  onAbrirNivel,
+}: {
+  niveis: GrupoDoMapa[];
+  semFaixa?: boolean;
+  onAbrir?: (id: string) => void;
+  /** O nome do nível vira botão: abre a lista só daquele nível (ex.: a fila da gramática). */
+  onAbrirNivel?: (id: string) => void;
+}) {
   const { dur, k } = useTempo();
   const [sobre, setSobre] = useState<string | null>(null);
   const soma = (g: GrupoDoMapa) => g.itens.reduce((a, i) => a + i.valor, 0);
@@ -797,10 +808,17 @@ export function NiveisEmFaixa({ niveis, semFaixa, onAbrir }: { niveis: GrupoDoMa
               onMouseEnter={() => setSobre(g.id)}
             >
               <i className="gr-niveis-cor" />
-              <span className="gr-niveis-texto">
-                <b>{g.rotulo}</b>
-                <small>{tipos.length ? tipos.map((t) => `${t.rotulo} ${t.valor}`).join(", ") : "nenhum até agora"}</small>
-              </span>
+              {onAbrirNivel && n > 0 ? (
+                <button type="button" className="gr-niveis-texto gr-niveis-texto--botao" onClick={() => onAbrirNivel(g.id)} title={`Abrir só os de ${g.rotulo.toLowerCase()}`}>
+                  <b>{g.rotulo}</b>
+                  <small>{tipos.map((t) => `${t.rotulo} ${t.valor}`).join(", ")}</small>
+                </button>
+              ) : (
+                <span className="gr-niveis-texto">
+                  <b>{g.rotulo}</b>
+                  <small>{tipos.length ? tipos.map((t) => `${t.rotulo} ${t.valor}`).join(", ") : "nenhum até agora"}</small>
+                </span>
+              )}
               <span className="gr-niveis-fichas" aria-hidden={!g.achados}>
                 {g.achados?.map((a, i) => (
                   <motion.button

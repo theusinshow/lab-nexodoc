@@ -186,6 +186,17 @@ test("a correção à mão vence o nome do arquivo", () => {
   );
 });
 
+test("no PDF de volume, o carimbo decide mesmo com UMA disciplina no nome", () => {
+  // `017_26_vol_6_est.pdf` abre com 4 folhas de fundações (02/10/2026): o nome
+  // diz de que volume é, não de que disciplina é cada página.
+  assert.equal(
+    escolherCodigo({ manual: "", doNome: ["est"], doCarimbo: "FUNDAÇÕES", nomeDeVolume: true }, TABELAS),
+    "fnd",
+  );
+  // Carimbo que não se reconhece: aí o nome do volume ainda serve.
+  assert.equal(escolherCodigo({ manual: "", doNome: ["est"], doCarimbo: "", nomeDeVolume: true }, TABELAS), "est");
+});
+
 test("nome com várias disciplinas não decide — quem decide é o carimbo", () => {
   // `040_26_vol10_his_inc_spd_a.pdf` é o volume inteiro. Chamar as 20 folhas
   // dele de "his" poria o nome errado em duas das três separatrizes.

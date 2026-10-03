@@ -16,8 +16,9 @@ import { MapaDasPaginas } from "@/components/ds/graficos";
 import type { AuditReport } from "@/lib/audit-report";
 import { rotuloDaContagem } from "@/lib/auditoria-incompleta";
 import { CURVA } from "@/lib/ds/movimento";
+import { formatarEmBrasilia } from "@/lib/fuso-de-brasilia";
 import { useTempo } from "@/lib/ds/tempo";
-import { DISCIPLINAS, NIVEIS } from "@/lib/nivel-do-achado";
+import { DISCIPLINAS, NIVEIS, type Nivel } from "@/lib/nivel-do-achado";
 import type { FindingDiscipline } from "@/lib/audit-report";
 
 import { SeloDaDisciplina } from "../comum/disciplina";
@@ -26,6 +27,39 @@ import type { AchadoDaTela, ParecerVivo } from "./use-parecer-vivo";
 import "./resultado-c.css";
 
 const ease = (c: readonly number[]) => [...c] as [number, number, number, number];
+
+/**
+ * QUANTOS POR NÍVEL o resumo lista. Com 53 achados ele virava a fila inteira,
+ * e o panorama (disciplinas, páginas) ia parar 53 linhas abaixo (02/10/2026).
+ * O resumo mostra o topo de cada nível; a lista completa é a fila.
+ */
+const POR_NIVEL = 5;
+
+/** O que mudou desde a auditoria anterior desta conversa (lib/diff-de-pareceres.ts). */
+export interface ComparadoComAnterior {
+  /** Quando a anterior foi gerada (ISO); nula nos pareceres antigos. */
+  desde: string | null;
+  corrigidos: number;
+  novos: number;
+  continuam: number;
+}
+
+const DIA = (ms: number) => formatarEmBrasilia(ms, { day: "2-digit", month: "2-digit", year: "numeric" });
+
+/** "hoje às 21:13", "ontem às 9:02", "18/09 às 14:40". */
+function quandoFoi(iso: string) {
+  const ms = Date.parse(iso);
+  if (!Number.isFinite(ms)) return null;
+  const agora = Date.now();
+  const hora = formatarEmBrasilia(ms, { hour: "2-digit", minute: "2-digit" });
+  const dia = DIA(ms) === DIA(agora) ? "hoje" : DIA(ms) === DIA(agora - 86_400_000) ? "ontem" : formatarEmBrasilia(ms, { day: "2-digit", month: "2-digit" });
+  return `${dia} às ${hora}`;
+}
+
+function duracao(ms: number) {
+  const s = Math.round(ms / 1000);
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+}
 const iniciais = (nome: string) =>
   nome
     .replace(/@.*/, "")
@@ -43,7 +77,12 @@ export function ResumoDoParecer({
   onVerNoMemorial,
   onAbrirDisciplina,
   onNoDocumento,
+  comparado,
+  onAbrirNivel,
 }: {
+  /** Abre a fila só com um nível (o "Mais N em …" do fim de cada grupo). */
+  onAbrirNivel?: (nivel: Nivel) => void;
+  comparado: ComparadoComAnterior | null;
   report: AuditReport;
   parecer: ParecerVivo;
   temArquivo: (a: AchadoDaTela) => boolean;
@@ -63,6 +102,14 @@ export function ResumoDoParecer({
   })
     .filter((d) => d.total)
     .sort((a, b) => b.pendentes - a.pendentes || b.total - a.total);
+
+  const quando = report.runtime?.gerado_em ? quandoFoi(report.runtime.gerado_em) : null;
+  const meta = [
+    quando && `Auditada ${quando}${report.runtime?.auditado_por ? ` por ${report.runtime.auditado_por}` : ""}`,
+    report.runtime?.duracao_ms ? `levou ${duracao(report.runtime.duracao_ms)}` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   // Onde estão: um ponto por achado em cada página citada.
   const totalDePaginas = Math.max(0, ...report.arquivos_analisados.map((a) => a.paginas ?? 0), ...achados.flatMap((a) => a.paginas));
@@ -104,7 +151,7 @@ export function ResumoDoParecer({
                   <span>{n.dica}</span>
                 </h3>
                 <AnimatePresence initial={false}>
-                  {doNivel.map((a) => (
+                  {doNivel.slice(0, POR_NIVEL).map((a) => (
                     <motion.div
                       key={a.chave}
                       layout
@@ -116,7 +163,7 @@ export function ResumoDoParecer({
                     >
                       <button type="button" className="rc-linha-corpo" onClick={() => onAbrir(a.chave)}>
                         <span className="rc-titulo">{a.titulo}</span>
-                        <SeloDaDisciplina disc={a.disc} neutro />
+                        <SeloDaDisciplina disc={a.disc} />
                         {a.responsavel ? <Avatar iniciais={iniciais(a.responsavel.nome)} pequeno /> : <span className="rc-sem">sem dono</span>}
                       </button>
                       <span className="rc-acoes">
@@ -147,6 +194,12 @@ export function ResumoDoParecer({
                     </motion.div>
                   ))}
                 </AnimatePresence>
+                {/* O resto do nível mora na fila: o resumo não vira a lista inteira (02/10/2026). */}
+                {doNivel.length > POR_NIVEL && (
+                  <button type="button" className="rc-mais" onClick={() => (onAbrirNivel ? onAbrirNivel(n.id) : onAbrir())}>
+                    Mais {doNivel.length - POR_NIVEL} em {n.nome.toLowerCase()}, na fila <ArrowRight size={13} aria-hidden />
+                  </button>
+                )}
               </div>
             );
           })}
@@ -188,6 +241,18 @@ export function ResumoDoParecer({
 
       {/* ================= como os achados se distribuem, e o que foi lido ================= */}
       <aside className="rc-lado">
+        {/* Quando, por quem e quanto levou (o cabeçalho do lab, que no palco da conversa fica escondido). */}
+        {meta && <p className="rc-meta">{meta}</p>}
+        {comparado && (
+          <section className="rc-cartao rc-comparado" data-diff-do-parecer title="Comparado com a auditoria anterior desta conversa">
+            <h3>{comparado.desde ? `Desde ${formatarEmBrasilia(comparado.desde, { day: "2-digit", month: "2-digit" })}` : "Desde a auditoria anterior"}</h3>
+            <p>
+              <b className="rs-delta--ok">{comparado.corrigidos}</b> {comparado.corrigidos === 1 ? "corrigido" : "corrigidos"},{" "}
+              <b className="rs-delta--novo">{comparado.novos}</b> {comparado.novos === 1 ? "novo" : "novos"}, <b>{comparado.continuam}</b>{" "}
+              {comparado.continuam === 1 ? "continua" : "continuam"}
+            </p>
+          </section>
+        )}
         <div className="re-distribuicao">
           {porDisciplina.length > 0 && (
             <section className="rc-cartao rc-disc">

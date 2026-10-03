@@ -1,7 +1,8 @@
 "use client";
 
 /**
- * Barra do canvas: ir para um tomo, criar tomo, desfazer a divisão manual.
+ * Barra do canvas: ir para um tomo ou para uma folha, criar tomo, desfazer a
+ * divisão manual.
  *
  * É um SEGMENTED CONTROL (DESIGN.md §5): faixa recessada, rótulo mono à esquerda,
  * chips dentro. Antes era texto solto de 10px sem hierarquia — dava para ver que
@@ -12,9 +13,9 @@
  * distraído.
  */
 
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useReactFlow } from "@xyflow/react";
-import { Plus, RotateCcw, Undo2 } from "lucide-react";
+import { Plus, RotateCcw, Search, Undo2 } from "lucide-react";
 
 import { ehDigitacao } from "../lib/navegacao-por-teclado";
 import { Chip } from "@/components/ui/chip";
@@ -29,6 +30,83 @@ export interface FileiraNavegavel {
 
 const MARGEM = 0.25;
 
+const semAcento = (t: string) => t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+
+/**
+ * IR PARA A FOLHA (o "Ir para a folha: código ou título" do Mapa do volume no
+ * lab): num tomo de duzentas folhas, achar a ARQ-12 rolando é procurar agulha.
+ * A busca casa o código do carimbo, o título ou o número; Enter enquadra a
+ * primeira, e Enter de novo vai para a seguinte. "/" leva o cursor ao campo.
+ */
+function IrParaAFolha() {
+  const fluxo = useReactFlow();
+  const campo = useRef<HTMLInputElement>(null);
+  const [busca, setBusca] = useState("");
+  const [vez, setVez] = useState(0);
+
+  const achadas = () => {
+    const q = semAcento(busca.trim());
+    if (!q) return [];
+    return fluxo.getNodes().filter((n) => {
+      if (n.type !== "folha") return false;
+      const d = n.data as { arquivo?: string | null; titulo?: string; numero?: number | null };
+      return [d.arquivo ?? "", d.titulo ?? "", d.numero != null ? String(d.numero).padStart(2, "0") : ""].some((v) => semAcento(v).includes(q));
+    });
+  };
+
+  const irParaAProxima = () => {
+    const nos = achadas();
+    if (nos.length === 0) return;
+    const n = nos[vez % nos.length];
+    const w = n.measured?.width ?? 220;
+    const h = n.measured?.height ?? 300;
+    fluxo.setCenter(n.position.x + w / 2, n.position.y + h / 2, { zoom: Math.max(fluxo.getZoom(), 1), duration: 300 });
+    setVez((v) => v + 1);
+  };
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key !== "/" || ehDigitacao(e.target as HTMLElement | null) || e.metaKey || e.ctrlKey || e.altKey) return;
+      e.preventDefault();
+      campo.current?.focus();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  const total = busca.trim() ? achadas().length : null;
+  return (
+    <label className="flex h-7 items-center gap-1.5 rounded-[6px] bg-[var(--nexodoc-recessed)] px-2 text-[11px] text-muted-foreground">
+      <Search size={13} aria-hidden />
+      <input
+        ref={campo}
+        value={busca}
+        onChange={(e) => {
+          setBusca(e.target.value);
+          setVez(0);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            irParaAProxima();
+          } else if (e.key === "Escape") {
+            setBusca("");
+            e.currentTarget.blur();
+          }
+        }}
+        placeholder="Ir para a folha: código ou título"
+        aria-label="Ir para a folha"
+        className="w-[190px] bg-transparent text-foreground outline-none placeholder:text-muted-foreground"
+      />
+      {total !== null ? (
+        <span className="font-mono tabular-nums">{total === 0 ? "nenhuma" : total === 1 ? "1 folha" : `${total} folhas`}</span>
+      ) : (
+        <kbd className="font-mono text-[10px]">/</kbd>
+      )}
+    </label>
+  );
+}
+
 export function NavegacaoDoCanvas({
   fileiras,
   temGrupoManual = false,
@@ -38,7 +116,10 @@ export function NavegacaoDoCanvas({
   onCriarFolha,
   removidas = [],
   onRestaurarFolhas,
+  temFolhas = false,
 }: {
+  /** Há folhas no canvas: a busca "Ir para a folha" só existe aí. */
+  temFolhas?: boolean;
   fileiras: FileiraNavegavel[];
   /** Alguma folha tem tomo decidido à mão — só aí faz sentido desfazer. */
   temGrupoManual?: boolean;
@@ -117,7 +198,7 @@ export function NavegacaoDoCanvas({
    * não foi lida precisa de um lugar para nascer, e ele não pode depender de o
    * volume já estar dividido em tomos.
    */
-  if (!podeNavegar && !temGrupoManual && !onCriarFolha && removidas.length === 0) {
+  if (!podeNavegar && !temGrupoManual && !onCriarFolha && removidas.length === 0 && !temFolhas) {
     return null;
   }
 
@@ -127,6 +208,8 @@ export function NavegacaoDoCanvas({
        elemento seria cortado junto (filter e aplicado antes de clip-path). */
     <div className="nx-elev absolute left-1/2 top-3 z-10 -translate-x-1/2 animate-in fade-in-0 slide-in-from-top-2 duration-[var(--duration-base)] ease-[var(--ease-entrance)]">
       <div className="nx-edge-4 flex items-center gap-2 px-2 py-1.5 [--nx-fill:var(--nexodoc-panel)]">
+      {temFolhas && <IrParaAFolha />}
+      {temFolhas && (podeNavegar || onCriarFolha || onCriarTomo) && <Separator orientation="vertical" className="mx-0.5 h-5" />}
       {podeNavegar && (
         <>
           <span className="pl-0.5 font-mono text-[10px] uppercase tracking-[0.09em] text-muted-foreground">

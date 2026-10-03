@@ -431,3 +431,89 @@ export function validateRows(
     missingSheets,
   };
 }
+
+/**
+ * A DIVISÃO EM TOMOS PELA DISCIPLINA — a regra que o Matheus descreveu
+ * (02/10/2026): "duas disciplinas sozinhas, e uma separada".
+ *
+ * - Até `TOMO_MAXIMO` folhas, um tomo só.
+ * - Disciplina GRANDE (`TOMO_MINIMO` folhas ou mais) tem os seus tomos, repartidos
+ *   como sempre (`sugerirNumeroDeTomos` + `buildBalancedQuantities`).
+ * - Disciplinas PEQUENAS nunca são partidas. Com duas ou mais, elas vão JUNTAS,
+ *   num tomo delas (3 FND + 3 HID + 12 EST → [FND, HID] e [EST]), em tomos de até
+ *   `TOMO_MAXIMO`.
+ * - Uma pequena SOZINHA não fica num tomo de 4 folhas: entra com a grande
+ *   vizinha (a seguinte; sem seguinte, a anterior), e as duas se repartem juntas
+ *   (4 FND + 26 EST → [FND + 6 EST], [10 EST], [10 EST]).
+ *
+ * Os tomos saem na ordem da primeira folha de cada um, e dentro do tomo vale a
+ * ordem da projeção. Devolve o tomo (1-based) de cada folha, na ordem recebida.
+ *
+ * `codigos[i]` é a disciplina da folha i (`codigoDaFolha`); vazio = sem
+ * disciplina, que conta como uma disciplina à parte.
+ */
+export function planoPorDisciplina(codigos: readonly string[]): number[] {
+  const total = codigos.length;
+  if (total === 0) return [];
+  if (total <= TOMO_MAXIMO) return codigos.map(() => 1);
+
+  const ordem: string[] = [];
+  const indices = new Map<string, number[]>();
+  codigos.forEach((c, i) => {
+    const k = c.trim().toLowerCase();
+    if (!indices.has(k)) {
+      indices.set(k, []);
+      ordem.push(k);
+    }
+    indices.get(k)!.push(i);
+  });
+  const blocos = ordem.map((k) => indices.get(k)!);
+  const grande = (b: number[]) => b.length >= TOMO_MINIMO;
+  const grandes = blocos.filter(grande);
+  const pequenos = blocos.filter((b) => !grande(b));
+
+  const tomos: number[][] = [];
+  /*
+   * As pequenas juntas: o mínimo de tomos que cabe (`TOMO_MAXIMO`), cortando só
+   * ENTRE disciplinas e o mais parelho possível (`repartirPorBlocos`).
+   */
+  const juntarPequenas = () => {
+    const soma = pequenos.reduce((n, b) => n + b.length, 0);
+    const todas = pequenos.flat();
+    let c = 0;
+    for (const q of repartirPorBlocos(pequenos.map((b) => b.length), Math.max(1, Math.ceil(soma / TOMO_MAXIMO)))) {
+      tomos.push(todas.slice(c, c + q));
+      c += q;
+    }
+  };
+  const repartir = (idx: number[]) => {
+    let c = 0;
+    for (const q of buildBalancedQuantities(idx.length, sugerirNumeroDeTomos(idx.length))) {
+      tomos.push(idx.slice(c, c + q));
+      c += q;
+    }
+  };
+
+  if (grandes.length === 0) {
+    juntarPequenas();
+  } else if (pequenos.length === 1) {
+    const sozinha = pequenos[0];
+    const pos = blocos.indexOf(sozinha);
+    const vizinha = blocos.slice(pos + 1).find(grande) ?? blocos.slice(0, pos).reverse().find(grande)!;
+    for (const g of grandes) repartir(g === vizinha ? [...sozinha, ...g].sort((a, b) => a - b) : g);
+  } else {
+    juntarPequenas();
+    for (const g of grandes) repartir(g);
+  }
+
+  tomos.forEach((t) => t.sort((a, b) => a - b));
+  tomos.sort((a, b) => a[0] - b[0]);
+  const plano: number[] = new Array(total).fill(1);
+  tomos.forEach((t, i) => t.forEach((j) => (plano[j] = i + 1)));
+  return plano;
+}
+
+/** Quantos tomos o plano por disciplina dá. */
+export function tomosPorDisciplina(codigos: readonly string[]): number {
+  return codigos.length ? Math.max(...planoPorDisciplina(codigos)) : 1;
+}

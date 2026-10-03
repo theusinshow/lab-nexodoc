@@ -60,7 +60,7 @@
 
 /* a fila ocupa a largura que a coluna devolveu */
 .ds .re .rs-fila { height: 700px; }
-.ds .re .re-distribuicao { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; align-items: stretch; }
+.ds .re .re-distribuicao { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; align-items: start; }
 .ds .re .re-distribuicao .rc-cartao { align-content: start; }
 
 /* ---------- ajuste: título fora da grade, coluna num bloco só ---------- */
@@ -104,3 +104,22 @@
 .ds .re-corpo--compacto .re-nav button { position: relative; width: 40px; height: 40px; margin: 0 auto; }
 .ds .re-corpo--compacto .re-acao { width: 40px; height: 40px; margin: 0 auto; }
 .ds .re-corpo--compacto .re-trilho { align-self: start; }
+
+/* "Nada mudou desde a última auditoria": o parecer anterior reaberto, com o aviso no meio */
+.ds .nx-resultado { position: relative; }
+.ds .nx-sem-mudanca { position: absolute; inset: 0; z-index: 20; display: grid; place-items: center; padding: 16px; background: color-mix(in srgb, var(--ds-surface-page) 60%, transparent); }
+.ds .nx-sem-mudanca-cartao { width: min(420px, 100%); padding: 20px; border: 1px solid var(--ds-line-default); border-radius: 12px; background: var(--ds-surface-overlay); box-shadow: 0 12px 32px rgb(0 0 0 / 0.35); display: grid; gap: 10px; justify-items: start; }
+.ds .nx-sem-mudanca-titulo { font-size: 15px; font-weight: 600; color: var(--ds-text-primary); }
+.ds .nx-sem-mudanca-texto { font-size: 13px; line-height: 1.5; color: var(--ds-text-secondary); margin-bottom: 4px; }
+
+/* Perguntar ao Nexo: o orbe parado no lugar do ícone, sem fundo próprio */
+.ds .re-acao--nexo .ds-orbe { flex: none; }
+
+/* O veredito no meio do anel (emitir ou não), e o anel como porta do resumo completo */
+.ds .rs-anel .rs-anel-veredito { fill: var(--re-tom); stroke: none; }
+.ds .re-tratado--atual { background: rgb(255 255 255 / 0.06); box-shadow: inset 0 0 0 1px var(--ds-line-default); }
+
+/* No palco o panorama vem ANTES da lista: com muitos achados ele sumia lá embaixo (02/10/2026). */
+.ds .re .rc-lado { order: -1; }
+.ds .rc-mais { display: inline-flex; align-items: center; gap: 6px; margin: 4px 0 6px 18px; padding: 4px 6px; border: 0; border-radius: 6px; background: none; font: inherit; font-size: var(--ds-text-xs); color: var(--ds-text-secondary); cursor: pointer; }
+.ds .rc-mais:hover { background: rgb(255 255 255 / 0.05); color: var(--ds-text-primary); }

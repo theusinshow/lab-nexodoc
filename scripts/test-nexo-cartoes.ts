@@ -12,6 +12,7 @@ import {
   TETO_DE_CONVERSAS,
   type ConversaResumida,
 } from "../modules/nexo/lib/cartoes-de-projeto.ts";
+import { ehDeExemplo, estadoDaConversa, oQueFoiGerado, vereditoDoResumo } from "../modules/nexo/lib/estado-da-conversa.ts";
 
 let passed = 0;
 function test(nome: string, fn: () => void) {
@@ -307,6 +308,41 @@ test("busca vazia devolve tudo, e nunca a mesma referência de lista", () => {
 
 test("texto que não casa devolve lista vazia, não a lista inteira", () => {
   assert.deepEqual(filtrarCartoes(ACERVO, "zzz"), []);
+});
+
+// ---------------------------------------------------------------------------
+// estado da conversa — o histórico diz como cada conversa terminou (02/10/2026)
+// ---------------------------------------------------------------------------
+
+test("o veredito sai do resumo curto da auditoria", () => {
+  assert.equal(vereditoDoResumo("Auditoria — com inconsistências críticas"), "nao-emitir");
+  assert.equal(vereditoDoResumo("Auditoria — revisão obrigatória antes de emissão"), "nao-emitir");
+  assert.equal(vereditoDoResumo("Auditoria — com pontos de revisão"), "revisar");
+  assert.equal(vereditoDoResumo("Auditoria — sem achados críticos"), "liberado");
+  assert.equal(vereditoDoResumo("Auditoria — AUDITORIA INCOMPLETA"), "parcial");
+  assert.equal(vereditoDoResumo("Auditoria — concluída"), null);
+});
+
+test("auditoria: a tratar é o total menos os encerrados", () => {
+  const e = estadoDaConversa({ folhas: 0, kinds: ["auditoria"], auditoriaResumo: "Auditoria — com pontos de revisão", auditoriaTotal: 9, auditoriaTratados: 6 });
+  assert.deepEqual(e, { tipo: "auditoria", veredito: "revisar", total: 9, aTratar: 3 });
+});
+
+test("auditoria rodando vence o resto", () => {
+  assert.equal(estadoDaConversa({ folhas: 30, kinds: ["volume"], auditoriaPendente: true }).tipo, "auditando");
+});
+
+test("documentos contados por tipo, com as disciplinas", () => {
+  const e = estadoDaConversa({ folhas: 20, kinds: ["capa", "ld", "separatriz"], capas: 1, lds: 3, separatrizes: 3, disciplinas: ["HID", "PCI", "SPD"] });
+  assert.equal(e.tipo, "documentos");
+  if (e.tipo === "documentos") assert.equal(oQueFoiGerado(e), "Capa, 3 LDs e 3 separatrizes");
+  assert.equal(oQueFoiGerado({ capas: 0, lds: 1, separatrizes: 0 }), "LD");
+});
+
+test("exemplos e testes: SIM, Cidade Fictícia", () => {
+  assert.equal(ehDeExemplo("SIM077-26", "Tubarão"), true);
+  assert.equal(ehDeExemplo("990-26", "Cidade Fictícia"), true);
+  assert.equal(ehDeExemplo("117-25", "Criciúma"), false);
 });
 
 console.log(`\n${passed} teste(s) ok`);

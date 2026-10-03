@@ -1,0 +1,84 @@
+/*
+ * O HISTÓRICO DE CONVERSAS (veio do lab: app/lab/telas/historico, 02/10/2026).
+ * A coluna das conversas do Nexo, por obra e com o resultado de cada tarefa.
+ * Só o sinal do estado e as siglas das disciplinas têm cor; o resto é texto.
+ */
+.ds .hs-lista { flex: 1; min-height: 0; overflow-y: auto; padding: 2px 8px 16px; scrollbar-width: thin; scrollbar-color: var(--ds-line-default) transparent; }
+.ds .hs-lista::-webkit-scrollbar { width: 6px; }
+.ds .hs-lista::-webkit-scrollbar-thumb { border-radius: 3px; background: var(--ds-line-default); }
+
+/* os grupos por recência: um rótulo, sem caixa */
+.ds .hs-grupo { margin: 14px 6px 4px; font-size: 11px; font-weight: 500; color: var(--ds-text-tertiary); }
+.ds .hs-grupo:first-of-type { margin-top: 4px; }
+.ds .hs-grupo--agora { color: var(--ds-nexo-soft, var(--ds-text-secondary)); }
+
+/* a obra: uma DIVISÃO ACESA entre uma e outra, o nome em primeiro plano */
+.ds .hs-obra { padding: 6px 0 4px; border-top: 1px solid var(--ds-line-default); }
+.ds .hs-grupo + .hs-obra { border-top-color: transparent; }
+.ds .hs-obra-cabeca { display: flex; align-items: flex-start; gap: 6px; width: 100%; min-width: 0; padding: 6px 6px; border: 0; border-radius: 7px; background: none; font: inherit; text-align: left; cursor: pointer; }
+.ds .hs-obra-cabeca:hover { background: rgb(255 255 255 / 0.03); }
+.ds .hs-obra-cabeca:focus-visible, .ds .hs-conversa:focus-visible, .ds .hs-exemplos-cabeca:focus-visible { outline: 2px solid var(--ds-nexo); outline-offset: -2px; }
+.ds .hs-seta { flex: none; margin-top: 2px; color: var(--ds-text-tertiary); transition: transform var(--ds-dur-state, 0.2s) var(--ds-ease-out, ease-out); }
+.ds .hs-obra--aberta > .hs-obra-cabeca .hs-seta, .ds .hs-exemplos-cabeca[aria-expanded="true"] .hs-seta { transform: rotate(90deg); }
+.ds .hs-obra-texto { display: grid; gap: 3px; min-width: 0; }
+.ds .hs-obra-nome { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 13.5px; font-weight: 500; letter-spacing: -0.01em; color: var(--ds-text-primary); }
+.ds .hs-obra-sub { display: flex; align-items: center; gap: 6px; min-width: 0; overflow: hidden; white-space: nowrap; font-size: 11px; color: var(--ds-text-tertiary); }
+.ds .hs-codigo { flex: none; font-family: var(--ds-font-mono); font-size: 10.5px; color: var(--ds-text-secondary); }
+.ds .hs-conta { flex: none; color: var(--ds-text-tertiary); }
+
+/* as conversas: penduradas na obra por uma guia, uma linha de cada coisa */
+.ds .hs-conversas { position: relative; display: grid; gap: 2px; margin: 2px 0 2px; padding: 0 0 0 22px; list-style: none; }
+.ds .hs-conversas::before { content: ""; position: absolute; left: 12px; top: 4px; bottom: 8px; width: 1px; background: var(--ds-line-default); }
+.ds .hs-conversa { position: relative; display: grid; gap: 4px; width: 100%; padding: 7px 8px 8px 10px; border: 0; border-radius: 8px; background: none; font: inherit; text-align: left; cursor: pointer; transition: background 0.15s, box-shadow 0.15s; }
+.ds .hs-conversa:hover { background: rgb(255 255 255 / 0.04); }
+.ds .hs-conversa--sel { background: rgb(255 255 255 / 0.08); box-shadow: inset 0 0 0 1px var(--ds-line-strong); }
+/* o nó da guia: a conversa aberta acende o ponto onde ela pendura */
+.ds .hs-conversa::before { content: ""; position: absolute; left: -12px; top: 15px; width: 5px; height: 5px; border-radius: 50%; background: var(--ds-surface-page, #0a0a0b); box-shadow: 0 0 0 1px var(--ds-line-strong); }
+.ds .hs-conversa--sel::before { background: var(--ds-text-primary); box-shadow: none; }
+.ds .hs-conversa-linha { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.ds .hs-conversa-titulo { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 12.5px; color: var(--ds-text-secondary); }
+.ds .hs-conversa:hover .hs-conversa-titulo, .ds .hs-conversa--sel .hs-conversa-titulo { color: var(--ds-text-primary); }
+.ds .hs-quando { flex: none; font-size: 11px; color: var(--ds-text-tertiary); }
+
+/* como terminou: o sinal tem a cor, a palavra do resultado tem o peso, o resto recua */
+.ds .hs-estado { display: flex; align-items: center; gap: 7px; min-width: 0; font-size: 11.5px; color: var(--ds-text-tertiary); }
+.ds .hs-estado-frase { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.ds .hs-estado-frase b { font-weight: 500; color: var(--ds-text-primary); }
+.ds .hs-estado-resto { color: var(--ds-text-tertiary); }
+.ds .hs-estado--rodando .hs-estado-frase b { color: var(--ds-nexo-soft, var(--ds-text-primary)); }
+
+/* as disciplinas do volume: sigla e ponto quadrado na cor dela (a linguagem do Resultado) */
+.ds .hs-volume { display: flex; align-items: center; gap: 10px; padding-left: 20px; font-size: 10.5px; color: var(--ds-text-tertiary); }
+.ds .hs-discs { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.ds .hs-disc { display: inline-flex; align-items: center; gap: 4px; font-family: var(--ds-font-mono); font-size: 10px; letter-spacing: 0.02em; color: var(--dc-cor); }
+.ds .hs-disc i { width: 5px; height: 5px; border-radius: 1.5px; background: var(--dc-cor); }
+.ds .hs-disc-mais { font-size: 10px; color: var(--ds-text-tertiary); }
+
+/* a busca: o trecho que casou */
+.ds .hs mark { padding: 0 1px; border-radius: 2px; background: color-mix(in srgb, var(--ds-nexo) 28%, transparent); color: var(--ds-text-primary); }
+.ds .hs-resultado { margin: 4px 6px 2px; font-size: 11px; color: var(--ds-text-tertiary); }
+
+/* exemplos e testes, recolhidos no fim */
+.ds .hs-exemplos { margin-top: 16px; padding-top: 8px; border-top: 1px solid var(--ds-line-subtle); }
+.ds .hs-exemplos-cabeca { display: flex; align-items: center; gap: 7px; width: 100%; padding: 6px; border: 0; border-radius: 7px; background: none; font: inherit; font-size: 11.5px; color: var(--ds-text-tertiary); cursor: pointer; }
+.ds .hs-exemplos-cabeca:hover { color: var(--ds-text-secondary); background: rgb(255 255 255 / 0.03); }
+.ds .hs-exemplos .hs-obra { opacity: 0.78; }
+
+.ds .hs-vazio { display: grid; gap: 6px; margin: 24px 8px; font-size: 12.5px; line-height: 1.5; color: var(--ds-text-tertiary); }
+.ds .hs-vazio p { margin: 0; }
+.ds .hs-vazio-titulo { font-size: 13px; color: var(--ds-text-primary) !important; }
+.ds .hs-link { justify-self: start; padding: 0; border: 0; background: none; font: inherit; color: var(--ds-text-secondary); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+
+
+
+/* dentro da coluna do Nexo: a lista rola sozinha, sem a margem da vitrine */
+.ds .nx-conversas .hs-lista { padding: 2px 0 12px; }
+.ds .nx-conversas .ds-seg { width: 100%; }
+.ds .nx-conversas .ds-seg button { flex: 1; }
+.ds .hs-mais { width: 100%; padding: 6px 10px; border: 0; border-radius: 7px; background: none; font: inherit; font-size: 11.5px; color: var(--ds-text-tertiary); text-align: left; cursor: pointer; }
+.ds .hs-mais:hover { color: var(--ds-text-secondary); background: rgb(255 255 255 / 0.03); }
+.ds .hs-mais:focus-visible { outline: 2px solid var(--ds-nexo); outline-offset: -2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ds .hs-seta { transition: none; }
+}

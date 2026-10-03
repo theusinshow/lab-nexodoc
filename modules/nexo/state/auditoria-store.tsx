@@ -12,7 +12,7 @@
  * criaria duas verdades sobre a mesma auditoria.
  */
 
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 import type { MarcoDaAuditoria } from "@/lib/audit-progress";
 /*
@@ -20,6 +20,7 @@ import type { MarcoDaAuditoria } from "@/lib/audit-progress";
  * dizer "esta etapa passou do orçamento" é preciso saber quando ela começou.
  */
 import type { MarcoRecebido } from "../lib/etapas-da-auditoria";
+import { guardarCorrida } from "../lib/tempos-da-auditoria";
 
 export interface AuditoriaEmCursoInfo {
   /**
@@ -37,6 +38,10 @@ export interface AuditoriaEmCursoInfo {
   marcos: MarcoRecebido[];
   /** Existe enquanto der para desistir. */
   cancelar?: () => void;
+  /** A obra, para o cabeçalho do painel em curso (o desenho do lab). */
+  obra?: string;
+  codigo?: string;
+  prefeitura?: string;
 }
 
 export type VistaDoPalco = "mapa" | "auditoria";
@@ -105,7 +110,18 @@ export function AuditoriaStoreProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const terminar = useCallback(() => setEmCurso(null), []);
+  // A corrida que chegou ao parecer ensina quanto cada etapa leva (a previsão da
+  // próxima). Lida por ref: gravar dentro do `setState` gravaria duas vezes no
+  // modo estrito, que roda o atualizador em dobro.
+  const emCursoRef = useRef(emCurso);
+  useEffect(() => {
+    emCursoRef.current = emCurso;
+  }, [emCurso]);
+  const terminar = useCallback(() => {
+    const atual = emCursoRef.current;
+    if (atual) guardarCorrida(atual.nivel, atual.marcos);
+    setEmCurso(null);
+  }, []);
 
   const [escolha, setEscolha] = useState<EscolhaDeVista | null>(null);
   const escolherVista = useCallback(

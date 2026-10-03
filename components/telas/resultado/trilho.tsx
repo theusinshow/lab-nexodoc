@@ -14,7 +14,7 @@ import { motion } from "motion/react";
 import { FileSearch, FileText, ListChecks, ScrollText, SquareStack } from "lucide-react";
 import { useState } from "react";
 
-import { Girando } from "@/components/ds/basicos";
+import { Girando, Orbe } from "@/components/ds/basicos";
 import { Dica } from "@/components/ds/micro";
 import { useMoldura } from "@/components/moldura/contexto";
 import { abrirParecerEmPdf, type AuditView } from "@/components/audit-result";
@@ -35,11 +35,16 @@ const SELO: Record<Estado, { rotulo: string; tom: "block" | "decide" | "ok" }> =
   liberado: { rotulo: "Liberado", tom: "ok" },
 };
 
-/** O anel do tratamento — o mesmo gesto do relógio da auditoria. */
-function Anel({ fracao, completo }: { fracao: number; completo: boolean }) {
+/**
+ * O anel do tratamento — o mesmo gesto do relógio da auditoria — com o
+ * veredito no meio: o ponto na cor de emitir ou não (02/10/2026, pedido do
+ * Matheus: "o símbolo de emitir ou não dentro do ring").
+ */
+function Anel({ fracao, completo, comVeredito }: { fracao: number; completo: boolean; comVeredito?: boolean }) {
   const { k } = useTempo();
   return (
     <svg className={`rs-anel${completo ? " rs-anel--completo" : ""}`} viewBox="0 0 64 64" aria-hidden>
+      {comVeredito && <circle cx="32" cy="32" r="9" className="rs-anel-veredito" />}
       <circle cx="32" cy="32" r="27" className="rs-anel-trilho" />
       <motion.circle
         cx="32"
@@ -55,7 +60,7 @@ function Anel({ fracao, completo }: { fracao: number; completo: boolean }) {
   );
 }
 
-export type VistaDoResultado = AuditView | "documento";
+export type VistaDoResultado = AuditView | "documento" | "geral";
 
 export function TrilhoDoResultado({
   report,
@@ -65,7 +70,10 @@ export function TrilhoDoResultado({
   podeVerNoDocumento,
   onVista,
   compacto = false,
+  onPerguntar,
 }: {
+  /** Leva à conversa desta auditoria, com o campo pronto para a pergunta. */
+  onPerguntar?: () => void;
   /**
    * SÓ ÍCONES, como no lab dentro do palco da conversa: o chat já ocupa a
    * direita, e a fila precisa da largura. O rótulo e o porquê vão para a dica.
@@ -113,13 +121,27 @@ export function TrilhoDoResultado({
   return (
     <aside className={`re-trilho re-trilho--${selo.tom} nx-trilho`} aria-label="Resultado">
       <section className="re-estado" data-tour="veredito-parecer">
-        <span className="rs-selo" title={compacto ? `${selo.rotulo}. ${porque}` : undefined} aria-label={compacto ? selo.rotulo : undefined}>
-          <i />
-          {!compacto && selo.rotulo}
-        </span>
+        {!compacto && (
+          <span className="rs-selo">
+            <i />
+            {selo.rotulo}
+          </span>
+        )}
         {!compacto && <p className="re-porque">{porque}</p>}
-        <button type="button" className="re-tratado" onClick={() => onVista("findings")} title={`${tratados} de ${total} tratados`}>
-          <Anel fracao={tratados / Math.max(1, total)} completo={total > 0 && tratados >= total} />
+        {/*
+          O VEREDITO NO ANEL, e o anel abre o RESUMO COMPLETO: a mesma tela da
+          auditoria em curso, depois de pronta (linha do tempo, páginas, achados
+          por nível). No palco o trilho é só ícones; a dica diz tudo.
+        */}
+        <Dica texto={`${selo.rotulo}. ${tratados} de ${total} tratados. Resumo completo`} lado="esquerda">
+        <button
+          type="button"
+          className={`re-tratado${vista === "geral" ? " re-tratado--atual" : ""}`}
+          onClick={() => onVista("geral")}
+          aria-label={`${selo.rotulo}: ${porque} ${tratados} de ${total} tratados. Abrir o resumo completo`}
+          aria-pressed={vista === "geral"}
+        >
+          <Anel fracao={tratados / Math.max(1, total)} completo={total > 0 && tratados >= total} comVeredito />
           {!compacto && (
             <span>
               <b className="ds-num">
@@ -129,6 +151,7 @@ export function TrilhoDoResultado({
             </span>
           )}
         </button>
+        </Dica>
       </section>
 
       <nav className="re-nav" aria-label="Vistas da auditoria">
@@ -150,6 +173,19 @@ export function TrilhoDoResultado({
 
       <section className="re-acoes">
         {!compacto && <h3>Levar adiante</h3>}
+        {onPerguntar && (
+          <Dica texto="Perguntar ao Nexo sobre esta auditoria" lado="esquerda">
+            <button type="button" className="re-acao re-acao--nexo" aria-label={compacto ? "Perguntar ao Nexo sobre esta auditoria" : undefined} onClick={onPerguntar}>
+              <Orbe tamanho={16} />
+              {!compacto && (
+                <span>
+                  Perguntar ao Nexo
+                  <small>na conversa desta auditoria</small>
+                </span>
+              )}
+            </button>
+          </Dica>
+        )}
         <Dica texto="Parecer em PDF, numa aba nova" lado="esquerda">
           <button type="button" className="re-acao re-acao--principal" aria-label={compacto ? "Parecer em PDF" : undefined} onClick={() => void pdf()} disabled={gerando}>
             {gerando ? <Girando tamanho={14} /> : <FileText aria-hidden />}

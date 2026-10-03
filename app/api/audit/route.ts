@@ -10,6 +10,7 @@ import {
   listAuditLearnings,
 } from "@/lib/audit-learnings";
 import type { EmitirMarco, MarcoDaAuditoria } from "@/lib/audit-progress";
+import { fotoDosAchados } from "@/lib/foto-da-auditoria";
 import { mensagemDeTetoEstourado, verificarTetoMensal } from "@/lib/ai-budget";
 import {
   mensagemDeVagaRecusada,
@@ -3281,9 +3282,22 @@ async function deepAnalyzeFile(args: {
    * São instantâneas e sem IA, e é honesto fechar a passada com a contagem: o
    * número já existe, não é previsão.
    */
+  /*
+   * O QUE JÁ SE ACHOU, acumulado e em foto (lib/foto-da-auditoria.ts): a tela
+   * em curso mostra por nível, tipo e página, como o lab desenhou.
+   */
+  const achadosAteAqui: AuditFinding[] = [
+    ...mandatoryGuardFindings,
+    ...withinDocumentIdentityFindings,
+    ...coherenceFindings,
+    ...inferredIdentityFindings,
+    ...ruleBasedReviewFindings,
+  ];
+  const foto = () => fotoDosAchados(achadosAteAqui, args.file.extracted.pageCount);
   marco({
     passada: "regras",
     estado: "fim",
+    foto: foto(),
     detalhe: `${
       mandatoryGuardFindings.length +
       withinDocumentIdentityFindings.length +
@@ -3367,10 +3381,12 @@ async function deepAnalyzeFile(args: {
   console.log(
     `[audit] ${args.file.file.name}: leitura global concluida em ${Math.round((Date.now() - globalStartedAt) / 1000)}s com ${globalFindings.length} achado(s)`,
   );
+  achadosAteAqui.push(...globalFindings);
   marco({
     passada: "global",
     estado: "fim",
     detalhe: `${globalFindings.length} achado(s)`,
+    foto: foto(),
   });
 
   // Passada de coerência — só faz sentido quando o documento é MAIOR que a janela
@@ -3404,8 +3420,16 @@ async function deepAnalyzeFile(args: {
   // Blocos só existem no Padrão — no Profundo `chunkLimit` é 0 e a leitura
   // global já cobriu o documento inteiro. Anunciar a passada aqui seria
   // descrever trabalho que não vai acontecer.
+  // As páginas de cada bloco e o estado dele: a foto vai inteira em cada marco.
+  const estadoDosBlocos = chunks.map((c, i) => ({
+    n: i + 1,
+    de: c.startPage,
+    ate: c.endPage,
+    estado: "fila" as "fila" | "lendo" | "feito",
+  }));
+  const fotoDosBlocos = () => estadoDosBlocos.map((b) => ({ ...b }));
   if (chunks.length > 0) {
-    marco({ passada: "blocos", estado: "inicio", indice: 0, total: chunks.length });
+    marco({ passada: "blocos", estado: "inicio", indice: 0, total: chunks.length, blocos: fotoDosBlocos() });
   }
   let blocosFeitos = 0;
   const modelFindingGroups = await mapWithConcurrency(
@@ -3416,6 +3440,8 @@ async function deepAnalyzeFile(args: {
       console.log(
         `[audit] ${args.file.file.name}: bloco ${index + 1}/${chunks.length} (${chunk.startPage}-${chunk.endPage}) iniciado`,
       );
+      estadoDosBlocos[index].estado = "lendo";
+      marco({ passada: "blocos", estado: "inicio", indice: blocosFeitos, total: chunks.length, blocos: fotoDosBlocos(), foto: foto() });
       const findings = await analyzeChunkWithModel({
         auditId: args.auditId,
         auditMode: args.auditMode,
@@ -3436,11 +3462,15 @@ async function deepAnalyzeFile(args: {
       // Contagem por CONCLUSÃO, não por índice: os blocos rodam em paralelo, e
       // "bloco 7 de 8" com o 3 ainda aberto mentiria sobre o que falta.
       blocosFeitos++;
+      estadoDosBlocos[index].estado = "feito";
+      achadosAteAqui.push(...findings);
       marco({
         passada: "blocos",
         estado: "inicio",
         indice: blocosFeitos,
         total: chunks.length,
+        blocos: fotoDosBlocos(),
+        foto: foto(),
       });
       return findings;
     },
@@ -3458,6 +3488,8 @@ async function deepAnalyzeFile(args: {
       detalhe: `${modelFindings.length} achado(s)`,
       indice: chunks.length,
       total: chunks.length,
+      blocos: fotoDosBlocos(),
+      foto: foto(),
     });
   }
 
@@ -3570,9 +3602,23 @@ async function deepAnalyzeFile(args: {
 async function executarAuditoria(
   request: Request,
   formData: FormData,
-  onMarco?: EmitirMarco,
+  onMarcoDeFora?: EmitirMarco,
 ) {
   const requestStartedAt = Date.now();
+  /*
+   * O TEMPO DE CADA ETAPA vai para o parecer (`runtime.etapas`): o resumo
+   * completo do Resultado desenha a mesma linha do tempo da auditoria em curso,
+   * depois de pronta e em qualquer computador. Mede-se aqui, onde todo marco
+   * passa, com ou sem alguém ouvindo o fluxo.
+   */
+  const etapasMedidas = new Map<MarcoDaAuditoria["passada"], { inicio_ms: number; fim_ms?: number }>();
+  const onMarco: EmitirMarco = (m) => {
+    const agora = Date.now() - requestStartedAt;
+    const e = etapasMedidas.get(m.passada);
+    if (!e) etapasMedidas.set(m.passada, { inicio_ms: agora, ...(m.estado === "fim" ? { fim_ms: agora } : {}) });
+    else if (m.estado === "fim") e.fim_ms = agora;
+    onMarcoDeFora?.(m);
+  };
   let persistedAuditId: string | null = null;
   let requestedAuditMode: AuditMode = "memorial";
   let requestedAnalysisLevel: AnalysisLevel = "standard";
@@ -3671,7 +3717,17 @@ async function executarAuditoria(
      * para `/api/audit/delta`, que responde o que mudou de graca. Faltava mandar
      * para ca, onde a resposta pode virar economia em vez de so informacao.
      */
-    const auditIdAnterior = String(formData.get("auditIdAnterior") ?? "").trim();
+    /*
+     * EM DESENVOLVIMENTO, O MESMO DOCUMENTO RODA QUANTAS VEZES PRECISAR
+     * (`NEXODOC_AUDIT_PERMITIR_REPETIDA=true`, só no `.env.local`): sem base, não
+     * há recusa por documento idêntico nem reuso — cada corrida lê tudo de novo,
+     * que é o que se quer ao comparar prompt, modelo ou motor. Em produção a
+     * flag não existe e a recusa abre o parecer anterior.
+     */
+    const auditIdAnterior =
+      process.env.NEXODOC_AUDIT_PERMITIR_REPETIDA === "true"
+        ? ""
+        : String(formData.get("auditIdAnterior") ?? "").trim();
     const conversationIdRaw = formData.get("conversationId");
     const conversationId =
       typeof conversationIdRaw === "string" && conversationIdRaw.trim()
@@ -3880,6 +3936,7 @@ async function executarAuditoria(
           passada: "extracao",
           estado: "fim",
           detalhe: `${extracted.pageCount} páginas, ${extracted.charCount.toLocaleString("pt-BR")} caracteres`,
+          paginas: extracted.pageCount,
         });
 
         const fileType = fileTypes[index] ?? "não informado";
@@ -4455,6 +4512,9 @@ async function executarAuditoria(
           };
         }),
         gerado_em: new Date().toISOString(),
+        etapas: [...etapasMedidas.entries()].map(([passada, e]) => ({ passada, ...e })),
+        // Quem pediu, pelo nome: o Resultado diz "auditada às 21:13 por Victor".
+        auditado_por: actor.name?.trim() || session?.user?.name?.trim() || undefined,
       },
       obra: isMissingProjectField(identidade.obra)
         ? dominantIdentity || "não identificada"

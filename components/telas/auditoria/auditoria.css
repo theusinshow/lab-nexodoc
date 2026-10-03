@@ -328,3 +328,23 @@
 .ds .au-contas-validacao small { justify-self: end; font-size: var(--ds-text-xs); color: var(--ds-text-primary); }
 /* Mais estreita no palco largo (02/10/2026): a linha do tempo ficava longa demais na horizontal. */
 .ds .au--embutido .au-corpo { width: min(1000px, calc(100% - 32px)); }
+
+/* Embutido no palco, o Cancelar mora no cabeçalho do Nexo: a reserva de 96px à
+   direita do cronômetro só espremia a coluna da obra (02/10/2026). */
+.ds .au--embutido .au-cronometro { padding-right: 0; }
+.ds .au--embutido .au-cronometro-texto { min-width: 0; }
+.ds .au--embutido .au-cronometro-falta { white-space: normal; max-width: 260px; line-height: 1.35; }
+/* Obra longa numa linha só, com reticências; o arquivo quebra antes de ser cortado. */
+.ds .au--embutido .au-obra { min-width: 0; }
+.ds .au--embutido .au-obra > span:last-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ds .au--embutido .au-painel-linha { min-width: 0; flex-wrap: nowrap; }
+.ds .au--embutido .au-estado { flex: none; }
+.ds .au--embutido .au-arquivo > span { white-space: nowrap; }
+
+/* O resumo completo (Resultado → anel do trilho): a mesma tela, concluída, na cor do veredito */
+.ds .au-painel--concluida.au-painel--block { --au-tom: var(--ds-sev-block); }
+.ds .au-painel--concluida.au-painel--decide { --au-tom: var(--ds-sev-decide); }
+.ds .au-painel--concluida.au-painel--ok { --au-tom: var(--ds-state-ok); }
+.ds .au-geral-porque { margin: 0; padding: 0 24px 20px; font-size: var(--ds-text-xs); line-height: 1.5; color: var(--ds-text-secondary); }
+.ds .au--geral .au-anel--concluida .au-anel-arco { stroke-dasharray: none; }
+.ds .au-geral-tratados { margin-top: 10px; }

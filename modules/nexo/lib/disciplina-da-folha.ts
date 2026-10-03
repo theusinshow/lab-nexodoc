@@ -27,14 +27,20 @@ export function rotuloDoCodigo(codigo: string): string {
  * canvas repete a pergunta a cada render, e um projeto tem 200+ folhas.
  */
 const porArquivo = new Map<string, string[]>();
+const deVolume = new Map<string, boolean>();
 function doNomeDoArquivo(fileName: string): string[] {
   const guardado = porArquivo.get(fileName);
   if (guardado) return guardado;
-  const codigos = parseFilename(fileName).disciplinas.map(
-    (c) => TABELAS.canonico.get(c) ?? c,
-  );
+  const lido = parseFilename(fileName);
+  const codigos = lido.disciplinas.map((c) => TABELAS.canonico.get(c) ?? c);
   porArquivo.set(fileName, codigos);
+  deVolume.set(fileName, Boolean(lido.volume) || lido.tipo === "volume");
   return codigos;
+}
+/** O nome é de um PDF de volume (ver `nomeDeVolume` em blocos.ts). */
+function ehNomeDeVolume(fileName: string): boolean {
+  doNomeDoArquivo(fileName);
+  return deVolume.get(fileName) ?? false;
 }
 
 /**
@@ -55,6 +61,7 @@ export function codigoDoSelo(
       manual: "",
       doNome: doNomeDoArquivo(fileName || arquivo?.trim() || ""),
       doCarimbo: disciplinaDoCarimbo ?? "",
+      nomeDeVolume: ehNomeDeVolume(fileName || arquivo?.trim() || ""),
     },
     TABELAS,
   );
@@ -78,6 +85,7 @@ export function codigoDaFolha(folha: Folha): string {
        */
       doNome: doNomeDoArquivo(folha.fileName || folha.arquivo?.trim() || ""),
       doCarimbo: folha.disciplina ?? "",
+      nomeDeVolume: ehNomeDeVolume(folha.fileName || folha.arquivo?.trim() || ""),
     },
     TABELAS,
   );

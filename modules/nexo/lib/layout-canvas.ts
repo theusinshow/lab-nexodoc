@@ -30,19 +30,24 @@ export function colunasDaGrade(quantidade: number): number {
     Math.max(COLUNAS_MINIMAS, Math.ceil(Math.sqrt(quantidade))),
   );
 }
-/** Largura do nó da folha. */
-export const LARGURA_FOLHA = 120;
+/**
+ * Largura do nó da folha. Era 120: num volume real (017-26, estrutural, 30
+ * folhas) os títulos saíam cortados no meio — "IMPLANTAÇÃO - CENTRAL DE GÁS:
+ * DETALHAMENTO…" — e conferir a lista virava abrir folha por folha (Matheus,
+ * 02/10/2026). Com 200 o título quase inteiro cabe em três linhas.
+ */
+export const LARGURA_FOLHA = 200;
 /**
  * Altura do nó da folha. Era 56, para o cartão antigo (número + título); o
  * cartão Carimbo do sistema novo (02/10/2026) tem a fileira de células e o
  * título embaixo, e com 56 de passo a segunda linha da grade caía por cima da
  * primeira — achado no teste real com 7 pranchas.
  */
-export const ALTURA_FOLHA = 88;
+export const ALTURA_FOLHA = 96;
 /** Largura do nó da folha + respiro. */
-export const PASSO_X = 128;
+export const PASSO_X = 210;
 /** Altura do nó da folha + respiro. */
-export const PASSO_Y = 96;
+export const PASSO_Y = 106;
 /**
  * Altura de uma fileira sem folhas — o bastante para o nó de DOCUMENTO, que é o
  * mais alto do canvas: miniatura 200×267 (aspecto 3/4) + rótulo + título de até

@@ -151,3 +151,17 @@
   .ds .ds-sino-icone[data-balanca] { animation: none; }
   .ds .ds-segurar[data-estado="segurando"] { transform: none; }
 }
+
+/* MARCA DE ESTADO (ref.: Status Mark) */
+.ds .ds-marca { flex: none; --marca: var(--ds-text-tertiary); overflow: visible; }
+.ds .ds-marca circle, .ds .ds-marca path { fill: none; stroke: var(--marca); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.ds .ds-marca-cheio { fill: color-mix(in srgb, var(--marca) 14%, transparent) !important; }
+.ds .ds-marca .ds-marca-ponto { fill: var(--marca); stroke: none; }
+.ds .ds-marca-trilho { stroke: color-mix(in srgb, var(--marca) 25%, transparent) !important; }
+.ds .ds-marca-arco { transform-origin: 12px 12px; animation: ds-marca-gira 1.1s linear infinite; }
+@keyframes ds-marca-gira { to { transform: rotate(360deg); } }
+.ds .ds-marca--rodando { --marca: var(--ds-nexo); }
+.ds .ds-marca--feito { --marca: var(--ds-state-ok); }
+.ds .ds-marca--atencao { --marca: var(--ds-sev-decide); }
+.ds .ds-marca--falhou { --marca: var(--ds-sev-block); }
+@media (prefers-reduced-motion: reduce) { .ds .ds-marca-arco { animation-duration: 3s; } }

@@ -243,6 +243,13 @@ export type AuditReport = {
     arquivos?: number;
     gerado_em?: string;
     /**
+     * Quando cada etapa começou e terminou, em ms desde o pedido — a linha do
+     * tempo do resumo completo. Ausente nos pareceres antes de 02/10/2026.
+     */
+    etapas?: { passada: string; inicio_ms: number; fim_ms?: number }[];
+    /** O nome de quem pediu a auditoria. Ausente nos pareceres antes de 02/10/2026. */
+    auditado_por?: string;
+    /**
      * A IMPRESSÃO DIGITAL DO DOCUMENTO, capítulo a capítulo (sha-256 do texto).
      *
      * É o que permite a PRÓXIMA auditoria do mesmo memorial dizer o que mudou —
