@@ -220,9 +220,22 @@ function paraOCartao(c: ConversaResumida): ConversaDoCartao {
 export function cartoesDeProjeto(
   conversas: readonly ConversaResumida[],
 ): CartaoDeProjeto[] {
+  /*
+   * A PASTA LEGADA ENTRA NO PROJETO DE MESMO CÓDIGO (03/10/2026). Uma conversa
+   * antiga, sem vínculo, fica na pasta "017-26-CRICIUMA"; a nova da mesma obra
+   * já nasce com o `projectId`. Agrupadas por chaves diferentes, a obra
+   * aparecia duas vezes no histórico. O código é único no escritório, então a
+   * pasta cujo código bate com um projeto vinculado vai para o cartão dele.
+   */
+  const projetoDoCodigo = new Map<string, string>();
+  for (const c of conversas) {
+    const id = (c.projectId ?? "").trim();
+    if (id && c.projectCode) projetoDoCodigo.set(c.projectCode.trim(), id);
+  }
   const porPasta = new Map<string, ConversaResumida[]>();
   for (const c of conversas) {
-    const chave = enderecoDa(c);
+    const pasta = enderecoDa(c);
+    const chave = (c.projectId ?? "").trim() ? pasta : (projetoDoCodigo.get(partes(pasta).codigo) ?? pasta);
     const lista = porPasta.get(chave);
     if (lista) lista.push(c);
     else porPasta.set(chave, [c]);

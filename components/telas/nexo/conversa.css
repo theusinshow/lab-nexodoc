@@ -372,3 +372,8 @@
 .ds .na-cita .ds-code { font-size: 11px; }
 .ds .na-cita-titulo { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .ds .na-cita-pag { font-size: 11.5px; color: var(--ds-text-tertiary); }
+
+/* a obra da conversa, na entrada: "Conversa da obra 017-26 Centro…" (03/10/2026) */
+.ds .nx-entrada-obra { display: inline-flex; align-items: baseline; gap: 8px; max-width: min(560px, 90%); margin: 4px 0 -2px; padding: 5px 12px; border-radius: var(--ds-radius-pill); background: var(--ds-nexo-wash); box-shadow: inset 0 0 0 1px var(--ds-nexo-line); font-size: 12.5px; color: var(--ds-text-secondary); }
+.ds .nx-entrada-obra .mp-mono { flex: none; color: var(--ds-nexo-soft); }
+.ds .nx-entrada-obra-nome { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: var(--ds-text-primary); }

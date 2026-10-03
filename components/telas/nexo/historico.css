@@ -82,3 +82,11 @@
 @media (prefers-reduced-motion: reduce) {
   .ds .hs-seta { transition: none; }
 }
+
+/* A CONVERSA ABERTA SE DESTACA (03/10/2026): quem chega por "Conversa da obra"
+   precisa ver de relance em que obra e em que conversa está. O violeta é o
+   destaque do sistema; a obra da conversa aberta acende o código junto. */
+.ds .hs-conversa--sel { background: var(--ds-nexo-wash); box-shadow: inset 0 0 0 1px var(--ds-nexo-line); }
+.ds .hs-conversa--sel::before { background: var(--ds-nexo); box-shadow: 0 0 0 3px var(--ds-nexo-wash); }
+.ds .hs-obra--ativa .hs-obra-nome { color: var(--ds-text-primary); }
+.ds .hs-obra--ativa .hs-codigo { color: var(--ds-nexo-soft); }

@@ -254,7 +254,7 @@ export function HistoricoDeConversas({
     const cidade = c.cliente ? nomeProprio(cidadeDoCliente(c.cliente) || c.cliente) : "";
     const nome = c.nome || (c.aEnderecar ? "A endereçar" : cidade || c.codigo || "Sem obra");
     return (
-      <section key={c.chave || "sem-codigo"} className={`hs-obra${abertaAgora ? " hs-obra--aberta" : ""}`}>
+      <section key={c.chave || "sem-codigo"} className={`hs-obra${abertaAgora ? " hs-obra--aberta" : ""}${temAtiva(c) ? " hs-obra--ativa" : ""}`}>
         <button type="button" className="hs-obra-cabeca" aria-expanded={abertaAgora} onClick={() => alternar(c)} title={[c.codigo, c.nome, cidade].filter(Boolean).join(" · ")}>
           <ChevronRight size={13} className="hs-seta" aria-hidden />
           <span className="hs-obra-texto">

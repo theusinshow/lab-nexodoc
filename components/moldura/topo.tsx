@@ -1,11 +1,11 @@
 "use client";
 
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, LayoutGroup, motion } from "motion/react";
 import { ArrowRight, Bell, ChevronDown, FolderOpen, Keyboard, LayoutGrid, LifeBuoy, ListChecks, LogOut, MessageSquare, Repeat2, Search, ShieldCheck } from "lucide-react";
 import { signOut } from "next-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState, type KeyboardEvent as KE, type ReactNode, type RefObject } from "react";
+import { useCallback, useEffect, useId, useRef, useState, type KeyboardEvent as KE, type ReactNode, type RefObject } from "react";
 
 import { Avatar, Botao, Orbe, Tecla } from "@/components/ds/basicos";
 import { CURVA } from "@/lib/ds/movimento";
@@ -35,12 +35,16 @@ export const destinosDe = (ehAdmin: boolean) => TODOS.filter((d) => d !== "Admin
  * ELA SE MEDE PELA CAIXA, NÃO PELA JANELA (container query em `.pn-topo-caixa`):
  * abaixo de 1280px os destinos vão para o cartão da marca; abaixo de 900 a busca
  * vira o ícone com o Ctrl K; abaixo de 600 fica só o avatar.
+ *
+ * EM PÍLULA desde 03/10/2026 (ref.: Navbar Interaction, aprovada no lab): solta
+ * da borda, o orbe num círculo, os destinos com o realce que segue o gesto e a
+ * conta como a pílula de contraste.
  */
 export function Topo({ atual, dados, trabalhando = false, busca = true }: { atual: DestinoDoTopo | null; dados: DadosDaMoldura; trabalhando?: boolean; busca?: boolean }) {
   const { abrirBusca } = useMoldura();
   const destinos = destinosDe(dados.usuario.ehAdmin);
   return (
-    <div className="pn-topo-caixa">
+    <div className="pn-topo-caixa pn-topo-caixa--pilula">
       <a href="#conteudo" className="pn-pular">
         Pular para o conteúdo
         <Tecla>↵</Tecla>
@@ -48,17 +52,13 @@ export function Topo({ atual, dados, trabalhando = false, busca = true }: { atua
       <header className="pn-topo">
         {/* larga: a marca leva ao Painel; estreita (abaixo de 1280): a marca abre o cartão de navegação */}
         <Link className="pn-marca pn-marca--link" href="/">
-          <Orbe tamanho={22} estado={trabalhando ? "trabalhando" : "repouso"} />
+          <span className="pn-marca-circulo">
+            <Orbe tamanho={22} estado={trabalhando ? "trabalhando" : "repouso"} />
+          </span>
           <span className="pn-marca-nome">Nexo</span>
         </Link>
         <CartaoDeNavegacao atual={atual} destinos={destinos} dados={dados} trabalhando={trabalhando} />
-        <nav className="pn-nav" aria-label="Principal">
-          {destinos.map((n) => (
-            <Link key={n} href={ROTA_DO_DESTINO[n]} aria-current={n === atual ? "page" : undefined}>
-              {n}
-            </Link>
-          ))}
-        </nav>
+        <NavComRealce atual={atual} destinos={destinos} />
         {busca ? (
           <button type="button" className="pn-busca" onClick={() => abrirBusca()} aria-label="Buscar obra, código ou ação (Ctrl K)">
             <Search size={15} />
@@ -72,6 +72,38 @@ export function Topo({ atual, dados, trabalhando = false, busca = true }: { atua
         <MenuDaConta dados={dados} />
       </header>
     </div>
+  );
+}
+
+/*
+ * OS DESTINOS COM REALCE. Uma cápsula clara mora no destino atual e desliza
+ * para onde o mouse ou o foco está; ao sair, volta para o atual. Só se move em
+ * resposta ao gesto, nunca sozinha. O `LayoutGroup` com id próprio impede que
+ * duas barras na mesma página troquem o realce entre si.
+ */
+function NavComRealce({ atual, destinos }: { atual: DestinoDoTopo | null; destinos: DestinoDoTopo[] }) {
+  const { dur } = useTempo();
+  const grupo = useId();
+  const [sob, setSob] = useState<DestinoDoTopo | null>(null);
+  const realce = sob ?? atual;
+  return (
+    <LayoutGroup id={grupo}>
+      <nav className="pn-nav" aria-label="Principal" onPointerLeave={() => setSob(null)}>
+        {destinos.map((n) => (
+          <Link
+            key={n}
+            href={ROTA_DO_DESTINO[n]}
+            aria-current={n === atual ? "page" : undefined}
+            onPointerEnter={() => setSob(n)}
+            onFocus={() => setSob(n)}
+            onBlur={() => setSob(null)}
+          >
+            {n === realce && <motion.span layoutId="pn-realce" className="pn-realce" transition={{ duration: dur("state"), ease: [...CURVA.out] }} aria-hidden />}
+            <span className="pn-nav-texto">{n}</span>
+          </Link>
+        ))}
+      </nav>
+    </LayoutGroup>
   );
 }
 
@@ -116,7 +148,9 @@ function CartaoDeNavegacao({ atual, destinos, dados, trabalhando }: { atual: Des
   return (
     <div ref={raiz} className="pn-conta pn-marca-raiz">
       <button ref={botao} type="button" className="pn-marca pn-marca--botao" aria-haspopup="menu" aria-expanded={aberto} aria-label="Navegação" onClick={aoClicar} onKeyDown={aoTeclar}>
-        <Orbe tamanho={22} estado={trabalhando ? "trabalhando" : "repouso"} />
+        <span className="pn-marca-circulo">
+          <Orbe tamanho={22} estado={trabalhando ? "trabalhando" : "repouso"} />
+        </span>
         <span className="pn-marca-nome">Nexo</span>
         <motion.span className="pn-quem-seta" animate={{ rotate: aberto ? 180 : 0 }} transition={{ duration: dur("state"), ease: [...CURVA.out] }}>
           <ChevronDown size={14} />
@@ -313,7 +347,22 @@ function MenuDaConta({ dados }: { dados: DadosDaMoldura }) {
   const papel = u.papelNoEscritorio ? PAPEL[u.papelNoEscritorio] : null;
   return (
     <div ref={raiz} className="pn-conta">
-      <button ref={botao} type="button" className="pn-quem" aria-haspopup="menu" aria-expanded={aberto} onClick={aoClicar} onKeyDown={aoTeclar}>
+      <button
+        ref={botao}
+        type="button"
+        className="pn-quem"
+        aria-haspopup="menu"
+        aria-expanded={aberto}
+        onClick={aoClicar}
+        onKeyDown={aoTeclar}
+        // O brilho segue o ponteiro por dentro da pílula.
+        onPointerMove={(e) => {
+          const r = e.currentTarget.getBoundingClientRect();
+          e.currentTarget.style.setProperty("--mx", `${e.clientX - r.left}px`);
+          e.currentTarget.style.setProperty("--my", `${e.clientY - r.top}px`);
+        }}
+      >
+        <span className="pn-quem-brilho" aria-hidden />
         <Avatar iniciais={u.iniciais} />
         <span className="pn-quem-texto">
           {u.nome.split(" ")[0]}
