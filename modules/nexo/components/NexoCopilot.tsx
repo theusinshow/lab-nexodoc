@@ -46,7 +46,14 @@ export function NexoCopilot({
   onTurnStatus,
   tarefa = null,
   onEscolherTarefa,
+  obra = null,
 }: {
+  /**
+   * A obra desta conversa, quando ela nasceu de uma (Projetos → "Conversa da
+   * obra"). A entrada diz qual é: sem isso a tela era a mesma de uma conversa
+   * solta, e quem chegava não sabia se estava na obra que clicou (03/10/2026).
+   */
+  obra?: { codigo: string; nome: string } | null;
   /** A tarefa da tela (Painel → Nexo, ou um atalho): a entrada fala dela. */
   tarefa?: Partida | null;
   onEscolherTarefa?: (id: string) => void;
@@ -207,6 +214,14 @@ export function NexoCopilot({
             o próprio Nexo, escrevendo.
           */}
           <>
+            {obra && (
+              <p className="nx-entrada-obra" data-projeto-da-conversa>
+                Conversa da obra <span className="mp-mono">{obra.codigo}</span>
+                <span className="nx-entrada-obra-nome" title={obra.nome}>
+                  {obra.nome}
+                </span>
+              </p>
+            )}
             <SaudacaoDoNexo nome={nome} convite={tarefa?.tela.convite} onDigitando={setSaudando} />
             {/*
               As partidas ENTRAM COM A SAUDAÇÃO, e saem com ela: passada a

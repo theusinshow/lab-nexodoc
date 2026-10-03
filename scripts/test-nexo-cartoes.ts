@@ -345,4 +345,21 @@ test("exemplos e testes: SIM, Cidade Fictícia", () => {
   assert.equal(ehDeExemplo("117-25", "Criciúma"), false);
 });
 
+test("a pasta legada entra no projeto de mesmo código — a obra não aparece duas vezes (03/10/2026)", () => {
+  const cartoes = cartoesDeProjeto([
+    c("antiga", "017-26-CRICIUMA", 1000),
+    c("nova", null, 2000, [], { projectId: "proj-017", projectCode: "017-26", projectClient: "Criciúma" }),
+    c("outra", "084-25-CRICIUMA", 500),
+  ]);
+  const da017 = cartoes.filter((x) => x.codigo === "017-26");
+  assert.equal(da017.length, 1);
+  assert.deepEqual(
+    da017[0].conversas.map((x) => x.id),
+    ["nova", "antiga"],
+  );
+  assert.equal(da017[0].chave, "proj-017");
+  // a pasta sem projeto de mesmo código continua sozinha
+  assert.equal(cartoes.filter((x) => x.codigo === "084-25").length, 1);
+});
+
 console.log(`\n${passed} teste(s) ok`);

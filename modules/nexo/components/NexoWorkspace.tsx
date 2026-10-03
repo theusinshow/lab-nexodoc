@@ -1899,6 +1899,27 @@ function NexoWorkspaceInner({
    * primeiro; a troca de verdade continua esperando tudo o que esperava.
    */
   const [abrindo, setAbrindo] = useState<string | null>(null);
+  /*
+   * A CONVERSA ABERTA APARECE NO HISTÓRICO MESMO ANTES DE EXISTIR (03/10/2026).
+   *
+   * "Conversa da obra" (Projetos) abre uma conversa NOVA já endereçada à obra,
+   * e ela só é gravada na primeira mensagem — até lá não estava na lista, e o
+   * histórico não tinha o que destacar: quem chegava não sabia se estava na
+   * obra que clicou. Enquanto não grava, ela entra como "Nova conversa" na
+   * obra dela, já selecionada; ao gravar, a de verdade toma o lugar (mesmo id).
+   */
+  // O horário do item provisório: o da abertura da tela, lido uma vez (o render é puro).
+  const [abertaEm] = useState(() => Date.now());
+  const conversasDaBarra = useMemo(() => {
+    const id = conv.conversationId;
+    if (!conv.projectId || abrindo || conv.conversations.some((c) => c.id === id)) return conv.conversations;
+    return [{ id, title: "Nova conversa", createdAt: abertaEm, updatedAt: abertaEm, projectId: conv.projectId }, ...conv.conversations];
+  }, [conv.conversations, conv.conversationId, conv.projectId, abrindo, abertaEm]);
+  /** A obra que a entrada nomeia: a pedida pela URL, enquanto a conversa aberta for dela. */
+  const obraDaEntrada =
+    projetoPedido?.estado === "ok" && conv.projectId === projetoPedido.id
+      ? { codigo: projetoPedido.codigo, nome: projetoPedido.nome }
+      : null;
   const abrirPelaBarra = async (id: string) => {
     setAbrindo(id);
     try {
@@ -2971,7 +2992,7 @@ function NexoWorkspaceInner({
         sidebar={
           <NexoSidebar
             onNewConversation={reset}
-            conversations={conv.conversations}
+            conversations={conversasDaBarra}
             activeId={abrindo ?? conv.conversationId}
             onSelect={abrirPelaBarra}
             onVerTour={iniciarTour}
@@ -3009,6 +3030,7 @@ function NexoWorkspaceInner({
         copilot={
           <NexoCopilot
             key={convId}
+            obra={obraDaEntrada}
             tarefa={tarefa}
             onEscolherTarefa={(id) => setTarefaDaTela({ id, conv: convId })}
             started={started}

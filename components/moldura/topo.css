@@ -205,3 +205,96 @@
 
 /* mono do sistema (a mesma regra de mapa.css: as telas de lista a repetem) */
 .ds .mp-mono { font-family: var(--ds-font-mono); font-size: 0.92em; }
+
+/* ---------- /* ---------- a barra em pílula (ref.: Navbar Interaction, 03/10/2026) ----------
+   Solta da borda e em cápsula; a marca num círculo; os destinos em texto puro,
+   com o realce que mora no atual e segue o gesto; a conta vira a pílula de
+   contraste (a cor da ação primária), com um brilho violeta que acompanha o
+   ponteiro por dentro. Aprovada no lab em 03/10/2026; aqui é a barra padrão. */
+.ds .pn-marca-circulo { display: contents; }
+.ds .pn-quem-brilho { display: none; }
+
+/* a folga é MARGEM da barra, não padding da caixa: a caixa é a régua das
+   container queries, e padding nela fazia 1280px medirem 1248 (a navegação sumia) */
+.ds .pn-topo-caixa--pilula .pn-topo {
+  margin: 12px 16px 4px;
+  height: 60px;
+  gap: 8px;
+  padding: 0 8px;
+  border-radius: var(--ds-radius-pill);
+  background: var(--ds-surface-card);
+  box-shadow: var(--ds-edge), 0 12px 32px rgb(0 0 0 / 0.35);
+}
+.ds .pn-topo-caixa--pilula .pn-marca-circulo {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--ds-surface-raised);
+  box-shadow: var(--ds-edge);
+}
+/* a palavra sai da vista, mas não do leitor de tela */
+.ds .pn-topo-caixa--pilula .pn-marca-nome { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.ds .pn-topo-caixa--pilula .pn-marca--botao { gap: 4px; padding: 0 10px 0 0; margin-left: 0; border-radius: var(--ds-radius-pill); }
+
+.ds .pn-topo-caixa--pilula .pn-nav { gap: 2px; margin-left: 24px; }
+.ds .pn-topo-caixa--pilula .pn-nav a {
+  position: relative;
+  padding: 10px 16px;
+  background: none;
+  font-size: var(--ds-text-sm);
+  text-decoration: none;
+  outline: none;
+}
+.ds .pn-topo-caixa--pilula .pn-nav a[aria-current="page"] { background: none; color: var(--ds-text-primary); }
+.ds .pn-topo-caixa--pilula .pn-nav a:focus-visible .pn-realce { box-shadow: 0 0 0 2px var(--ds-nexo-line); }
+.ds .pn-nav-texto { position: relative; }
+.ds .pn-realce { position: absolute; inset: 0; border-radius: var(--ds-radius-pill); background: rgb(255 255 255 / 0.07); }
+
+/* a busca encolhe para o ícone e o atalho: a pílula da direita é a conta */
+.ds .pn-topo-caixa--pilula .pn-busca { min-width: 0; height: 44px; padding: 0 10px 0 14px; background: rgb(255 255 255 / 0.04); box-shadow: none; }
+.ds .pn-topo-caixa--pilula .pn-busca:hover { background: rgb(255 255 255 / 0.07); }
+.ds .pn-topo-caixa--pilula .pn-busca-texto { display: none; }
+.ds .pn-topo-caixa--pilula .pn-sino { width: 44px; height: 44px; border-radius: 50%; }
+.ds .pn-topo-caixa--pilula .pn-sino i { top: 12px; right: 12px; box-shadow: 0 0 0 2px var(--ds-surface-card); }
+
+.ds .pn-topo-caixa--pilula .pn-quem {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  height: 44px;
+  gap: 10px;
+  padding: 0 16px 0 8px;
+  background: var(--ds-action-bg);
+  box-shadow: none;
+  color: var(--ds-action-fg);
+  font-weight: 500;
+}
+.ds .pn-topo-caixa--pilula .pn-quem:hover,
+.ds .pn-topo-caixa--pilula .pn-quem[aria-expanded="true"] { background: var(--ds-action-bg-hover); }
+.ds .pn-topo-caixa--pilula .pn-quem small { display: none; }
+.ds .pn-topo-caixa--pilula .pn-quem-seta { color: color-mix(in srgb, var(--ds-action-fg) 55%, transparent); }
+.ds .pn-topo-caixa--pilula .pn-quem:focus-visible { outline: 2px solid var(--ds-nexo); outline-offset: 2px; }
+.ds .pn-topo-caixa--pilula .pn-quem-brilho {
+  display: block;
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  opacity: 0;
+  pointer-events: none;
+  background: radial-gradient(110px circle at var(--mx, 50%) var(--my, 50%), color-mix(in srgb, var(--ds-nexo) 70%, transparent), transparent 70%);
+  filter: blur(10px);
+  transition: opacity var(--ds-dur-feedback);
+}
+.ds .pn-topo-caixa--pilula .pn-quem:hover .pn-quem-brilho { opacity: 1; }
+
+@container topo (max-width: 599px) {
+  .ds .pn-topo-caixa--pilula .pn-topo { margin: 8px 8px 4px; gap: 6px; padding: 0 6px; }
+  .ds .pn-topo-caixa--pilula .pn-quem { padding: 0 8px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ds .pn-realce { transition: none; }
+}
+.ds .pn-topo-caixa--pilula .pn-marca--botao .pn-quem-seta { color: var(--ds-text-secondary); }
