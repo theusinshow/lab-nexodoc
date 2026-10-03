@@ -9,6 +9,7 @@
 import assert from "node:assert/strict";
 
 import { aplicarFolhaManual, reconcileByPageOrder, type SheetItem } from "../server/nexo/reconcile-sheets.ts";
+import { resolveSheetNumbers, serieDoCodigo } from "../server/nexo/parse-filename.ts";
 
 let passed = 0;
 function test(name: string, fn: () => void) {
@@ -92,6 +93,21 @@ test("folhaManual inválido é ignorado (volta a valer o carimbo)", () => {
 test("folhaManual não inventa folha onde a resolução achou nada", () => {
   // Null continua null sem correção — a folha some da LD, e é o certo.
   assert.deepEqual(aplicarFolhaManual([null, null], [undefined, 3]), [null, 3]);
+});
+
+test("série pelo código do carimbo, sem número nem revisão", () => {
+  assert.equal(serieDoCodigo("017_26_est_fnd_002_a"), "017_26_est_fnd");
+  assert.equal(serieDoCodigo("017_26_est_014_b"), "017_26_est");
+  assert.equal(serieDoCodigo(null), "");
+});
+
+test("PDF de volume com duas séries: 01-04 de fundação e 01-24 de estrutural não se renumeram", () => {
+  // O volume 6 do 017-26 (03/10/2026): capa e separatrizes antes, as 4 de FND
+  // nas páginas 4-7, o estrutural a partir da 10. A repetição 01..04 é legítima.
+  const arq = "017_26_vol_6_est.pdf";
+  const fnd = [1, 2, 3, 4].map((n) => ({ fileName: arq, pageNumber: 3 + n, arquivo: `017_26_est_fnd_00${n}_a`, folha: n }));
+  const est = Array.from({ length: 24 }, (_, k) => ({ fileName: arq, pageNumber: 10 + k, arquivo: `017_26_est_${String(k + 1).padStart(3, "0")}_b`, folha: k + 1 }));
+  assert.deepEqual(resolveSheetNumbers([...fnd, ...est]), [1, 2, 3, 4, ...Array.from({ length: 24 }, (_, k) => k + 1)]);
 });
 
 console.log(`\n${passed} teste(s) passaram.`);

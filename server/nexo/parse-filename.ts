@@ -197,13 +197,34 @@ export function resolveSheetNumbersComOrigem(
   });
 }
 
+/**
+ * A SÉRIE de uma prancha pelo código do carimbo, sem o número e sem a revisão:
+ * `017_26_est_fnd_002_a` → `017_26_est_fnd`; `017_26_est_014_b` → `017_26_est`.
+ * Sem código, vazio — essas folhas ficam juntas, como sempre ficaram.
+ */
+export function serieDoCodigo(arquivo: string | null | undefined): string {
+  const tokens = (arquivo ?? "").trim().toLowerCase().split(/[_\s-]+/).filter(Boolean);
+  if (tokens.length && /^[a-z]$/.test(tokens[tokens.length - 1])) tokens.pop();
+  if (tokens.length && /^\d{1,3}$/.test(tokens[tokens.length - 1])) tokens.pop();
+  return tokens.join("_");
+}
+
 export function resolveSheetNumbers(selos: SeloSheetInput[]): (number | null)[] {
   const candidates = selos.map((s) =>
     sheetNumberFromSelo({ arquivo: s.arquivo, fileName: s.fileName, folha: s.folha }),
   );
+  /*
+   * O GRUPO É O ARQUIVO **E A SÉRIE** (03/10/2026). Um PDF de volume traz mais
+   * de uma série de pranchas: o volume 6 do 017-26 tem as fundações (01 a 04 de
+   * 04, `017_26_est_fnd_00N_a`) e o estrutural (01 a 24 de 24,
+   * `017_26_est_0NN_b`) no mesmo arquivo. Agrupadas juntas, as folhas 01 a 04
+   * apareciam duas vezes, a reconciliação tomava a repetição por erro de OCR e
+   * renumerava tudo pela página — as quatro de fundação ficavam sem número e o
+   * estrutural andava três casas. Cada série reconcilia sozinha.
+   */
   const byFile = new Map<string, number[]>();
   selos.forEach((s, i) => {
-    const key = s.fileName || "";
+    const key = `${s.fileName || ""}|${serieDoCodigo(s.arquivo)}`;
     const arr = byFile.get(key);
     if (arr) arr.push(i);
     else byFile.set(key, [i]);

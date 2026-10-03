@@ -129,6 +129,8 @@
   --ds-disc-cli: #c99ab8;
   --ds-disc-ter: #c4a58f;
   --ds-disc-pai: #a3bd8a;
+  /* Fundações (03/10/2026): do grupo estrutural, mas com cor própria — o volume do estrutural abre com ela. */
+  --ds-disc-fnd: #c2ad86;
   /* as quatro que não tinham cor */
   --ds-disc-cab: #d6a472;
   --ds-disc-gas: #86c4a8;

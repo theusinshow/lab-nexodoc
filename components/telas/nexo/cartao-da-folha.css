@@ -49,3 +49,10 @@
 .ds .nx-folha-avulsa { margin: 0; padding: 2px 6px 3px; font-family: var(--ds-font-mono); font-size: 9px; color: var(--ds-text-tertiary); }
 .ds .nx-folha-avulsa--sem-codigo { color: var(--ds-sev-decide); }
 .ds .nx-folha > .mt-1 { margin: 0; padding: 4px 6px 6px; background: var(--ds-surface-raised); }
+
+/* O TOM DA DISCIPLINA (03/10/2026): um véu da cor no fundo, a borda puxando para
+   ela e um fio fino no topo. Leve o bastante para o texto continuar sendo o que
+   se lê; forte o bastante para FND e EST se separarem no mesmo volume. */
+.ds .nx-folha.nx-folha--disc { background: color-mix(in srgb, var(--dc-cor) 9%, var(--ds-surface-raised)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dc-cor) 32%, var(--ds-line-strong)), inset 0 2px 0 0 color-mix(in srgb, var(--dc-cor) 75%, transparent); }
+.ds .nx-folha.nx-folha--disc .ct-sigla { color: color-mix(in srgb, var(--dc-cor) 80%, var(--ds-text-secondary)); }
+.ds .nx-folha.nx-folha--disc > .mt-1 { background: color-mix(in srgb, var(--dc-cor) 9%, var(--ds-surface-raised)); }

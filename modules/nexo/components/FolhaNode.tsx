@@ -235,7 +235,11 @@ export function FolhaNode({ data, selected }: NodeProps<Node<FolhaNodeData>>) {
     data.origemDoNumero === "ordem" ? <span className="nx-folha-ordem" aria-label="número deduzido pela ordem das páginas" /> : null;
 
   const corpo = (
-    <div className={`ct ct--carimbo ct--${distancia} nx-folha${selected ? " ct--sel" : ""}${data.editado ? " nx-folha--editada" : ""}`}>
+    <div
+      className={`ct ct--carimbo ct--${distancia} nx-folha${cor ? " nx-folha--disc" : ""}${selected ? " ct--sel" : ""}${data.editado ? " nx-folha--editada" : ""}`}
+      // A cor da disciplina tinge o cartão de leve (03/10/2026): os blocos se separam de relance.
+      style={cor ? { ["--dc-cor" as string]: cor } : undefined}
+    >
       {distancia === "longe" ? (
         <div className="ct-carimbo-longe">
           <span className={`ct-grande${semNumero ? " ct-falta" : ""}`} title={fonteDoNumero}>
