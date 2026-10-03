@@ -21,7 +21,7 @@ import "../admin/pessoas-banco.css";
  * confirmação, a página que não existe e a tela estreita têm palco próprio.
  */
 
-export type SituacaoPecas = "paleta" | "atalhos" | "aviso" | "menu" | "sino" | "pular" | "confirmacao" | "404" | "erro" | "estreita";
+export type SituacaoPecas = "paleta" | "atalhos" | "aviso" | "menu" | "sino" | "pular" | "confirmacao" | "404" | "erro" | "estreita" | "pilula" | "pilula-estreita";
 
 function digitando(alvo: EventTarget | null) {
   const el = alvo as HTMLElement | null;
@@ -81,6 +81,7 @@ export function TelaPecas({ situacao }: { situacao: SituacaoPecas }) {
     onAtalhos: abrirAtalhos,
     aberto: situacao === "menu" ? ("menu" as const) : situacao === "sino" ? ("sino" as const) : null,
     pularVisivel: situacao === "pular",
+    estilo: situacao === "pilula" || situacao === "pilula-estreita" ? ("pilula" as const) : pai.estilo,
   };
 
   if (situacao === "confirmacao")
@@ -139,6 +140,12 @@ export function TelaPecas({ situacao }: { situacao: SituacaoPecas }) {
     );
 
   if (situacao === "estreita") return <Estreita />;
+  if (situacao === "pilula-estreita")
+    return (
+      <ControleDoTopo.Provider value={controle}>
+        <Estreita />
+      </ControleDoTopo.Provider>
+    );
 
   return (
     <ControleDoTopo.Provider value={controle}>

@@ -13,6 +13,8 @@ export const SITUACOES: { id: SituacaoPecas; nome: string; dica: string }[] = [
   { id: "confirmacao", nome: "Confirmação destrutiva", dica: "A regra dos três pesos, na tela e nunca no diálogo do navegador: some das listas (frase e verbo), apaga de verdade (faixa vermelha), apaga muito e além do banco (vai/fica e a palavra)." },
   { id: "404", nome: "Página não encontrada", dica: "O endereço pedido, por que pode não existir (inclusive projeto excluído) e a saída: buscar o código na paleta já preenchida, ou ir para Projetos." },
   { id: "erro", nome: "Página que não carregou", dica: "O app não tem página de erro própria. Esta usa a frase de lib/estado-da-carga.ts para falha de rede: diz o endereço, que nada foi alterado, e oferece Tentar de novo." },
+  { id: "pilula", nome: "Barra em pílula", dica: "Proposta (ref.: Navbar Interaction, 03/10): a barra solta da borda, em cápsula; o orbe num círculo; os destinos em texto, com o realce que mora no atual e desliza para onde o mouse ou o Tab está; a busca vira ícone com Ctrl K; a conta vira a pílula clara, com um brilho violeta que segue o ponteiro. Compare com qualquer outra situação, que usa a barra atual." },
+  { id: "pilula-estreita", nome: "Barra em pílula, estreita", dica: "A mesma pílula em 1280, 1100, 760 e 390px: abaixo de 1280 o orbe abre o cartão de navegação, como na barra atual." },
   { id: "estreita", nome: "Tela estreita", dica: "O Topo em 1280, 1100, 760 e 390px: nada quebra linha; a navegação vai para o menu, a busca vira ícone. E o portão das telas densas (admin) num telefone." },
 ];
 

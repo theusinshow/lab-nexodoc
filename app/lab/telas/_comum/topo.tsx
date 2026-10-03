@@ -1,8 +1,8 @@
 "use client";
 
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, LayoutGroup, motion } from "motion/react";
 import { ArrowRight, Bell, ChevronDown, FolderOpen, Keyboard, LayoutGrid, LifeBuoy, ListChecks, LogOut, MessageSquare, Repeat2, Search, ShieldCheck } from "lucide-react";
-import { createContext, useCallback, useContext, useEffect, useRef, useState, type KeyboardEvent as KE, type ReactNode, type RefObject } from "react";
+import { createContext, useCallback, useContext, useEffect, useId, useRef, useState, type KeyboardEvent as KE, type ReactNode, type RefObject } from "react";
 
 import { Avatar, Botao, Orbe, Tecla } from "@/components/ds/basicos";
 import { USUARIO } from "@/lib/design-lab/amostras";
@@ -18,7 +18,14 @@ import "./topo.css";
  * Quem está em volta da tela (a vitrine das peças) liga o Topo sem que cada
  * tela precise repassar props: Ctrl K, atalhos e um painel já aberto.
  */
-export const ControleDoTopo = createContext<{ onBusca?: () => void; onAtalhos?: () => void; aberto?: "menu" | "sino" | null; pularVisivel?: boolean }>({});
+export const ControleDoTopo = createContext<{
+  onBusca?: () => void;
+  onAtalhos?: () => void;
+  aberto?: "menu" | "sino" | null;
+  pularVisivel?: boolean;
+  /** "pilula": a barra solta, em cápsula (ref.: Navbar Interaction, 03/10/2026). Em comparação; o padrão segue "faixa". */
+  estilo?: "faixa" | "pilula";
+}>({});
 
 const DESTINOS = ["Painel", "Nexo", "Projetos", "Achados", "Ajuda", "Administração"] as const;
 type Destino = (typeof DESTINOS)[number];
@@ -54,8 +61,9 @@ export function Topo({
   const ir = useIr();
   onBusca ??= ctx.onBusca;
   onAtalhos ??= ctx.onAtalhos;
+  const pilula = ctx.estilo === "pilula";
   return (
-    <div className="pn-topo-caixa">
+    <div className={`pn-topo-caixa${pilula ? " pn-topo-caixa--pilula" : ""}`}>
       <a href="#conteudo" className={`pn-pular${ctx.pularVisivel ? " pn-pular--visivel" : ""}`}>
         Pular para o conteúdo
         <Tecla>↵</Tecla>
@@ -63,17 +71,23 @@ export function Topo({
       <header className="pn-topo">
         {/* larga: a marca leva ao Painel; estreita (abaixo de 1280): a marca abre o cartão de navegação */}
         <a className="pn-marca pn-marca--link" href="#inicio" onClick={(e) => (e.preventDefault(), ir("inicio"))}>
-          <Orbe tamanho={22} estado={trabalhando ? "trabalhando" : "repouso"} />
+          <span className="pn-marca-circulo">
+            <Orbe tamanho={22} estado={trabalhando ? "trabalhando" : "repouso"} />
+          </span>
           <span className="pn-marca-nome">Nexo</span>
         </a>
         <CartaoDeNavegacao atual={atual} trabalhando={trabalhando} />
-        <nav className="pn-nav" aria-label="Principal">
-          {DESTINOS.map((n) => (
-            <a key={n} href={`#${DESTINO_DA_BARRA[n][0]}`} aria-current={n === atual ? "page" : undefined} onClick={(e) => (e.preventDefault(), ir(...DESTINO_DA_BARRA[n]))}>
-              {n}
-            </a>
-          ))}
-        </nav>
+        {pilula ? (
+          <NavComRealce atual={atual} />
+        ) : (
+          <nav className="pn-nav" aria-label="Principal">
+            {DESTINOS.map((n) => (
+              <a key={n} href={`#${DESTINO_DA_BARRA[n][0]}`} aria-current={n === atual ? "page" : undefined} onClick={(e) => (e.preventDefault(), ir(...DESTINO_DA_BARRA[n]))}>
+                {n}
+              </a>
+            ))}
+          </nav>
+        )}
         {busca ? (
           <button type="button" className="pn-busca" onClick={onBusca} aria-label="Buscar obra, código ou ação (Ctrl K)">
             <Search size={15} />
@@ -87,6 +101,41 @@ export function Topo({
         <MenuDaConta atual={atual} onAtalhos={onAtalhos} abertoInicial={ctx.aberto === "menu"} />
       </header>
     </div>
+  );
+}
+
+/*
+ * OS DESTINOS COM REALCE (barra em pílula, 03/10/2026). Uma cápsula clara mora
+ * no destino atual e desliza para onde o mouse ou o foco está; ao sair, volta
+ * para o atual. Só se move em resposta ao gesto, nunca sozinha. O `LayoutGroup`
+ * com id próprio impede que duas barras na mesma página (a tela estreita mostra
+ * quatro) troquem o realce entre si.
+ */
+function NavComRealce({ atual }: { atual: Destino | null }) {
+  const ir = useIr();
+  const { dur } = useTempo();
+  const grupo = useId();
+  const [sob, setSob] = useState<Destino | null>(null);
+  const realce = sob ?? atual;
+  return (
+    <LayoutGroup id={grupo}>
+      <nav className="pn-nav" aria-label="Principal" onPointerLeave={() => setSob(null)}>
+        {DESTINOS.map((n) => (
+          <a
+            key={n}
+            href={`#${DESTINO_DA_BARRA[n][0]}`}
+            aria-current={n === atual ? "page" : undefined}
+            onPointerEnter={() => setSob(n)}
+            onFocus={() => setSob(n)}
+            onBlur={() => setSob(null)}
+            onClick={(e) => (e.preventDefault(), ir(...DESTINO_DA_BARRA[n]))}
+          >
+            {n === realce && <motion.span layoutId="pn-realce" className="pn-realce" transition={{ duration: dur("state"), ease: [...CURVA.out] }} aria-hidden />}
+            <span className="pn-nav-texto">{n}</span>
+          </a>
+        ))}
+      </nav>
+    </LayoutGroup>
   );
 }
 
@@ -137,7 +186,9 @@ function CartaoDeNavegacao({ atual, trabalhando }: { atual: Destino | null; trab
   return (
     <div ref={p.raiz} className="pn-conta pn-marca-raiz">
       <button type="button" className="pn-marca pn-marca--botao" aria-haspopup="menu" aria-label="Navegação" {...p.gatilho}>
-        <Orbe tamanho={22} estado={trabalhando ? "trabalhando" : "repouso"} />
+        <span className="pn-marca-circulo">
+          <Orbe tamanho={22} estado={trabalhando ? "trabalhando" : "repouso"} />
+        </span>
         <span className="pn-marca-nome">Nexo</span>
         <motion.span className="pn-quem-seta" animate={{ rotate: p.aberto ? 180 : 0 }} transition={{ duration: dur("state"), ease: [...CURVA.out] }}>
           <ChevronDown size={14} />
@@ -337,7 +388,19 @@ function MenuDaConta({ atual, onAtalhos, abertoInicial }: { atual: Destino | nul
   const ir = useIr();
   return (
     <div ref={p.raiz} className="pn-conta">
-      <button type="button" className="pn-quem" aria-haspopup="menu" {...p.gatilho}>
+      <button
+        type="button"
+        className="pn-quem"
+        aria-haspopup="menu"
+        {...p.gatilho}
+        // O brilho da barra em pílula segue o ponteiro (só existe lá; na faixa o CSS não o desenha).
+        onPointerMove={(e) => {
+          const r = e.currentTarget.getBoundingClientRect();
+          e.currentTarget.style.setProperty("--mx", `${e.clientX - r.left}px`);
+          e.currentTarget.style.setProperty("--my", `${e.clientY - r.top}px`);
+        }}
+      >
+        <span className="pn-quem-brilho" aria-hidden />
         <Avatar iniciais={USUARIO.iniciais} />
         <span className="pn-quem-texto">
           {USUARIO.nome}
