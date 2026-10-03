@@ -814,6 +814,31 @@ function isCoberturaTotalEnabled() {
   return process.env.NEXODOC_AUDIT_COBERTURA_TOTAL === "true";
 }
 
+/*
+ * O DESENHO POR DISCIPLINAS — experimento de 03/10/2026, só no Profundo.
+ *
+ * O tempo do Profundo é quase todo a SAÍDA da leitura global (20k tokens a
+ * ~70 tok/s no 027-24), porque ela faz dois trabalhos: o interno de cada
+ * capítulo e o que cruza capítulos. Aqui eles se separam e correm juntos:
+ *
+ *   - os blocos (o mesmo agrupamento da cobertura total) ficam com o interno;
+ *   - a global lê o documento inteiro e procura SÓ o que cruza capítulos — o
+ *     prompt é o da passada de coerência, que já existia para documento gigante.
+ *
+ * Medido na sonda (`scripts/sonda-global-de-cruzamento.ts`, 027-24): a global
+ * de cruzamento escreveu 6.913 tokens em 69s, contra 20.129 em 275s, e pegou os
+ * três cruzamentos alcançáveis do gabarito. Ver `docs/benchmarks/sondas/`.
+ *
+ * Desligado, nada muda. A global de cruzamento não devolve a síntese por
+ * capítulo, então a reauditoria deste parecer não terá resumos para herdar.
+ */
+function isDesenhoPorDisciplinas(analysisLevel: AnalysisLevel) {
+  return analysisLevel === "deep" && process.env.NEXODOC_AUDIT_DESENHO === "disciplinas";
+}
+
+/** Tamanho do bloco no desenho por disciplinas — ver `deepAnalyzeFile`. */
+const GRUPO_POR_DISCIPLINA_CHARS = 28_000;
+
 function getMaxChunksPerFile(analysisLevel: AnalysisLevel) {
   const value = numeroDoControle("limites.blocosPorArquivo") ?? Number.NaN;
   // Sem teto na cobertura total: o teto É o buraco que ela existe para fechar.
@@ -2461,6 +2486,8 @@ async function analyzeFileGloballyWithModel(args: {
    * vazio, e a rede de arrasto varre o documento que ninguém leu.
    */
   paginasLidas?: Set<number>;
+  /** Desenho por disciplinas: procura só o que cruza capítulos, sem síntese. */
+  soCruzamento?: boolean;
 }) {
   const profile = getPrimaryExecutionProfile(args.auditMode, args.analysisLevel, "global");
   const model = profile.model;
@@ -2510,8 +2537,10 @@ async function analyzeFileGloballyWithModel(args: {
           args.analysisLevel === "deep"
             ? getDeepGlobalMaxOutputTokens()
             : getStandardGlobalMaxOutputTokens(),
-        text: { format: auditGlobalResponseFormat },
-        input: getGlobalFilePrompt(args),
+        text: { format: args.soCruzamento ? auditFindingsResponseFormat : auditGlobalResponseFormat },
+        input: args.soCruzamento
+          ? getCoherencePrompt({ ...args, textoDoDocumento: contextoDoDocumento(args) })
+          : getGlobalFilePrompt(args),
       },
       metadata: {
         fileName: args.fileName,
@@ -2519,6 +2548,7 @@ async function analyzeFileGloballyWithModel(args: {
         pages: args.extracted.pageCount,
         analysisLevel: args.analysisLevel,
         auditMode: args.auditMode,
+        ...(args.soCruzamento ? { desenho: "disciplinas" } : {}),
       },
       conversationId: args.conversationId,
       userEmail: args.userEmail,
@@ -2601,6 +2631,11 @@ function getCoherencePrompt(args: {
   userMessage: string;
   projectName: string;
   extracted: ExtractedPdf;
+  /**
+   * O texto já montado — o desenho por disciplinas manda o mesmo contexto da
+   * leitura global (inteiro, com o reuso), não o recorte de 400k desta passada.
+   */
+  textoDoDocumento?: string;
 }) {
   return `
 Você é um auditor documental sênior. Leia o DOCUMENTO INTEIRO abaixo de uma vez e procure APENAS incoerências que exigem enxergar capítulos distantes ao mesmo tempo — o tipo de erro que passa despercebido numa leitura por blocos:
@@ -2625,7 +2660,7 @@ Solicitação do usuário: ${args.userMessage}
 Responda APENAS JSON válido no formato {"findings":[{ "prioridade": "...", "pagina": "...", "capitulo": "...", "local": "...", "tipo": "...", "descricao": "...", "evidencia": "...", "termo_busca": "...", "categoria": "...", "referencia_comparada": "...", "conflito": "...", "sugestao_correcao": "...", "confianca": "..." }]}. Se nada, {"findings":[]}.
 
 TEXTO DO DOCUMENTO:
-${buildWholeDocumentContext(args.extracted)}
+${args.textoDoDocumento ?? buildWholeDocumentContext(args.extracted)}
 `.trim();
 }
 
@@ -3178,7 +3213,10 @@ async function deepAnalyzeFile(args: {
    * deixava o documento sem uma linha lida por IA no Profundo, sem aviso. Um
    * achado de regra acrescenta ao parecer; nunca decide o que a IA deixa de ler.
    */
-  const coberturaTotal = isCoberturaTotalEnabled();
+  // O desenho por disciplinas devolve os blocos ao Profundo pelo mesmo caminho
+  // da cobertura total: o agrupamento, o teto e o aviso de corte são os dela.
+  const porDisciplinas = isDesenhoPorDisciplinas(args.analysisLevel);
+  const coberturaTotal = isCoberturaTotalEnabled() || porDisciplinas;
   const chunkLimit =
     args.analysisLevel === "deep" && !coberturaTotal
       ? 0
@@ -3191,8 +3229,13 @@ async function deepAnalyzeFile(args: {
    * derruba o custo em 3,3× sem tirar um caractere da leitura.
    */
   const capitulos = chunkPdfByChapter(args.file.extracted);
+  /*
+   * Por disciplinas o bloco é maior: ele é o dono do interno de um trecho
+   * inteiro, e 10k partia o 017-26 em 38 blocos — o teto de 24 cortava a
+   * leitura na página 69 de 132 e o parecer saía parcial. Com 28k são ~12.
+   */
   const blocosDisponiveis = coberturaTotal
-    ? agruparBlocosParaLeitura(capitulos, CHUNK_GROUP_CHARS)
+    ? agruparBlocosParaLeitura(capitulos, porDisciplinas ? GRUPO_POR_DISCIPLINA_CHARS : CHUNK_GROUP_CHARS)
     : capitulos;
   /*
    * O REUSO CORTA AQUI, e não no `chunkLimit`: o teto é orçamento, o plano é
@@ -3358,42 +3401,57 @@ async function deepAnalyzeFile(args: {
   const sinteseDesteArquivo: { capitulo: string; resumo: string }[] = [];
   // Vazio até a global terminar bem — é o que a rede de arrasto lê lá embaixo.
   const paginasLidasPelaGlobal = new Set<number>();
-  const globalFindings = await analyzeFileGloballyWithModel({
-    auditId: args.auditId,
-    auditMode: args.auditMode,
-    analysisLevel: args.analysisLevel,
-    userMessage: args.userMessage,
-    projectName: args.projectName,
-    learningContext: args.learningContext,
-    gabarito: args.gabarito,
-    fileName: args.file.file.name,
-    fileType: args.file.fileType,
-    extracted: args.file.extracted,
-    conversationId: args.conversationId,
-    userEmail: args.userEmail,
-    degradacoes: args.degradacoes,
-    sintese: sinteseDesteArquivo,
-    hashesHerdados: args.hashesHerdados,
-    resumoPorHash: args.resumoPorHash,
-    paginasLidas: paginasLidasPelaGlobal,
-  });
-  args.sinteses?.set(args.file.file.name, sinteseDesteArquivo);
-  console.log(
-    `[audit] ${args.file.file.name}: leitura global concluida em ${Math.round((Date.now() - globalStartedAt) / 1000)}s com ${globalFindings.length} achado(s)`,
-  );
-  achadosAteAqui.push(...globalFindings);
-  marco({
-    passada: "global",
-    estado: "fim",
-    detalhe: `${globalFindings.length} achado(s)`,
-    foto: foto(),
-  });
+  const leituraGlobal = (async () => {
+    const achados = await analyzeFileGloballyWithModel({
+      auditId: args.auditId,
+      auditMode: args.auditMode,
+      analysisLevel: args.analysisLevel,
+      userMessage: args.userMessage,
+      projectName: args.projectName,
+      learningContext: args.learningContext,
+      gabarito: args.gabarito,
+      fileName: args.file.file.name,
+      fileType: args.file.fileType,
+      extracted: args.file.extracted,
+      conversationId: args.conversationId,
+      userEmail: args.userEmail,
+      degradacoes: args.degradacoes,
+      sintese: sinteseDesteArquivo,
+      hashesHerdados: args.hashesHerdados,
+      resumoPorHash: args.resumoPorHash,
+      paginasLidas: paginasLidasPelaGlobal,
+      soCruzamento: porDisciplinas,
+    });
+    args.sinteses?.set(args.file.file.name, sinteseDesteArquivo);
+    console.log(
+      `[audit] ${args.file.file.name}: leitura global${porDisciplinas ? " de cruzamento" : ""} concluida em ${Math.round((Date.now() - globalStartedAt) / 1000)}s com ${achados.length} achado(s)`,
+    );
+    achadosAteAqui.push(...achados);
+    marco({
+      passada: "global",
+      estado: "fim",
+      detalhe: `${achados.length} achado(s)`,
+      foto: foto(),
+    });
+    return achados;
+  })();
+  /*
+   * Por disciplinas, a global corre AO LADO dos blocos e só é esperada depois
+   * deles — os blocos não leem nada do que ela devolve. Até lá a promessa fica
+   * sem ninguém esperando, e uma rejeição nesse intervalo derrubaria o processo
+   * como "unhandled rejection"; o `catch` vazio só marca que há quem trate. O
+   * `await` lá embaixo continua recebendo o erro.
+   */
+  leituraGlobal.catch(() => {});
+  if (!porDisciplinas) await leituraGlobal;
 
   // Passada de coerência — só faz sentido quando o documento é MAIOR que a janela
   // da leitura global (senão a global já leu tudo e a coerência seria redundante,
   // dobrando o custo da chamada grande). Com a A1, o Profundo lê o doc inteiro,
   // então isto vira fallback só para documentos gigantes acima da janela.
+  // Por disciplinas, a própria global já é esta passada.
   const shouldRunCoherencePass =
+    !porDisciplinas &&
     isCoherencePassEnabled() &&
     args.analysisLevel === "deep" &&
     args.file.extracted.text.length > getGlobalContextChars(args.analysisLevel);
@@ -3476,6 +3534,7 @@ async function deepAnalyzeFile(args: {
     },
   );
   const modelFindings = modelFindingGroups.flat();
+  const globalFindings = await leituraGlobal;
 
   console.log(
     `[audit] ${args.file.file.name}: analise concluida em ${Math.round((Date.now() - startedAt) / 1000)}s com ${mandatoryGuardFindings.length + withinDocumentIdentityFindings.length + coherenceFindings.length + inferredIdentityFindings.length + ruleBasedReviewFindings.length + identityFindings.length + globalFindings.length + coherenceModelFindings.length + modelFindings.length} achado(s) antes de deduplicar`,
