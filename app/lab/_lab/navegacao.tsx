@@ -13,7 +13,8 @@ import { useLab } from "./contexto";
 const FASES: { href: string; rotulo: string; fase: string; pronta: boolean; grupo?: string }[] = [
   { href: "/lab", rotulo: "Começar aqui", fase: "", pronta: true },
   { href: "/prototipo", rotulo: "Protótipo navegável (app inteiro)", fase: "", pronta: true, grupo: "Juntar tudo" },
-  { href: "/lab/telas/nexo-auditoria", rotulo: "Nexo: a auditoria na conversa", fase: "", pronta: true, grupo: "Em andamento" },
+  { href: "/lab/telas/historico", rotulo: "Histórico de conversas", fase: "", pronta: true, grupo: "Em andamento" },
+  { href: "/lab/telas/nexo-auditoria", rotulo: "Nexo: a auditoria na conversa", fase: "", pronta: true },
   { href: "/lab/telas/orbe", rotulo: "Orbe: violeta → coral", fase: "", pronta: true },
   { href: "/lab/telas/admin", rotulo: "Administração", fase: "", pronta: true, grupo: "Telas para aprovar" },
   { href: "/lab/telas/ajuda", rotulo: "Ajuda", fase: "", pronta: true },

@@ -1,8 +1,10 @@
 "use client";
 
 import { Bell, BellRing, Check } from "lucide-react";
+import { motion } from "motion/react";
 import { useEffect, useRef, useState, type ButtonHTMLAttributes, type ReactNode } from "react";
 
+import { useTempo } from "@/lib/ds/tempo";
 import "./micro.css";
 
 /*
@@ -231,5 +233,53 @@ export function SinoDeAviso({ ligado, onTroca, rotulo = "Me avise quando termina
       </span>
       {ligado ? ligadoRotulo : rotulo}
     </button>
+  );
+}
+
+/* ------------------------------------------------------------------------ */
+/* MARCA DE ESTADO (ref.: Status Mark)                                      */
+/* ------------------------------------------------------------------------ */
+
+export type EstadoDaMarca = "pendente" | "rodando" | "feito" | "atencao" | "falhou";
+
+/**
+ * Como uma tarefa terminou, num sinal só: o anel tracejado espera, o arco gira
+ * enquanto há trabalho, o visto fecha, o ponto de exclamação pede decisão, a
+ * cruz barra. A cor vem do sinal (`--marca`), e o desenho do traço acontece
+ * QUANDO O ESTADO MUDA — nunca ao montar a lista, que viraria uma coluna inteira
+ * se desenhando sozinha.
+ */
+export function MarcaDeEstado({ estado, tamanho = 14, rotulo }: { estado: EstadoDaMarca; tamanho?: number; rotulo?: string }) {
+  const { dur } = useTempo();
+  // Na montagem o traço já está desenhado; ele só se desenha quando o estado muda.
+  const [inicial] = useState(estado);
+  const desenho = {
+    initial: estado !== inicial ? { pathLength: 0, opacity: 0 } : (false as const),
+    animate: { pathLength: 1, opacity: 1 },
+    transition: { duration: dur("state") },
+  };
+  return (
+    <svg className={`ds-marca ds-marca--${estado}`} width={tamanho} height={tamanho} viewBox="0 0 24 24" role={rotulo ? "img" : undefined} aria-label={rotulo} aria-hidden={rotulo ? undefined : true}>
+      {estado === "pendente" ? (
+        <circle cx="12" cy="12" r="9" className="ds-marca-anel" pathLength={1} strokeDasharray="0.0625 0.0625" />
+      ) : estado === "rodando" ? (
+        <>
+          <circle cx="12" cy="12" r="9" className="ds-marca-trilho" />
+          <circle cx="12" cy="12" r="9" className="ds-marca-arco" pathLength={1} strokeDasharray="0.3 0.7" />
+        </>
+      ) : (
+        <>
+          <circle cx="12" cy="12" r="9" className="ds-marca-anel ds-marca-cheio" />
+          {estado === "feito" && <motion.path key="v" d="M8 12.4l2.7 2.6L16 9.6" className="ds-marca-traco" {...desenho} />}
+          {estado === "falhou" && <motion.path key="x" d="M9 9l6 6M15 9l-6 6" className="ds-marca-traco" {...desenho} />}
+          {estado === "atencao" && (
+            <>
+              <motion.path key="!" d="M12 7.5v5.5" className="ds-marca-traco" {...desenho} />
+              <circle cx="12" cy="16.4" r="1.1" className="ds-marca-ponto" />
+            </>
+          )}
+        </>
+      )}
+    </svg>
   );
 }
