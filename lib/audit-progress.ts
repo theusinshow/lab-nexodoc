@@ -16,6 +16,8 @@
  */
 
 /** Identidade estável de cada passada. A UI mapeia isto para o texto que mostra. */
+import type { FotoDosAchados } from "./foto-da-auditoria.ts";
+
 export type PassadaDaAuditoria =
   | "extracao"
   | "regras"
@@ -40,6 +42,16 @@ export interface MarcoDaAuditoria {
    * que só é conhecido no fim, confirma o que a interface já preparou.
    */
   orcamentoMs?: number;
+  /** Páginas do documento (no fim da abertura), para o mapa das páginas. */
+  paginas?: number;
+  /**
+   * Os blocos da leitura capítulo a capítulo, com as páginas e o estado de cada
+   * um — a foto inteira a cada marco dos blocos (eles rodam em paralelo e
+   * terminam fora de ordem).
+   */
+  blocos?: { n: number; de: number; ate: number; estado: "fila" | "lendo" | "feito" }[];
+  /** O que já se achou, acumulado (lib/foto-da-auditoria.ts). */
+  foto?: FotoDosAchados;
 }
 
 export type EmitirMarco = (marco: MarcoDaAuditoria) => void;

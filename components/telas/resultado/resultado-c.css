@@ -51,3 +51,6 @@
 .ds .rc-comparado .rs-delta--novo { color: var(--ds-nexo); }
 .ds .rc-lido { display: block; margin: 0; padding: 0 4px; font-size: var(--ds-text-2xs); line-height: 1.5; color: var(--ds-text-tertiary); }
 .ds .rc-lido .rs-link { display: flex; margin-top: 4px; }
+
+/* quando, por quem e quanto levou: a linha do cabeçalho do lab, no topo da coluna */
+.ds .rc-meta { margin: 0; padding: 0 2px; font-size: var(--ds-text-xs); color: var(--ds-text-tertiary); }

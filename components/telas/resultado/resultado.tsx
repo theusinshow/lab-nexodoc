@@ -19,11 +19,13 @@ import { CURVA } from "@/lib/ds/movimento";
 import { useTempo } from "@/lib/ds/tempo";
 import { resolverFonte, type FonteDoCatalogo } from "@/lib/fonte-da-evidencia";
 import type { TextoCorrigido } from "@/lib/texto-corrigido";
+import type { Nivel } from "@/lib/nivel-do-achado";
 
 import { FilaDeAchados } from "./fila";
 import { NoDocumento } from "./no-documento";
 import { RelatorioDoParecer } from "./relatorio";
-import { ResumoDoParecer } from "./resumo";
+import { ResumoDoParecer, type ComparadoComAnterior } from "./resumo";
+import { VisaoGeralDoParecer } from "./geral";
 import type { AchadoDaTela, ParecerVivo } from "./use-parecer-vivo";
 import { VisorDoMemorial } from "./visor";
 import "./resultado.css";
@@ -31,8 +33,8 @@ import "./documento.css";
 import "./embutido.css";
 
 const ease = (c: readonly number[]) => [...c] as [number, number, number, number];
-export type LeituraDoParecer = AuditView | "documento";
-const ORDEM: LeituraDoParecer[] = ["summary", "findings", "report", "documento"];
+export type LeituraDoParecer = AuditView | "documento" | "geral";
+const ORDEM: LeituraDoParecer[] = ["geral", "summary", "findings", "report", "documento"];
 
 export function ResultadoDoParecer({
   report,
@@ -44,6 +46,7 @@ export function ResultadoDoParecer({
   podeVerNoDocumento = false,
   achadoEmFoco,
   aoGerarTexto,
+  comparado,
 }: {
   report: AuditReport;
   parecer: ParecerVivo;
@@ -54,6 +57,8 @@ export function ResultadoDoParecer({
   podeVerNoDocumento?: boolean;
   achadoEmFoco?: string | null;
   aoGerarTexto?: (findingId: string, texto: TextoCorrigido) => void;
+  /** O que mudou desde a auditoria anterior desta conversa (o cartão "Desde 18/09" do lab). */
+  comparado?: ComparadoComAnterior | null;
 }) {
   const { dur } = useTempo();
   const [aberto, setAberto] = useState<string | null>(achadoEmFoco ?? null);
@@ -69,8 +74,18 @@ export function ResultadoDoParecer({
   }
 
   const temArquivo = (a: AchadoDaTela) => resolverFonte({ arquivo: a.estruturado.documento }, catalogo).tipo === "arquivo";
+  const [nivelDaFila, setNivelDaFila] = useState<Nivel | null>(null);
   const abrirNaFila = (chave?: string) => {
     if (chave) setAberto(chave);
+    setNivelDaFila(null);
+    setFilaKey((k) => k + 1);
+    onVista("findings");
+  };
+  /** A fila só com um nível, aberta no primeiro pendente dele (o clique no nível do resumo completo). */
+  const abrirNivelNaFila = (nivel: Nivel) => {
+    const primeiro = parecer.achados.find((a) => a.confirmado && a.nivel === nivel && !a.desfecho) ?? parecer.achados.find((a) => a.confirmado && a.nivel === nivel);
+    if (primeiro) setAberto(primeiro.chave);
+    setNivelDaFila(nivel);
     setFilaKey((k) => k + 1);
     onVista("findings");
   };
@@ -119,8 +134,11 @@ export function ResultadoDoParecer({
           exit="sai"
           transition={{ duration: dur("enter"), ease: ease(CURVA.out) }}
         >
+          {vista === "geral" && <VisaoGeralDoParecer report={report} parecer={parecer} onAbrir={abrirNaFila} onAbrirNivel={abrirNivelNaFila} />}
           {vista === "summary" && (
             <ResumoDoParecer
+              comparado={comparado ?? null}
+              onAbrirNivel={abrirNivelNaFila}
               report={report}
               parecer={parecer}
               temArquivo={temArquivo}
@@ -131,7 +149,7 @@ export function ResultadoDoParecer({
             />
           )}
           {vista === "findings" && (
-            <FilaDeAchados key={filaKey} parecer={parecer} auditId={auditId} catalogo={catalogo} inicial={aberto} onVerNoMemorial={setVisor} aoGerarTexto={aoGerarTexto} />
+            <FilaDeAchados key={filaKey} nivelInicial={nivelDaFila} parecer={parecer} auditId={auditId} catalogo={catalogo} inicial={aberto} onVerNoMemorial={setVisor} aoGerarTexto={aoGerarTexto} />
           )}
           {vista === "report" && <RelatorioDoParecer report={report} parecer={parecer} />}
           {vista === "documento" && <NoDocumento report={report} parecer={parecer} catalogo={catalogo} onVerNoMemorial={setVisor} onAbrir={(chave) => abrirNaFila(chave)} />}

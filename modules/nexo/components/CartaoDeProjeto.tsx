@@ -16,7 +16,7 @@ import { cidadeDoCliente } from "@/lib/cliente-do-projeto";
 import { ehDocumentoFinal, type CartaoDeProjeto as Cartao } from "../lib/cartoes-de-projeto";
 import { MarcaDaPrefeitura } from "./MarcaDaPrefeitura";
 
-function quando(ms: number, agora = Date.now()): string {
+export function quando(ms: number, agora = Date.now()): string {
   const min = Math.round((agora - ms) / 60_000);
   if (min < 1) return "agora";
   if (min < 60) return `${min} min`;
@@ -32,7 +32,7 @@ function quando(ms: number, agora = Date.now()): string {
  * coluna o nome se lê em caixa normal. Só na exibição: o dado fica como veio.
  */
 const MINUSCULAS = new Set(["de", "da", "do", "das", "dos", "e"]);
-function nomeProprio(texto: string) {
+export function nomeProprio(texto: string) {
   if (texto !== texto.toUpperCase()) return texto;
   return texto
     .toLowerCase()

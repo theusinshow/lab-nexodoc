@@ -13,6 +13,7 @@
  */
 
 import { X } from "lucide-react";
+import { useState } from "react";
 
 import { Botao, Girando } from "@/components/ds/basicos";
 import { contextoDaBarra } from "../lib/contexto-da-barra";
@@ -21,6 +22,35 @@ import { auditoriaDaConversa, useAuditoria } from "../state/auditoria-store";
 import { useConversation } from "../state/conversation-store";
 import type { ProjetoPedido } from "../lib/projeto-pedido";
 import { MarcaDaPrefeitura } from "./MarcaDaPrefeitura";
+
+/**
+ * CANCELAR PERGUNTA ANTES (o "Cancelar a auditoria?" do lab). Um clique no
+ * cabeçalho jogava fora minutos de análise já pagos; agora o botão abre a
+ * pergunta no mesmo lugar, e continuar auditando é o botão em evidência.
+ */
+function CancelarComConfirmacao({ cancelar }: { cancelar: () => void }) {
+  const [perguntando, setPerguntando] = useState(false);
+  if (!perguntando) {
+    return (
+      <Botao variante="quiet" tamanho="sm" onClick={() => setPerguntando(true)}>
+        <X size={13} aria-hidden /> Cancelar
+      </Botao>
+    );
+  }
+  return (
+    <span className="nx-cancelar" role="alertdialog" aria-label="Cancelar a auditoria">
+      <span>
+        <b>Cancelar a auditoria?</b> Ela para agora e não gera parecer.
+      </span>
+      <Botao variante="ghost" tamanho="sm" autoFocus onClick={() => setPerguntando(false)}>
+        Continuar auditando
+      </Botao>
+      <Botao variante="quiet" tamanho="sm" className="nx-cancelar-sim" onClick={cancelar}>
+        Cancelar auditoria
+      </Botao>
+    </span>
+  );
+}
 
 export function BarraDoNexo({ projetoPedido = null }: { projetoPedido?: ProjetoPedido | null } = {}) {
   const { conversationId, identidade, seloResults, projectId } = useConversation();
@@ -45,11 +75,7 @@ export function BarraDoNexo({ projetoPedido = null }: { projetoPedido?: ProjetoP
           {rotulo}
           {contagem ? `, ${contagem}` : ""}
         </span>
-        {auditando.cancelar && (
-          <Botao variante="quiet" tamanho="sm" onClick={auditando.cancelar}>
-            <X size={13} aria-hidden /> Cancelar
-          </Botao>
-        )}
+        {auditando.cancelar && <CancelarComConfirmacao cancelar={auditando.cancelar} />}
       </span>
     );
   }

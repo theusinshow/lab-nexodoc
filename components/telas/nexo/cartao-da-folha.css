@@ -35,14 +35,14 @@
    e passo vertical de 96; o cartão tem altura FIXA de 88 em todas as
    densidades, para a grade ficar regular. Escolhida, a folha cresce com as
    ações (só ela, e só onde dá para lê-las). O título inteiro fica no `title`. */
-.ds .nx-folha { width: 120px; height: 88px; }
-.ds .nx-folha.ct--sel { height: auto; min-height: 88px; z-index: 1; }
+.ds .nx-folha { width: 200px; height: 96px; }
+.ds .nx-folha.ct--sel { height: auto; min-height: 96px; z-index: 1; }
 .ds .nx-folha .ct-grande { font-size: 30px; }
 .ds .nx-folha .ct-tabela { height: auto; }
 .ds .nx-folha .ct-cel { padding: 4px 6px; }
 .ds .nx-folha .ct-cel small { font-size: 8px; }
 .ds .nx-folha .ct-cel b { font-size: 10.5px; line-height: 1.2; }
-.ds .nx-folha .nx-cel-titulo b { -webkit-line-clamp: 3; font-size: 10px; }
+.ds .nx-folha .nx-cel-titulo b { -webkit-line-clamp: 3; font-size: 10.5px; line-height: 1.25; }
 .ds .nx-folha.ct--perto .nx-cel-titulo b { -webkit-line-clamp: 2; }
 .ds .nx-folha .ct-cel--codigo b { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 9.5px; }
 .ds .nx-folha-ordem { display: inline-block; width: 6px; height: 6px; margin-left: 4px; border-radius: 50%; box-shadow: inset 0 0 0 1.2px var(--ds-text-tertiary); vertical-align: 1px; }

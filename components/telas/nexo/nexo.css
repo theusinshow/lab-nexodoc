@@ -144,3 +144,8 @@
 .ds .nx-palco-vazio svg { width: 22px; height: 22px; color: var(--ds-text-tertiary); }
 .ds .nx-palco-vazio p { display: grid; gap: 6px; max-width: 36ch; margin: 0; font-size: var(--ds-text-sm); line-height: 1.55; color: var(--ds-text-secondary); }
 .ds .nx-palco-vazio b { font-family: var(--ds-font-mono); font-size: 12px; font-weight: 400; color: var(--ds-text-primary); overflow-wrap: anywhere; }
+
+/* Cancelar a auditoria? — a pergunta no lugar do botão, dentro do cabeçalho do palco */
+.ds .nx-cancelar { display: inline-flex; align-items: center; gap: 8px; margin-left: 4px; font-size: var(--ds-text-xs); color: var(--ds-text-secondary); white-space: nowrap; }
+.ds .nx-cancelar b { font-weight: 500; color: var(--ds-text-primary); }
+.ds .nx-cancelar-sim { color: var(--ds-state-error); }

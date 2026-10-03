@@ -140,6 +140,14 @@ export interface FontesDaDisciplina {
   doNome: readonly string[];
   /** O que o carimbo diz (rótulo por extenso, do OCR). */
   doCarimbo: string;
+  /**
+   * O arquivo é o PDF de um VOLUME (`017_26_vol_6_est.pdf`), não de uma
+   * prancha. Aí o nome diz de que volume ele é, não de que disciplina é cada
+   * página: o volume 6 do 017-26 se chama "est" e abre com as 4 folhas de
+   * fundações (02/10/2026). Quem decide é o carimbo, que é por página; o nome só
+   * vale quando o carimbo não diz nada que se reconheça.
+   */
+  nomeDeVolume?: boolean;
 }
 
 /**
@@ -163,6 +171,10 @@ export function escolherCodigo(
 ): string {
   const manual = codigoDoRotulo(fontes.manual, tabelas);
   if (manual) return manual;
+  if (fontes.nomeDeVolume) {
+    const doCarimbo = codigoDoRotulo(fontes.doCarimbo, tabelas);
+    if (doCarimbo) return doCarimbo;
+  }
   if (fontes.doNome.length === 1) return fontes.doNome[0];
   return codigoDoRotulo(fontes.doCarimbo, tabelas);
 }

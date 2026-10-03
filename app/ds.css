@@ -814,7 +814,13 @@
 .ds .gr-niveis-texto { display: grid; gap: 1px; min-width: 0; }
 .ds .gr-niveis-texto b { font-size: var(--ds-text-xs); font-weight: 400; color: var(--ds-text-primary); }
 .ds .gr-niveis-texto small { font-size: 11px; color: var(--ds-text-tertiary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ds .gr-niveis-fichas { display: flex; gap: 3px; }
+.ds .gr-niveis-texto--botao { margin: -4px -6px; padding: 4px 6px; border: 0; border-radius: 6px; background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+.ds .gr-niveis-texto--botao:hover { background: rgb(255 255 255 / 0.05); }
+.ds .gr-niveis-texto--botao:hover b { text-decoration: underline; text-underline-offset: 3px; }
+.ds .gr-niveis-texto--botao:focus-visible { outline: 2px solid var(--ds-nexo); outline-offset: 1px; }
+/* Uma pílula por achado, mas com teto de largura: com 40+ elas quebram em linhas
+   em vez de espremer o nome do nível (02/10/2026). */
+.ds .gr-niveis-fichas { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 3px; max-width: 132px; }
 .ds .gr-niveis-fichas i { width: 5px; height: 14px; border-radius: 999px; background: var(--gr-tom); opacity: 0.85; transform-origin: bottom; }
 .ds .gr-niveis-conta { display: grid; justify-items: end; line-height: 1.1; }
 .ds .gr-niveis-conta b { font-size: 16px; font-weight: 400; color: var(--ds-text-primary); }

@@ -16,13 +16,14 @@
  */
 
 import { CloudOff, Compass, MessageSquarePlus, Search, TriangleAlert } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
-import { Botao } from "@/components/ds/basicos";
+import { Botao, Segmento, Tecla } from "@/components/ds/basicos";
 import type { ConversationSummary } from "../lib/nexo-db";
 import { avisoDeGravacao } from "../lib/aviso-de-gravacao";
 import type { EstadoDaSincronizacao } from "../lib/nexo-sync";
-import { ListaDeProjetos } from "./ListaDeProjetos";
+import { HistoricoDeConversas, type FiltroDoHistorico } from "./HistoricoDeConversas";
+import { ehDigitacao } from "../lib/navegacao-por-teclado";
 import "@/components/telas/mapa/mapa.css";
 import "@/components/telas/nexo/nexo.css";
 
@@ -44,7 +45,21 @@ export function NexoSidebar({
   onVerTour?: () => void | Promise<void>;
 }) {
   const [query, setQuery] = useState("");
+  const [filtro, setFiltro] = useState<FiltroDoHistorico>("tudo");
+  const campo = useRef<HTMLInputElement>(null);
   const vazia = conversations.length === 0;
+
+  // "/" leva à busca do histórico (fora de um campo de texto).
+  useEffect(() => {
+    const tecla = (e: KeyboardEvent) => {
+      if (e.key !== "/" || e.metaKey || e.ctrlKey || e.altKey || ehDigitacao(e.target as HTMLElement | null)) return;
+      if (!campo.current) return;
+      e.preventDefault();
+      campo.current.focus();
+    };
+    window.addEventListener("keydown", tecla);
+    return () => window.removeEventListener("keydown", tecla);
+  }, []);
 
   /*
    * A GRAVAÇÃO SÓ APARECE QUANDO FALHA — E O VOLUME VEM DO RISCO. Uma das duas
@@ -64,15 +79,28 @@ export function NexoSidebar({
       {!vazia && (
         <label className="mp-busca nw-busca">
           <Search size={14} aria-hidden />
-          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar obra ou código" aria-label="Buscar conversas por obra ou código" />
+          <input ref={campo} value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Obra, código, município ou tarefa" aria-label="Buscar no histórico" />
+          {!query && <Tecla>/</Tecla>}
         </label>
+      )}
+      {!vazia && (
+        <Segmento
+          rotulo="O que mostrar"
+          valor={filtro}
+          onTroca={setFiltro}
+          opcoes={[
+            { valor: "tudo", rotulo: "Tudo" },
+            { valor: "auditorias", rotulo: "Auditorias" },
+            { valor: "volumes", rotulo: "Volumes" },
+          ]}
+        />
       )}
 
       <div id="nexo-historico" className="nw-pastas nx-pastas">
         {vazia ? (
           <p className="nx-conversas-vazio">Cada obra vira uma pasta aqui, com as conversas dela. O projeto nasce do carimbo: solte as pranchas ou o memorial na conversa.</p>
         ) : (
-          <ListaDeProjetos conversations={conversations} query={query} {...(activeId ? { activeId } : {})} {...(onSelect ? { onSelect } : {})} />
+          <HistoricoDeConversas conversations={conversations} query={query} filtro={filtro} {...(activeId ? { activeId } : {})} {...(onSelect ? { onSelect } : {})} />
         )}
       </div>
 

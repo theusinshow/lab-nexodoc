@@ -48,7 +48,7 @@ import { AcaoDoNo } from "./AcaoDoNo";
 import { AgentPopover } from "@/components/ui/agent-popover";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { buildBalancedQuantities, repartirPorBlocos } from "@/lib/ld/ld-rules";
+import { buildBalancedQuantities, planoPorDisciplina, repartirPorBlocos } from "@/lib/ld/ld-rules";
 import { repartirDaLista } from "../lib/blocos";
 import { codigoDaFolha } from "../lib/disciplina-da-folha";
 import {
@@ -382,8 +382,13 @@ function ArtifactNode({ data, selected }: NodeProps<Node<ArtifactNodeData>>) {
  */
 function RotuloNode({
   data,
-}: NodeProps<Node<{ tomo: number; folhas: number } & Record<string, unknown>>>) {
+}: NodeProps<Node<{ tomo: number; folhas: number; documentos?: string[] } & Record<string, unknown>>>) {
   const ehResto = data.tomo === 0;
+  const { removeResult } = useConversation();
+  // Excluir as sobras de uma vez (o "Excluir os 2" do Mapa do volume no lab), com
+  // o mesmo "Excluir? Sim / Não" do nó: a proposta volta ao chat se precisar.
+  const [confirmando, setConfirmando] = useState(false);
+  const sobras = ehResto ? (data.documentos ?? []) : [];
   return (
     <div className="w-[130px] text-right">
       <p
@@ -402,10 +407,41 @@ function RotuloNode({
         </p>
       )}
       {ehResto && (
-        <p className="mt-0.5 text-[10px] leading-tight text-muted-foreground">
-          gerado antes de dividir
+        <p
+          className="mt-0.5 text-[10px] leading-tight text-muted-foreground"
+          title="Gerados quando a obra ainda tinha volume único. Os tomos têm capa e LD próprias; estes não entram em volume nenhum."
+        >
+          gerado antes de dividir, sem volume
         </p>
       )}
+      {sobras.length > 0 &&
+        (confirmando ? (
+          <p className="mt-1 flex justify-end gap-2 text-[11px]">
+            <span className="text-muted-foreground">Excluir?</span>
+            <button
+              type="button"
+              onClick={() => sobras.forEach((id) => removeResult(id))}
+              className="nodrag nopan rounded-sm font-medium text-destructive underline underline-offset-2 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/25"
+            >
+              Sim
+            </button>
+            <button
+              type="button"
+              onClick={() => setConfirmando(false)}
+              className="nodrag nopan rounded-sm text-muted-foreground underline underline-offset-2 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/25"
+            >
+              Não
+            </button>
+          </p>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setConfirmando(true)}
+            className="nodrag nopan mt-1 text-[11px] text-muted-foreground underline underline-offset-2 hover:text-destructive focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/25"
+          >
+            {sobras.length === 1 ? "Excluir este" : `Excluir os ${sobras.length}`}
+          </button>
+        ))}
     </div>
   );
 }
@@ -604,6 +640,8 @@ function CanvasInterno({
             tomosReais,
             // O corte cai ENTRE disciplinas -- ver `repartirPorBlocos`.
             repartirDaLista(folhas, codigoDaFolha, repartirPorBlocos, buildBalancedQuantities),
+            // As disciplinas pequenas juntas, a grande separada — ver `planoPorDisciplina`.
+            (l) => planoPorDisciplina(l.map(codigoDaFolha)),
           )
         : [];
     const porId = new Map(folhas.map((f) => [f.id, f]));
@@ -802,7 +840,7 @@ function CanvasInterno({
           id: `rotulo:${grupo.tomo}`,
           type: "rotulo",
           position: { x: -150, y: y + 130 },
-          data: { tomo: grupo.tomo, folhas: daFileira.length },
+          data: { tomo: grupo.tomo, folhas: daFileira.length, documentos: grupo.itens.map((a) => a.id) },
           draggable: false,
           selectable: false,
         });
@@ -1121,6 +1159,7 @@ function CanvasInterno({
         setas andam · enter abre · e corrige
       </div>
       <NavegacaoDoCanvas
+        temFolhas={folhas.length > 0}
         fileiras={fileiras}
         proximoTomo={maiorTomo + 1}
         temGrupoManual={folhas.some((f) => f.grupo !== undefined)}

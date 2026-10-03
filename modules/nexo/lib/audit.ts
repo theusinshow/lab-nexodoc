@@ -60,6 +60,12 @@ export interface MemorialAuditResult {
    * `fonteDoDocumento` trata os dois casos do mesmo jeito, e a tela diz o motivo.
    */
   arquivos?: { fileName: string; checksumSha256: string | null }[];
+  /**
+   * O PEDIDO QUE NÃO RODOU porque nada mudou: este é o parecer ANTERIOR,
+   * reaberto no lugar da auditoria recusada (409 "documento idêntico"). A tela
+   * do resultado avisa no meio dela, uma vez, que nada mudou desde então.
+   */
+  semMudanca?: { aviso: string };
 }
 
 /**
@@ -80,6 +86,19 @@ export interface MemorialAuditResult {
  * de FICAR — apagá-lo joga fora minutos de modelo já pagos e obriga a rodar de
  * novo, que foi o que aconteceu em 12/08/2026.
  */
+/**
+ * O servidor recusou porque o documento é idêntico ao da auditoria anterior.
+ * Leva o id dela: quem pegar o erro abre aquele parecer em vez de mostrar falha.
+ */
+export class DocumentoSemMudanca extends Error {
+  readonly auditIdAnterior: string | null;
+  constructor(mensagem: string, auditIdAnterior: string | null) {
+    super(mensagem);
+    this.auditIdAnterior = auditIdAnterior;
+    this.name = "DocumentoSemMudanca";
+  }
+}
+
 export class AuditoriaDesconectada extends Error {
   constructor() {
     super(
@@ -281,8 +300,12 @@ export async function runMemorialAudit(
    * retomada para uma auditoria que nunca começou.
    */
   if (res.status === 409) {
-    const corpo = (await res.json().catch(() => null)) as { error?: string } | null;
-    throw new Error(corpo?.error ?? "O documento é idêntico ao que já foi auditado.");
+    const corpo = (await res.json().catch(() => null)) as
+      | { error?: string; identico?: boolean; auditIdAnterior?: string }
+      | null;
+    const mensagem = corpo?.error ?? "O documento é idêntico ao que já foi auditado.";
+    if (corpo?.identico) throw new DocumentoSemMudanca(mensagem, corpo.auditIdAnterior ?? null);
+    throw new Error(mensagem);
   }
 
   /*
@@ -310,6 +333,13 @@ export async function runMemorialAudit(
     throw new SessaoExpiradaNaAuditoria();
   }
   if (payload?.status === 403) throw new AcessoNegadoNaAuditoria(payload.error);
+  // O documento idêntico, no fluxo: a mesma recusa do 409 acima, com o id da base.
+  if (payload?.identico) {
+    throw new DocumentoSemMudanca(
+      payload.error ?? "O documento é idêntico ao que já foi auditado.",
+      payload.auditIdAnterior ?? null,
+    );
+  }
 
   /*
    * FLUXO CORTADO ≠ AUDITORIA FALHADA.
@@ -339,6 +369,9 @@ interface RespostaDaAuditoria {
   auditId?: string | null;
   /** Só no `event: error` do fluxo: o status que a rota teria respondido. */
   status?: number;
+  /** Recusa por documento idêntico (409), com a auditoria que ele repete. */
+  identico?: boolean;
+  auditIdAnterior?: string;
 }
 
 /** O que o servidor sabe sobre uma auditoria já disparada. */

@@ -5,26 +5,33 @@
  * curso"), com o que o motor relata de verdade.
  *
  * A primeira versão do app (migração 5h) era um cartão com o relógio e uma
- * lista; o lab tinha a linha do tempo em barras, os capítulos, os achados até
- * agora e o registro (Matheus, 02/10/2026). Tudo isso volta, com uma regra:
- * nada inventado. O motor não manda previsão por etapa nem as páginas de cada
- * bloco; então o futuro fica "na fila" (sem pílula prevista), o anel gira sem
- * fingir porcentagem, e os capítulos são contados pela conclusão.
+ * lista; a segunda (02/10/2026) trouxe a linha do tempo, os capítulos e o
+ * registro, mas cortou o que o motor não mandava. Na terceira (02/10/2026,
+ * "o backend não acompanhava o front") o motor passou a mandar as páginas e o
+ * estado de cada bloco e a foto dos achados por nível, tipo e página
+ * (lib/foto-da-auditoria.ts), e a tela voltou a ser a do lab: o mapa das
+ * páginas com os blocos, os achados por nível e o previsto na linha do tempo.
  *
- * O que o motor manda (lib/audit-progress.ts, app/api/audit/route.ts): início
- * e fim de cada etapa, um FATO medido no fim ("6 achado(s)", "218 páginas,
- * 464.585 caracteres"), o progresso dos blocos e o teto de tempo da validação.
+ * Uma regra continua: nada inventado. O previsto sai das últimas auditorias
+ * deste navegador (modules/nexo/lib/tempos-da-auditoria.ts); sem histórico ele
+ * não aparece e o anel gira sem fingir porcentagem.
  */
 import { AnimatePresence, motion } from "motion/react";
 import { ChevronDown, FileText } from "lucide-react";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 
 import { Esqueleto, Orbe, Selo } from "@/components/ds/basicos";
-import { LinhaDoTempo, type PassoDaLinha } from "@/components/ds/graficos";
+import { LinhaDoTempo, MapaDasPaginas, NiveisEmFaixa, type GrupoDoMapa, type PassoDaLinha } from "@/components/ds/graficos";
+import { CURVA } from "@/lib/ds/movimento";
 import { useTempo } from "@/lib/ds/tempo";
 import { formatarEmBrasilia } from "@/lib/fuso-de-brasilia";
 import { NOME_DA_PASSADA, type PassadaDaAuditoria } from "@/lib/audit-progress";
+import { NIVEIS as NOMES_DOS_NIVEIS } from "@/lib/nivel-do-achado";
 import { etapasDosMarcos, type EtapaVista, type MarcoRecebido } from "../lib/etapas-da-auditoria";
+import { maisRecente, paginasDosMarcos, previsaoPorEtapa } from "../lib/tempos-da-auditoria";
+import { MarcaDaPrefeitura } from "./MarcaDaPrefeitura";
+import { useMoldura } from "@/components/moldura/contexto";
+import { tituloDoMemorial } from "@/lib/titulo-do-memorial";
 import "@/components/telas/auditoria/auditoria.css";
 
 /** Os nomes curtos da linha do tempo (os do lab). */
@@ -39,30 +46,24 @@ const ROTULO: Record<PassadaDaAuditoria, string> = {
   parecer: "Fechando o parecer",
 };
 
-/** As etapas que toda auditoria percorre; o confronto só existe com mais de um arquivo. */
+/**
+ * As etapas que toda auditoria percorre. "Capítulo a capítulo" só existe quando
+ * o motor planeja blocos; o confronto, só com mais de um arquivo.
+ */
 const PREVISTAS: PassadaDaAuditoria[] = ["extracao", "regras", "global", "blocos", "evidencia", "validacao", "parecer"];
 
-/** As etapas que acham problema, na ordem: é delas a conta de "achados até agora". */
-const QUE_ACHAM: { passada: PassadaDaAuditoria; rotulo: string }[] = [
-  { passada: "regras", rotulo: "Regras locais" },
-  { passada: "global", rotulo: "Leitura do documento" },
-  { passada: "blocos", rotulo: "Capítulo a capítulo" },
-];
-
-/** O primeiro número do fato ("6 achado(s)" → 6). */
-function numeroDo(detalhe?: string): number | null {
-  const m = detalhe?.match(/(\d[\d.]*)/);
-  return m ? Number(m[1].replace(/\./g, "")) : null;
-}
+const ease = (c: readonly number[]) => [...c] as [number, number, number, number];
 
 function mmss(s: number) {
   const t = Math.max(0, Math.floor(s));
   return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, "0")}`;
 }
 
-function hora(ms: number) {
-  return formatarEmBrasilia(ms, { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+function hora(ms: number, segundos = true) {
+  return formatarEmBrasilia(ms, { hour: "2-digit", minute: "2-digit", ...(segundos ? { second: "2-digit" } : {}) });
 }
+
+const juntar = (n: number[]) => n.join(", ").replace(/, (\d+)$/, " e $1");
 
 type Estado = "enviando" | "rodando" | "passou" | "retomada";
 const ROTULO_DO_ESTADO: Record<Estado, string> = {
@@ -72,12 +73,29 @@ const ROTULO_DO_ESTADO: Record<Estado, string> = {
   retomada: "Rodando no servidor",
 };
 
-/** O anel: sem estimativa honesta, ele gira — "está trabalhando", não "está em 25%". */
-function Anel({ estado }: { estado: Estado }) {
+/**
+ * O relógio em anel: quanto do tempo previsto já passou. Sem previsão o arco
+ * gira sem medir nada — "está trabalhando", não "está em 25%".
+ */
+function Anel({ fracao, estado }: { fracao: number | null; estado: Estado }) {
+  const { dur } = useTempo();
   return (
     <svg className={`au-anel au-anel--${estado}`} viewBox="0 0 64 64" aria-hidden>
       <circle cx="32" cy="32" r="27" className="au-anel-trilho" />
-      <circle cx="32" cy="32" r="27" className="au-anel-giro" pathLength={1} strokeDasharray="0.22 0.78" />
+      {fracao === null ? (
+        <circle cx="32" cy="32" r="27" className="au-anel-giro" pathLength={1} strokeDasharray="0.22 0.78" />
+      ) : (
+        <motion.circle
+          cx="32"
+          cy="32"
+          r="27"
+          className="au-anel-arco"
+          transform="rotate(-90 32 32)"
+          initial={false}
+          animate={{ pathLength: fracao }}
+          transition={{ duration: dur("layout") * 3, ease: ease(CURVA.out) }}
+        />
+      )}
     </svg>
   );
 }
@@ -91,10 +109,14 @@ function linhaDoRegistro(m: MarcoRecebido): { ms: number; texto: string } {
 }
 
 export function AuditoriaEmCurso({
+  nivel,
   arquivo,
   inicioMs,
   marcos,
   retomada = false,
+  obra,
+  codigo,
+  prefeitura,
 }: {
   nivel: "standard" | "deep";
   arquivo: string;
@@ -102,10 +124,15 @@ export function AuditoriaEmCurso({
   marcos: MarcoRecebido[];
   onCancelar?: () => void;
   retomada?: boolean;
+  obra?: string;
+  codigo?: string;
+  prefeitura?: string;
 }) {
   const { dur } = useTempo();
+  const { primeiroNome } = useMoldura();
   const [agoraMs, setAgoraMs] = useState(() => Date.now());
   const [registroAberto, setRegistroAberto] = useState(false);
+  const [blocoSobre, setBlocoSobre] = useState<number | null>(null);
 
   useEffect(() => {
     const id = setInterval(() => setAgoraMs(Date.now()), 1000);
@@ -118,69 +145,108 @@ export function AuditoriaEmCurso({
   const decorrido = (agoraMs - inicioMs) / 1000;
   const semSinal = etapas.length === 0;
 
-  const estourou = atual?.orcamentoMs !== undefined && agoraMs - atual.inicioMs > atual.orcamentoMs;
-  const estado: Estado = retomada ? "retomada" : semSinal ? "enviando" : estourou ? "passou" : "rodando";
+  const totalDePaginas = paginasDosMarcos(marcos);
+  // O histórico só muda quando uma corrida termina: lido uma vez por documento.
+  const previsao = useMemo(() => previsaoPorEtapa(nivel, totalDePaginas), [nivel, totalDePaginas]);
 
-  // As etapas desta corrida: as previstas, mais o confronto se o motor o abriu.
-  const ordem = PREVISTAS.flatMap((p) => (p === "validacao" && porPassada.has("confronto") ? (["confronto", p] as PassadaDaAuditoria[]) : [p]));
+  // Sem blocos planejados (a leitura do documento já leu tudo e a etapa seguinte
+  // começou), ou sem blocos no histórico, "Capítulo a capítulo" sai da linha.
+  const blocosNaoVem =
+    !porPassada.has("blocos") &&
+    ((porPassada.has("evidencia") && Boolean(porPassada.get("global")?.concluida)) || (previsao !== null && previsao.blocos === undefined));
+  const ordem = PREVISTAS.filter((p) => !(p === "blocos" && blocosNaoVem)).flatMap((p) =>
+    p === "validacao" && porPassada.has("confronto") ? (["confronto", p] as PassadaDaAuditoria[]) : [p],
+  );
 
-  const passos: PassoDaLinha[] = ordem.map((p) => {
+  // As pílulas: feitas com o tempo real, a atual com o decorrido, as que faltam
+  // com o previsto, cada uma começando onde a anterior terminaria.
+  let cursor = 0;
+  let restante = 0;
+  let passouDoPrevisto = false;
+  const passos: PassoDaLinha[] = [];
+  for (const p of ordem) {
     const e = porPassada.get(p);
-    const inicio = e ? (e.inicioMs - inicioMs) / 1000 : decorrido;
-    if (!e) return { id: p, rotulo: ROTULO[p], inicio, duracao: 0, previsto: 0, estado: "futuro" };
+    const previsto = previsao?.[p] ?? 0;
+    if (!e) {
+      const inicio = Math.max(cursor, decorrido);
+      cursor = inicio + previsto;
+      restante += previsto;
+      passos.push({ id: p, rotulo: ROTULO[p], inicio, duracao: 0, previsto, estado: "futuro" });
+      continue;
+    }
+    const inicio = (e.inicioMs - inicioMs) / 1000;
     if (e.concluida) {
       const fim = ((e.fimMs ?? agoraMs) - inicioMs) / 1000;
-      return { id: p, rotulo: ROTULO[p], inicio, duracao: Math.max(0, fim - inicio), previsto: 0, estado: "feito" };
+      cursor = fim;
+      passos.push({ id: p, rotulo: ROTULO[p], inicio, duracao: Math.max(0, fim - inicio), previsto: 0, estado: "feito" });
+      continue;
     }
     const naEtapa = Math.max(0, decorrido - inicio);
+    if (previsto > 0 && naEtapa > previsto) passouDoPrevisto = true;
+    restante += Math.max(0, previsto - naEtapa);
+    cursor = inicio + Math.max(naEtapa, previsto);
     let nota: ReactNode = (
       <>
         <Orbe tamanho={12} estado="trabalhando" />
         <span className="au-brilho">{e.detalhe ?? NOME_DA_PASSADA[p]}</span>
       </>
     );
-    if (p === "blocos" && e.total)
+    if (p === "blocos" && e.total) {
+      const lendoAgora = (maisRecente(marcos, "blocos") ?? []).filter((b) => b.estado === "lendo").map((b) => b.n);
       nota = (
         <>
           <Orbe tamanho={12} estado="trabalhando" />
           <span className="au-brilho">
             {e.indice ?? 0} de {e.total} blocos lidos
+            {lendoAgora.length ? `, lendo agora ${lendoAgora.length === 1 ? "o" : "os"} ${juntar(lendoAgora)}` : ""}
           </span>
         </>
       );
-    if (estourou)
+    }
+    const estourou = e.orcamentoMs !== undefined && agoraMs - e.inicioMs > e.orcamentoMs;
+    if (estourou || (previsto > 0 && naEtapa > previsto))
       nota = (
         <>
           {nota}
-          <Selo tom="decide">passou do teto</Selo>
+          <Selo tom="decide">{estourou ? "passou do teto" : "passou do previsto"}</Selo>
         </>
       );
-    // O teto (orcamentoMs) não é previsão: serve só para dizer "passou do teto".
-    return { id: p, rotulo: ROTULO[p], inicio, duracao: naEtapa, previsto: 0, estado: "atual", nota };
-  });
-  // A escala acompanha o tempo, com folga à frente.
-  const total = Math.max(60, decorrido * 1.2);
-  const concluidas = etapas.filter((e) => e.concluida).length;
+    passos.push({ id: p, rotulo: ROTULO[p], inicio, duracao: naEtapa, previsto, estado: "atual", nota });
+  }
 
-  // Os fatos da abertura do memorial: "218 páginas, 464.585 caracteres".
-  const abertura = porPassada.get("extracao")?.concluida ? porPassada.get("extracao")?.detalhe : undefined;
-  const paginas = abertura ? numeroDo(abertura) : null;
+  const estourouTeto = atual?.orcamentoMs !== undefined && agoraMs - atual.inicioMs > atual.orcamentoMs;
+  const estado: Estado = retomada ? "retomada" : semSinal ? "enviando" : estourouTeto || passouDoPrevisto ? "passou" : "rodando";
+  const comPrevisao = previsao !== null && !semSinal && !retomada;
+  // A escala acompanha o tempo e o previsto, com folga à frente.
+  const total = Math.max(60, decorrido * 1.15, cursor * 1.05);
+  const fracao = comPrevisao ? Math.min(1, decorrido / Math.max(1, decorrido + restante)) : null;
+  const horaDoFim = hora(agoraMs + restante * 1000, false);
 
-  // Capítulo a capítulo: contados pela CONCLUSÃO (os blocos rodam em paralelo).
-  const blocos = porPassada.get("blocos");
-  const totalDeBlocos = blocos?.total ?? 0;
-  const blocosFeitos = blocos?.concluida ? totalDeBlocos : (blocos?.indice ?? 0);
+  // ---------- as páginas e os blocos ----------
+  const blocos = maisRecente(marcos, "blocos") ?? [];
+  const foto = maisRecente(marcos, "foto");
+  const global = porPassada.get("global");
+  const paginas = totalDePaginas ? Array.from({ length: totalDePaginas }, (_, i) => foto?.porPagina[i] ?? 0) : [];
+  const todas = paginas.map((_, i) => i + 1);
+  const paginasDe = (b: { de: number; ate: number }) => todas.filter((n) => n >= b.de && n <= b.ate);
+  const temBlocos = blocos.length > 0;
+  // Sem blocos, quem lê o documento inteiro é a leitura global: as páginas acendem juntas.
+  const lidasEm = temBlocos ? blocos.filter((b) => b.estado === "feito").flatMap(paginasDe) : global?.concluida ? todas : [];
+  const atuais = temBlocos ? blocos.filter((b) => b.estado === "lendo").flatMap(paginasDe) : global && !global.concluida ? todas : [];
+  const blocoEmFoco = blocos.find((b) => b.n === blocoSobre);
+  const colunas = paginas.length <= 42 ? 14 : Math.min(40, Math.ceil(paginas.length / 6));
 
-  // Achados até agora: o fato de fim de cada etapa que acha problema.
-  const contas = QUE_ACHAM.map((q) => {
-    const e = porPassada.get(q.passada);
-    return { ...q, valor: e?.concluida ? numeroDo(e.detalhe) : null, emCurso: Boolean(e && !e.concluida) };
-  });
-  const achadosAteAgora = contas.reduce((s, c) => s + (c.valor ?? 0), 0);
-  const maiorConta = Math.max(1, ...contas.map((c) => c.valor ?? 0));
+  // ---------- os achados até agora, por nível ----------
+  const niveis: GrupoDoMapa[] = NOMES_DOS_NIVEIS.map((n) => ({
+    id: n.id,
+    rotulo: n.nome,
+    tom: n.id,
+    itens: (foto?.achados ?? [])
+      .filter((a) => a.nivel === n.id)
+      .map((a) => ({ id: a.tipo, rotulo: a.tipo, valor: a.n, ...(n.id === "texto" ? { tom: "texto" as const } : {}) })),
+  }));
+  const achadosAteAgora = (foto?.achados ?? []).reduce((s, a) => s + a.n, 0);
   const validacao = porPassada.get("validacao");
-  const aRevisar = validacao ? numeroDo(validacao.detalhe && !validacao.concluida ? validacao.detalhe : undefined) : null;
-  const confirmados = validacao?.concluida ? numeroDo(validacao.detalhe) : null;
 
   const registro = marcos.map(linhaDoRegistro).sort((a, b) => a.ms - b.ms);
   const ultima = registro[registro.length - 1];
@@ -196,34 +262,49 @@ export function AuditoriaEmCurso({
                   <i />
                   {ROTULO_DO_ESTADO[estado]}
                 </span>
+                {(obra || codigo) && (
+                  <span className="au-obra">
+                    {prefeitura && <MarcaDaPrefeitura prefeitura={prefeitura} forma="sinal" />}
+                    {codigo && <span className="ds-code">{codigo}</span>}
+                    {obra && <span>{obra}</span>}
+                  </span>
+                )}
               </div>
-              <h1>Memorial descritivo</h1>
+              <h1>{tituloDoMemorial(arquivo)}</h1>
               <p className="au-arquivo">
                 <FileText size={13} aria-hidden />
                 <span title={arquivo}>
                   {arquivo}
-                  {paginas ? `, ${paginas} páginas` : ""}
+                  {totalDePaginas ? `, ${totalDePaginas} páginas` : ""}
                 </span>
                 <span className="au-sep" />
-                <span>Auditoria</span>
+                <span title={nivel === "deep" ? "Leitura do documento inteiro e revisão de cada achado por um segundo modelo" : undefined}>
+                  {nivel === "deep" ? "Análise profunda" : "Análise padrão"}
+                </span>
+                <span className="au-sep" />
+                <span>{primeiroNome ? `${primeiroNome}, às` : "começou às"} {hora(inicioMs, false)}</span>
               </p>
             </div>
 
             <div className="au-cronometro">
-              <Anel estado={estado} />
+              <Anel fracao={fracao} estado={estado} />
               <div className="au-cronometro-texto">
                 <span className="au-cronometro-tempo">
                   <b className="ds-num">{mmss(decorrido)}</b>
                   <small>decorrido</small>
                 </span>
-                <span className={`au-cronometro-falta${estourou ? " au-ambar" : ""}`}>
+                <span className={`au-cronometro-falta${estado === "passou" ? " au-ambar" : ""}`}>
                   {retomada
                     ? "reconectada à análise no servidor"
                     : semSinal
                       ? "esperando a primeira etapa"
-                      : estourou
+                      : estourouTeto
                         ? "a etapa passou do teto; pode voltar incompleta"
-                        : `${concluidas} de ${ordem.length} etapas prontas`}
+                        : !comPrevisao
+                          ? "a estimativa vem depois da primeira auditoria completa"
+                          : passouDoPrevisto
+                            ? `passou do previsto; ~${mmss(restante)} para terminar`
+                            : `~${mmss(restante)} para terminar, lá pelas ${horaDoFim}`}
                 </span>
               </div>
             </div>
@@ -240,6 +321,11 @@ export function AuditoriaEmCurso({
               <i className="au-leg au-leg--feito" /> feito
               <i className="au-leg au-leg--lento" /> mais lento
               <i className="au-leg au-leg--agora" /> agora
+              {comPrevisao && (
+                <>
+                  <i className="au-leg au-leg--futuro" /> previsto
+                </>
+              )}
             </span>
           </div>
           {retomada && semSinal ? (
@@ -261,61 +347,80 @@ export function AuditoriaEmCurso({
         </section>
 
         <div className="au-grade">
-          {/* ---------- capítulo a capítulo ---------- */}
+          {/* ---------- onde: páginas e blocos ---------- */}
           <section className="au-bloco au-paginas">
             <div className="au-bloco-cabeca">
-              <h2>Capítulo a capítulo</h2>
-              <span className="au-nota ds-num">{abertura ?? "páginas e caracteres quando o memorial abrir"}</span>
+              <h2>Páginas do memorial</h2>
+              <span className="au-nota ds-num">
+                {!totalDePaginas
+                  ? "as páginas aparecem quando o memorial abrir"
+                  : temBlocos
+                    ? `${lidasEm.length} de ${totalDePaginas} lidas capítulo a capítulo`
+                    : global?.concluida
+                      ? `${totalDePaginas} de ${totalDePaginas} lidas pela leitura do documento`
+                      : global
+                        ? `lendo as ${totalDePaginas} páginas de uma vez`
+                        : `${totalDePaginas} páginas`}
+              </span>
             </div>
-            <div className="au-blocos">
-              {totalDeBlocos > 0 ? (
-                <div className="au-blocos-faixa" role="img" aria-label={`${blocosFeitos} de ${totalDeBlocos} blocos lidos`}>
-                  {Array.from({ length: totalDeBlocos }, (_, i) => (
-                    <span key={i} className={`au-bloco-pil au-bloco-pil--${i < blocosFeitos ? "feito" : blocos?.concluida ? "feito" : "fila"}`}>
-                      <span className="ds-num">{i + 1}</span>
-                    </span>
+            {paginas.length > 0 ? (
+              <MapaDasPaginas
+                legenda={null}
+                paginas={paginas}
+                lidas={0}
+                lidasEm={lidasEm}
+                atuais={atuais}
+                destaque={blocoEmFoco ? paginasDe(blocoEmFoco) : null}
+                colunas={colunas}
+              />
+            ) : (
+              <Esqueleto largura="100%" altura={64} raio={8} />
+            )}
+            {temBlocos && (
+              <div className="au-blocos" onMouseLeave={() => setBlocoSobre(null)}>
+                <div className="au-blocos-faixa">
+                  {blocos.map((b) => (
+                    <button
+                      key={b.n}
+                      type="button"
+                      className={`au-bloco-pil au-bloco-pil--${b.estado}${blocoSobre === b.n ? " au-bloco-pil--sobre" : ""}`}
+                      style={{ flexGrow: b.ate - b.de + 1 }}
+                      onMouseEnter={() => setBlocoSobre(b.n)}
+                      onFocus={() => setBlocoSobre(b.n)}
+                      aria-label={`Bloco ${b.n}, páginas ${b.de} a ${b.ate}`}
+                    >
+                      <span className="ds-num">{b.n}</span>
+                    </button>
                   ))}
                 </div>
-              ) : null}
-              <p className="au-blocos-rodape">
-                {totalDeBlocos > 0
-                  ? blocos?.concluida
-                    ? `${totalDeBlocos} blocos lidos${blocos.detalhe ? `, ${blocos.detalhe}` : ""}`
-                    : `${blocosFeitos} de ${totalDeBlocos} blocos lidos`
-                  : "Os blocos aparecem quando a leitura capítulo a capítulo começar."}
-              </p>
-            </div>
+                <p className="au-blocos-rodape">
+                  {blocoEmFoco ? (
+                    <>
+                      <b>Bloco {blocoEmFoco.n}</b>, p. {blocoEmFoco.de}–{blocoEmFoco.ate}:{" "}
+                      {blocoEmFoco.estado === "feito" ? "lido" : blocoEmFoco.estado === "lendo" ? "lendo agora" : "na fila"}
+                    </>
+                  ) : null}
+                </p>
+              </div>
+            )}
           </section>
 
-          {/* ---------- o que já se achou, por etapa ---------- */}
+          {/* ---------- o que já se achou: por nível e por tipo ---------- */}
           <section className="au-bloco au-achados">
             <div className="au-bloco-cabeca">
               <h2>Achados até agora</h2>
-              <span className="au-achados-total ds-num" title="Antes do segundo modelo, que ainda pode derrubar alguns">
-                {contas.some((c) => c.valor !== null) ? achadosAteAgora : "—"}
+              <span
+                className="au-achados-total ds-num"
+                title={
+                  validacao?.concluida
+                    ? `O segundo modelo terminou: ${validacao.detalhe ?? "revisão pronta"}`
+                    : "Antes do segundo modelo, que ainda pode derrubar alguns"
+                }
+              >
+                {foto ? achadosAteAgora : "—"}
               </span>
             </div>
-            {contas.some((c) => c.valor !== null || c.emCurso) ? (
-              <ul className="au-contas">
-                {contas.map((c) => (
-                  <li key={c.passada} data-em-curso={c.emCurso || undefined}>
-                    <span>{c.rotulo}</span>
-                    <i aria-hidden>
-                      <motion.em initial={false} animate={{ width: `${((c.valor ?? 0) / maiorConta) * 100}%` }} transition={{ duration: dur("layout") }} />
-                    </i>
-                    <b className="ds-num">{c.valor ?? (c.emCurso ? "lendo" : "—")}</b>
-                  </li>
-                ))}
-                {(aRevisar !== null || confirmados !== null) && (
-                  <li className="au-contas-validacao">
-                    <span>Segundo modelo</span>
-                    <small>{confirmados !== null ? `${confirmados} confirmados` : `revisando ${aRevisar}`}</small>
-                  </li>
-                )}
-              </ul>
-            ) : (
-              <p className="au-nota">Os achados aparecem quando a primeira etapa terminar.</p>
-            )}
+            {foto ? <NiveisEmFaixa niveis={niveis} semFaixa /> : <p className="au-nota">Os achados aparecem quando a primeira etapa terminar.</p>}
           </section>
         </div>
 
@@ -323,37 +428,61 @@ export function AuditoriaEmCurso({
         <section className="au-registro-fino">
           <button type="button" className="au-registro-fino-barra" aria-expanded={registroAberto} onClick={() => setRegistroAberto((a) => !a)} disabled={registro.length === 0}>
             <AnimatePresence mode="wait" initial={false}>
-              <motion.span key={ultima ? `${ultima.ms}-${ultima.texto}` : "nada"} className="au-registro-ultimo" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: dur("state") }}>
+              <motion.span
+                key={ultima ? `${ultima.ms}-${ultima.texto}` : "nada"}
+                className="au-registro-ultimo"
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+                transition={{ duration: dur("state") }}
+              >
                 {ultima ? (
                   <>
-                    <time>{hora(ultima.ms)}</time>
-                    {ultima.texto}
+                    <time>{hora(ultima.ms)}</time> {ultima.texto}
                   </>
                 ) : (
-                  "O registro começa quando o motor responder."
+                  "Enviando o documento para análise…"
                 )}
               </motion.span>
             </AnimatePresence>
-            {registro.length > 1 && (
+            {registro.length > 0 && (
               <span className="au-registro-ver">
-                {registroAberto ? "fechar" : `ver as ${registro.length} linhas`}
-                <ChevronDown size={14} aria-hidden style={{ transform: registroAberto ? "rotate(180deg)" : undefined }} />
+                {registroAberto ? "Fechar o registro" : `Registro completo, ${registro.length} ${registro.length === 1 ? "linha" : "linhas"}`}
+                <motion.span animate={{ rotate: registroAberto ? 180 : 0 }} transition={{ duration: dur("state") }} style={{ display: "inline-flex" }}>
+                  <ChevronDown size={14} aria-hidden />
+                </motion.span>
               </span>
             )}
           </button>
-          {registroAberto && (
-            <div className="au-registro-aberto au-registro">
-              <ol>
-                {registro.map((l, i) => (
-                  <li key={i}>
-                    <time>{hora(l.ms)}</time>
-                    <span>{l.texto}</span>
-                  </li>
-                ))}
-              </ol>
-            </div>
-          )}
+          <AnimatePresence initial={false}>
+            {registroAberto && (
+              <motion.div
+                className="au-registro au-registro-aberto"
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: dur("layout"), ease: ease(CURVA.out) }}
+              >
+                <ol>
+                  {registro.map((l, i) => (
+                    <li key={i}>
+                      <time>{hora(l.ms)}</time>
+                      <span>{l.texto}</span>
+                    </li>
+                  ))}
+                </ol>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </section>
+
+        {/* ---------- o que vem depois ---------- */}
+        <footer className="au-depois">
+          <span className="au-depois-texto">
+            Pode fechar a aba: a auditoria continua no servidor. Quando você voltar a esta conversa, o resultado abre aqui, com o veredito e a fila de
+            achados.
+          </span>
+        </footer>
       </div>
     </div>
   );

@@ -6,17 +6,12 @@
 // ser aberta por clique — a troca tem de acontecer na MESMA página, com o cartão
 // de A ainda esperando a resposta. Um F5 aqui mataria a espera e testaria A4.
 //
-// ABRIR B NÃO É SÓ CLICAR NO TEXTO. A barra lateral é uma lista de CARTÕES de
-// projeto (CartaoDeProjeto.tsx / ListaDeProjetos.tsx), um aberto por vez, e só o
-// aberto renderiza a lista de conversas de dentro. Com A recém-vinculada a um
-// projeto (o cartão dela abre sozinho, por ser a conversa ativa), B cai no
-// balde "A endereçar" — FECHADO. Clicar direto no texto "BATERIA C5 B" sem abrir
-// o cartão primeiro trava 30s e QUEBRA a jornada por um motivo que não é o
-// dela (medido em 15/09/2026, lendo os dois componentes). A busca da barra
-// ("Buscar obra ou código…") filtra as conversas de CADA cartão para as que
-// batem com o texto — ela não abre o cartão sozinha, mas garante que só a B da
-// CORRIDA ATUAL apareça ali, mesmo com corridas antigas da bateria deixando
-// outras "BATERIA C5 B" no mesmo balde (o banco não é esvaziado entre corridas).
+// ABRIR B PELA BUSCA DO HISTÓRICO (02/10/2026). A coluna virou o histórico por
+// obra (HistoricoDeConversas.tsx): com texto na busca, toda obra que casa se
+// abre sozinha, e só as conversas que casam aparecem. Antes era um cartão
+// fechado ("A endereçar") que precisava de um clique para abrir — clique que,
+// hoje, FECHARIA a obra. A busca também garante que só a B da CORRIDA ATUAL
+// apareça, com corridas antigas deixando outras "BATERIA C5 B" no balde.
 //
 // A TROCA ÚNICA TEM DE FICAR DE PÉ (ruling R18, 15/09/2026). A retomada da
 // auditoria em voo (`NexoWorkspace.tsx`, `retomouRef`) existe para o F5, mas
@@ -27,17 +22,9 @@
 // verificação "B continua aberta alguns segundos depois" é quem trava a volta.
 async function abrirB(ctx, idB) {
   const { page } = ctx;
-  await page
-    .getByLabel("Buscar conversas por obra ou código")
-    .fill("BATERIA C5 B");
-  // Sem relógio entre os gestos (15/09/2026): o clique do Playwright já espera
-  // o elemento existir, ficar estável e habilitado — e refaz se a busca
-  // redesenhar o cartão no meio.
-  await page
-    .getByRole("button", { name: /A endere.ar/i })
-    .first()
-    .click({ timeout: 30_000 });
-  await page.getByText("BATERIA C5 B").first().click({ timeout: 30_000 });
+  await page.getByLabel("Buscar no histórico").fill("BATERIA C5 B");
+  // O clique do Playwright já espera o elemento existir e ficar estável.
+  await page.locator(`[data-conversa="${idB}"]`).click({ timeout: 30_000 });
   // Espera pelo EVENTO (a conversa aberta virou B), não por um relógio afinado
   // no puxão que existia: quem prova que B fica é a verificação seguinte.
   await ctx.esperar(
@@ -73,7 +60,7 @@ export default {
     await page.reload({ waitUntil: "domcontentloaded" });
     // A barra de conversas de pé (evento), e não 2,5s de relógio.
     await page
-      .getByLabel("Buscar conversas por obra ou código")
+      .getByLabel("Buscar no histórico")
       .waitFor({ timeout: 30_000 });
 
     // 30s, e não os 15s do resto da bateria: a folga garante que a auditoria de

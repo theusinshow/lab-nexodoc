@@ -14,6 +14,7 @@ import assert from "node:assert/strict";
 import {
   buildBalancedQuantities,
   repartirPorBlocos,
+  planoPorDisciplina,
   buildBalancedTomos,
   compareBySheet,
   formatSheet,
@@ -327,6 +328,48 @@ check("desempate por MENOS tomos: 24 vira 2x12, não 3x8", () => {
 
 check("total zero não quebra", () => {
   assert.equal(sugerirNumeroDeTomos(0), 1);
+});
+
+// ---------------------------------------------------------------------------
+// planoPorDisciplina -- as pequenas juntas, a grande separada (02/10/2026)
+// ---------------------------------------------------------------------------
+
+/** O conteúdo de cada tomo do plano: `{ "1": { fnd: 4, est: 6 }, ... }`. */
+function tomosDoPlano(codigos: string[]) {
+  const plano = planoPorDisciplina(codigos);
+  const t: Record<number, Record<string, number>> = {};
+  codigos.forEach((c, i) => {
+    t[plano[i]] ??= {};
+    t[plano[i]][c] = (t[plano[i]][c] ?? 0) + 1;
+  });
+  return t;
+}
+const vezes = (c: string, n: number) => Array<string>(n).fill(c);
+
+check("planoPorDisciplina: a pequena sozinha vai com o começo da grande", () => {
+  assert.deepEqual(tomosDoPlano([...vezes("fnd", 4), ...vezes("est", 26)]), {
+    1: { fnd: 4, est: 6 },
+    2: { est: 10 },
+    3: { est: 10 },
+  });
+});
+
+check("planoPorDisciplina: duas pequenas juntas, a grande separada", () => {
+  assert.deepEqual(tomosDoPlano([...vezes("fnd", 3), ...vezes("est", 12), ...vezes("his", 3)]), {
+    1: { fnd: 3, his: 3 },
+    2: { est: 12 },
+  });
+});
+
+check("planoPorDisciplina: até o máximo de um tomo, um tomo só", () => {
+  assert.deepEqual(new Set(planoPorDisciplina([...vezes("fnd", 3), ...vezes("est", 12)])), new Set([1]));
+});
+
+check("planoPorDisciplina: pequenas demais para um tomo se repartem sem partir disciplina", () => {
+  assert.deepEqual(tomosDoPlano([...vezes("a", 5), ...vezes("b", 5), ...vezes("c", 5), ...vezes("d", 5)]), {
+    1: { a: 5, b: 5 },
+    2: { c: 5, d: 5 },
+  });
 });
 
 console.log(`\n${passed} teste(s) passaram.`);

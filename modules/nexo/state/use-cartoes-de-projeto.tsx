@@ -3,7 +3,7 @@
 /**
  * OS CARTÕES DE PROJETO — uma lista só, para a barra e para a paleta.
  *
- * A barra lateral montava esta lista dentro de `ListaDeProjetos` (busca o
+ * A barra lateral montava esta lista dentro da antiga `ListaDeProjetos` (busca o
  * resumo do servidor, enxerta nas conversas locais, agrupa em cartões) e a
  * paleta montava OUTRA, por `groupConversations`, que só enxergava o título e o
  * `folderKey`. As duas divergiram na prática: "criciuma" achava projetos na
@@ -176,6 +176,20 @@ export function useCartoesDeProjeto(
         auditoriaPendente: c.temAuditoriaPendente,
         folhas: c.id === conversationId ? folhasDaAberta : (r?.folhas ?? 0),
         kinds: c.id === conversationId ? (kindsDaAberta ? kindsDaAberta.split(",") : []) : (r?.kinds ?? []),
+        /*
+         * O QUE O HISTÓRICO MOSTRA (02/10/2026): o nome da obra, o veredito e
+         * quanto falta tratar, os documentos contados e as disciplinas. Só o
+         * resumo os tem; sem ele, a conversa aparece com o que a lista local sabe.
+         */
+        projectName: r?.projectName ?? "",
+        auditoriaResumo: r?.auditoriaResumo ?? null,
+        auditoriaTotal: r?.auditoriaTotal ?? null,
+        auditoriaTratados: r?.auditoriaTratados ?? null,
+        capas: r?.capas,
+        lds: r?.lds,
+        separatrizes: r?.separatrizes,
+        volumes: r?.volumes,
+        disciplinas: r?.disciplinas ?? [],
       };
     });
     return cartoesDeProjeto(cruas);

@@ -13,7 +13,8 @@ import {
   type NexoAgentPrefeitura,
 } from "@/server/nexo/agent/run-turn";
 import { buildSlotRequestForTurn } from "@/server/nexo/agent/slot-request";
-import { sugerirNumeroDeTomos } from "@/lib/ld/ld-rules";
+import { tomosPorDisciplina } from "@/lib/ld/ld-rules";
+import { codigoDoSelo } from "@/modules/nexo/lib/disciplina-da-folha";
 import { fatosDaConversa, type FatosDoMemorial } from "@/server/nexo/agent/fatos";
 import { carregarEscritorio } from "@/lib/escritorio-config";
 import { accessDeniedResponse, requireActor } from "@/lib/access-control";
@@ -209,9 +210,11 @@ export async function POST(req: NextRequest) {
     // O mês de Brasília: às 22h do último dia o servidor em UTC já virou o mês.
     mesAtual: partesEmBrasilia(now).mes,
     anoAtual: partesEmBrasilia(now).ano,
-    // A divisão em tomos é computada AQUI porque `sugerirNumeroDeTomos` é import
+    // A divisão em tomos é computada AQUI porque `tomosPorDisciplina` é import
     // de runtime e os módulos do agente são folhas puras.
-    tomosSugeridos: sugerirNumeroDeTomos(selos.length),
+    // Pela disciplina de cada folha (`planoPorDisciplina`): as pequenas juntas,
+    // a grande separada. O canvas e a LD dividem pela mesma regra.
+    tomosSugeridos: tomosPorDisciplina(selos.map((s) => codigoDoSelo(s.fileName, s.disciplina, s.arquivo))),
     /*
      * A MESMA `dataDominante` que o `slot-request` chama para o slot do mes.
      * Uma fonte, dois consumidores: se aqui fosse outra conta, a capa e a
@@ -245,7 +248,9 @@ export async function POST(req: NextRequest) {
 
   /*
    * O BOTÃO NÃO PRECISA DA IA. "Auditar o memorial" manda sempre a mesma frase,
-   * e a resposta é sempre a mesma proposta (auditoria padrão): esperar o modelo
+   * e a resposta é sempre a mesma proposta (a auditoria de nível único, "deep" —
+   * ver `clampNivel` em server/nexo/agent/normalize.ts; "standard" amostra o
+   * documento e o parecer sai incompleto): esperar o modelo
    * redigi-la custava segundos em produção para um cartão que já se sabe qual é.
    * Só a frase exata do botão, só com memorial e sem pranchas — o que for
    * digitado à mão continua indo ao agente.
@@ -253,7 +258,7 @@ export async function POST(req: NextRequest) {
   if (memorial && !fatos.temSelos && ehOPedidoDoBotao(message)) {
     const turn = {
       reply: "Leio o memorial contra a obra declarada e aponto o que não fecha. Confirme para começar.",
-      proposals: [{ kind: "auditoria" as const, resumo: "Auditoria do memorial", params: { nivel: "standard" as const } }],
+      proposals: [{ kind: "auditoria" as const, resumo: "Auditoria do memorial", params: { nivel: "deep" as const } }],
     };
     if (wantsStream) {
       const corpo =

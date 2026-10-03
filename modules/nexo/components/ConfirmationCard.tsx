@@ -34,6 +34,7 @@ import {
   Download,
   ShieldCheck,
   RotateCcw,
+  Check,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -50,10 +51,13 @@ import {
 } from "@/lib/audit-report";
 import {
   AuditoriaDesconectada,
+  DocumentoSemMudanca,
   auditoriaMaisRecente,
+  consultarAuditoria,
   type MemorialAuditResult,
 } from "../lib/audit";
 import { idDaAuditoriaDaProposta } from "../lib/auditoria-da-proposta";
+import { falaDaDuracao, maisRecente, previsaoTotal } from "../lib/tempos-da-auditoria";
 import { desfechoNaChegada } from "../lib/destino-do-parecer";
 import { fraseDoImpasse, resolverProjetoDaAuditoria } from "../lib/projeto-da-auditoria";
 import {
@@ -101,7 +105,7 @@ import { titulosDoBloco } from "@/server/nexo/titulos-do-bloco";
 import { repartirDaLista } from "../lib/blocos";
 import { motivoParaNaoMontar } from "../lib/pre-condicoes-do-volume";
 import { summarizeSelos } from "../lib/agent-context";
-import { buildBalancedQuantities, repartirPorBlocos } from "@/lib/ld/ld-rules";
+import { buildBalancedQuantities, planoPorDisciplina, repartirPorBlocos } from "@/lib/ld/ld-rules";
 import { plural } from "@/lib/plural";
 import { gruposDasFolhas, type Folha } from "../lib/folhas";
 import {
@@ -140,6 +144,13 @@ import {
   type MudancaDeParametro,
 } from "../lib/pendencia";
 import { useComposer } from "../state/composer-controller";
+import { nivelDoAchado } from "@/lib/nivel-do-achado";
+import { paginasDoAchado } from "@/lib/paginas-do-achado";
+import { rotuloDoAchado } from "@/lib/rotulo-do-achado";
+import { tituloDoMemorial } from "@/lib/titulo-do-memorial";
+import { Orbe } from "@/components/ds/basicos";
+import { resumoDaAuditoria } from "../lib/resumo-da-auditoria";
+import { reportFindingToStructured } from "@/components/audit-result";
 import { useConversation, type SavedResult } from "../state/conversation-store";
 import { baixarArquivosEmZip, editaveisDosResultados } from "../lib/editaveis";
 import { SalvarEditaveisNoProjeto } from "./SalvarEditaveisNoProjeto";
@@ -1710,6 +1721,8 @@ function VolumeConfirmation({
       projecao,
       total,
       repartirDaLista(projecao, codigoDaFolha, repartirPorBlocos, buildBalancedQuantities),
+      // As disciplinas pequenas juntas, a grande separada — ver `planoPorDisciplina`.
+      (l) => planoPorDisciplina(l.map(codigoDaFolha)),
     );
     const doTomo = folhasDoTomo(projecao, divisao, tomo.atual);
     return doTomo.length > 0 ? doTomo : selos;
@@ -2385,6 +2398,11 @@ function AuditoriaConfirmation({
   } = useConversation();
   const { refresh: refreshUsage } = useConversationUsage();
   const auditoria = useAuditoria();
+  const fotoDaCorrida =
+    auditoria.emCurso && auditoria.emCurso.conversationId === conversationId ? maisRecente(auditoria.emCurso.marcos, "foto") : undefined;
+  const etapaDaCorrida =
+    auditoria.emCurso && auditoria.emCurso.conversationId === conversationId ? resumoDaAuditoria(auditoria.emCurso.marcos) : null;
+  const pontosAteAgora = fotoDaCorrida ? fotoDaCorrida.achados.reduce((soma, a) => soma + a.n, 0) : null;
   /*
    * UM RESULTADO POR PROPOSTA, e não por documento. Com o id por documento, a
    * segunda auditoria do 117_25 (14/09/2026) achou o parecer da primeira: o
@@ -2522,6 +2540,10 @@ function AuditoriaConfirmation({
   const mudas =
     paginasMudas.estado === "pronto" ? paginasMudas.dados : null;
   const temFolhaMuda = (mudas?.mudas.length ?? 0) > 0;
+  const estimativa = useMemo(
+    () => (mudas ? previsaoTotal(params.nivel, mudas.totalDePaginas) : null),
+    [mudas, params.nivel],
+  );
   /** Folhas já transcritas / total, enquanto a transcrição corre. */
   const [progressoDaTranscricao, setProgressoDaTranscricao] = useState<
     { prontas: number; total: number } | null
@@ -2664,6 +2686,9 @@ function AuditoriaConfirmation({
       nivel: params.nivel,
       arquivo: memorialFile.name,
       cancelar: () => controle.abort(),
+      obra,
+      codigo: memorialFatos?.codigo ?? undefined,
+      prefeitura: prefeitura || municipio,
     });
     /** A saída foi perda de conexão? Decide se o bilhete sobrevive ao `finally`. */
     let desconectou = false;
@@ -2772,6 +2797,25 @@ function AuditoriaConfirmation({
        * transforma o resultado em artefato quando ficar pronto.
        */
       desconectou = err instanceof AuditoriaDesconectada;
+      /*
+       * NADA MUDOU DESDE A ÚLTIMA: não é falha. O servidor recusou gastar com o
+       * mesmo documento, então o pedido abre o parecer que já existe — o
+       * resultado vai ao palco e avisa, no meio da tela, que é o de antes.
+       */
+      if (err instanceof DocumentoSemMudanca && err.auditIdAnterior) {
+        const anterior = await consultarAuditoria(err.auditIdAnterior).catch(() => null);
+        if (anterior?.situacao === "pronta") {
+          await saveResult({
+            artifactId: id,
+            kind: "auditoria",
+            summary: resumoDoParecer(anterior.resultado.report),
+            files: [],
+            payload: { ...anterior.resultado, semMudanca: { aviso: err.message } },
+            canvas: { label: "Auditoria", detail: detalheDoParecer(anterior.resultado.report) },
+          });
+          return;
+        }
+      }
       if (!cancelou) {
         setError(err instanceof Error ? err.message : "Erro na auditoria do memorial.");
       }
@@ -2799,6 +2843,24 @@ function AuditoriaConfirmation({
    * (`auditarDeNovo`). Reabrir aqui gravaria a rodada nova por cima desta.
    */
   const podeAuditar = !result;
+
+  /*
+   * COM PARECER, É UMA FALA DO NEXO, não um cartão (o desenho do lab): a moldura
+   * de proposta já cumpriu seu papel, e o que resta é dizer o que achou.
+   */
+  if (result) {
+    return (
+      <>
+        <AuditoriaAncora
+          report={result.report}
+          onVer={auditoria.verNoPalco}
+          // Aba travada: a rodada nova cairia numa conversa que esta aba não grava.
+          onAuditarDeNovo={ehAMaisRecente && podeGastar ? auditarDeNovo : undefined}
+        />
+        <CardError message={error} />
+      </>
+    );
+  }
 
   return (
     <CardShell kind="auditoria" resumo={resumo}>
@@ -3022,6 +3084,37 @@ function AuditoriaConfirmation({
               </span>
             )}
             {/*
+              QUANTO VAI LEVAR (o "leva uns 4 minutos" da proposta no lab): a
+              mediana das últimas auditorias deste navegador, escalada pelas
+              páginas. Sem histórico, nada — melhor calar que chutar.
+            */}
+            {/*
+              ATÉ AGORA (a fala do Nexo durante a auditoria, no lab): quantos
+              pontos o motor já marcou. São os de ANTES do segundo modelo — a
+              frase diz isso, para o número final menor não parecer perda.
+            */}
+            {/* A etapa em curso, como fala do Nexo (lab: "Lendo capítulo a capítulo, 9 de 12 blocos"). */}
+            {busy && etapaDaCorrida && (
+              <span className="cx-passo cx-passo--curso" data-etapa-da-auditoria>
+                <Orbe tamanho={11} estado="trabalhando" />
+                <span>
+                  {etapaDaCorrida.rotulo}
+                  {etapaDaCorrida.contagem ? `, ${etapaDaCorrida.contagem}` : ""}
+                </span>
+              </span>
+            )}
+            {busy && pontosAteAgora !== null && (
+              <span className="text-xs text-muted-foreground" data-pontos-ate-agora>
+                Até agora, {pontosAteAgora} {pontosAteAgora === 1 ? "ponto" : "pontos"}. O segundo modelo ainda confere cada um antes do parecer.
+                Pode fechar a aba: eu continuo, e o resultado abre aqui ao lado.
+              </span>
+            )}
+            {estimativa !== null && !busy && (
+              <span className="text-xs text-muted-foreground" data-estimativa-da-auditoria>
+                Deve levar {falaDaDuracao(estimativa)}, pelas últimas auditorias. Você pode fechar a aba.
+              </span>
+            )}
+            {/*
               POR QUE O BOTÃO ESTÁ CINZA — em âmbar, não em cinza (17/09/2026,
               Urubici). O aviso era um texto discreto ao lado de um botão
               desabilitado: clicar não fazia nada e a frase não era lida. Botão
@@ -3081,27 +3174,24 @@ function AuditoriaConfirmation({
         </>
       )}
 
-      {result && (
-        <AuditoriaAncora
-          report={result.report}
-          onVer={auditoria.verNoPalco}
-          // Aba travada: a rodada nova cairia numa conversa que esta aba não grava.
-          onAuditarDeNovo={ehAMaisRecente && podeGastar ? auditarDeNovo : undefined}
-        />
-      )}
       <CardError message={error} />
     </CardShell>
   );
 }
 
 /**
- * A ÂNCORA no chat: veredito, contagem por impacto e o caminho para o parecer.
+ * O FIM DA AUDITORIA NA CONVERSA (desenho do lab: Nexo, a auditoria — 02/10/2026,
+ * pedido do Matheus): uma fala do Nexo, não um cartão.
  *
- * Antes esta caixa listava 8 dos N achados como `[prioridade] descrição` e
- * terminava em "relatório completo no módulo Auditoria" — apontando para a tela
- * que o Nexo veio substituir. Era o pior dos dois mundos: prosa demais para o
- * log da conversa, dado de menos para decidir emitir. O parecer legível é o do
- * palco; aqui fica só o que uma linha de conversa precisa dizer.
+ *   ✓ Auditei o memorial geral, revisão A, em 4 min 21 s
+ *   Não emitir. 9 achados: 2 impedem a entrega, 3 pedem decisão técnica e 4
+ *   são de texto. Os dois que travam:
+ *   [ACH-001 Revisão B no carimbo…  p. 1]   ← abre o achado no palco
+ *   [O que trava a emissão?] [Resumir para o cliente] [Ver o parecer] [Auditar de novo]
+ *
+ * As perguntas vão pelo campo do chat, que com o parecer aberto responde pela
+ * conversa desta auditoria. Contagem só dos confirmados (`camada-do-achado.ts`)
+ * e o veredito da regra única (`avaliarEmissao`), como no trilho e no PDF.
  */
 function AuditoriaAncora({
   report,
@@ -3113,40 +3203,92 @@ function AuditoriaAncora({
   /** Só na rodada mais recente. Abre outra proposta, com outro cartão. */
   onAuditarDeNovo?: () => void;
 }) {
+  const composer = useComposer();
   const incompleta = incompletudeDoParecer(report);
-  // A regra única (`avaliarEmissao`): só achados principais acendem o semáforo,
-  // igual ao parecer em tela. Antes daqui este cartão contava as sugestões.
-  const verdict = avaliarEmissao(report).veredito;
-  const variant =
-    verdict.emoji === "🔴" ? "critical" : verdict.emoji === "🟢" ? "ok" : "warning";
-  // Só os confirmados, como o trilho e o rótulo acima (`camada-do-achado.ts`).
-  const porImpacto = groupFindingsByImpact(achadosConfirmados(report.incongruencias));
+  const { estado } = avaliarEmissao(report);
+  const confirmados = achadosConfirmados(report.incongruencias);
+  const comNivel = confirmados.map((f) => ({ f, nivel: nivelDoAchado(f) }));
+  const n = (nivel: string) => comNivel.filter((c) => c.nivel === nivel).length;
+  const bloqueios = n("block");
+  const decisoes = n("decide");
+  const texto = n("note") + n("texto");
+
+  const arquivo = report.arquivos_analisados[0]?.arquivo ?? "";
+  const titulo = tituloDoMemorial(arquivo);
+  const ms = report.runtime?.duracao_ms;
+  const tempo = ms ? ` em ${Math.floor(ms / 60000) ? `${Math.floor(ms / 60000)} min ` : ""}${Math.round((ms % 60000) / 1000)} s` : "";
+
+  const VEREDITO: Record<typeof estado, string> = {
+    incompleto: "Análise parcial.",
+    nao_emitir: "Não emitir.",
+    revisar: "Revisar antes de emitir.",
+    liberado_com_ressalvas: "Liberado com ressalvas.",
+    liberado: "Liberado.",
+  };
+  const partes = [
+    bloqueios && `${bloqueios} ${bloqueios === 1 ? "impede" : "impedem"} a entrega`,
+    decisoes && `${decisoes} ${decisoes === 1 ? "pede" : "pedem"} decisão técnica`,
+    texto && `${texto} ${texto === 1 ? "é" : "são"} de texto`,
+  ].filter(Boolean) as string[];
+  const frase = partes.length > 1 ? `${partes.slice(0, -1).join(", ")} e ${partes.at(-1)}` : (partes[0] ?? "");
+  // Os que travam; sem bloqueio, os que pedem decisão. Três no máximo: o resto está no palco.
+  const citados = (bloqueios ? comNivel.filter((c) => c.nivel === "block") : comNivel.filter((c) => c.nivel === "decide")).slice(0, 3);
+  const quantosCitados = citados.length === 1 ? "O que" : citados.length === 2 ? "Os dois que" : `Os ${citados.length} primeiros que`;
+
+  const abrirAchado = (chave: string) => {
+    onVer();
+    window.dispatchEvent(new CustomEvent("nexo:abrir-achado", { detail: { chave } }));
+  };
 
   return (
-    <div className="flex flex-col gap-2 rounded-md border border-border bg-[var(--nexodoc-recessed)] p-3">
+    <div className="nx-fim-da-auditoria flex flex-col gap-2.5">
       {/* Antes do número: a contagem de uma auditoria incompleta não é o total. */}
       <AvisoDeAuditoriaIncompleta report={report} compacto />
-      <div className="flex flex-wrap items-center gap-2">
-        <Badge variant={variant}>{verdict.label}</Badge>
-        <span className="text-xs text-muted-foreground">
-          {rotuloDaContagem(report)} · obra {report.obra || "?"}
-        </span>
-      </div>
-      <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
-        <span>{porImpacto.critico_documental.length} crítico documental</span>
-        <span>{porImpacto.tecnico_contratual.length} técnico contratual</span>
-        <span>{porImpacto.revisao_editorial.length} revisão editorial</span>
-      </div>
-      <div className="flex flex-wrap items-center gap-2">
-        <Chip onClick={onVer}>
-          <ShieldCheck aria-hidden />
+      <span className="cx-passo">
+        <Check size={13} aria-hidden />
+        <span>Auditei o {titulo.charAt(0).toLowerCase() + titulo.slice(1)}{tempo}</span>
+      </span>
+      <p className="cx-texto">
+        <b>{VEREDITO[estado]}</b>{" "}
+        {confirmados.length === 0
+          ? "Nenhum achado confirmado no escopo analisado."
+          : `${rotuloDaContagem(report)}${frase ? `: ${frase}` : ""}.${citados.length ? ` ${quantosCitados} ${bloqueios ? "travam" : "pedem decisão"}:` : ""}`}
+      </p>
+      {citados.length > 0 && (
+        <div className="na-citas">
+          {citados.map(({ f, nivel }) => {
+            const pagina = paginasDoAchado({ pagina: f.pagina, referencia: f.referencia_comparada })[0];
+            return (
+              <button key={f.id} type="button" className={`na-cita na-cita--${nivel}`} onClick={() => abrirAchado(f.id)} title="Abrir no palco">
+                <i aria-hidden />
+                <span className="ds-code">{rotuloDoAchado(f.id)}</span>
+                <span className="na-cita-titulo">{reportFindingToStructured(f).title}</span>
+                {pagina ? <span className="ds-num na-cita-pag">p. {pagina}</span> : <span />}
+              </button>
+            );
+          })}
+        </div>
+      )}
+      <div className="cx-saidas">
+        {confirmados.length > 0 && (
+          <button type="button" className="cx-saida cx-saida--principal" onClick={() => composer.send(bloqueios ? "O que trava a emissão?" : "O que precisa de decisão técnica?")}>
+            {bloqueios ? "O que trava a emissão?" : "O que precisa de decisão técnica?"}
+          </button>
+        )}
+        {confirmados.length > 0 && (
+          <button type="button" className="cx-saida" onClick={() => composer.send("Resume os achados para o cliente, em linguagem simples.")}>
+            Resumir para o cliente
+          </button>
+        )}
+        <button type="button" className="cx-saida" onClick={onVer}>
+          <ShieldCheck size={14} aria-hidden />
           Ver o parecer
-        </Chip>
+        </button>
         {onAuditarDeNovo && (
-          <Chip onClick={onAuditarDeNovo} variant={incompleta.incompleta ? "default" : "quiet"}>
-            <RotateCcw aria-hidden />
+          <button type="button" className="cx-saida" onClick={onAuditarDeNovo}>
+            <RotateCcw size={14} aria-hidden />
             {incompleta.paginasNaoLidas > 0 ? "Transcrever e auditar de novo" : "Auditar de novo"}
-          </Chip>
+          </button>
         )}
       </div>
     </div>

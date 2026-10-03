@@ -18,8 +18,11 @@
  *
  * A altura é previsível por construção: 59px fechado, 219px no máximo aberto.
  *
- * PURO e sem imports → roda em node cru (`npm run test:nexo:cartoes`).
+ * PURO; o único import é `estado-da-conversa.ts`, também puro → roda em node cru
+ * (`npm run test:nexo:cartoes`).
  */
+
+import { ehDeExemplo, estadoDaConversa, type EstadoDaConversa } from "./estado-da-conversa.ts";
 
 /** Uma conversa com o que o resumo do servidor apurou. */
 export interface ConversaResumida {
@@ -39,6 +42,21 @@ export interface ConversaResumida {
   folhas: number;
   /** Tipos de artefato gerados (`ld`, `capa`, `separatriz`, `volume`, ...). */
   kinds: readonly string[];
+  /** O nome da obra (`Project.name`). Vazio sem vínculo. */
+  projectName?: string;
+  /** O resumo curto da auditoria mais recente ("Auditoria — <status geral>"). */
+  auditoriaResumo?: string | null;
+  /** Achados confirmados da auditoria mais recente (`Audit.totalFindings`). */
+  auditoriaTotal?: number | null;
+  /** Quantos deles já foram encerrados (`AuditFeedback.resolvedAt`). */
+  auditoriaTratados?: number | null;
+  /** Documentos gerados, contados por tipo. */
+  capas?: number;
+  lds?: number;
+  separatrizes?: number;
+  volumes?: number;
+  /** As disciplinas das folhas, em sigla ("FND", "EST"). */
+  disciplinas?: readonly string[];
 }
 
 export interface ConversaDoCartao {
@@ -49,6 +67,8 @@ export interface ConversaDoCartao {
   desfecho: string;
   updatedAt: number;
   rodando: boolean;
+  /** Como terminou: o veredito, o volume, os documentos (`estado-da-conversa.ts`). */
+  estado: EstadoDaConversa;
 }
 
 export interface CartaoDeProjeto {
@@ -67,6 +87,10 @@ export interface CartaoDeProjeto {
   codigo: string;
   /** `CRICIUMA`. Vazio quando a pasta traz só o código (carimbo sem prefeitura). */
   cliente: string;
+  /** O nome da obra, do projeto. Vazio quando não há vínculo. */
+  nome: string;
+  /** Projeto de exemplo ou de teste (`ehDeExemplo`): vai para o grupo recolhido. */
+  exemplo: boolean;
   atualizadoEm: number;
   /** Folhas somadas das conversas do projeto. */
   folhas: number;
@@ -182,6 +206,7 @@ function paraOCartao(c: ConversaResumida): ConversaDoCartao {
     desfecho: desfechoDa(c),
     updatedAt: c.updatedAt,
     rodando: Boolean(c.auditoriaPendente),
+    estado: estadoDaConversa(c),
   };
 }
 
@@ -233,6 +258,8 @@ export function cartoesDeProjeto(
       aEnderecar: chave === "",
       codigo,
       cliente,
+      nome: comProjeto?.projectName?.trim() ?? "",
+      exemplo: ehDeExemplo(codigo, cliente),
       atualizadoEm: ordenado[0].updatedAt,
       folhas,
       artefatos: ORDEM_DOS_ARTEFATOS.filter((k) => tipos.has(k)).map(
@@ -292,7 +319,7 @@ export function filtrarCartoes(
 
   const achados: CartaoDeProjeto[] = [];
   for (const c of cartoes) {
-    if (paraBusca(`${c.chave} ${c.codigo} ${c.cliente}`).includes(q)) {
+    if (paraBusca(`${c.chave} ${c.codigo} ${c.cliente} ${c.nome}`).includes(q)) {
       achados.push(c);
       continue;
     }

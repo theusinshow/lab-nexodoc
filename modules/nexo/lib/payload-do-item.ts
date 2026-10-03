@@ -10,7 +10,7 @@
  * `opcoesDoTomo` veio junto porque `payloadDoItem` depende dela e deixá-la para
  * trás obrigaria a importar o módulo aliasado de volta.
  */
-import { buildBalancedQuantities, repartirPorBlocos } from "../../../lib/ld/ld-rules.ts";
+import { buildBalancedQuantities, planoPorDisciplina, repartirPorBlocos } from "../../../lib/ld/ld-rules.ts";
 import { repartirDaLista } from "./blocos.ts";
 import { codigoDaFolha } from "./disciplina-da-folha.ts";
 import { nomeNaCapa, nomeNaSeparatriz } from "../../../server/nexo/disciplinas.ts";
@@ -58,6 +58,8 @@ export function opcoesDoTomo(
     projecao,
     numTomos,
     repartirDaLista(projecao, codigoDaFolha, repartirPorBlocos, buildBalancedQuantities),
+    // As disciplinas pequenas juntas, a grande separada — ver `planoPorDisciplina`.
+    (l) => planoPorDisciplina(l.map(codigoDaFolha)),
   );
   const doTomo = folhasDoTomo(projecao, divisao, tomoAtual);
   if (doTomo.length === 0) return { doTomo, opts: {} };

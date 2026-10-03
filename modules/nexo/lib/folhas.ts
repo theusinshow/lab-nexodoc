@@ -305,10 +305,24 @@ export function gruposDasFolhas(
   lista: readonly Folha[],
   numTomos: number,
   repartir: Repartir,
+  /**
+   * O plano por disciplina (`planoPorDisciplina`): o tomo de cada folha. Vale
+   * só quando ninguém arrastou folha à mão e o número de tomos é o dele — com
+   * outro número, foi a pessoa quem escolheu, e a conta por quantidade obedece.
+   */
+  plano?: (lista: readonly Folha[]) => number[],
 ): FolhaId[][] {
   const tomos = Math.max(1, Math.trunc(numTomos));
   const baldes: FolhaId[][] = Array.from({ length: tomos }, () => []);
   if (lista.length === 0) return baldes;
+
+  if (plano && lista.every((f) => f.grupo === undefined)) {
+    const doPlano = plano(lista);
+    if (doPlano.length === lista.length && Math.max(...doPlano) === tomos) {
+      lista.forEach((f, i) => baldes[doPlano[i] - 1].push(f.id));
+      return baldes;
+    }
+  }
 
   const posicao = new Map<FolhaId, number>(lista.map((f, i) => [f.id, i]));
   const semGrupo: Folha[] = [];

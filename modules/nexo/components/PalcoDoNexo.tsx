@@ -25,16 +25,18 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Botao } from "@/components/ds/basicos";
 
 import type { AuditView } from "@/components/audit-result";
 import { classifyFindingTier } from "@/lib/audit-report";
-import { compararPareceres, resumoDoDiff } from "@/lib/diff-de-pareceres";
+import { compararPareceres } from "@/lib/diff-de-pareceres";
 import {
   auditoriaMaisRecente,
   consultarAuditoria,
   type MemorialAuditResult,
 } from "../lib/audit";
 import { useConversation } from "../state/conversation-store";
+import { useComposer } from "../state/composer-controller";
 import {
   auditoriaDaConversa,
   useAuditoria,
@@ -167,8 +169,27 @@ export function PalcoDoNexo({
         .sort((a, b) => (a.generatedAt ?? 0) - (b.generatedAt ?? 0)),
     [results],
   );
-  const salvo = useMemo(() => auditoriaMaisRecente(results)?.salvo, [results]);
+  const maisRecente = useMemo(() => auditoriaMaisRecente(results), [results]);
+  /*
+   * PERGUNTAR AO NEXO (o botão do trilho, desenho do lab): a conversa desta
+   * auditoria já está ao lado; o gesto a traz de volta, se estiver recolhida, e
+   * põe o cursor no campo. A pergunta é de quem pergunta: nada pré-escrito.
+   */
+  const composer = useComposer();
+  const areasDoPalco = useAreasRecolhidas();
+  const perguntarAoNexo = () => {
+    if (areasDoPalco.chat) areasDoPalco.alternarChat();
+    requestAnimationFrame(() => composer.focus());
+  };
+  const salvo = maisRecente?.salvo;
   const report = salvo?.report;
+  /*
+   * O AVISO DE "NADA MUDOU" fecha por parecer: fechado o deste, o de um pedido
+   * seguinte (outro artefato) volta a aparecer.
+   */
+  const [semMudancaFechado, setSemMudancaFechado] = useState<string | null>(null);
+  const avisoSemMudanca =
+    salvo?.semMudanca && maisRecente?.artifactId !== semMudancaFechado ? salvo.semMudanca.aviso : null;
 
   /*
    * O DOCUMENTO, LOCAL OU DO SERVIDOR.
@@ -264,13 +285,12 @@ export function PalcoDoNexo({
    * de correção mudou, em vez de entregar a lista nova como se fosse a primeira.
    */
   const reportAnterior = (auditorias.at(-2)?.payload as MemorialAuditResult | undefined)?.report;
-  const diffDoParecer = useMemo(
-    () =>
-      report && reportAnterior
-        ? resumoDoDiff(compararPareceres({ anterior: reportAnterior, atual: report }))
-        : "",
-    [report, reportAnterior],
-  );
+  // O cartão "Desde 18/09" do Resumo (desenho do lab): números, não a frase.
+  const comparado = useMemo(() => {
+    if (!report || !reportAnterior) return null;
+    const d = compararPareceres({ anterior: reportAnterior, atual: report });
+    return { desde: reportAnterior.runtime?.gerado_em ?? null, corrigidos: d.corrigidos.length, novos: d.novos.length, continuam: d.persistentes.length };
+  }, [report, reportAnterior]);
   // Os corrigidos DESTA auditoria: a conversa pode ter mais de uma ao longo do
   // tempo, e o progresso de uma não vale para a outra.
   const auditIdAtual = salvo?.auditId ?? "";
@@ -340,7 +360,7 @@ export function PalcoDoNexo({
    * seletores empilhados — chips grandes aqui, um controle de 12px dentro do
    * parecer —, e o de baixo se lia como filtro da lista, não como troca de vista.
    */
-  const [vistaDoParecer, setVistaDoParecer] = useState<AuditView>("summary");
+  const [vistaDoParecer, setVistaDoParecer] = useState<AuditView | "geral">("summary");
 
   /*
    * O LINK QUE PEDE UM ACHADO ABRE A ABA ACHADOS.
@@ -359,6 +379,23 @@ export function PalcoDoNexo({
    * para Achados e a pessoa não conseguiria sair dela.
    */
   const [focoDoLink, setFocoDoLink] = useState<string | null>(null);
+
+  /*
+   * O ACHADO PEDIDO PELO CHAT (a citação "ACH-001 … p. 1" no fim da auditoria):
+   * vai à fila, aberto nele. `vez` remonta o resultado, que só lê o foco ao nascer.
+   */
+  const [focoDoChat, setFocoDoChat] = useState<{ chave: string; vez: number } | null>(null);
+  useEffect(() => {
+    const abrir = (e: Event) => {
+      const chave = (e as CustomEvent<{ chave?: string }>).detail?.chave;
+      if (!chave) return;
+      setNoDocumento(false);
+      setVistaDoParecer("findings");
+      setFocoDoChat({ chave, vez: Date.now() });
+    };
+    window.addEventListener("nexo:abrir-achado", abrir);
+    return () => window.removeEventListener("nexo:abrir-achado", abrir);
+  }, []);
 
   if (aberturaPorLink.achadoEmFoco !== focoDoLink) {
     setFocoDoLink(aberturaPorLink.achadoEmFoco);
@@ -490,32 +527,13 @@ export function PalcoDoNexo({
         inexistente) e o que mudou desde a rodada anterior. A navegação entre
         as vistas foi para o trilho da direita (Resultado E).
       */}
-      {mostrandoAuditoria && report && !emCurso && ((fonte.tipo === "ausente" && !buscandoArquivos) || diffDoParecer) ? (
+      {mostrandoAuditoria && report && !emCurso && fonte.tipo === "ausente" && !buscandoArquivos ? (
         <div className="nx-notas-do-parecer">
           {report && fonte.tipo === "ausente" && !buscandoArquivos ? (
             <span className="nx-vistas-nota">
               {fonte.motivo}
             </span>
           ) : null}
-          {/*
-            O QUE MUDOU DESDE A AUDITORIA ANTERIOR.
-
-            Só aparece quando existe uma anterior nesta conversa — numa primeira
-            auditoria não há com o que comparar, e uma faixa dizendo "0 saíram"
-            seria ruído com cara de dado. Fica na barra de vistas, ao lado da
-            contagem, porque responde à mesma pergunta que ela: quanto trabalho
-            sobrou. Sem ela, o parecer da segunda rodada chega com cara de
-            primeira, e o esforço de correção não aparece em lugar nenhum.
-          */}
-          {diffDoParecer && (
-            <span
-              data-diff-do-parecer
-              className="nx-vistas-diff"
-              title="Comparado com a auditoria anterior desta conversa"
-            >
-              {diffDoParecer}
-            </span>
-          )}
         </div>
       ) : null}
 
@@ -529,6 +547,9 @@ export function PalcoDoNexo({
                 inicioMs={emCurso.inicioMs}
                 marcos={emCurso.marcos}
                 onCancelar={emCurso.cancelar}
+                obra={emCurso.obra}
+                codigo={emCurso.codigo}
+                prefeitura={emCurso.prefeitura}
               />
             </div>
           ) : aberturaPorLink.carregando || aberturaPorLink.falha ? (
@@ -651,9 +672,25 @@ export function PalcoDoNexo({
              * veredito, o tratado e as quatro leituras do mesmo parecer.
              */
             <div className="nx-resultado re-corpo--compacto">
+              {avisoSemMudanca && (
+                <div className="nx-sem-mudanca" role="dialog" aria-modal="false" aria-labelledby="nx-sem-mudanca-titulo">
+                  <div className="nx-sem-mudanca-cartao">
+                    <p id="nx-sem-mudanca-titulo" className="nx-sem-mudanca-titulo">
+                      Nada mudou desde a última auditoria
+                    </p>
+                    <p className="nx-sem-mudanca-texto">
+                      {avisoSemMudanca} Abri o parecer dela: os achados e o que já foi tratado continuam valendo.
+                    </p>
+                    <Botao variante="primary" autoFocus onClick={() => setSemMudancaFechado(maisRecente?.artifactId ?? null)}>
+                      Ver o parecer
+                    </Botao>
+                  </div>
+                </div>
+              )}
               <div className="nx-resultado-miolo">
                 <div className="h-full overflow-y-auto">
                   <ResultadoDoParecer
+                    key={focoDoChat?.vez ?? "parecer"}
                     report={report}
                     parecer={parecerVivo}
                     auditId={salvo?.auditId ?? null}
@@ -667,13 +704,15 @@ export function PalcoDoNexo({
                       }
                     }}
                     podeVerNoDocumento={podeVerNoDocumento}
-                    achadoEmFoco={aberturaPorLink.achadoEmFoco ?? null}
+                    achadoEmFoco={focoDoChat?.chave ?? aberturaPorLink.achadoEmFoco ?? null}
                     aoGerarTexto={aoGerarTextoCorrigido}
+                    comparado={comparado}
                   />
                 </div>
               </div>
               <TrilhoDoResultado
                 compacto
+                onPerguntar={perguntarAoNexo}
                 report={report}
                 total={totalDeAchados}
                 tratados={salvo?.auditId ? tratadosNoServidor : tratadosDesta}
