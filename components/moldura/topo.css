@@ -217,7 +217,7 @@
 /* a folga é MARGEM da barra, não padding da caixa: a caixa é a régua das
    container queries, e padding nela fazia 1280px medirem 1248 (a navegação sumia) */
 .ds .pn-topo-caixa--pilula .pn-topo {
-  margin: 12px 16px 4px;
+  margin: 12px var(--md-margem, 32px) 4px;
   height: 60px;
   gap: 8px;
   padding: 0 8px;
@@ -291,10 +291,20 @@
 .ds .pn-topo-caixa--pilula .pn-quem:hover .pn-quem-brilho { opacity: 1; }
 
 @container topo (max-width: 599px) {
-  .ds .pn-topo-caixa--pilula .pn-topo { margin: 8px 8px 4px; gap: 6px; padding: 0 6px; }
+  .ds .pn-topo-caixa--pilula .pn-topo { margin: 8px min(var(--md-margem, 32px), 8px) 4px; gap: 6px; padding: 0 6px; }
   .ds .pn-topo-caixa--pilula .pn-quem { padding: 0 8px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .ds .pn-realce { transition: none; }
 }
 .ds .pn-topo-caixa--pilula .pn-marca--botao .pn-quem-seta { color: var(--ds-text-secondary); }
+
+/* A BARRA ALINHA COM A TELA (auditoria de espaçamento, 03/10/2026). A pílula
+   sobrava 16px para cada lado do conteúdo: as páginas têm margem de 32px
+   (.mp-cabeca e .mp-painel) e o Nexo de 16px (.nx-mesa). A margem da barra é a
+   da tela em que ela está. E a altura que a barra ocupa (12 + 60 + 4) é uma
+   variável só: quem desconta o Topo da altura da janela lê daqui, e não um
+   64px da barra antiga. */
+.md-raiz { --md-margem: 32px; --md-altura-do-topo: 76px; }
+.md-raiz:has(.nx-mesa) { --md-margem: 16px; }
+@media (max-width: 599px) { .md-raiz { --md-altura-do-topo: 72px; } }

@@ -280,7 +280,11 @@
 .ds .nx-voce p, .ds .nx-texto { white-space: pre-wrap; overflow-wrap: anywhere; }
 .ds .nx-resposta { display: grid; gap: 12px; max-width: 72ch; }
 .ds .nx-turno-nota { font-size: 11.5px; color: var(--ds-text-tertiary); }
-.ds .nx-chat-pe { padding: 8px 14px 14px; }
+/* O campo alinha com as mensagens (auditoria de espaçamento, 03/10/2026): o
+   fio tem 20px de folga de cada lado, e o campo somava 14 do pé + 24 dele
+   mesmo — 18px mais estreito que as falas logo acima. */
+.ds .nx-chat-pe { padding: 8px 20px 14px; }
+.ds .nx-chat-pe .cx-campo { width: 100%; }
 .ds .nx-chat-pe-dentro { width: min(760px, 100%); margin: 0 auto; }
 .ds .nx-chat-erro { width: min(760px, calc(100% - 28px)); margin: 0 auto 8px; }
 .ds .nx-descer { position: sticky; left: auto; bottom: 12px; display: flex; width: max-content; margin: 0 auto; }
