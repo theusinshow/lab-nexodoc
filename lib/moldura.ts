@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { cache } from "react";
 
 import { auth } from "@/auth";
 import { AccessDenied } from "@/lib/actor";
@@ -73,32 +74,30 @@ export function iniciaisDe(nome: string) {
   return duas.toUpperCase();
 }
 
-/**
- * A moldura de quem talvez nem esteja logado (a página 404): sem sessão ou sem
- * acesso, devolve `null` em vez de mandar para o login — a página que não
- * existe não pede login para dizer que não existe.
+/*
+ * UMA CARGA POR REQUISIÇÃO — 03/10/2026.
+ *
+ * O Next monta a `app/not-found.tsx` em TODA requisição, como reserva para o
+ * caso de a página chamar `notFound()`, e ela pede a moldura também. Sem o
+ * `cache`, cada tela pagava a moldura duas vezes: medido no dev, Projetos fazia
+ * 23 consultas e caiu para 14; o Início, de 31 para 22. Com o banco a ~175 ms
+ * (Render em Oregon, Neon em São Paulo) era um segundo inteiro por clique.
+ *
+ * O `cache` do React vale para UMA requisição: a página e a 404 recebem o
+ * mesmo resultado, e a requisição seguinte consulta de novo. Por isso a parte
+ * cacheada não redireciona — só diz o que achou; quem decide o destino é
+ * `carregarMoldura` (manda para o login) ou `tentarMoldura` (devolve null).
  */
-export async function tentarMoldura(): Promise<DadosDaMoldura | null> {
-  const session = await auth();
-  if (!session?.user) return null;
-  const access = await getUserAccess(session.user.email, session.user.name);
-  if (!access.isActive) return null;
-  try {
-    return await carregarMoldura("/");
-  } catch {
-    return null;
-  }
-}
+type ResultadoDaMoldura =
+  | { tipo: "sem-sessao" }
+  | { tipo: "sem-acesso" }
+  | { tipo: "ok"; dados: DadosDaMoldura };
 
-/**
- * Carrega a moldura para uma tela. Quem não está logado vai para o login (e
- * volta para `rota`); quem não está liberado, para /sem-acesso.
- */
-export async function carregarMoldura(rota: string): Promise<DadosDaMoldura> {
+const lerMoldura = cache(async (): Promise<ResultadoDaMoldura> => {
   const session = await auth();
-  if (!session?.user) redirectToLogin(rota);
+  if (!session?.user) return { tipo: "sem-sessao" };
   const access = await getUserAccess(session.user.email, session.user.name);
-  if (!access.isActive) redirect("/sem-acesso");
+  if (!access.isActive) return { tipo: "sem-acesso" };
 
   const email = access.email || session.user.email || "";
   const nome = session.user.name?.trim() || email;
@@ -111,7 +110,9 @@ export async function carregarMoldura(rota: string): Promise<DadosDaMoldura> {
     papelNoEscritorio: null,
   };
 
-  if (!isDatabaseConfigured()) return { usuario, comVoce: [], obras: [], recentes: [], semBanco: true };
+  if (!isDatabaseConfigured()) {
+    return { tipo: "ok", dados: { usuario, comVoce: [], obras: [], recentes: [], semBanco: true } };
+  }
 
   try {
     const actor = await requireActor();
@@ -137,14 +138,42 @@ export async function carregarMoldura(rota: string): Promise<DadosDaMoldura> {
     usuario.escritorio = org?.name ?? null;
     usuario.papelNoEscritorio = actor.orgRole;
     return {
-      usuario,
-      semBanco: false,
-      comVoce: pendencias.map((p) => ({ auditId: p.auditId, codigo: p.code, titulo: p.auditTitle, enviadoPor: p.enviadoPor, enviadoEm: p.enviadoEm, total: p.total })),
-      obras: projetos.map((p) => ({ id: p.id, codigo: p.code, nome: p.name, cliente: p.client, atualizadoEm: p.updatedAt.toISOString() })),
-      recentes: auditorias.map((a) => ({ auditId: a.id, titulo: a.title, codigo: a.project?.code ?? null, status: a.status, criadoEm: a.createdAt.toISOString() })),
+      tipo: "ok",
+      dados: {
+        usuario,
+        semBanco: false,
+        comVoce: pendencias.map((p) => ({ auditId: p.auditId, codigo: p.code, titulo: p.auditTitle, enviadoPor: p.enviadoPor, enviadoEm: p.enviadoEm, total: p.total })),
+        obras: projetos.map((p) => ({ id: p.id, codigo: p.code, nome: p.name, cliente: p.client, atualizadoEm: p.updatedAt.toISOString() })),
+        recentes: auditorias.map((a) => ({ auditId: a.id, titulo: a.title, codigo: a.project?.code ?? null, status: a.status, criadoEm: a.createdAt.toISOString() })),
+      },
     };
   } catch (err) {
-    if (err instanceof AccessDenied) redirect("/sem-acesso");
+    if (err instanceof AccessDenied) return { tipo: "sem-acesso" };
     throw err;
   }
+});
+
+/**
+ * A moldura de quem talvez nem esteja logado (a página 404): sem sessão ou sem
+ * acesso, devolve `null` em vez de mandar para o login — a página que não
+ * existe não pede login para dizer que não existe.
+ */
+export async function tentarMoldura(): Promise<DadosDaMoldura | null> {
+  try {
+    const resultado = await lerMoldura();
+    return resultado.tipo === "ok" ? resultado.dados : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Carrega a moldura para uma tela. Quem não está logado vai para o login (e
+ * volta para `rota`); quem não está liberado, para /sem-acesso.
+ */
+export async function carregarMoldura(rota: string): Promise<DadosDaMoldura> {
+  const resultado = await lerMoldura();
+  if (resultado.tipo === "sem-sessao") redirectToLogin(rota);
+  if (resultado.tipo === "sem-acesso") redirect("/sem-acesso");
+  return resultado.dados;
 }
