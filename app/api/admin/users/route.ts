@@ -5,6 +5,7 @@ import type { Prisma, UserRole } from "@prisma/client";
 import { checkAdminRequest } from "@/lib/admin-gate";
 import { registrarAcao } from "@/lib/trilha-administrativa";
 import { getPrisma } from "@/lib/db";
+import { resumoPorPessoa, type ResumoDaPessoa } from "@/lib/metricas-por-pessoa";
 
 export const runtime = "nodejs";
 
@@ -105,7 +106,7 @@ async function serializeUser(user: {
   createdAt: Date;
   updatedAt: Date;
   _count?: { audits: number; sessions: number };
-}) {
+}, resumo?: ResumoDaPessoa) {
   const prisma = getPrisma();
   const [ldDraftCount, ldGeneratedCount, escritorio] = await Promise.all([
     prisma.ldDraft.count({ where: { userEmail: user.email } }),
@@ -126,6 +127,8 @@ async function serializeUser(user: {
     ldGeneratedCount,
     createdAt: user.createdAt.toISOString(),
     updatedAt: user.updatedAt.toISOString(),
+    // O que a pessoa faz (03/10/2026): ver [[lib/metricas-por-pessoa.ts]].
+    ...(resumo ?? {}),
   };
 }
 
@@ -147,8 +150,9 @@ export async function GET(request: Request) {
     },
   });
 
+  const resumos = await resumoPorPessoa(users);
   return NextResponse.json({
-    users: await Promise.all(users.map(serializeUser)),
+    users: await Promise.all(users.map((u) => serializeUser(u, resumos.get(u.email)))),
     generatedAt: new Date().toISOString(),
   });
 }

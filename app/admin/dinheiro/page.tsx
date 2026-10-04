@@ -21,7 +21,9 @@ const ORIGEM_DA_OBRA: Record<string, string> = {
   pasta: "pasta",
   conversa: "conversa avulsa",
   "conversa-removida": "a conversa não existe mais",
-  "sem-vinculo": "consumo sem conversa (auditoria fora do Nexo, manutenção)",
+  auditoria: "auditoria fora de conversa",
+  "pasta-e-auditoria": "pasta e auditorias fora de conversa",
+  "sem-vinculo": "consumo sem conversa e sem auditoria (manutenção, teste de provedor)",
 };
 
 type AdminUsageResponse = {
@@ -81,6 +83,8 @@ type AdminUsageResponse = {
     enabled: boolean;
     /** Consumo agrupado por obra (pasta da conversa). Ver `lib/custo-por-obra.ts`. */
     obras?: CustoDaObra[];
+    /** O mesmo consumo por quem gastou (03/10/2026). */
+    pessoas?: { email: string; estimatedCostUsd: number; totalTokens: number; requests: number }[];
     /** O teto de eventos lidos, dito em voz alta quando bate. */
     amostra?: { eventos: number; limite: number; truncado: boolean };
     totals: {
@@ -263,6 +267,8 @@ export default function AdminUsagePage() {
   const diasDoUso = data?.usage.daily ?? [];
   const interno = data?.internalUsage;
   const maxObra = Math.max(0, ...obras.map((o) => o.estimatedCostUsd));
+  const pessoasDoCusto = interno?.pessoas ?? [];
+  const maxPessoa = Math.max(0, ...pessoasDoCusto.map((p) => p.estimatedCostUsd));
   const maxFluxo = Math.max(0, ...(interno?.flows ?? []).map((x) => x.estimatedCostUsd));
   const maxTarefa = Math.max(0, ...(interno?.tasks ?? []).map((x) => x.estimatedCostUsd));
   const itens = [...(data?.costs.lineItems ?? [])].sort((a, b) => b.amount - a.amount);
@@ -403,7 +409,7 @@ export default function AdminUsagePage() {
       </Bloco>
 
       <Bloco id="din-obra" titulo="Custo por obra" acoes={interno?.amostra?.truncado ? <span className="din-selo">amostra: os {interno.amostra.limite} eventos mais recentes</span> : undefined}>
-        <p className="din-lede">O mesmo consumo, cortado pela pergunta que o escritório faz: quanto custou entregar este projeto. A obra é a pasta da conversa; conversa fora de pasta conta como obra de uma conversa só.</p>
+        <p className="din-lede">O mesmo consumo, cortado pela pergunta que o escritório faz: quanto custou entregar este projeto. A obra é a pasta da conversa, ou a obra da auditoria quando ela correu fora de uma conversa; conversa fora de pasta conta como obra de uma conversa só.</p>
         {!data ? (
           <p className="adm-vazio">{semResposta}</p>
         ) : !interno?.enabled ? (
@@ -439,6 +445,42 @@ export default function AdminUsagePage() {
                 </div>
               );
             })}
+          </div>
+        )}
+      </Bloco>
+
+      <Bloco id="din-pessoa" titulo="Custo por pessoa" acoes={interno?.amostra?.truncado ? <span className="din-selo">amostra: os {interno.amostra.limite} eventos mais recentes</span> : undefined}>
+        <p className="din-lede">Quem gastou no período. A ficha da pessoa, em Pessoas, mostra o gasto dia a dia e o que ela fez.</p>
+        {!data ? (
+          <p className="adm-vazio">{semResposta}</p>
+        ) : !interno?.enabled ? (
+          <p className="adm-vazio">Sem DATABASE_URL: o consumo por pessoa vem dos eventos gravados no banco.</p>
+        ) : pessoasDoCusto.length === 0 ? (
+          <p className="adm-vazio">Nenhum consumo registrado no período.</p>
+        ) : (
+          <div className="adm-tabela din-tabela--obras">
+            <div className="adm-linha din-cab">
+              <span>Pessoa</span>
+              <span />
+              <span className="din-direita">Chamadas</span>
+              <span className="din-direita">Tokens</span>
+              <span className="din-direita">Custo</span>
+            </div>
+            {pessoasDoCusto.map((p) => (
+              <div key={p.email} className="adm-linha">
+                <span className="adm-tit">
+                  <b className={p.email === "sem dono" ? "adm-fraco" : undefined}>{p.email}</b>
+                  {p.email === "sem dono" && <small>chamadas sem pessoa identificada (rotinas do sistema)</small>}
+                </span>
+                <BarraEmbutida key={days} valor={p.estimatedCostUsd} maximo={maxPessoa} />
+                <span className="adm-fraco ds-num din-direita">{formatNumber(p.requests)}</span>
+                <span className="adm-fraco ds-num din-direita">{formatNumber(p.totalTokens)}</span>
+                <span className="ds-num din-direita din-custo">
+                  {usd(p.estimatedCostUsd)}
+                  {brl(p.estimatedCostUsd) && <small>{brl(p.estimatedCostUsd)}</small>}
+                </span>
+              </div>
+            ))}
           </div>
         )}
       </Bloco>
