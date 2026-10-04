@@ -279,15 +279,26 @@ export function assuntoDoAviso(pessoa: PessoaAAvisar, contexto: Contexto) {
 /** A rampa teal da DESIGN.md, e o preto do app. Repetida aqui como literal, e
  *  NÃO lida dos tokens CSS: cliente de e-mail não resolve `var()`, e um token
  *  que chegasse cru pintaria texto de preto sobre preto. */
+/*
+ * A IDENTIDADE NOVA (04/10/2026): o e-mail é o app escuro, com o orbe e o
+ * violeta como destaque — as cores do sistema `--ds-*` (app/ds.css), escritas
+ * por extenso porque cliente de e-mail não lê variável. Era o teal e o
+ * "NexoDoc" em letras de máquina do tema antigo.
+ */
 const TINTA = {
-  fundo: "#0a0e11",
-  papel: "#ffffff",
-  tinta: "#14181b",
-  suave: "#5c666d",
-  linha: "#e4e6e8",
-  teal: "#00a693",
-  claro: "#7af7e1",
+  pagina: "#08090b", // --ds-p-gray-0
+  cartao: "#121317", // --ds-p-gray-2
+  ficha: "#181a1f", // --ds-p-gray-3
+  linha: "#25272d", // --ds-line-subtle sobre o cartão
+  tinta: "#eeeff2", // --ds-text-primary
+  suave: "#a4a8b3", // --ds-text-secondary
+  fraco: "#8a8f99", // --ds-text-tertiary
+  nexo: "#c3a3ff", // --ds-nexo (violeta)
+  acao: "#f2f3f5", // --ds-action-bg
+  acaoTinta: "#0a0b0d", // --ds-action-fg
 } as const;
+const FONTE = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
+const MONO = "ui-monospace,SFMono-Regular,Menlo,Consolas,monospace";
 
 /**
  * O CORPO, nas duas formas.
@@ -305,7 +316,7 @@ const TINTA = {
  * que é o terreno em que todo cliente acerta.
  *
  * O ORBE É IMAGEM REMOTA, e o e-mail funciona sem ele: metade dos clientes
- * bloqueia imagem por padrão. O `alt` diz "NexoDoc", a faixa escura já é a
+ * bloqueia imagem por padrão. O `alt` diz "Nexo", a faixa escura já é a
  * marca, e nenhuma informação mora dentro do PNG. Imagem embutida em `data:`
  * não é alternativa — o Gmail descarta.
  */
@@ -328,7 +339,7 @@ export function corpoDoAviso(pessoa: PessoaAAvisar, contexto: Contexto) {
   /*
    * A LINHA SOB O BOTÃO SÓ EXISTE PARA QUEM NUNCA ENTROU.
    *
-   * "Abrir no NexoDoc" pressupõe uma conta que essa pessoa não tem, e ela é
+   * "Abrir no Nexo" pressupõe uma conta que essa pessoa não tem, e ela é
    * justamente para quem este e-mail mais importa: é o único caminho pelo qual
    * pode descobrir que há trabalho esperando por ela. A frase avisa que o
    * clique vai pedir login antes de mostrar o parecer.
@@ -336,7 +347,7 @@ export function corpoDoAviso(pessoa: PessoaAAvisar, contexto: Contexto) {
    * Para quem já tem conta a linha repetia o botão logo acima dela.
    */
   const chamada = pessoa.convidado
-    ? "Você ainda não entrou no NexoDoc. Use a conta Google do escritório — o parecer estará esperando."
+    ? "Você ainda não entrou no Nexo. Use a conta Google do escritório — o parecer estará esperando."
     : "";
 
   /*
@@ -352,26 +363,26 @@ export function corpoDoAviso(pessoa: PessoaAAvisar, contexto: Contexto) {
   ];
 
   const texto = [
-    `${quantos} ${verbo} por você no NexoDoc.`,
+    `${quantos} ${verbo} por você no Nexo.`,
     "",
     `${quem} enviou ${quantos} da auditoria para você.`,
     "",
     ...ficha.map(([r, v]) => `${r}: ${v}`),
     "",
-    "Abrir no NexoDoc:",
+    "Abrir no Nexo:",
     link,
     ...(chamada ? ["", chamada] : []),
     "",
     "---",
     "O conteúdo dos achados não sai do sistema — este aviso leva só a contagem e o caminho.",
-    "Você recebeu esta mensagem porque faz parte de um escritório no NexoDoc.",
+    "Você recebeu esta mensagem porque faz parte de um escritório no Nexo.",
   ].join("\n");
 
   const linhasDaFicha = ficha
     .map(
       ([rotulo, valor], i) => `<tr>
-<td style="padding:${i === 0 ? "0" : "9px"} 16px 9px 0;border-top:${i === 0 ? "0" : `1px solid ${TINTA.linha}`};font:600 11px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;letter-spacing:.07em;text-transform:uppercase;color:${TINTA.suave};white-space:nowrap;vertical-align:top;">${esc(rotulo)}</td>
-<td style="padding:${i === 0 ? "0" : "9px"} 0 9px 0;border-top:${i === 0 ? "0" : `1px solid ${TINTA.linha}`};font-size:14px;line-height:1.5;color:${TINTA.tinta};vertical-align:top;">${esc(valor)}</td>
+<td style="padding:${i === 0 ? "0" : "10px"} 16px 10px 0;border-top:${i === 0 ? "0" : `1px solid ${TINTA.linha}`};font:400 13px/1.5 ${FONTE};color:${TINTA.fraco};white-space:nowrap;vertical-align:top;">${esc(rotulo)}</td>
+<td style="padding:${i === 0 ? "0" : "10px"} 0 10px 0;border-top:${i === 0 ? "0" : `1px solid ${TINTA.linha}`};font:${rotulo === "Projeto" ? `500 13px/1.5 ${MONO}` : `400 14px/1.5 ${FONTE}`};color:${TINTA.tinta};vertical-align:top;">${esc(valor)}</td>
 </tr>`,
     )
     .join("");
@@ -382,48 +393,47 @@ export function corpoDoAviso(pessoa: PessoaAAvisar, contexto: Contexto) {
    * Toda célula abaixo declara a própria fonte — menos uma, que ficou sem e caiu
    * na SERIFA padrão do cliente no meio de um layout sem serifa nenhuma. Herdar
    * aqui não conserta quem declara, e salva quem esquecer.
+   *
+   * ESCURO DE PROPÓSITO, e com `bgcolor` em toda superfície: o atributo é o que
+   * cliente que ignora CSS de fundo (Outlook) respeita, e sem ele o texto claro
+   * cairia sobre branco.
    */
-  const html = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;background:#f2f3f4;margin:0;padding:24px 12px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  const html = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${TINTA.pagina}" style="width:100%;background:${TINTA.pagina};margin:0;padding:32px 12px;font-family:${FONTE};">
 <tr><td align="center" style="padding:0;">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:520px;width:100%;background:${TINTA.papel};border:1px solid ${TINTA.linha};">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${TINTA.cartao}" style="max-width:520px;width:100%;background:${TINTA.cartao};border:1px solid ${TINTA.linha};border-radius:16px;">
 
-<tr><td style="padding:0;background:${TINTA.fundo};" bgcolor="${TINTA.fundo}">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
-<td style="padding:26px 0 26px 28px;width:76px;" valign="middle">
-<img src="${esc(orbe)}" width="64" height="64" alt="NexoDoc" style="display:block;width:64px;height:64px;border:0;outline:none;text-decoration:none;">
-</td>
-<td style="padding:26px 28px 26px 16px;" valign="middle">
-<p style="margin:0;font:600 12px/1.4 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;letter-spacing:.16em;text-transform:uppercase;color:${TINTA.claro};">NexoDoc</p>
-<p style="margin:5px 0 0 0;font:400 15px/1.4 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#9fb0b6;">Documentação de projetos de engenharia</p>
-</td>
+<tr><td style="padding:26px 28px 0 28px;">
+<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+<td valign="middle" style="padding:0 12px 0 0;"><img src="${esc(orbe)}" width="36" height="36" alt="Nexo" style="display:block;width:36px;height:36px;border:0;outline:none;text-decoration:none;border-radius:50%;"></td>
+<td valign="middle" style="padding:0;"><p style="margin:0;font:600 17px/1.2 ${FONTE};letter-spacing:-0.01em;color:${TINTA.tinta};">Nexo</p></td>
 </tr></table>
 </td></tr>
-<tr><td style="padding:0;font-size:0;line-height:0;background:${TINTA.teal};" bgcolor="${TINTA.teal}" height="3">&nbsp;</td></tr>
 
-<tr><td style="padding:30px 28px 0 28px;">
-<h1 style="margin:0;font:600 23px/1.3 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:${TINTA.tinta};">${esc(quantos)} ${verbo} por você</h1>
-<p style="margin:12px 0 0 0;font:400 15px/1.6 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#3f484e;">${esc(quem)} enviou ${esc(quantos)} da auditoria para você revisar.</p>
+<tr><td style="padding:28px 28px 0 28px;">
+<p style="margin:0 0 10px 0;font:500 12px/1.4 ${FONTE};color:${TINTA.nexo};">Com você</p>
+<h1 style="margin:0;font:400 26px/1.25 ${FONTE};letter-spacing:-0.02em;color:${TINTA.tinta};">${esc(quantos)} ${verbo} por você</h1>
+<p style="margin:12px 0 0 0;font:400 15px/1.6 ${FONTE};color:${TINTA.suave};">${esc(quem)} enviou ${esc(quantos)} da auditoria para você revisar.</p>
 </td></tr>
 
 <tr><td style="padding:24px 28px 0 28px;">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-top:1px solid ${TINTA.linha};border-bottom:1px solid ${TINTA.linha};">
-<tr><td style="padding:16px 0;">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">${linhasDaFicha}</table>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${TINTA.ficha}" style="width:100%;background:${TINTA.ficha};border-radius:12px;">
+<tr><td style="padding:16px 18px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;font-family:${FONTE};">${linhasDaFicha}</table>
 </td></tr></table>
 </td></tr>
 
 <tr><td style="padding:24px 28px 0 28px;">
 <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
-<td style="background:${TINTA.teal};" bgcolor="${TINTA.teal}">
-<a href="${esc(link)}" style="display:block;padding:13px 26px;font:600 15px/1 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#ffffff;text-decoration:none;">Abrir no NexoDoc &rarr;</a>
+<td bgcolor="${TINTA.acao}" style="background:${TINTA.acao};border-radius:999px;">
+<a href="${esc(link)}" style="display:block;padding:13px 24px;font:600 15px/1 ${FONTE};color:${TINTA.acaoTinta};text-decoration:none;border-radius:999px;">Abrir no Nexo &rarr;</a>
 </td>
 </tr></table>
-${chamada ? `<p style="margin:14px 0 0 0;font:400 13px/1.6 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:${TINTA.suave};">${esc(chamada)}</p>` : ""}
+${chamada ? `<p style="margin:14px 0 0 0;font:400 13px/1.6 ${FONTE};color:${TINTA.suave};">${esc(chamada)}</p>` : ""}
 </td></tr>
 
-<tr><td style="padding:26px 28px 28px 28px;">
-<p style="margin:0;padding-top:18px;border-top:1px solid ${TINTA.linha};font:400 12px/1.6 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#8b959b;">O conteúdo dos achados não sai do sistema — este aviso leva só a contagem e o caminho.</p>
-<p style="margin:8px 0 0 0;font:400 12px/1.6 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#8b959b;">Você recebeu esta mensagem porque faz parte de um escritório no NexoDoc.</p>
+<tr><td style="padding:28px 28px 26px 28px;">
+<p style="margin:0;padding-top:18px;border-top:1px solid ${TINTA.linha};font:400 12px/1.6 ${FONTE};color:${TINTA.fraco};">O conteúdo dos achados não sai do sistema — este aviso leva só a contagem e o caminho.</p>
+<p style="margin:8px 0 0 0;font:400 12px/1.6 ${FONTE};color:${TINTA.fraco};">Você recebeu esta mensagem porque faz parte de um escritório no Nexo.</p>
 </td></tr>
 
 </table>

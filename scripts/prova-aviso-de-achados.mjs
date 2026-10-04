@@ -362,7 +362,7 @@ check(
 );
 check(
   "e ela tem alt, senao o cabecalho fica mudo quando bloqueada",
-  /<img[^>]+alt="NexoDoc"/.test(paraMilton?.html ?? ""),
+  /<img[^>]+alt="Nexo"/.test(paraMilton?.html ?? ""),
 );
 check(
   "nenhuma imagem embutida em data: (o Gmail descarta)",
