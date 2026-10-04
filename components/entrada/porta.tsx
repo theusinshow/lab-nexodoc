@@ -5,6 +5,7 @@ import { FONTES_DS } from "@/lib/ds/fontes";
 import { VERSAO_DO_BUILD } from "@/lib/versao-do-build";
 
 import { Filme } from "./filme";
+import { FundoDaPorta } from "./fundo";
 import "@/app/ds.css";
 import "./entrada.css";
 
@@ -28,11 +29,14 @@ export function PortaDeEntrada({
     <div className={`ds ${FONTES_DS}`}>
       <div className="en">
         <section className="en-porta">
+          <FundoDaPorta />
           <header className="en-marca">
             <Orbe tamanho={18} />
             <span>Nexo</span>
           </header>
-          <main className="en-conteudo">{children}</main>
+          <main className="en-conteudo">
+            <div className="en-cartao">{children}</div>
+          </main>
           {depois}
           <footer className="en-pe">
             <span>PROSUL</span>

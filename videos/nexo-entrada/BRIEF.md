@@ -43,3 +43,18 @@ a faixa do parecer, a fileira do volume com as setas aprovadas, o orbe, Geist, d
 - Sem áudio: vai num login, mudo.
 - Composições: compositions/leitura.html (mundo e câmera) e compositions/legenda.html (HUD e
   tipografia), no mesmo relógio (objeto R nas duas).
+
+## Render de entrega (04/10/2026)
+
+O 1x (1440x1080 a ~0,66 Mbps) borrava no painel de 2K, que estica o filme ~1,5x. O CLI só faz
+supersample (`--resolution`) em 16:9, então a entrega sai por um palco 16:9 numa CÓPIA do projeto:
+
+1. Copiar index.html, compositions, assets, hyperframes.json e package.json para uma pasta temporária; no
+   index.html da cópia: viewport e `html, body` com 1920 de largura, `data-width="1920"` no #root
+   e `#leitura, #legenda { position:absolute; left:240px; width:1440px; height:1080px }`.
+2. `npx --yes hyperframes@0.8.100 render --resolution landscape-4k --crf 12 --output mestre4k.mp4`
+3. Recortar o 4:3 do meio e reduzir para 2160x1620 (cobre painel de 2K e Retina):
+   `-vf "crop=2880:2160:480:0,scale=2160:1620:flags=lanczos"`
+   - mp4: `-c:v libx264 -preset veryslow -tune animation -crf 20 -pix_fmt yuv420p -movflags +faststart -an`
+   - webm: `-c:v libvpx-vp9 -b:v 0 -crf 34 -row-mt 1 -cpu-used 1 -pix_fmt yuv420p -an`
+   - pôsteres webp (quality 82): quadro 0 → nexo-entrada-inicio.webp; 13,2 s → nexo-entrada-poster.webp
