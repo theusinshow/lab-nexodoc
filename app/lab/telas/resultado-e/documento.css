@@ -1,0 +1,105 @@
+/* NO DOCUMENTO: o memorial página a página, com os achados no lugar. */
+.ds .nd { display: grid; gap: 12px; }
+.ds .nd-barra { display: flex; align-items: center; gap: 16px; }
+.ds .nd-legenda > span { display: inline-flex; align-items: center; gap: 6px; }
+.ds .nd-leg { width: 12px; height: 4px; border-radius: 999px; background: var(--nd-tom); }
+
+.ds .nd--block { --nd-tom: var(--ds-sev-block); }
+.ds .nd--decide { --nd-tom: var(--ds-sev-decide); }
+.ds .nd--note { --nd-tom: #9aa1ad; }
+.ds .nd--texto { --nd-tom: var(--ds-sev-texto); }
+
+.ds .nd-aviso { display: flex; align-items: center; gap: 12px; padding: 10px 10px 10px 14px; border-radius: var(--ds-radius-row); background: var(--ds-nexo-wash); box-shadow: inset 0 0 0 1px var(--ds-nexo-line); font-size: var(--ds-text-2xs); line-height: 1.5; color: var(--ds-text-secondary); }
+.ds .nd-aviso > svg { flex: none; color: var(--ds-nexo); }
+.ds .nd-aviso > span { flex: 1; }
+.ds .nd-aviso b { font-weight: 500; color: var(--ds-text-primary); }
+.ds .nd-aviso--neutro { background: var(--ds-surface-card); box-shadow: var(--ds-edge); }
+.ds .nd-aviso--neutro > svg { color: var(--ds-text-secondary); }
+
+/* ---------- com achados: uma coluna por página ---------- */
+.ds .nd-colunas { display: grid; grid-template-columns: repeat(auto-fill, minmax(148px, 1fr)); gap: 14px 12px; align-items: start; }
+.ds .nd-coluna { display: grid; gap: 8px; }
+.ds .nd-pagina { display: flex; align-items: center; justify-content: space-between; padding: 0 2px; font-size: 11.5px; color: var(--ds-text-secondary); }
+.ds .nd-folha-botao { padding: 0; border: 0; border-radius: 4px; background: none; cursor: zoom-in; }
+.ds .nd-folha { display: grid; align-content: start; gap: 5px; aspect-ratio: 210 / 297; padding: 14% 11%; border-radius: 4px; background: var(--ds-p-paper); box-shadow: 0 10px 24px rgb(0 0 0 / 0.4), 0 1px 3px rgb(0 0 0 / 0.3); transition: transform var(--ds-dur-feedback); }
+.ds .nd-folha-botao:hover .nd-folha { transform: translateY(-2px); }
+.ds .nd-linha { display: block; height: 4px; border-radius: 1px; background: #d9dce2; }
+.ds .nd-marca { display: block; height: 6px; margin: -1px 0; border-radius: 2px; background: color-mix(in srgb, var(--nd-tom) 55%, transparent); box-shadow: 0 0 0 1px var(--nd-tom); transition: background var(--ds-dur-feedback), opacity var(--ds-dur-feedback), box-shadow var(--ds-dur-feedback); }
+.ds .nd-marca--acesa { background: var(--nd-tom); box-shadow: 0 0 0 2px color-mix(in srgb, var(--nd-tom) 45%, transparent); }
+.ds .nd-marca.nd--apagada { opacity: 0.45; }
+.ds .nd-folha--remota { background: repeating-linear-gradient(135deg, rgb(255 255 255 / 0.04) 0 2px, transparent 2px 8px), var(--ds-surface-raised); box-shadow: inset 0 0 0 1px var(--ds-line-default); }
+.ds .nd-folha--desenho { background: repeating-linear-gradient(45deg, #c9cdd5 0 1px, transparent 1px 7px), #e9ebef; opacity: 0.5; }
+
+/* as notas: sem caixa, sem borda colorida — o delta e o texto, como anotação de revisão */
+.ds .nd-notas { list-style: none; margin: 0; padding: 2px 0 0; display: grid; gap: 2px; }
+.ds .nd-nota { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto; align-items: start; gap: 8px; padding: 5px 2px; border-radius: 6px; }
+.ds .nd-nota .nd-delta { margin-top: 1px; }
+.ds .nd-nota-texto { display: grid; gap: 2px; padding: 0; border: 0; background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+.ds .nd-nota-texto b { font-size: 12.5px; font-weight: 400; line-height: 1.35; color: var(--ds-text-primary); text-decoration: underline; text-decoration-color: transparent; text-underline-offset: 3px; transition: text-decoration-color var(--ds-dur-feedback); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.ds .nd-nota-texto small { font-family: var(--ds-font-mono); font-size: 10.5px; color: var(--ds-text-tertiary); }
+.ds .nd-nota--acesa .nd-nota-texto b { text-decoration-color: var(--ds-text-tertiary); }
+.ds .nd-nota--tratada .nd-nota-texto b { color: var(--ds-text-tertiary); }
+.ds .nd-nota-memorial { display: grid; place-items: center; width: 22px; height: 22px; padding: 0; border: 0; border-radius: 6px; background: none; color: var(--ds-text-tertiary); cursor: pointer; opacity: 0; transition: opacity var(--ds-dur-feedback); }
+.ds .nd-nota:hover .nd-nota-memorial, .ds .nd-nota-memorial:focus-visible { opacity: 1; }
+.ds .nd-nota-memorial:hover { color: var(--ds-text-primary); background: rgb(255 255 255 / 0.06); }
+
+/* a marca do trecho também perde o contorno: só o grifo */
+.ds .nd-marca { box-shadow: none; }
+.ds .nd-marca--acesa { box-shadow: none; }
+
+/* ---------- todas: a grade das 42 ---------- */
+.ds .nd-todas { display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 12px 10px; }
+.ds .nd-mini { display: grid; gap: 5px; padding: 0; border: 0; background: none; font: inherit; cursor: default; }
+.ds .nd-mini .nd-folha { gap: 3px; padding: 12% 10%; opacity: 0.35; box-shadow: 0 4px 10px rgb(0 0 0 / 0.35); }
+.ds .nd-mini .nd-linha { height: 2px; }
+.ds .nd-mini .nd-marca { height: 3px; margin: 0; box-shadow: none; background: var(--nd-tom); }
+.ds .nd-mini--com { cursor: zoom-in; }
+.ds .nd-mini--com .nd-folha { opacity: 1; }
+.ds .nd-mini--com:hover .nd-folha { transform: translateY(-2px); }
+.ds .nd-mini-rodape { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--ds-text-tertiary); }
+.ds .nd-mini--com .nd-mini-rodape { color: var(--ds-text-primary); }
+.ds .nd-mini-rodape em { min-width: 15px; height: 15px; padding: 0 4px; border-radius: 999px; background: var(--nd-tom); color: var(--ds-text-on-paper); font-style: normal; font-size: 10px; font-weight: 600; line-height: 15px; text-align: center; }
+.ds .nd-mini-rodape small { font-size: 10.5px; }
+.ds .nd-colunas .nd-folha { gap: 4px; padding: 12% 10%; }
+.ds .nd-colunas .nd-linha { height: 3px; }
+.ds .nd-colunas .nd-marca { height: 5px; }
+/* ---------- a etiqueta: retângulo reto, cor do nível, código em branco ---------- */
+.ds .nd-marca-linha { position: relative; display: block; }
+.ds .nd-etq { display: inline-block; padding: 2px 5px; background: var(--nd-tom); color: var(--ds-p-ink); font-family: var(--ds-font-mono); font-size: 10.5px; font-weight: 600; line-height: 1.3; letter-spacing: 0.02em; white-space: nowrap; transition: background var(--ds-dur-state), color var(--ds-dur-state), box-shadow var(--ds-dur-feedback); }
+/* tratada: vazada — só o contorno, o código riscado */
+.ds .nd-etq--tratada { background: transparent; color: var(--nd-tom); box-shadow: inset 0 0 0 1.25px var(--nd-tom); text-decoration: line-through; text-decoration-thickness: 1px; }
+/* acesa: um anel afastado, que não mexe no tamanho */
+.ds .nd-etq--acesa { box-shadow: 0 0 0 2px var(--ds-surface-page), 0 0 0 3.5px var(--nd-tom); }
+.ds .nd-etq--tratada.nd-etq--acesa { box-shadow: inset 0 0 0 1.25px var(--nd-tom), 0 0 0 2px var(--ds-surface-page), 0 0 0 3.5px var(--nd-tom); }
+/* na margem da página: a mesma etiqueta, pequena, colada na borda do texto */
+/* no papel, a cor clara do nível some: o texto da tratada fica cinza de papel e a cor vai só para o contorno */
+.ds .nd-folha .nd-etq--tratada { color: var(--ds-text-on-paper-muted); }
+.ds .nd-etq--margem { position: absolute; right: 0; top: 50%; padding: 1px 3px; font-size: 8px; line-height: 1.2; transform: translate(calc(100% + 2px), -50%); }
+.ds .nd-folha .nd-etq--acesa { box-shadow: 0 0 0 1.5px var(--ds-p-paper), 0 0 0 2.5px var(--nd-tom); }
+.ds .nd-folha .nd-etq--tratada.nd-etq--acesa { box-shadow: inset 0 0 0 1.25px var(--nd-tom), 0 0 0 1.5px var(--ds-p-paper), 0 0 0 2.5px var(--nd-tom); }
+.ds .nd-colunas .nd-folha--margem { padding-right: 16%; }
+.ds .nd-marca--tratada { opacity: 0.35; }
+
+/* a nota: a etiqueta em cima, o título embaixo na largura toda */
+.ds .nd-nota { grid-template-columns: minmax(0, 1fr) auto; row-gap: 5px; padding: 6px 4px; }
+.ds .nd-nota .nd-etq { grid-row: 1; grid-column: 1; justify-self: start; }
+.ds .nd-nota .nd-nota-memorial { grid-row: 1; grid-column: 2; }
+.ds .nd-nota .nd-nota-texto { grid-row: 2; grid-column: 1 / -1; }
+/* a nota ativa (pelo teclado) ganha um fundo discreto, sem borda */
+.ds .nd-nota--ativa { background: rgb(255 255 255 / 0.04); }
+
+/* o cabeçalho da página diz o que falta */
+.ds .nd-pagina-falta { font-size: 11px; color: var(--ds-text-secondary); }
+.ds .nd-pagina-ok { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; color: var(--ds-state-ok); }
+
+/* a legenda que filtra */
+.ds .nd-filtro { display: flex; gap: 4px; }
+.ds .nd-filtro-item { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 9px; border: 0; border-radius: 999px; background: none; font: inherit; font-size: 11.5px; color: var(--ds-text-tertiary); cursor: pointer; transition: color var(--ds-dur-feedback), background var(--ds-dur-feedback); }
+.ds .nd-filtro-item i { width: 9px; height: 9px; background: var(--nd-tom); transition: background var(--ds-dur-state), box-shadow var(--ds-dur-state); }
+.ds .nd-filtro-item em { font-style: normal; font-size: 10.5px; color: var(--ds-text-tertiary); }
+.ds .nd-filtro-item[aria-pressed="true"] { color: var(--ds-text-secondary); }
+.ds .nd-filtro-item:hover { background: rgb(255 255 255 / 0.04); color: var(--ds-text-primary); }
+.ds .nd-filtro-item[aria-pressed="false"] i { background: transparent; box-shadow: inset 0 0 0 1.25px var(--nd-tom); }
+.ds .nd-filtro-item[aria-pressed="false"] { text-decoration: line-through; text-decoration-color: var(--ds-text-tertiary); }
+.ds .nd-atalhos { margin-left: auto; display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; color: var(--ds-text-tertiary); white-space: nowrap; }
+.ds .nd-vazio { grid-column: 1 / -1; margin: 24px 4px; font-size: var(--ds-text-xs); color: var(--ds-text-secondary); }

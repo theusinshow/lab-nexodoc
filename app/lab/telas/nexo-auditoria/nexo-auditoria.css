@@ -1,0 +1,99 @@
+/* A AUDITORIA DENTRO DA CONVERSA: o palco do shell do Nexo (nexo.css) com a
+   auditoria ou o Resultado dentro, e o chat que cita achados. */
+
+.ds .na .nw-palco { min-height: 0; }
+.ds .na-palco { flex: 1; min-height: 0; overflow: auto; background: var(--ds-surface-page); }
+
+/* o Resultado e a Auditoria no palco: sem barra, sem título (o palco já diz), mais justos */
+.ds .re--embutido .re-titulo { display: none; }
+.ds .re--embutido .re-corpo { width: calc(100% - 32px); padding-top: 16px; }
+.ds .au--embutido { padding-bottom: 32px; }
+.ds .au--embutido .au-corpo { width: calc(100% - 32px); padding-top: 16px; }
+
+/* o achado citado no chat: o traço da gravidade, o número, o assunto e a página */
+.ds .na-citas { display: grid; gap: 6px; width: 100%; }
+.ds .na-cita {
+  display: grid;
+  grid-template-columns: 3px auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  min-height: 36px;
+  padding: 6px 10px 6px 8px;
+  border: 0;
+  border-radius: 8px;
+  background: rgb(255 255 255 / 0.035);
+  box-shadow: inset 0 0 0 1px var(--ds-line-subtle);
+  font: inherit;
+  font-size: 12.5px;
+  text-align: left;
+  color: var(--ds-text-primary);
+  cursor: pointer;
+  transition: box-shadow var(--ds-dur-state) var(--ds-ease-feedback), background var(--ds-dur-state) var(--ds-ease-feedback);
+}
+.ds .na-cita:hover { background: rgb(255 255 255 / 0.06); box-shadow: inset 0 0 0 1px var(--ds-line-strong); }
+.ds .na-cita i { align-self: stretch; border-radius: 2px; background: var(--ds-sev-note); }
+.ds .na-cita--block i { background: var(--ds-sev-block); }
+.ds .na-cita--decide i { background: var(--ds-sev-decide); }
+.ds .na-cita--texto i { background: var(--ds-sev-texto); }
+.ds .na-cita .ds-code { font-size: 11px; }
+.ds .na-cita-titulo { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.ds .na-cita-pag { font-size: 11.5px; color: var(--ds-text-tertiary); }
+/* a citação de uma resposta que chegou agora fica no recuo do texto do Nexo */
+.ds .na-cita-solta { margin: -14px 0 0 32px; }
+
+.ds .na-lista { display: grid; gap: 6px; margin: 0; padding-left: 18px; font-size: 13.5px; line-height: 1.5; color: var(--ds-text-primary); }
+.ds .na-lista li::marker { color: var(--ds-text-tertiary); font-family: var(--ds-font-mono); font-size: 12px; }
+
+/* a fila no palco: lista e achado dividem a largura, e o achado lê de cima para baixo */
+.ds .re--embutido .rs-fila { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); height: max(560px, calc(100vh - 64px - 48px - 32px)); }
+.ds .re--embutido .rs-partes > div { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+.ds .re--embutido .rs-detalhe-corpo h2 { font-size: 19px; }
+
+/* recolher conversas e chat: o palco fica com a largura */
+.ds .na .nw-mesa { transition: grid-template-columns var(--ds-dur-layout) var(--ds-ease-out); }
+.ds .na .nw-mesa { --na-conversas: 240px; --na-chat: 430px; grid-template-columns: var(--na-conversas) minmax(0, 1fr) var(--na-chat); }
+/* abaixo de 1440 o palco perderia a fila: conversas e chat cedem um pouco */
+@media (max-width: 1439px) {
+  .ds .na .nw-mesa { --na-conversas: 196px; --na-chat: 360px; }
+}
+.ds .na .nw-mesa.na-mesa--sem-conversas { --na-conversas: 0px; }
+.ds .na .nw-mesa.na-mesa--sem-chat { --na-chat: 0px; }
+.ds .na-mesa--sem-conversas > .nw-conversas,
+.ds .na-mesa--sem-chat > .nw-chat { overflow: hidden; padding-left: 0; padding-right: 0; border: 0; visibility: hidden; }
+.ds .nw-espaco button[aria-pressed="true"] { background: rgb(255 255 255 / 0.08); color: var(--ds-text-primary); }
+
+/* A LISTA ESTREITA LÊ EM DUAS FAIXAS: em cima o número, a disciplina e o dono;
+   embaixo o título inteiro, em até duas linhas. Cortar o título em "Revisão B
+   n…" deixava a fila ilegível no palco. As abas de cima rolam de lado em vez
+   de sumir pela borda. */
+.ds .re.re--embutido .rs-linha-corpo {
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "id meta" "titulo titulo";
+  row-gap: 3px;
+  height: auto;
+  min-height: 52px;
+  padding: 8px 10px 9px 8px;
+}
+.ds .re.re--embutido .rs-linha-id { grid-area: id; }
+.ds .re.re--embutido .rs-linha-meta { grid-area: meta; }
+.ds .re.re--embutido .rs-linha-titulo {
+  grid-area: titulo;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  white-space: normal;
+  line-height: 1.4;
+}
+.ds .re--embutido .rs-lista-topo .ds-seg { max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+.ds .re--embutido .rs-lista-topo .ds-seg::-webkit-scrollbar { display: none; }
+.ds .re--embutido .rs-lista-topo .ds-seg button { flex: none; }
+
+/* a faixa de cima do achado e a linha do dono quebram em vez de cortar */
+.ds .re--embutido .rs-detalhe-topo { flex-wrap: wrap; row-gap: 6px; padding-left: 16px; }
+.ds .re--embutido .rs-dono { flex-wrap: wrap; row-gap: 8px; }
+.ds .re--embutido .rs-dono > * { white-space: nowrap; }
+.ds .re--embutido .rs-detalhe-corpo { padding: 16px 16px 18px; }
+/* as ações do achado quebram linha no palco estreito; os atalhos J/K saem (o teclado continua valendo) */
+.ds .re--embutido .rs-botoes { flex-wrap: wrap; row-gap: 6px; }
+.ds .re--embutido .rs-atalhos { display: none; }

@@ -1,0 +1,627 @@
+{
+  "inv.login": {
+    "status": "aprovado",
+    "nota": "",
+    "em": "2026-09-30T01:13:03.053Z"
+  },
+  "inv.sem-acesso": {
+    "status": "aprovado",
+    "nota": "",
+    "em": "2026-09-30T01:12:59.514Z"
+  },
+  "tela.achados.com-voce": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, proxima tela\".",
+    "em": "2026-10-01T01:10:30.684023Z"
+  },
+  "tela.achados.nada": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, proxima tela\".",
+    "em": "2026-10-01T01:10:30.684023Z"
+  },
+  "tela.achados.parecer-escolhido": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, proxima tela\".",
+    "em": "2026-10-01T01:10:30.684023Z"
+  },
+  "tela.achados.que-voce-passou": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, proxima tela\".",
+    "em": "2026-10-01T01:10:30.684023Z"
+  },
+  "tela.achados.so-passados": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, proxima tela\".",
+    "em": "2026-10-01T01:10:30.684023Z"
+  },
+  "tela.admin.atencao": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, isso ai mesmo\" (rodada 1: trilho + Cockpit).",
+    "em": "2026-10-01T05:03:41.187Z"
+  },
+  "tela.admin.cockpit": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, isso ai mesmo\" (rodada 1: trilho + Cockpit).",
+    "em": "2026-10-01T05:03:41.145Z"
+  },
+  "tela.admin.dados": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus em 01/10: \"aprovado, pode seguir para as pe�as de toda tela\" (Pessoas com adicionar no topo, fila sem escrit�rio e ficha de 3 chaves; Dados).",
+    "em": "2026-10-01T14:01:34.668Z"
+  },
+  "tela.admin.dados-excluir": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus em 01/10: \"aprovado, pode seguir para as pe�as de toda tela\" (Pessoas com adicionar no topo, fila sem escrit�rio e ficha de 3 chaves; Dados).",
+    "em": "2026-10-01T14:01:34.746Z"
+  },
+  "tela.admin.dados-expurgo": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus em 01/10: \"aprovado, pode seguir para as pe�as de toda tela\" (Pessoas com adicionar no topo, fila sem escrit�rio e ficha de 3 chaves; Dados).",
+    "em": "2026-10-01T14:01:34.706Z"
+  },
+  "tela.admin.dinheiro": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus em 02/10: \"aprovado, vamos para o proximo\" (com os graficos de components/ds/medidas).",
+    "em": "2026-10-01T13:19:05.477Z"
+  },
+  "tela.admin.dinheiro-sem-cotacao": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus em 02/10: \"aprovado, vamos para o proximo\" (com os graficos de components/ds/medidas).",
+    "em": "2026-10-01T13:19:05.528Z"
+  },
+  "tela.admin.dinheiro-sem-preco": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus em 02/10: \"aprovado, vamos para o proximo\" (com os graficos de components/ds/medidas).",
+    "em": "2026-10-01T13:19:05.574Z"
+  },
+  "tela.admin.erro": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, isso ai mesmo\" (rodada 1: trilho + Cockpit).",
+    "em": "2026-10-01T05:03:41.230Z"
+  },
+  "tela.admin.motor": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus em 02/10: \"aprovado\" (Motor, com os 20 fluxos numa tabela so).",
+    "em": "2026-10-01T13:34:10.347Z"
+  },
+  "tela.admin.motor-amostra": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus em 02/10: \"aprovado\" (Motor, com os 20 fluxos numa tabela so).",
+    "em": "2026-10-01T13:34:10.395Z"
+  },
+  "tela.admin.motor-teste-falhou": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus em 02/10: \"aprovado\" (Motor, com os 20 fluxos numa tabela so).",
+    "em": "2026-10-01T13:34:10.442Z"
+  },
+  "tela.admin.pessoas": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus em 01/10: \"aprovado, pode seguir para as pe�as de toda tela\" (Pessoas com adicionar no topo, fila sem escrit�rio e ficha de 3 chaves; Dados).",
+    "em": "2026-10-01T14:01:34.442Z"
+  },
+  "tela.admin.pessoas-convite": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus em 01/10: \"aprovado, pode seguir para as pe�as de toda tela\" (Pessoas com adicionar no topo, fila sem escrit�rio e ficha de 3 chaves; Dados).",
+    "em": "2026-10-01T14:01:34.628Z"
+  },
+  "tela.admin.pessoas-ficha": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus em 01/10: \"aprovado, pode seguir para as pe�as de toda tela\" (Pessoas com adicionar no topo, fila sem escrit�rio e ficha de 3 chaves; Dados).",
+    "em": "2026-10-01T14:01:34.546Z"
+  },
+  "tela.admin.pessoas-lote": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus em 01/10: \"aprovado, pode seguir para as pe�as de toda tela\" (Pessoas com adicionar no topo, fila sem escrit�rio e ficha de 3 chaves; Dados).",
+    "em": "2026-10-01T14:01:34.586Z"
+  },
+  "tela.admin.sem-token": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, isso ai mesmo\" (rodada 1: trilho + Cockpit).",
+    "em": "2026-10-01T05:03:41.101Z"
+  },
+  "tela.ajuda.busca": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"certo, aprovado\".",
+    "em": "2026-10-01T04:57:37.145Z"
+  },
+  "tela.ajuda.busca-vazia": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"certo, aprovado\".",
+    "em": "2026-10-01T04:57:37.193Z"
+  },
+  "tela.ajuda.inicio": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"certo, aprovado\".",
+    "em": "2026-10-01T04:57:36.956Z"
+  },
+  "tela.ajuda.onde-fica": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"certo, aprovado\".",
+    "em": "2026-10-01T04:57:37.051Z"
+  },
+  "tela.ajuda.palavra": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"certo, aprovado\".",
+    "em": "2026-10-01T04:57:37.097Z"
+  },
+  "tela.ajuda.tarefa": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"certo, aprovado\".",
+    "em": "2026-10-01T04:57:37.007Z"
+  },
+  "tela.auditoria.cancelando": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 30/09: \"Fechado, vamos para o proximo\" (versão enxuta, relógio em anel).",
+    "em": "2026-09-30T04:51:13.842663Z"
+  },
+  "tela.auditoria.concluida": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 30/09: \"Fechado, vamos para o proximo\" (versão enxuta, relógio em anel).",
+    "em": "2026-09-30T04:51:13.842663Z"
+  },
+  "tela.auditoria.em-curso": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 30/09: \"Fechado, vamos para o proximo\" (versão enxuta, relógio em anel).",
+    "em": "2026-09-30T04:51:13.842663Z"
+  },
+  "tela.auditoria.enviando": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 30/09: \"Fechado, vamos para o proximo\" (versão enxuta, relógio em anel).",
+    "em": "2026-09-30T04:51:13.842663Z"
+  },
+  "tela.auditoria.falhou": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 30/09: \"Fechado, vamos para o proximo\" (versão enxuta, relógio em anel).",
+    "em": "2026-09-30T04:51:13.842663Z"
+  },
+  "tela.auditoria.passou": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 30/09: \"Fechado, vamos para o proximo\" (versão enxuta, relógio em anel).",
+    "em": "2026-09-30T04:51:13.842663Z"
+  },
+  "tela.auditoria.retomada": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 30/09: \"Fechado, vamos para o proximo\" (versão enxuta, relógio em anel).",
+    "em": "2026-09-30T04:51:13.842663Z"
+  },
+  "tela.conversa.alteracao-pendente": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, vamos para a próxima tela\" (Conversa v2 com movimento em crossfade e ritmo vertical).",
+    "em": "2026-09-30T18:47:38.764897Z"
+  },
+  "tela.conversa.anexando": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, vamos para a próxima tela\" (Conversa v2 com movimento em crossfade e ritmo vertical).",
+    "em": "2026-09-30T18:47:38.764897Z"
+  },
+  "tela.conversa.arquivo-sem-selo": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, vamos para a próxima tela\" (Conversa v2 com movimento em crossfade e ritmo vertical).",
+    "em": "2026-09-30T18:47:38.764897Z"
+  },
+  "tela.conversa.auditoria-pronta": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, vamos para a próxima tela\" (Conversa v2 com movimento em crossfade e ritmo vertical).",
+    "em": "2026-09-30T18:47:38.764897Z"
+  },
+  "tela.conversa.capa-sem-prefeitura": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, vamos para a próxima tela\" (Conversa v2 com movimento em crossfade e ritmo vertical).",
+    "em": "2026-09-30T18:47:38.764897Z"
+  },
+  "tela.conversa.conferir-selo": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, vamos para a próxima tela\" (Conversa v2 com movimento em crossfade e ritmo vertical).",
+    "em": "2026-09-30T18:47:38.764897Z"
+  },
+  "tela.conversa.confirmar-auditoria": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, vamos para a próxima tela\" (Conversa v2 com movimento em crossfade e ritmo vertical).",
+    "em": "2026-09-30T18:47:38.764897Z"
+  },
+  "tela.conversa.erro-resposta": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, vamos para a próxima tela\" (Conversa v2 com movimento em crossfade e ritmo vertical).",
+    "em": "2026-09-30T18:47:38.764897Z"
+  },
+  "tela.conversa.escolher-projeto": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, vamos para a próxima tela\" (Conversa v2 com movimento em crossfade e ritmo vertical).",
+    "em": "2026-09-30T18:47:38.764897Z"
+  },
+  "tela.conversa.gerando": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, vamos para a próxima tela\" (Conversa v2 com movimento em crossfade e ritmo vertical).",
+    "em": "2026-09-30T18:47:38.764897Z"
+  },
+  "tela.conversa.montar-volume": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, vamos para a próxima tela\" (Conversa v2 com movimento em crossfade e ritmo vertical).",
+    "em": "2026-09-30T18:47:38.764897Z"
+  },
+  "tela.conversa.nova": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, vamos para a próxima tela\" (Conversa v2 com movimento em crossfade e ritmo vertical).",
+    "em": "2026-09-30T18:47:38.764897Z"
+  },
+  "tela.conversa.plano-de-geracao": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, vamos para a próxima tela\" (Conversa v2 com movimento em crossfade e ritmo vertical).",
+    "em": "2026-09-30T18:47:38.764897Z"
+  },
+  "tela.conversa.respondendo": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, vamos para a próxima tela\" (Conversa v2 com movimento em crossfade e ritmo vertical).",
+    "em": "2026-09-30T18:47:38.764897Z"
+  },
+  "tela.conversa.volume-montado": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, vamos para a próxima tela\" (Conversa v2 com movimento em crossfade e ritmo vertical).",
+    "em": "2026-09-30T18:47:38.764897Z"
+  },
+  "tela.documento.doc-mudas": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, vamos para a próxima tela\" (etiqueta só no No documento).",
+    "em": "2026-09-30T17:22:31.187834Z"
+  },
+  "tela.documento.doc-remoto": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, vamos para a próxima tela\" (etiqueta só no No documento).",
+    "em": "2026-09-30T17:22:31.187834Z"
+  },
+  "tela.documento.documento": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, vamos para a próxima tela\" (etiqueta só no No documento).",
+    "em": "2026-09-30T17:22:31.187834Z"
+  },
+  "tela.entrada.contato": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus em 01/10 com o filme novo: auditoria do memorial (p. 9, Arquitetura) como protagonista, fecho nas duas fun��es, orbe provis�rio, abertura de longe com zoom. \"aprovado, pode seguir\".",
+    "em": "2026-10-01T16:27:16.773Z"
+  },
+  "tela.entrada.dev": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus em 01/10 com o filme novo: auditoria do memorial (p. 9, Arquitetura) como protagonista, fecho nas duas fun��es, orbe provis�rio, abertura de longe com zoom. \"aprovado, pode seguir\".",
+    "em": "2026-10-01T16:27:16.731Z"
+  },
+  "tela.entrada.erro": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus em 01/10 com o filme novo: auditoria do memorial (p. 9, Arquitetura) como protagonista, fecho nas duas fun��es, orbe provis�rio, abertura de longe com zoom. \"aprovado, pode seguir\".",
+    "em": "2026-10-01T16:27:16.680Z"
+  },
+  "tela.entrada.indo": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus em 01/10 com o filme novo: auditoria do memorial (p. 9, Arquitetura) como protagonista, fecho nas duas fun��es, orbe provis�rio, abertura de longe com zoom. \"aprovado, pode seguir\".",
+    "em": "2026-10-01T16:27:16.640Z"
+  },
+  "tela.entrada.padrao": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus em 01/10 com o filme novo: auditoria do memorial (p. 9, Arquitetura) como protagonista, fecho nas duas fun��es, orbe provis�rio, abertura de longe com zoom. \"aprovado, pode seguir\".",
+    "em": "2026-10-01T16:27:16.519Z"
+  },
+  "tela.entrada.recado-enviado": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus em 01/10 com o filme novo: auditoria do memorial (p. 9, Arquitetura) como protagonista, fecho nas duas fun��es, orbe provis�rio, abertura de longe com zoom. \"aprovado, pode seguir\".",
+    "em": "2026-10-01T16:27:16.810Z"
+  },
+  "tela.entrada.recado-nao-saiu": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus em 01/10 com o filme novo: auditoria do memorial (p. 9, Arquitetura) como protagonista, fecho nas duas fun��es, orbe provis�rio, abertura de longe com zoom. \"aprovado, pode seguir\".",
+    "em": "2026-10-01T16:27:16.850Z"
+  },
+  "tela.entrada.sem-acesso": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus em 01/10 com o filme novo: auditoria do memorial (p. 9, Arquitetura) como protagonista, fecho nas duas fun��es, orbe provis�rio, abertura de longe com zoom. \"aprovado, pode seguir\".",
+    "em": "2026-10-01T16:27:16.898Z"
+  },
+  "tela.entrada.sem-responsavel": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus em 01/10 com o filme novo: auditoria do memorial (p. 9, Arquitetura) como protagonista, fecho nas duas fun��es, orbe provis�rio, abertura de longe com zoom. \"aprovado, pode seguir\".",
+    "em": "2026-10-01T16:27:16.941Z"
+  },
+  "tela.inicio-d2.arquivo-recebido": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 30/09: \"Curti, pode ser assim mesmo, definido\".",
+    "em": "2026-09-30T02:29:27.937561Z"
+  },
+  "tela.inicio-d2.arrastando": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 30/09: \"Curti, pode ser assim mesmo, definido\".",
+    "em": "2026-09-30T02:29:27.937561Z"
+  },
+  "tela.inicio-d2.buscando": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 30/09: \"Curti, pode ser assim mesmo, definido\".",
+    "em": "2026-09-30T02:29:27.937561Z"
+  },
+  "tela.inicio-d2.nada-com-voce": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 30/09: \"Curti, pode ser assim mesmo, definido\".",
+    "em": "2026-09-30T02:29:27.937561Z"
+  },
+  "tela.inicio-d2.padrao": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 30/09: \"Curti, pode ser assim mesmo, definido\".",
+    "em": "2026-09-30T02:29:27.937561Z"
+  },
+  "tela.inicio-d2.primeiro-acesso": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 30/09: \"Curti, pode ser assim mesmo, definido\".",
+    "em": "2026-09-30T02:29:27.937561Z"
+  },
+  "tela.inicio-d2.tarefa-escolhida": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 30/09: \"Curti, pode ser assim mesmo, definido\".",
+    "em": "2026-09-30T02:29:27.937561Z"
+  },
+  "tela.mapa.corrigindo": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"mapa dos volumes aprovado\" (canvas com a pele nova; cartão da folha = B. Carimbo; capa/LD/separatrizes como papel).",
+    "em": "2026-09-30T20:37:07.327397Z"
+  },
+  "tela.mapa.desatualizado": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"mapa dos volumes aprovado\" (canvas com a pele nova; cartão da folha = B. Carimbo; capa/LD/separatrizes como papel).",
+    "em": "2026-09-30T20:37:07.327397Z"
+  },
+  "tela.mapa.folha-aberta": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"mapa dos volumes aprovado\" (canvas com a pele nova; cartão da folha = B. Carimbo; capa/LD/separatrizes como papel).",
+    "em": "2026-09-30T20:37:07.327397Z"
+  },
+  "tela.mapa.fora-da-divisao": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"mapa dos volumes aprovado\" (canvas com a pele nova; cartão da folha = B. Carimbo; capa/LD/separatrizes como papel).",
+    "em": "2026-09-30T20:37:07.327397Z"
+  },
+  "tela.mapa.lendo-selos": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"mapa dos volumes aprovado\" (canvas com a pele nova; cartão da folha = B. Carimbo; capa/LD/separatrizes como papel).",
+    "em": "2026-09-30T20:37:07.327397Z"
+  },
+  "tela.mapa.lido": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"mapa dos volumes aprovado\" (canvas com a pele nova; cartão da folha = B. Carimbo; capa/LD/separatrizes como papel).",
+    "em": "2026-09-30T20:37:07.327397Z"
+  },
+  "tela.mapa.vou-gerar": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"mapa dos volumes aprovado\" (canvas com a pele nova; cartão da folha = B. Carimbo; capa/LD/separatrizes como papel).",
+    "em": "2026-09-30T20:37:07.327397Z"
+  },
+  "tela.nexo.desatualizado": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, proxima tela\" (seta do rascunho dele com fisica no arrasto, porta colada na origem).",
+    "em": "2026-10-01T03:53:01.501Z"
+  },
+  "tela.nexo.dividido": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, proxima tela\" (seta do rascunho dele com fisica no arrasto, porta colada na origem).",
+    "em": "2026-10-01T03:53:01.324Z"
+  },
+  "tela.nexo.gerando": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, proxima tela\" (seta do rascunho dele com fisica no arrasto, porta colada na origem).",
+    "em": "2026-10-01T03:53:01.413Z"
+  },
+  "tela.nexo.lido": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, proxima tela\" (seta do rascunho dele com fisica no arrasto, porta colada na origem).",
+    "em": "2026-10-01T03:53:01.279Z"
+  },
+  "tela.nexo.montado": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, proxima tela\" (seta do rascunho dele com fisica no arrasto, porta colada na origem).",
+    "em": "2026-10-01T03:53:01.460Z"
+  },
+  "tela.nexo.soltou": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, proxima tela\" (seta do rascunho dele com fisica no arrasto, porta colada na origem).",
+    "em": "2026-10-01T03:53:01.230Z"
+  },
+  "tela.nexo.tirou": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, proxima tela\" (seta do rascunho dele com fisica no arrasto, porta colada na origem).",
+    "em": "2026-10-01T03:53:01.366Z"
+  },
+  "tela.parecer.parecer": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 30/09: \"relatorio aprovado\" (aba Relatório em texto corrido).",
+    "em": "2026-09-30T05:27:38.693239Z"
+  },
+  "tela.parecer.parecer-erro": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 30/09: \"relatorio aprovado\" (aba Relatório em texto corrido).",
+    "em": "2026-09-30T05:27:38.693239Z"
+  },
+  "tela.parecer.parecer-gerando": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 30/09: \"relatorio aprovado\" (aba Relatório em texto corrido).",
+    "em": "2026-09-30T05:27:38.693239Z"
+  },
+  "tela.pecas.404": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus em 01/10: \"perfeito, aprovado\" (pe�as de toda tela, com aviso e menu revistos).",
+    "em": "2026-10-01T14:31:56.755Z"
+  },
+  "tela.pecas.atalhos": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus em 01/10: \"perfeito, aprovado\" (pe�as de toda tela, com aviso e menu revistos).",
+    "em": "2026-10-01T14:31:56.511Z"
+  },
+  "tela.pecas.aviso": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus em 01/10: \"perfeito, aprovado\" (pe�as de toda tela, com aviso e menu revistos).",
+    "em": "2026-10-01T14:31:56.554Z"
+  },
+  "tela.pecas.confirmacao": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus em 01/10: \"perfeito, aprovado\" (pe�as de toda tela, com aviso e menu revistos).",
+    "em": "2026-10-01T14:31:56.716Z"
+  },
+  "tela.pecas.erro": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus em 01/10: \"perfeito, aprovado\" (pe�as de toda tela, com aviso e menu revistos).",
+    "em": "2026-10-01T14:31:56.797Z"
+  },
+  "tela.pecas.estreita": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus em 01/10: \"perfeito, aprovado\" (pe�as de toda tela, com aviso e menu revistos).",
+    "em": "2026-10-01T14:31:56.838Z"
+  },
+  "tela.pecas.menu": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus em 01/10: \"perfeito, aprovado\" (pe�as de toda tela, com aviso e menu revistos).",
+    "em": "2026-10-01T14:31:56.594Z"
+  },
+  "tela.pecas.paleta": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus em 01/10: \"perfeito, aprovado\" (pe�as de toda tela, com aviso e menu revistos).",
+    "em": "2026-10-01T14:31:56.460Z"
+  },
+  "tela.pecas.pular": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus em 01/10: \"perfeito, aprovado\" (pe�as de toda tela, com aviso e menu revistos).",
+    "em": "2026-10-01T14:31:56.676Z"
+  },
+  "tela.pecas.sino": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus em 01/10: \"perfeito, aprovado\" (pe�as de toda tela, com aviso e menu revistos).",
+    "em": "2026-10-01T14:31:56.637Z"
+  },
+  "tela.projeto.arquivado": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, vamos para a próxima tela\".",
+    "em": "2026-09-30T21:10:07.792296Z"
+  },
+  "tela.projeto.com-registros": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, vamos para a próxima tela\".",
+    "em": "2026-09-30T21:10:07.792296Z"
+  },
+  "tela.projeto.configuracoes": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, vamos para a próxima tela\".",
+    "em": "2026-09-30T21:10:07.792296Z"
+  },
+  "tela.projeto.eventos": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, vamos para a próxima tela\".",
+    "em": "2026-09-30T21:10:07.792296Z"
+  },
+  "tela.projeto.item-escolhido": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, vamos para a próxima tela\".",
+    "em": "2026-09-30T21:10:07.792296Z"
+  },
+  "tela.projeto.vazio": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, vamos para a próxima tela\".",
+    "em": "2026-09-30T21:10:07.792296Z"
+  },
+  "tela.projetos.arquivados": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, vamos para a próxima tela\".",
+    "em": "2026-09-30T20:51:49.080984Z"
+  },
+  "tela.projetos.busca-vazia": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, vamos para a próxima tela\".",
+    "em": "2026-09-30T20:51:49.080984Z"
+  },
+  "tela.projetos.lista": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, vamos para a próxima tela\".",
+    "em": "2026-09-30T20:51:49.080984Z"
+  },
+  "tela.projetos.novo": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, vamos para a próxima tela\".",
+    "em": "2026-09-30T20:51:49.080984Z"
+  },
+  "tela.projetos.obra-escolhida": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, vamos para a próxima tela\".",
+    "em": "2026-09-30T20:51:49.080984Z"
+  },
+  "tela.projetos.vazia": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"aprovado, vamos para a próxima tela\".",
+    "em": "2026-09-30T20:51:49.080984Z"
+  },
+  "tela.resultado-e.abrindo": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"pode arquivar as outras e seguir pro No documento\" (versão E, coluna à direita).",
+    "em": "2026-09-30T14:27:32.450151Z"
+  },
+  "tela.resultado-e.comparado": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"pode arquivar as outras e seguir pro No documento\" (versão E, coluna à direita).",
+    "em": "2026-09-30T14:27:32.450151Z"
+  },
+  "tela.resultado-e.decisao": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"pode arquivar as outras e seguir pro No documento\" (versão E, coluna à direita).",
+    "em": "2026-09-30T14:27:32.450151Z"
+  },
+  "tela.resultado-e.encerrado": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"pode arquivar as outras e seguir pro No documento\" (versão E, coluna à direita).",
+    "em": "2026-09-30T14:27:32.450151Z"
+  },
+  "tela.resultado-e.fila": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"pode arquivar as outras e seguir pro No documento\" (versão E, coluna à direita).",
+    "em": "2026-09-30T14:27:32.450151Z"
+  },
+  "tela.resultado-e.filtros": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"pode arquivar as outras e seguir pro No documento\" (versão E, coluna à direita).",
+    "em": "2026-09-30T14:27:32.450151Z"
+  },
+  "tela.resultado-e.liberado": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"pode arquivar as outras e seguir pro No documento\" (versão E, coluna à direita).",
+    "em": "2026-09-30T14:27:32.450151Z"
+  },
+  "tela.resultado-e.memorial": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"pode arquivar as outras e seguir pro No documento\" (versão E, coluna à direita).",
+    "em": "2026-09-30T14:27:32.450151Z"
+  },
+  "tela.resultado-e.nao-abriu": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"pode arquivar as outras e seguir pro No documento\" (versão E, coluna à direita).",
+    "em": "2026-09-30T14:27:32.450151Z"
+  },
+  "tela.resultado-e.nao-emitir": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"pode arquivar as outras e seguir pro No documento\" (versão E, coluna à direita).",
+    "em": "2026-09-30T14:27:32.450151Z"
+  },
+  "tela.resultado-e.parcial": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"pode arquivar as outras e seguir pro No documento\" (versão E, coluna à direita).",
+    "em": "2026-09-30T14:27:32.450151Z"
+  },
+  "tela.resultado-e.por-disciplina": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"pode arquivar as outras e seguir pro No documento\" (versão E, coluna à direita).",
+    "em": "2026-09-30T14:27:32.450151Z"
+  },
+  "tela.resultado-e.revisar": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"pode arquivar as outras e seguir pro No documento\" (versão E, coluna à direita).",
+    "em": "2026-09-30T14:27:32.450151Z"
+  },
+  "tela.resultado-e.selecionando": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"pode arquivar as outras e seguir pro No documento\" (versão E, coluna à direita).",
+    "em": "2026-09-30T14:27:32.450151Z"
+  },
+  "tela.resultado-e.vazio-filtro": {
+    "status": "aprovado",
+    "nota": "Aprovado pelo Matheus no chat em 01/10: \"pode arquivar as outras e seguir pro No documento\" (versão E, coluna à direita).",
+    "em": "2026-09-30T14:27:32.450151Z"
+  }
+}

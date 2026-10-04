@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8">
+    <title>Legenda: marca, parecer e as duas funções</title>
+  </head>
+  <body>
+    <template>
+      <style>
+        @font-face { font-family: "Geist"; src: url("assets/fonts/Geist.woff2") format("woff2"); font-weight: 100 900; }
+        @font-face { font-family: "Geist Mono"; src: url("assets/fonts/GeistMono.woff2") format("woff2"); font-weight: 100 900; }
+        #root { position: absolute; inset: 0; color: #eeeff2; font-family: "Geist", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+        /* véus: o HUD e a tipografia nunca ficam sobre o papel claro */
+        .veu { position: absolute; left: 0; right: 0; pointer-events: none; }
+        .veu.topo { top: 0; height: 300px; background: linear-gradient(#08090b 0%, rgb(8 9 11 / 0.9) 50%, rgb(8 9 11 / 0) 100%); }
+        .veu.base { bottom: 0; height: 430px; background: linear-gradient(rgb(8 9 11 / 0) 0%, rgb(8 9 11 / 0.9) 45%, #08090b 100%); }
+        .hud { position: absolute; left: 130px; right: 130px; top: 84px; display: flex; justify-content: space-between; align-items: flex-start; }
+        .marca { display: flex; align-items: flex-start; gap: 14px; }
+        .orbe { position: relative; flex: none; width: 34px; height: 34px; margin-top: 3px; border-radius: 50%; background: #08090b; box-shadow: 0 0 22px rgb(154 108 240 / 0.32); z-index: 5; }
+        /* O ORBE DE VERDADE: 48 quadros do AgentOrbScene (violeta → coral) capturados e fechados em laço
+           (assets/orbe-vivo.png, 8 × 6). Cada célula tem 8% de margem em volta da esfera: 34 / 0,84.
+           O fundo da página atrás do vidro: sem ele a aura atravessa o corpo e a esfera fica lilás. */
+        .aura { position: absolute; left: 720px; top: 470px; width: 1100px; height: 1100px; margin: -550px 0 0 -550px; border-radius: 50%; background: radial-gradient(closest-side, rgb(154 108 240 / 0.34), rgb(255 162 147 / 0.1) 45%, transparent 100%); }
+        .nome { position: absolute; left: 0; right: 0; top: 664px; text-align: center; font-size: 46px; font-weight: 520; letter-spacing: -0.025em; }
+        .orbe-a, .orbe-b { position: absolute; left: -3.24px; top: -3.24px; width: 40.48px; height: 40.48px; background: url("assets/orbe-vivo.png") 0 0 / 323.84px 242.88px no-repeat; }
+        .marca-txt b { display: block; font-family: "Geist Mono", monospace; font-size: 22px; font-weight: 500; letter-spacing: -0.01em; line-height: 1; }
+        .marca-txt i { display: block; margin-top: 7px; font-style: normal; font-family: "Geist Mono", monospace; font-size: 16px; color: #a4a8b3; }
+        .parecer { width: 520px; }
+        .parecer-tit { display: flex; justify-content: space-between; font-family: "Geist Mono", monospace; font-size: 15px; color: #a4a8b3; }
+        .parecer-tit b { font-weight: 400; }
+        .faixa { position: relative; display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 26px; }
+        .seg i { display: block; height: 5px; border-radius: 3px; transform-origin: 0 50%; }
+        .seg span { display: block; margin-top: 9px; font-family: "Geist Mono", monospace; font-size: 13px; color: #a4a8b3; white-space: nowrap; }
+        .losango { position: absolute; left: 0; top: -15px; width: 11px; height: 11px; margin-left: -5.5px; background: #eeeff2; box-shadow: 0 0 0 3px #08090b; }
+        .fila { margin-top: 20px; display: grid; gap: 9px; }
+        .ach { position: relative; display: grid; grid-template-columns: 10px 76px 1fr auto; align-items: center; gap: 10px; font-size: 14.5px; color: #a4a8b3; white-space: nowrap; }
+        .ach .pt { width: 8px; height: 8px; border-radius: 50%; }
+        .ach code { font-family: "Geist Mono", monospace; font-size: 14px; color: #eeeff2; }
+        .ach .niv { font-family: "Geist Mono", monospace; font-size: 13px; }
+        .risco { position: absolute; left: 20px; right: 110px; top: 50%; height: 1.5px; background: #a4a8b3; transform-origin: 0 50%; }
+        .tipo { position: absolute; left: 130px; right: 130px; bottom: 92px; height: 170px; }
+        .linha { position: absolute; left: 0; bottom: 44px; white-space: nowrap; font-size: 70px; font-weight: 560; letter-spacing: -0.035em; line-height: 1.05; }
+        .final { position: absolute; left: 0; bottom: 0; white-space: nowrap; font-size: 58px; font-weight: 560; letter-spacing: -0.032em; line-height: 1.12; }
+        .m { display: inline-block; overflow: hidden; vertical-align: bottom; padding: 0 0.04em 0.14em 0; margin-bottom: -0.14em; }
+        .w { display: inline-block; }
+        .w.leve { color: #a4a8b3; font-weight: 400; }
+        .legenda { position: absolute; left: 2px; bottom: 0; font-family: "Geist Mono", monospace; font-size: 18px; color: #a4a8b3; white-space: nowrap; }
+        .legenda b { font-weight: 400; color: #eeeff2; font-variant-numeric: tabular-nums; }
+      </style>
+      <div id="root" data-composition-id="legenda" data-width="1440" data-height="1080">
+        <div class="veu topo" data-layout-ignore=""></div>
+        <div class="veu base" data-layout-ignore=""></div>
+        <div class="aura" id="aura" data-layout-ignore=""></div>
+        <div class="nome" id="nome"><span class="m"><span class="w" data-layout-allow-overlap="" data-layout-allow-overflow="" data-layout-allow-occlusion="">Nexo</span></span></div>
+        <header class="hud">
+          <div class="marca">
+            <div class="orbe" id="orbe"><div class="orbe-a" id="orbeA" data-layout-ignore=""></div><div class="orbe-b" id="orbeB" data-layout-ignore=""></div></div>
+            <div class="marca-txt" id="marcaTxt"><b>117-25</b><i>Memorial geral · rev. <span id="mrev">A</span></i></div>
+          </div>
+          <div class="parecer" id="parecer">
+            <div class="parecer-tit"><span>parecer da auditoria</span><b id="estado">—</b></div>
+            <div class="faixa">
+              <div class="seg"><i style="background: #7bd8a5"></i><span>liberado</span></div>
+              <div class="seg"><i style="background: #d9c27a"></i><span>com ressalvas</span></div>
+              <div class="seg"><i style="background: #f0b45c"></i><span>revisar</span></div>
+              <div class="seg"><i style="background: #ff7d6e"></i><span>não emitir</span></div>
+              <div class="losango" id="losango"></div>
+            </div>
+            <div class="fila">
+              <div class="ach" id="r1"><i class="pt" id="r1pt" style="background: #f0b45c"></i><code data-layout-allow-occlusion="">ACH-003</code><span data-layout-allow-occlusion="">p. 9 · área 1.240 m² ≠ 1.180 m² no quadro</span><span class="niv" id="r1niv" style="color: #f0b45c">decide</span><i class="risco" id="r1risco" data-layout-allow-occlusion=""></i></div>
+              <div class="ach" id="r2"><i class="pt" id="r2pt" style="background: #ff7d6e"></i><code data-layout-allow-occlusion="">ACH-001</code><span data-layout-allow-occlusion="">p. 1 · capa em rev. A, carimbo em rev. B</span><span class="niv" id="r2niv" style="color: #ff7d6e">bloqueia</span><i class="risco" id="r2risco" data-layout-allow-occlusion=""></i></div>
+              <div class="ach" id="r3"><i class="pt" style="background: #f0b45c"></i><code data-layout-allow-occlusion="">ACH-004</code><span data-layout-allow-occlusion="">p. 19 · NBR 5626 de 1998, vigente 2020</span><span class="niv" style="color: #f0b45c">decide</span></div>
+              <div class="ach" id="r4"><i class="pt" style="background: #86b6f0"></i><code data-layout-allow-occlusion="">ACH-007</code><span data-layout-allow-occlusion="">p. 27 · “os quadro de distribuição”</span><span class="niv" style="color: #86b6f0">gramática</span></div>
+            </div>
+          </div>
+        </header>
+        <div class="tipo">
+          <div class="linha" id="l1"><span class="m"><span class="w" data-layout-allow-overlap="" data-layout-allow-overflow="" data-layout-allow-occlusion="">Lê</span></span> <span class="m"><span class="w leve" data-layout-allow-overlap="" data-layout-allow-overflow="" data-layout-allow-occlusion="">o</span></span> <span class="m"><span class="w leve" data-layout-allow-overlap="" data-layout-allow-overflow="" data-layout-allow-occlusion="">memorial.</span></span></div>
+          <div class="linha" id="l2"><span class="m"><span class="w" data-layout-allow-overlap="" data-layout-allow-overflow="" data-layout-allow-occlusion="">Acha</span></span> <span class="m"><span class="w leve" data-layout-allow-overlap="" data-layout-allow-overflow="" data-layout-allow-occlusion="">o que</span></span> <span class="m"><span class="w leve" data-layout-allow-overlap="" data-layout-allow-overflow="" data-layout-allow-occlusion="">trava.</span></span></div>
+          <div class="linha" id="l3"><span class="m"><span class="w" data-layout-allow-overlap="" data-layout-allow-overflow="" data-layout-allow-occlusion="">Dá</span></span> <span class="m"><span class="w leve" data-layout-allow-overlap="" data-layout-allow-overflow="" data-layout-allow-occlusion="">o</span></span> <span class="m"><span class="w leve" data-layout-allow-overlap="" data-layout-allow-overflow="" data-layout-allow-occlusion="">parecer.</span></span></div>
+          <div class="linha" id="l4"><span class="m"><span class="w" data-layout-allow-overlap="" data-layout-allow-overflow="" data-layout-allow-occlusion="">Monta</span></span> <span class="m"><span class="w leve" data-layout-allow-overlap="" data-layout-allow-overflow="" data-layout-allow-occlusion="">o</span></span> <span class="m"><span class="w leve" data-layout-allow-overlap="" data-layout-allow-overflow="" data-layout-allow-occlusion="">volume.</span></span></div>
+          <div class="final" id="fim">
+            <div><span class="m"><span class="w" data-layout-allow-overlap="" data-layout-allow-overflow="" data-layout-allow-occlusion="">Audita</span></span> <span class="m"><span class="w leve" data-layout-allow-overlap="" data-layout-allow-overflow="" data-layout-allow-occlusion="">o memorial.</span></span></div>
+            <div><span class="m"><span class="w" data-layout-allow-overlap="" data-layout-allow-overflow="" data-layout-allow-occlusion="">Monta</span></span> <span class="m"><span class="w leve" data-layout-allow-overlap="" data-layout-allow-overflow="" data-layout-allow-occlusion="">o volume.</span></span></div>
+          </div>
+          <div class="legenda" id="g1" data-layout-allow-overlap="" data-layout-allow-occlusion="">p. <b>9</b> de <b>42</b> · capítulo a capítulo</div>
+          <div class="legenda" id="g2" data-layout-allow-overlap="" data-layout-allow-occlusion=""><b id="g2n">1</b> achados · <b id="g2b">0</b> bloqueiam a emissão</div>
+          <div class="legenda" id="g3" data-layout-allow-overlap="" data-layout-allow-occlusion="">revisão <b id="g3r">A</b> · <b id="g3b">2</b> bloqueios</div>
+          <div class="legenda" id="g4" data-layout-allow-overlap="" data-layout-allow-occlusion=""><b id="g4n">0</b> páginas em <b>2</b> volumes</div>
+        </div>
+      </div>
+      <script>
+        /* A LEGENDA, no mesmo relógio da leitura (compositions/leitura.html):
+           cada achado entra na fila no instante em que nasce no trecho. */
+        (() => {
+          const D = 20;
+          const R = { ach003: 2.9, ach001: 4.61, ach004: 6.17, ach007: 6.69, corrige: 9.25, monta: 10.1, fecha: 13.35, volta: 17.7 };
+          const tl = gsap.timeline({ paused: true });
+          gsap.set("#parecer", { opacity: 0 });
+          gsap.set(".seg i", { scaleX: 0 });
+          gsap.set(["#r1", "#r2", "#r3", "#r4"], { opacity: 0 });
+          gsap.set(["#r1risco", "#r2risco"], { scaleX: 0 });
+          gsap.set(".tipo .w", { yPercent: 115 });
+          gsap.set(".legenda", { opacity: 0 });
+
+
+          const entra = (sel, t) => tl.fromTo(`${sel} .w`, { yPercent: 115 }, { yPercent: 0, duration: 0.62, ease: "power3.out", stagger: 0.07, immediateRender: false }, t);
+          const sai = (sel, t) => tl.to(`${sel} .w`, { yPercent: -115, duration: 0.36, ease: "power3.in", stagger: 0.035 }, t);
+          const entraLeg = (id, t) => tl.fromTo(id, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.4, ease: "power2.out", immediateRender: false }, t);
+          const saiLeg = (id, t) => tl.to(id, { opacity: 0, y: -6, duration: 0.25, ease: "power2.in" }, t);
+          // contadores como função do tempo: qualquer quadro, buscado em qualquer ordem, mostra o mesmo número
+          const sobe = (t, ini, dur, de, ate) => (t <= ini ? de : t >= ini + dur ? ate : de + (ate - de) * (1 - (1 - (t - ini) / dur) ** 2));
+
+          entra("#l1", 0.45); entraLeg("#g1", 0.8);
+          sai("#l1", 3.25); saiLeg("#g1", 3.2);
+          entra("#l2", 3.5); entraLeg("#g2", 3.8);
+          sai("#l2", 7.45); saiLeg("#g2", 7.4);
+          entra("#l3", 7.7); entraLeg("#g3", 8.0);
+          sai("#l3", 9.95); saiLeg("#g3", 9.9);
+          entra("#l4", 10.25); entraLeg("#g4", 10.55);
+          sai("#l4", 12.3); saiLeg("#g4", 12.25);
+          entra("#fim", 12.55);
+          sai("#fim", 13.9);
+
+          /* o parecer: a faixa se desenha, o losango anda com o pior achado */
+          const COL = (520 - 3 * 8) / 4;
+          const xDe = (i) => i * (COL + 8) + COL / 2;
+          gsap.set("#losango", { opacity: 0, x: xDe(0), rotation: 45 });
+          tl.fromTo("#parecer", { opacity: 0, y: -10 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out", immediateRender: false }, 2.6);
+          tl.fromTo(".seg i", { scaleX: 0 }, { scaleX: 1, duration: 0.5, ease: "power3.out", stagger: 0.07, immediateRender: false }, 2.7);
+          tl.fromTo("#losango", { opacity: 0, scale: 0.4 }, { opacity: 1, scale: 1, duration: 0.3, ease: "back.out(2)", immediateRender: false }, 2.85);
+          const fila = (id, t) => tl.fromTo(id, { opacity: 0, x: -14 }, { opacity: 1, x: 0, duration: 0.4, ease: "power3.out", immediateRender: false }, t);
+          // a decisão técnica leva a revisar; o bloqueio da capa leva a não emitir
+          fila("#r1", R.ach003 + 0.1);
+          tl.fromTo("#losango", { x: xDe(0) }, { x: xDe(2), duration: 0.5, ease: "power3.inOut", immediateRender: false }, R.ach003 + 0.12);
+          fila("#r2", R.ach001 + 0.05);
+          tl.fromTo("#losango", { x: xDe(2) }, { x: xDe(3), duration: 0.45, ease: "power3.inOut", immediateRender: false }, R.ach001 + 0.08);
+          fila("#r3", R.ach004 + 0.05); fila("#r4", R.ach007 + 0.05);
+          // revisão B: o bloqueio sai, as decisões técnicas ficam
+          tl.to(["#r1pt", "#r2pt"], { backgroundColor: "#7bd8a5", duration: 0.2 }, R.corrige + 0.3);
+          tl.fromTo(["#r1risco", "#r2risco"], { scaleX: 0 }, { scaleX: 1, duration: 0.35, ease: "power2.inOut", stagger: 0.12, immediateRender: false }, R.corrige + 0.3);
+          tl.fromTo("#losango", { x: xDe(3) }, { x: xDe(1), duration: 0.6, ease: "power3.inOut", immediateRender: false }, R.corrige + 0.4);
+          tl.to("#parecer", { opacity: 0, y: -8, duration: 0.4, ease: "power2.in" }, R.fecha - 0.15);
+
+          // de volta ao primeiro quadro, já invisível
+          tl.set("#r1pt", { backgroundColor: "#f0b45c" }, 19.6);
+          tl.set("#r2pt", { backgroundColor: "#ff7d6e" }, 19.6);
+          tl.set(["#r1risco", "#r2risco"], { scaleX: 0 }, 19.6);
+          tl.set(["#r1", "#r2", "#r3", "#r4", "#losango"], { opacity: 0 }, 19.6);
+          tl.set(".seg i", { scaleX: 0 }, 19.6);
+
+          /* O ORBE: o do HUD sai do canto, cresce no centro e volta ao lugar (o último quadro é o primeiro) */
+          gsap.set("#aura", { opacity: 0, scale: 0.6 });
+          const ALVO = { x: 720 - 147, y: 470 - 104, s: 9 };
+          tl.to("#marcaTxt", { opacity: 0, x: -10, duration: 0.35, ease: "power2.in" }, 13.35);
+          tl.to("#orbe", { x: ALVO.x, y: ALVO.y, scale: ALVO.s, duration: 1.25, ease: "power3.inOut" }, 13.45);
+          tl.to("#orbe", { boxShadow: "0 0 26px rgb(154 108 240 / 0.55)", duration: 1.25 }, 13.45);
+          tl.to("#aura", { opacity: 1, scale: 1, duration: 1.4, ease: "power2.out" }, 13.9);
+          // fora da janela dele o nome não existe na cena (escondido na máscara, ainda contaria contraste)
+          gsap.set("#nome", { opacity: 0 });
+          tl.set("#nome", { opacity: 1 }, 14.5);
+          tl.set("#nome", { opacity: 0 }, 18.75);
+          entra("#nome", 14.55);
+          // respira devagar enquanto está sozinho na cena (um ciclo inteiro: começa e termina em 9)
+          tl.to("#orbe", { scale: ALVO.s * 1.035, duration: 1.6, ease: "sine.inOut", yoyo: true, repeat: 1 }, 14.9);
+          sai("#nome", 18.2);
+          tl.to("#aura", { opacity: 0, scale: 0.7, duration: 0.9, ease: "power2.in" }, 18.25);
+          tl.to("#orbe", { x: 0, y: 0, scale: 1, boxShadow: "0 0 22px rgb(154 108 240 / 0.32)", duration: 1.2, ease: "power3.inOut" }, 18.35);
+          tl.fromTo("#marcaTxt", { opacity: 0, x: -10 }, { opacity: 1, x: 0, duration: 0.45, ease: "power2.out", immediateRender: false }, 19.1);
+
+          /* textos de estado: função do tempo e do losango */
+          const ESTADOS = [["liberado", "#7bd8a5"], ["com ressalvas", "#d9c27a"], ["revisar", "#f0b45c"], ["não emitir", "#ff7d6e"]];
+          const losango = document.getElementById("losango"), estado = document.getElementById("estado");
+          const r1niv = document.getElementById("r1niv"), r2niv = document.getElementById("r2niv");
+          /* o orbe vive: 4 voltas do laço de 48 quadros em 20 s, com fusão entre um quadro e o próximo
+             (a captura é a 9,6 quadros por segundo; trocar seco daria degrau) */
+          const orbeA = document.getElementById("orbeA"), orbeB = document.getElementById("orbeB");
+          const CEL = 40.48, NQ = 48;
+          const quadro = (el, i) => { el.style.backgroundPosition = `${-(i % 8) * CEL}px ${-Math.floor(i / 8) * CEL}px`; };
+          const escrever = () => {
+            const t = tl.time();
+            const f = ((t / D) * 4 * NQ) % NQ;
+            quadro(orbeA, Math.floor(f));
+            quadro(orbeB, (Math.floor(f) + 1) % NQ);
+            orbeB.style.opacity = String(f - Math.floor(f));
+            if (Number(gsap.getProperty(losango, "opacity")) < 0.05) { estado.textContent = "—"; estado.style.color = "#a4a8b3"; }
+            else if (t < 7.6) { estado.textContent = "auditando"; estado.style.color = "#c3a3ff"; }
+            else {
+              const i = Math.max(0, Math.min(3, Math.round((Number(gsap.getProperty(losango, "x")) - xDe(0)) / (COL + 8))));
+              [estado.textContent, estado.style.color] = ESTADOS[i];
+            }
+            const resolvido = t >= R.corrige + 0.45 && t < 19.6;
+            r1niv.textContent = resolvido ? "resolvido" : "decide";
+            r1niv.style.color = resolvido ? "#7bd8a5" : "#f0b45c";
+            r2niv.textContent = resolvido ? "resolvido" : "bloqueia";
+            r2niv.style.color = resolvido ? "#7bd8a5" : "#ff7d6e";
+            const rev = t >= R.corrige + 0.2 && t < R.fecha + 0.2 ? "B" : "A";
+            const achados = t < R.ach001 + 0.05 ? 1 : t < R.ach004 + 0.05 ? 2 : t < R.ach007 + 0.05 ? 3 : Math.round(sobe(t, 6.85, 0.5, 4, 9));
+            document.getElementById("g2n").textContent = String(achados);
+            document.getElementById("g2b").textContent = t < R.ach001 + 0.05 ? "0" : t < 7.0 ? "1" : "2";
+            document.getElementById("g3b").textContent = String(Math.round(sobe(t, R.corrige + 0.3, 0.35, 2, 0)));
+            document.getElementById("g4n").textContent = String(Math.round(sobe(t, 11.9, 0.7, 0, 412)));
+            document.getElementById("mrev").textContent = rev;
+            document.getElementById("g3r").textContent = rev;
+          };
+          tl.eventCallback("onUpdate", escrever);
+          escrever();
+          window.__timelines["legenda"] = tl;
+        })();
+      </script>
+    </template>
+  </body>
+</html>
