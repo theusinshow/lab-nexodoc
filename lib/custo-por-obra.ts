@@ -39,7 +39,7 @@ export interface CustoDaObra {
   /** O nome que aparece na tela. */
   obra: string;
   /** De onde saiu o nome: a pasta, a conversa avulsa, ou a falta de vínculo. */
-  origem: "pasta" | "conversa" | "auditoria" | "sem-vinculo" | "conversa-removida";
+  origem: "pasta" | "conversa" | "auditoria" | "pasta-e-auditoria" | "sem-vinculo" | "conversa-removida";
   estimatedCostUsd: number;
   totalTokens: number;
   requests: number;
@@ -122,6 +122,14 @@ export function custoPorObra(
       idsDeConversa: new Set<string>(),
     };
 
+    /*
+     * A MESMA OBRA POR DOIS CAMINHOS (pasta da conversa e auditoria fora dela):
+     * a linha diz que junta os dois, e o nome é o da pasta, que traz o município.
+     */
+    if (grupo.origem !== origem && (grupo.origem === "auditoria" || origem === "auditoria") && (grupo.origem === "pasta" || origem === "pasta" || grupo.origem === "pasta-e-auditoria")) {
+      if (origem === "pasta") grupo.obra = obra;
+      grupo.origem = "pasta-e-auditoria";
+    }
     grupo.estimatedCostUsd += evento.estimatedCostUsd ?? 0;
     grupo.totalTokens += evento.totalTokens;
     grupo.requests += 1;

@@ -22,6 +22,7 @@ const ORIGEM_DA_OBRA: Record<string, string> = {
   conversa: "conversa avulsa",
   "conversa-removida": "a conversa não existe mais",
   auditoria: "auditoria fora de conversa",
+  "pasta-e-auditoria": "pasta e auditorias fora de conversa",
   "sem-vinculo": "consumo sem conversa e sem auditoria (manutenção, teste de provedor)",
 };
 

@@ -35,6 +35,15 @@ test("pasta e auditoria da mesma obra viram uma linha só, somando", () => {
   assert.equal(da017.length, 1);
   assert.equal(da017[0].estimatedCostUsd, 3);
   assert.equal(da017[0].requests, 2);
+  // a linha diz que junta os dois caminhos, e leva o nome da pasta (com o município)
+  assert.equal(da017[0].origem, "pasta-e-auditoria");
+  assert.equal(da017[0].obra, "017-26-CRICIUMA");
+});
+
+test("a ordem de chegada não muda o nome: auditoria antes da pasta também vira o nome da pasta", () => {
+  const linhas = custoPorObra([ev(null, 2, "aud-1"), ev("c1", 1)], conversas, new Map([["aud-1", "017-26"]]));
+  assert.equal(linhas[0].obra, "017-26-CRICIUMA");
+  assert.equal(linhas[0].origem, "pasta-e-auditoria");
 });
 
 test("sem conversa e sem auditoria conhecida continua 'sem vínculo', no fim", () => {

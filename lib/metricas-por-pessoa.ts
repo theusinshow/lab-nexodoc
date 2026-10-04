@@ -72,6 +72,13 @@ const ROTULO_DO_EVENTO: Record<string, string> = {
   LD_GENERATED: "gerou LD",
 };
 
+/*
+ * UMA AUDITORIA, UMA LINHA (04/10/2026). Cada auditoria também gera eventos de
+ * obra (criada, entrada registrada, artefato) e o relatório .md — cinco linhas
+ * para o mesmo trabalho. A auditoria já está na linha do tempo; esses ficam fora.
+ */
+const JA_NA_AUDITORIA = ["AUDIT_CREATED", "AUDIT_COMPLETED", "INPUT_UPLOADED"] as const;
+
 /** A linha do tempo de uma pessoa no período, do mais novo para o mais antigo, com o acesso e o custo por dia. */
 export async function atividadeDaPessoa(email: string, dias: number) {
   const prisma = getPrisma();
@@ -82,9 +89,9 @@ export async function atividadeDaPessoa(email: string, dias: number) {
     prisma.audit.findMany({ where: { userId: id, createdAt: { gte: desde } }, orderBy: { createdAt: "desc" }, take: 100, select: { id: true, title: true, status: true, analysisLevel: true, totalFindings: true, createdAt: true, project: { select: { code: true } } } }),
     prisma.nexoConversation.findMany({ where: { userEmail: email, createdAt: { gte: desde } }, orderBy: { createdAt: "desc" }, take: 100, select: { id: true, title: true, tipo: true, createdAt: true, project: { select: { code: true } } } }),
     prisma.ldDraft.findMany({ where: { userEmail: email, createdAt: { gte: desde } }, orderBy: { createdAt: "desc" }, take: 100, select: { id: true, title: true, status: true, projectCode: true, createdAt: true } }),
-    prisma.documentArtifact.findMany({ where: { userEmail: email, createdAt: { gte: desde } }, orderBy: { createdAt: "desc" }, take: 100, select: { id: true, kind: true, fileName: true, createdAt: true, project: { select: { code: true } } } }),
+    prisma.documentArtifact.findMany({ where: { userEmail: email, createdAt: { gte: desde }, auditId: null }, orderBy: { createdAt: "desc" }, take: 100, select: { id: true, kind: true, fileName: true, createdAt: true, project: { select: { code: true } } } }),
     prisma.auditFindingMessage.findMany({ where: { authorEmail: email, createdAt: { gte: desde } }, orderBy: { createdAt: "desc" }, take: 100, select: { kind: true, body: true, createdAt: true, feedback: { select: { findingLabel: true, auditId: true } } } }),
-    prisma.projectEvent.findMany({ where: { actorEmail: email, createdAt: { gte: desde } }, orderBy: { createdAt: "desc" }, take: 100, select: { type: true, title: true, createdAt: true, project: { select: { code: true } } } }),
+    prisma.projectEvent.findMany({ where: { actorEmail: email, createdAt: { gte: desde }, type: { notIn: [...JA_NA_AUDITORIA] } }, orderBy: { createdAt: "desc" }, take: 100, select: { type: true, title: true, createdAt: true, project: { select: { code: true } } } }),
     prisma.recusaDeAcesso.findMany({ where: { email, createdAt: { gte: desde } }, orderBy: { createdAt: "desc" }, take: 50, select: { motivo: true, createdAt: true } }),
     prisma.acessoDiario.findMany({ where: { email, dia: { gte: diaHaDias(dias) } }, orderBy: { dia: "asc" }, select: { dia: true, primeiro: true, ultimo: true, marcas: true } }),
     prisma.aiUsageEvent.findMany({ where: { userEmail: email, createdAt: { gte: desde } }, select: { createdAt: true, estimatedCostUsd: true } }),

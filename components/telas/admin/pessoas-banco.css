@@ -183,7 +183,7 @@
 .ds .pb-atv-mais:hover { color: var(--ds-text-primary); }
 
 /* Dados cabe na tela (03/10/2026): obras recolhidas, busca e "Mostrar mais" */
-.ds .pb-busca--dados { max-width: 360px; margin: 4px 0 10px; }
+.ds .pb-busca--dados { max-width: 360px; margin: 4px 16px 10px; }
 .ds .pb-obra-abrir { display: grid; gap: 2px; padding: 0; border: 0; background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; }
 .ds .pb-obra-abrir:hover b { text-decoration: underline; text-underline-offset: 3px; }
 .ds .pb-mostrar-mais { justify-self: start; margin: 10px 0 2px; padding: 6px 0; border: 0; background: none; font: inherit; font-size: 12.5px; color: var(--ds-text-secondary); cursor: pointer; }

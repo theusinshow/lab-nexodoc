@@ -35,25 +35,38 @@ export function registrarAcesso(email: string): void {
   if (cedoDemais(ultimaMarca, email, agora)) return;
   const quando = new Date(agora);
   const dia = diaEmBrasilia(quando);
-  void getPrisma()
-    .acessoDiario.upsert({
-      where: { email_dia: { email, dia } },
-      create: { email, dia, primeiro: quando, ultimo: quando },
-      update: { ultimo: quando, marcas: { increment: 1 } },
-    })
-    .catch((erro: unknown) => {
-      ultimaMarca.delete(email);
-      console.warn("[acesso] não gravou o acesso de", email, erro instanceof Error ? erro.message : erro);
-    });
+  const falhou = (erro: unknown) => {
+    ultimaMarca.delete(email);
+    console.warn("[acesso] não gravou o acesso de", email, erro instanceof Error ? erro.message : erro);
+  };
+  /*
+   * O `try` cobre a falha SÍNCRONA, e ela aconteceu (04/10/2026): com um cliente
+   * do Prisma gerado antes da tabela, `getPrisma().acessoDiario` era `undefined`
+   * e o `.upsert` lançava na hora — fora do `.catch` da promessa, e a página do
+   * admin caiu com 500. Telemetria nunca pode fazer isso.
+   */
+  try {
+    void getPrisma()
+      .acessoDiario.upsert({
+        where: { email_dia: { email, dia } },
+        create: { email, dia, primeiro: quando, ultimo: quando },
+        update: { ultimo: quando, marcas: { increment: 1 } },
+      })
+      .catch(falhou);
+  } catch (erro) {
+    falhou(erro);
+  }
 }
 
 /** Guarda quem foi barrado, e por quê. Uma linha por pessoa e motivo por hora. Chamado sem `await`. */
 export function registrarRecusa(email: string, motivo: string): void {
   if (!email || !isDatabaseConfigured()) return;
   if (cedoDemais(ultimaRecusa, `${email}|${motivo}`, Date.now())) return;
-  void getPrisma()
-    .recusaDeAcesso.create({ data: { email, motivo } })
-    .catch((erro: unknown) => {
-      console.warn("[acesso] não gravou a recusa de", email, erro instanceof Error ? erro.message : erro);
-    });
+  const falhou = (erro: unknown) => console.warn("[acesso] não gravou a recusa de", email, erro instanceof Error ? erro.message : erro);
+  // O mesmo `try` do acesso: a falha síncrona também não pode subir.
+  try {
+    void getPrisma().recusaDeAcesso.create({ data: { email, motivo } }).catch(falhou);
+  } catch (erro) {
+    falhou(erro);
+  }
 }
