@@ -20,6 +20,7 @@ import { Banco, type VarianteBanco } from "./banco";
 import { PERIODOS } from "./dados-dinheiro";
 import "../mapa/mapa.css";
 import "./admin.css";
+import { formatarHora } from "@/lib/fuso-de-brasilia";
 
 /*
  * O CENTRO DE CONTROLE. Cinco destinos agrupados pela pergunta que se faz
@@ -298,7 +299,7 @@ export function TelaAdmin({ situacao }: { situacao: SituacaoAdmin }) {
     if (atualizando) return;
     setAtualizando(true);
     window.setTimeout(() => {
-      setHora(new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }));
+      setHora(formatarHora(new Date()));
       setAtualizando(false);
     }, 650);
   };

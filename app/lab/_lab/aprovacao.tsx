@@ -6,6 +6,7 @@ import { useEffect, useId, useState } from "react";
 import { CURVA, DURACAO, MOLA, escalarMola } from "@/lib/ds/movimento";
 
 import { useLab, type StatusDeAprovacao } from "./contexto";
+import { formatarEmBrasilia } from "@/lib/fuso-de-brasilia";
 
 /**
  * O SELO DE APROVAÇÃO de cada item do lab. Três estados, uma nota.
@@ -22,7 +23,7 @@ const OPCOES: { status: StatusDeAprovacao; rotulo: string }[] = [
   { status: "aprovado", rotulo: "Aprovado" },
 ];
 
-const QUANDO = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+const QUANDO = { format: (d: Date) => formatarEmBrasilia(d, { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) };
 
 export function Aprovacao({ id, rotulo }: { id: string; rotulo: string }) {
   const { aprovacoes, gravar, escala, carregado } = useLab();

@@ -1,3 +1,7 @@
+import { partesEmBrasilia } from "@/lib/fuso-de-brasilia";
+
+/** Dia, mês e semana como o relógio de Brasília mostra (regra de scripts/test-fuso-de-brasilia.ts). */
+const noFuso = (d: Date) => partesEmBrasilia(d);
 /*
  * DINHEIRO, com o que o /api/admin/usage devolve hoje (app/admin/dinheiro,
  * lib/cambio.ts, lib/controles-da-plataforma.ts). Os números são amostra; as
@@ -45,13 +49,13 @@ export const PERIODOS = [7, 14, 30] as const;
  * Tudo que a tela mostra no período sai deste recorte, então os números batem.
  */
 export const DIAS30 = Array.from({ length: 30 }, (_, i) => {
-  const data = new Date(2026, 8, 1 + i);
-  const fds = data.getDay() === 0 || data.getDay() === 6;
+  const data = new Date(Date.UTC(2026, 8, 1 + i, 15));
+  const fds = noFuso(data).diaDaSemana === 0 || noFuso(data).diaDaSemana === 6;
   const onda = 0.75 + 0.25 * Math.sin(i * 1.7) + (i > 22 ? 0.35 : 0);
   const usd = +(fds ? 0.4 + (i % 3) * 0.25 : 5.2 * onda + (i % 4)).toFixed(2);
   const tokens = Math.round(usd * 271_000 + (i % 5) * 9_000);
   const chamadas = Math.round(usd * 27.4);
-  return { dia: `${String(data.getDate()).padStart(2, "0")}/${String(data.getMonth() + 1).padStart(2, "0")}`, usd, tokens, chamadas, cache: Math.round(tokens * 0.24) };
+  return { dia: `${String(noFuso(data).dia).padStart(2, "0")}/${String(noFuso(data).mes).padStart(2, "0")}`, usd, tokens, chamadas, cache: Math.round(tokens * 0.24) };
 });
 export const doPeriodo = (n: number) => DIAS30.slice(-n);
 export const totaisDo = (n: number) => {

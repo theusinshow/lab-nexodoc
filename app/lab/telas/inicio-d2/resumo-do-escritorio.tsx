@@ -4,6 +4,10 @@ import { useMemo, useState } from "react";
 
 import { NumeroQueChega, Segmento } from "@/components/ds/basicos";
 import { BarrasPorMes, ColunasEmPilula, Fichas, LinhaAcumulada, MESES, type Coluna } from "@/components/ds/graficos";
+import { partesEmBrasilia } from "@/lib/fuso-de-brasilia";
+
+/** Dia, mês e semana como o relógio de Brasília mostra (regra de scripts/test-fuso-de-brasilia.ts). */
+const noFuso = (d: Date) => partesEmBrasilia(d);
 
 /**
  * O NEXO NO ESCRITÓRIO — o que ele já fez, para quem abre (e para quem vê a
@@ -33,8 +37,8 @@ interface Dia {
   folhas: number;
 }
 
-const INICIO = new Date(2026, 5, 1); // 1º de junho, quando o escritório começou
-const HOJE = new Date(2026, 8, 29);
+const INICIO = new Date(Date.UTC(2026, 5, 1, 15)); // 1º de junho, quando o escritório começou
+const HOJE = new Date(Date.UTC(2026, 8, 29, 15));
 
 /** Série de exemplo, determinística (mesma a cada render e no servidor). */
 function serie(): Dia[] {
@@ -48,8 +52,8 @@ function serie(): Dia[] {
   const dias: Dia[] = [];
   const total = Math.round((HOJE.getTime() - INICIO.getTime()) / 864e5) + 1;
   for (let i = 0; i < total; i++) {
-    const data = new Date(2026, 5, 1 + i);
-    const util = data.getDay() !== 0 && data.getDay() !== 6;
+    const data = new Date(Date.UTC(2026, 5, 1 + i, 15));
+    const util = noFuso(data).diaDaSemana !== 0 && noFuso(data).diaDaSemana !== 6;
     const adocao = Math.min(1, (i + 12) / 45);
     const auditorias = util && r() < 0.6 * adocao ? 1 + Math.floor(r() * 3) : !util && r() < 0.05 ? 1 : 0;
     let encontrados = 0;
@@ -67,14 +71,14 @@ function serie(): Dia[] {
 }
 
 const SEMANA = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
-const dataCurta = (d: Date) => `${d.getDate()} ${MESES[d.getMonth()]}`;
+const dataCurta = (d: Date) => `${noFuso(d).dia} ${MESES[noFuso(d).mes - 1]}`;
 const plural = (n: number, um: string, varios: string) => `${n.toLocaleString("pt-BR")} ${n === 1 ? um : varios}`;
 
 /** Agrupa em semanas começando na segunda; a última pode estar pela metade. */
 function porSemana(dias: Dia[]) {
   const grupos: Dia[][] = [];
   dias.forEach((d) => {
-    if (!grupos.length || d.data.getDay() === 1) grupos.push([]);
+    if (!grupos.length || noFuso(d.data).diaDaSemana === 1) grupos.push([]);
     grupos[grupos.length - 1].push(d);
   });
   return grupos;
@@ -84,7 +88,7 @@ const soma = (ds: Dia[], campo: keyof Omit<Dia, "data">) => ds.reduce((a, d) => 
 export function ResumoDoEscritorio() {
   const [periodo, setPeriodo] = useState<Periodo>("mes");
   const dias = useMemo(serie, []);
-  const doMes = dias.filter((d) => d.data.getMonth() === HOJE.getMonth());
+  const doMes = dias.filter((d) => (noFuso(d.data).mes - 1) === (noFuso(HOJE).mes - 1));
   const recorte = periodo === "mes" ? doMes : dias;
 
   const encontrados = soma(recorte, "encontrados");
@@ -97,14 +101,14 @@ export function ResumoDoEscritorio() {
     const d0 = g[0].data;
     const e = soma(g, "encontrados");
     const rs = soma(g, "resolvidos");
-    const quando = periodo === "mes" ? `${SEMANA[d0.getDay()]}, ${dataCurta(d0)}` : `semana de ${dataCurta(d0)}`;
+    const quando = periodo === "mes" ? `${SEMANA[noFuso(d0).diaDaSemana]}, ${dataCurta(d0)}` : `semana de ${dataCurta(d0)}`;
     const eixo =
       periodo === "mes"
-        ? [1, 8, 15, 22].includes(d0.getDate())
-          ? `${d0.getDate()}`
+        ? [1, 8, 15, 22].includes(noFuso(d0).dia)
+          ? `${noFuso(d0).dia}`
           : undefined
-        : i === 0 || g.some((d) => d.data.getDate() === 1)
-          ? MESES[g[g.length - 1].data.getMonth()]
+        : i === 0 || g.some((d) => noFuso(d.data).dia === 1)
+          ? MESES[noFuso(g[g.length - 1].data).mes - 1]
           : undefined;
     return {
       eixo,
@@ -119,7 +123,7 @@ export function ResumoDoEscritorio() {
   });
 
   // cada número com o desenho que combina com o que ele conta
-  const porMes = [5, 6, 7, 8].map((m) => ({ rotulo: MESES[m], valor: soma(dias.filter((d) => d.data.getMonth() === m), "lds") }));
+  const porMes = [5, 6, 7, 8].map((m) => ({ rotulo: MESES[m], valor: soma(dias.filter((d) => (noFuso(d.data).mes - 1) === m), "lds") }));
   const menores = [
     {
       campo: "encontrados",
