@@ -22,7 +22,11 @@
            O fundo da página atrás do vidro: sem ele a aura atravessa o corpo e a esfera fica lilás. */
         .aura { position: absolute; left: 720px; top: 470px; width: 1100px; height: 1100px; margin: -550px 0 0 -550px; border-radius: 50%; background: radial-gradient(closest-side, rgb(154 108 240 / 0.34), rgb(255 162 147 / 0.1) 45%, transparent 100%); }
         .nome { position: absolute; left: 0; right: 0; top: 664px; text-align: center; font-size: 46px; font-weight: 520; letter-spacing: -0.025em; }
-        .orbe-a, .orbe-b { position: absolute; left: -3.24px; top: -3.24px; width: 40.48px; height: 40.48px; background: url("assets/orbe-vivo.png") 0 0 / 323.84px 242.88px no-repeat; }
+        /* A FUSÃO SEM DEGRAU (04/10/2026): B por cima de A a 0→1 deixava resto de A sob a esfera translúcida,
+           e a cada troca de quadro (9,6 por segundo) o brilho saltava: o orbe piscava. Agora A vai a 1−w e B a w,
+           somados (plus-lighter) num grupo isolado: a mistura é linear e a troca não se vê. */
+        .orbe-vivo { position: absolute; inset: 0; isolation: isolate; }
+        .orbe-a, .orbe-b { mix-blend-mode: plus-lighter; position: absolute; left: -3.24px; top: -3.24px; width: 40.48px; height: 40.48px; background: url("assets/orbe-vivo.png") 0 0 / 323.84px 242.88px no-repeat; }
         .marca-txt b { display: block; font-family: "Geist Mono", monospace; font-size: 22px; font-weight: 500; letter-spacing: -0.01em; line-height: 1; }
         .marca-txt i { display: block; margin-top: 7px; font-style: normal; font-family: "Geist Mono", monospace; font-size: 16px; color: #a4a8b3; }
         .parecer { width: 520px; }
@@ -54,7 +58,7 @@
         <div class="nome" id="nome"><span class="m"><span class="w" data-layout-allow-overlap="" data-layout-allow-overflow="" data-layout-allow-occlusion="">Nexo</span></span></div>
         <header class="hud">
           <div class="marca">
-            <div class="orbe" id="orbe"><div class="orbe-a" id="orbeA" data-layout-ignore=""></div><div class="orbe-b" id="orbeB" data-layout-ignore=""></div></div>
+            <div class="orbe" id="orbe"><div class="orbe-vivo" data-layout-ignore=""><div class="orbe-a" id="orbeA" data-layout-ignore=""></div><div class="orbe-b" id="orbeB" data-layout-ignore=""></div></div></div>
             <div class="marca-txt" id="marcaTxt"><b>117-25</b><i>Memorial geral · rev. <span id="mrev">A</span></i></div>
           </div>
           <div class="parecer" id="parecer">
@@ -182,7 +186,9 @@
             const f = ((t / D) * 4 * NQ) % NQ;
             quadro(orbeA, Math.floor(f));
             quadro(orbeB, (Math.floor(f) + 1) % NQ);
-            orbeB.style.opacity = String(f - Math.floor(f));
+            const w = f - Math.floor(f);
+            orbeA.style.opacity = String(1 - w);
+            orbeB.style.opacity = String(w);
             if (Number(gsap.getProperty(losango, "opacity")) < 0.05) { estado.textContent = "—"; estado.style.color = "#a4a8b3"; }
             else if (t < 7.6) { estado.textContent = "auditando"; estado.style.color = "#c3a3ff"; }
             else {

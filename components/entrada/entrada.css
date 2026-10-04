@@ -2,7 +2,8 @@
 .ds .en {
   display: grid;
   grid-template-columns: 480px 1fr;
-  min-height: 100dvh;
+  /* A tela inteira, nunca mais: a página não rola. Se a porta não couber (recado aberto em tela baixa), rola só ela. */
+  height: var(--ds-altura-da-janela, 100dvh);
   background: var(--ds-surface-page);
 }
 .ds .en ::selection { background: var(--ds-nexo-wash); color: var(--ds-text-primary); }
@@ -15,7 +16,8 @@
   position: relative;
   z-index: 1;
   isolation: isolate;
-  overflow: hidden;
+  overflow: hidden auto;
+  overscroll-behavior: contain;
 }
 
 /* ---------- O FUNDO DA PORTA: luz parada, grade que acende sob o cursor, grão ---------- */
@@ -181,8 +183,21 @@
 .ds .en-pe { display: flex; gap: 14px; font-size: 12px; color: var(--ds-text-tertiary); }
 
 /* ---------- O FILME: o vídeo cobre o painel, no mesmo chão da página ---------- */
-.ds .en-filme { position: relative; overflow: hidden; background: #08090b; }
-.ds .en-filme-midia { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 50%; display: block; }
+.ds .en-filme { position: relative; overflow: hidden; background: #08090b; display: grid; place-items: center; }
+/*
+ * O FILME INTEIRO (04/10/2026): era `cover`, e em tela larga o corte comia o parecer
+ * no alto e a legenda embaixo. Agora o quadro 4:3 cabe todo no painel; o que sobra
+ * dos lados é o mesmo escuro, e as laterais do filme se apagam nele (no começo o
+ * papel encosta na borda, e sem a fusão ficaria um degrau).
+ */
+.ds .en-filme-midia {
+  display: block;
+  width: min(100%, calc(var(--ds-altura-da-janela, 100dvh) * 4 / 3));
+  aspect-ratio: 4 / 3;
+  height: auto;
+  object-fit: contain;
+  mask-image: linear-gradient(to right, transparent, #000 6%, #000 94%, transparent);
+}
 
 /* ---------- A nota do celular: só aparece quando o filme sai ---------- */
 .ds .en-celular { display: none; margin: 0 0 20px; padding: 12px 14px; border-radius: 10px; background: rgb(255 255 255 / 0.03); box-shadow: inset 0 0 0 1px var(--ds-line-subtle); }
@@ -191,7 +206,8 @@
 
 /* ---------- Tela estreita: o filme sai, o login fica ---------- */
 @media (max-width: 900px) {
-  .ds .en { grid-template-columns: 1fr; min-height: 100dvh; }
+  .ds .en { grid-template-columns: 1fr; height: auto; min-height: var(--ds-altura-da-janela, 100dvh); }
+  .ds .en-porta { overflow: visible; }
   .ds .en-filme { display: none; }
   .ds .en-porta { padding: 24px 20px; box-shadow: none; }
   .ds .en-conteudo { margin: 32px 0 20px; }
