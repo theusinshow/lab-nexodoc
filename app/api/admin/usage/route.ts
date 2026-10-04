@@ -428,11 +428,30 @@ async function summarizeInternalUsage(startTime: number) {
         select: { id: true, title: true, folderKey: true },
       })
     : [];
+  /*
+   * O consumo de auditoria sem conversa acha a obra pela própria auditoria
+   * (`taskId` = id dela), e o custo por PESSOA sai dos mesmos eventos (03/10/2026).
+   */
+  const idsDeAuditoria = [...new Set(events.filter((e) => !e.conversationId && e.taskId).map((e) => e.taskId as string))];
+  const auditoriasDoConsumo = idsDeAuditoria.length
+    ? await getPrisma().audit.findMany({ where: { id: { in: idsDeAuditoria } }, select: { id: true, project: { select: { code: true } } } })
+    : [];
+  const obraDaAuditoria = new Map(auditoriasDoConsumo.filter((a) => a.project?.code).map((a) => [a.id, a.project!.code]));
+  const porPessoa = new Map<string, { email: string; estimatedCostUsd: number; totalTokens: number; requests: number }>();
+  for (const e of events) {
+    const email = e.userEmail ?? "sem dono";
+    const linha = porPessoa.get(email) ?? { email, estimatedCostUsd: 0, totalTokens: 0, requests: 0 };
+    linha.estimatedCostUsd += e.estimatedCostUsd ?? 0;
+    linha.totalTokens += e.totalTokens;
+    linha.requests += 1;
+    porPessoa.set(email, linha);
+  }
 
   return {
     enabled: true,
     totals,
-    obras: custoPorObra(events, conversas),
+    obras: custoPorObra(events, conversas, obraDaAuditoria),
+    pessoas: [...porPessoa.values()].sort((a, b) => b.estimatedCostUsd - a.estimatedCostUsd),
     /*
      * O TETO APARECE. `take: 500` é antigo e continua valendo, mas uma tabela
      * por obra montada sobre uma amostra sem dizer que é amostra leria como o

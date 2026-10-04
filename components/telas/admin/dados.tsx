@@ -97,6 +97,17 @@ type Previa = { conversas: number; auditorias: number; achados: number; mensagen
 type Pendente = { alcance: Alcance; rotulo: string; titulo: string; previa: Previa | null };
 const ehConversas = (c: unknown): c is { conversas: Conversa[] } => Array.isArray((c as { conversas?: unknown } | null)?.conversas);
 
+/** "Mostrar mais 15 de 40": a lista entra aos pedaços, para a página de Dados caber na tela (03/10/2026). */
+function MostrarMais({ total, limite, passo, nome, onMais }: { total: number; limite: number; passo: number; nome: [string, string]; onMais: (n: number) => void }) {
+  if (total <= limite) return null;
+  const falta = total - limite;
+  return (
+    <button type="button" className="pb-mostrar-mais" onClick={() => onMais(limite + passo)}>
+      Mostrar mais {Math.min(passo, falta)} · faltam {plural(falta, nome[0], nome[1])}
+    </button>
+  );
+}
+
 export function ExpurgoDeConversas() {
   const { k } = useTempo();
   const carga = useCarga("/api/admin/dados", ehConversas);
@@ -123,6 +134,22 @@ export function ExpurgoDeConversas() {
     }
     return [...mapa.values()];
   }, [conversas]);
+  /*
+   * A LISTA CABE NA TELA (auditoria do admin, 03/10/2026): eram todas as obras
+   * com todas as conversas abertas, e a página de Dados passava de 12 mil px.
+   * As obras começam recolhidas, a busca olha obra, título e pessoa, e entram
+   * 15 obras por vez.
+   */
+  const [buscaObra, setBuscaObra] = useState("");
+  const [abertas, setAbertas] = useState<Set<string>>(new Set());
+  const [limiteObras, setLimiteObras] = useState(15);
+  const obrasFiltradas = useMemo(() => {
+    const q = buscaObra.trim().toLowerCase();
+    if (!q) return obras;
+    return obras
+      .map((o) => (o.rotulo.toLowerCase().includes(q) ? o : { ...o, conversas: o.conversas.filter((c) => c.title.toLowerCase().includes(q) || c.userEmail.toLowerCase().includes(q)) }))
+      .filter((o) => o.conversas.length > 0);
+  }, [obras, buscaObra]);
 
   /** A prévia conta o que VAI e o que FICA antes de qualquer coisa ser apagada. */
   async function pedirPrevia(alcance: Alcance, rotulo: string, titulo: string) {
@@ -245,9 +272,14 @@ export function ExpurgoDeConversas() {
       {carga.dados && conversas.length === 0 && <p className="adm-vazio">Nenhuma conversa guardada no servidor.</p>}
       {obras.length > 0 && (
         <>
+          <label className="pb-busca pb-busca--dados">
+            <Search size={14} aria-hidden />
+            <input value={buscaObra} onChange={(e) => (setBuscaObra(e.target.value), setLimiteObras(15))} placeholder="Buscar obra, conversa ou pessoa" aria-label="Buscar nas conversas guardadas" />
+          </label>
           <div className="adm-tabela pb-conversas">
-            {obras.map((o) => {
+            {obrasFiltradas.slice(0, limiteObras).map((o) => {
               const todas = o.conversas.every((c) => marcadas.has(c.id));
+              const aberta = abertas.has(o.chave) || Boolean(buscaObra.trim());
               return (
                 <Fragment key={o.chave}>
                   <div className="adm-linha pb-obra">
@@ -266,17 +298,31 @@ export function ExpurgoDeConversas() {
                         aria-label={`Selecionar todas as conversas da obra ${o.rotulo}`}
                       />
                     </span>
-                    <span className="adm-tit">
+                    <button
+                      type="button"
+                      className="adm-tit pb-obra-abrir"
+                      aria-expanded={aberta}
+                      onClick={() =>
+                        setAbertas((a) => {
+                          const n = new Set(a);
+                          if (n.has(o.chave)) n.delete(o.chave);
+                          else n.add(o.chave);
+                          return n;
+                        })
+                      }
+                    >
                       <b>{o.rotulo}</b>
-                      <small className="ds-num">{plural(o.conversas.length, "conversa", "conversas")}</small>
-                    </span>
+                      <small className="ds-num">
+                        {plural(o.conversas.length, "conversa", "conversas")} · {aberta ? "recolher" : "abrir"}
+                      </small>
+                    </button>
                     <span />
                     <span />
                     <Botao variante="quiet" tamanho="sm" className="pb-acao-obra" onClick={() => void pedirPrevia({ tipo: "obra", chave: o.chave }, o.rotulo, `a obra ${o.rotulo}`)}>
                       Expurgar obra
                     </Botao>
                   </div>
-                  {o.conversas.map((c) => (
+                  {aberta && o.conversas.map((c) => (
                     <div key={c.id} className={`adm-linha pb-conversa${marcadas.has(c.id) ? " pb-pessoa--marcada" : ""}`}>
                       <span>
                         <input
@@ -304,6 +350,7 @@ export function ExpurgoDeConversas() {
               );
             })}
           </div>
+          <MostrarMais total={obrasFiltradas.length} limite={limiteObras} passo={15} nome={["obra", "obras"]} onMais={setLimiteObras} />
           <div className="pb-rodape-acoes">
             <Botao variante="ghost" tamanho="sm" disabled={marcadas.size === 0} onClick={() => void pedirPrevia({ tipo: "selecao", ids: [...marcadas] }, "a seleção", plural(marcadas.size, "conversa selecionada", "conversas selecionadas"))}>
               Expurgar seleção{marcadas.size ? ` (${marcadas.size})` : ""}
@@ -368,6 +415,7 @@ export function HistoricoDeAuditorias() {
   }, [restaurado, token, recarga, carregar, consulta]);
 
   const auditorias = carga.dados?.audits ?? [];
+  const [limiteAud, setLimiteAud] = useState(25);
   async function excluir() {
     setErro("");
     try {
@@ -451,7 +499,7 @@ export function HistoricoDeAuditorias() {
             <span>Usuário</span>
             <span>Criada em</span>
           </div>
-          {auditorias.map((a) => (
+          {auditorias.slice(0, limiteAud).map((a) => (
             <div key={a.id} className={`adm-linha${marcadas.has(a.id) ? " pb-pessoa--marcada" : ""}`}>
               <span>
                 <input
@@ -487,6 +535,7 @@ export function HistoricoDeAuditorias() {
             </div>
           ))}
           {!auditorias.length && <p className="adm-vazio">Nenhuma auditoria com esses filtros.</p>}
+          <MostrarMais total={auditorias.length} limite={limiteAud} passo={25} nome={["auditoria", "auditorias"]} onMais={setLimiteAud} />
         </div>
       )}
     </section>
@@ -519,6 +568,7 @@ export function OperacaoDeLds() {
   }, [restaurado, token, recarga, carregar, consulta]);
 
   const lds = carga.dados?.lds ?? [];
+  const [limiteLds, setLimiteLds] = useState(25);
   const maxPranchas = Math.max(1, ...lds.map((l) => l.rowCount));
   async function excluir() {
     setErro("");
@@ -593,7 +643,7 @@ export function OperacaoDeLds() {
             <span className="din-direita">Eventos</span>
             <span>Atualizada</span>
           </div>
-          {lds.map((l) => (
+          {lds.slice(0, limiteLds).map((l) => (
             <div key={l.id} className={`adm-linha${marcadas.has(l.id) ? " pb-pessoa--marcada" : ""}`}>
               <span>
                 <input
@@ -631,6 +681,7 @@ export function OperacaoDeLds() {
             </div>
           ))}
           {!lds.length && <p className="adm-vazio">Nenhuma LD com esses filtros.</p>}
+          <MostrarMais total={lds.length} limite={limiteLds} passo={25} nome={["LD", "LDs"]} onMais={setLimiteLds} />
         </div>
       )}
     </section>

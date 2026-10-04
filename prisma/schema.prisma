@@ -944,3 +944,39 @@ model StoredFile {
   /// Sustenta a regra de expurgo no dia em que ela existir. Não há nenhuma hoje.
   @@index([organizationId, createdAt])
 }
+
+/// O ACESSO DE CADA PESSOA, uma linha por dia (03/10/2026).
+///
+/// O login é JWT e a tabela `Session` nunca é escrita: até aqui não havia
+/// registro nenhum de quem entrou, quando, nem há quantos dias alguém não usa.
+/// `getUserAccess` (toda página e toda API passam por ele) marca o dia de quem
+/// tem acesso, no máximo uma vez por hora por pessoa — ver
+/// [[lib/registro-de-acesso.ts]]. Dá o último acesso, os ativos em 7/30 dias e
+/// o uso diário do Cockpit. O dia é o de Brasília.
+model AcessoDiario {
+  id       String   @id @default(cuid())
+  email    String
+  /// AAAA-MM-DD no fuso de Brasília.
+  dia      String
+  primeiro DateTime @default(now())
+  ultimo   DateTime @default(now())
+  /// Quantas marcas o dia recebeu (no máximo uma por hora): uma medida grosseira de quanto a pessoa ficou.
+  marcas   Int      @default(1)
+
+  @@unique([email, dia])
+  @@index([dia])
+  @@index([email, ultimo])
+}
+
+/// QUEM TENTOU ENTRAR E FOI BARRADO (03/10/2026): conta desativada ou sem
+/// vínculo com o escritório. Antes só virava uma linha no log do servidor, e o
+/// admin nunca ficava sabendo. Uma linha por pessoa por hora, no máximo.
+model RecusaDeAcesso {
+  id        String   @id @default(cuid())
+  email     String
+  motivo    String
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([email, createdAt])
+}

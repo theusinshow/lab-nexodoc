@@ -12,7 +12,8 @@ import { RITMO, SUAVE } from "@/components/telas/comum/ritmo";
 import { useControles } from "@/components/telas/admin/controles";
 import { AvisoDaCarga, quandoCurto } from "@/components/telas/admin/pecas";
 import { classificarFalha, faseDaCarga, type FalhaDaCarga } from "@/lib/estado-da-carga";
-import { formatarDiaMes } from "@/lib/fuso-de-brasilia";
+import { formatarDiaMes, formatarHora } from "@/lib/fuso-de-brasilia";
+import { AtividadeDaPessoa } from "@/components/telas/admin/atividade-da-pessoa";
 import { useTempo } from "@/lib/ds/tempo";
 import { palavra, plural } from "@/lib/plural";
 import "@/components/telas/admin/pessoas-banco.css";
@@ -47,7 +48,30 @@ type Pessoa = {
   escritorio: Vinculo;
   createdAt: string;
   updatedAt: string;
+  /* O que a pessoa faz (03/10/2026), de [[lib/metricas-por-pessoa.ts]]. O acesso só existe a partir dessa data. */
+  ultimoAcesso?: string | null;
+  diasComAcesso30?: number;
+  custoMesUsd?: number;
+  auditoriasMes?: number;
+  achadosResolvidos?: number;
 };
+type Ordem = "acesso" | "custo" | "auditorias" | "resolvidos" | "nome";
+const ORDENS: { id: Ordem; rotulo: string }[] = [
+  { id: "acesso", rotulo: "Último acesso" },
+  { id: "custo", rotulo: "Custo no mês" },
+  { id: "auditorias", rotulo: "Auditorias no mês" },
+  { id: "resolvidos", rotulo: "Achados resolvidos" },
+  { id: "nome", rotulo: "Nome" },
+];
+const usd = (v: number | undefined) => (v ? `US$ ${v.toFixed(2).replace(".", ",")}` : "—");
+/** "hoje, 14:20", "ontem", "há 5 dias", "nunca" — o que importa é há quanto tempo. */
+function haQuanto(iso: string | null | undefined): string {
+  if (!iso) return "nunca";
+  const dias = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
+  if (dias <= 0) return `hoje, ${formatarHora(iso)}`;
+  if (dias === 1) return "ontem";
+  return `há ${dias} dias`;
+}
 type Porta = "prosul" | "convite" | "outra";
 type Escritorio = "fora" | "MEMBER" | "ADMIN" | "OWNER";
 type Chaves = { ativo: boolean; admin: boolean; escritorio: Escritorio };
@@ -186,6 +210,7 @@ function Ficha({ p, porta, adminsAtivos, ocupado, onFechar, onAplicar }: { p: Pe
             <p>{textoDoEscritorio}</p>
           </div>
         </div>
+        <AtividadeDaPessoa email={p.email} />
         <footer className="pb-ficha-pe">
           {travaDoUltimo ? (
             <p className="pb-ficha-trava">
@@ -226,6 +251,7 @@ export default function AdminPessoasPage() {
   const [erro, setErro] = useState("");
   const [ocupado, setOcupado] = useState("");
   const [busca, setBusca] = useState("");
+  const [ordem, setOrdem] = useState<Ordem>("acesso");
   const [papel, setPapel] = useState("all");
   const [situacao, setSituacao] = useState("all");
   const [aberta, setAberta] = useState<string | null>(null);
@@ -355,11 +381,20 @@ export default function AdminPessoasPage() {
   // os filtros são locais: a lista vem inteira (o servidor devolve até 200 pessoas)
   const visiveis = useMemo(() => {
     const q = busca.trim().toLowerCase();
-    return pessoas.filter((p) => (!q || p.name.toLowerCase().includes(q) || p.email.toLowerCase().includes(q)) && (papel === "all" || p.role === papel) && (situacao === "all" || (situacao === "active" ? p.isActive : !p.isActive)));
-  }, [pessoas, busca, papel, situacao]);
+    const filtradas = pessoas.filter((p) => (!q || p.name.toLowerCase().includes(q) || p.email.toLowerCase().includes(q)) && (papel === "all" || p.role === papel) && (situacao === "all" || (situacao === "active" ? p.isActive : !p.isActive)));
+    const chave: Record<Ordem, (p: Pessoa) => number | string> = {
+      acesso: (p) => (p.ultimoAcesso ? -new Date(p.ultimoAcesso).getTime() : 0),
+      custo: (p) => -(p.custoMesUsd ?? 0),
+      auditorias: (p) => -(p.auditoriasMes ?? 0),
+      resolvidos: (p) => -(p.achadosResolvidos ?? 0),
+      nome: (p) => (p.name || p.email).toLowerCase(),
+    };
+    const k = chave[ordem];
+    return [...filtradas].sort((a, b) => (k(a) < k(b) ? -1 : k(a) > k(b) ? 1 : 0));
+  }, [pessoas, busca, papel, situacao, ordem]);
   const semEscritorio = pessoas.filter((p) => !p.escritorio && p.isActive);
   const adminsAtivos = pessoas.filter((p) => p.role === "ADMIN" && p.isActive).length;
-  const maxAud = Math.max(1, ...pessoas.map((p) => p.auditCount));
+  const maxAud = Math.max(1, ...pessoas.map((p) => p.auditoriasMes ?? 0));
   const todos = visiveis.length > 0 && visiveis.every((p) => marcados.has(p.id));
   const porta = (controles.retrato?.freio.estado ?? "prosul") as Porta;
   const semResposta = fase === "sem-token" ? "Aguardando o token de administração." : fase === "erro" ? "Não carregado." : "Carregando…";
@@ -555,9 +590,26 @@ export default function AdminPessoasPage() {
               <span>Conta</span>
               <span>Centro de controle</span>
               <span>Escritório</span>
-              <span>Auditorias</span>
-              <span className="din-direita">LDs</span>
-              <span className="pb-col-data">Atualizado</span>
+              {(
+                [
+                  ["acesso", "Último acesso", ""],
+                  ["acesso", "Dias ativos", "din-direita"],
+                  ["auditorias", "Auditorias no mês", ""],
+                  ["resolvidos", "Resolvidos", "din-direita"],
+                  ["custo", "Custo no mês", "din-direita"],
+                ] as const
+              ).map(([o, r, c], i) => (
+                <button
+                  key={r}
+                  type="button"
+                  className={`pb-ordem${c ? " " + c : ""}${ordem === o && i !== 1 ? " pb-ordem--ativa" : ""}`}
+                  aria-pressed={ordem === o && i !== 1}
+                  title={i === 1 ? "Dias com acesso nos últimos 30" : `Ordenar por ${r.toLowerCase()}`}
+                  onClick={() => setOrdem(o)}
+                >
+                  {r}
+                </button>
+              ))}
               <span />
             </div>
             {visiveis.map((p) => {
@@ -595,12 +647,16 @@ export default function AdminPessoasPage() {
                     </span>
                     <span className={`pb-papel${p.role === "ADMIN" ? " pb-papel--admin" : ""}`}>{p.role === "ADMIN" ? "Admin" : "Usuário"}</span>
                     <span className={`pb-vinculo-rotulo pb-vinculo--${v.toLowerCase()}`}>{v}</span>
-                    <span className="pb-aud">
-                      <BarraEmbutida valor={p.auditCount} maximo={maxAud} />
-                      <b className="ds-num">{p.auditCount}</b>
+                    <span className={`ds-num pb-acesso${p.ultimoAcesso ? "" : " adm-fraco"}`} title={p.ultimoAcesso ? quandoCurto(p.ultimoAcesso) : "Sem acesso registrado desde 03/10/2026"}>
+                      {haQuanto(p.ultimoAcesso)}
                     </span>
-                    <span className="ds-num din-direita adm-fraco">{p.ldDraftCount}</span>
-                    <span className="ds-num adm-fraco pb-col-data">{quandoCurto(p.updatedAt)}</span>
+                    <span className="ds-num din-direita adm-fraco">{p.diasComAcesso30 ?? 0}</span>
+                    <span className="pb-aud" title={`${p.auditCount} no total`}>
+                      <BarraEmbutida valor={p.auditoriasMes ?? 0} maximo={maxAud} />
+                      <b className="ds-num">{p.auditoriasMes ?? 0}</b>
+                    </span>
+                    <span className="ds-num din-direita">{p.achadosResolvidos ?? 0}</span>
+                    <span className="ds-num din-direita">{usd(p.custoMesUsd)}</span>
                     <button type="button" className="pb-abrir" aria-expanded={estaAberta} aria-label={`Acesso de ${p.name || p.email}`} onClick={(e) => (e.stopPropagation(), setAberta(estaAberta ? null : p.id))}>
                       <ChevronDown size={15} aria-hidden />
                     </button>

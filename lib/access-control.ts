@@ -11,6 +11,7 @@ import {
 import { freioDoCadastro } from "@/lib/cache-de-controles";
 import { recarregarControles } from "@/lib/configuracao-da-plataforma";
 import { getPrisma, isDatabaseConfigured } from "@/lib/db";
+import { registrarAcesso, registrarRecusa } from "@/lib/registro-de-acesso";
 
 function normalizeEmail(value: string) {
   return value.trim().toLowerCase();
@@ -91,7 +92,7 @@ export async function getUserAccess(email: string | null | undefined, name?: str
    */
   const guardado = ACESSO_GUARDADO.get(normalizedEmail);
   const nomeDaVez = name?.trim() || "";
-  if (guardado && guardado.ate > Date.now() && guardado.nome === nomeDaVez) return guardado.valor;
+  if (guardado && guardado.ate > Date.now() && guardado.nome === nomeDaVez) return marcarAcesso(guardado.valor);
 
   const prisma = getPrisma();
   const existing = await prisma.user.findUnique({
@@ -153,6 +154,17 @@ export async function getUserAccess(email: string | null | undefined, name?: str
     source: envAdmin ? "env" as const : "database" as const,
   };
   ACESSO_GUARDADO.set(normalizedEmail, { valor, nome: nomeDaVez, ate: Date.now() + VALIDADE_DO_ACESSO_MS });
+  return marcarAcesso(valor);
+}
+
+/*
+ * O ACESSO VAI PARA O REGISTRO (03/10/2026): quem tem acesso marca o dia, quem
+ * tem a conta desativada vira recusa. Os dois no máximo uma vez por hora por
+ * pessoa, e sem esperar o banco — ver [[lib/registro-de-acesso.ts]].
+ */
+function marcarAcesso<T extends { email: string; isActive: boolean }>(valor: T): T {
+  if (valor.isActive) registrarAcesso(valor.email);
+  else registrarRecusa(valor.email, "Conta desativada");
   return valor;
 }
 
@@ -353,7 +365,13 @@ export async function requireActor(): Promise<Actor> {
     },
   });
 
-  return resolveActor({ access, member });
+  try {
+    return resolveActor({ access, member });
+  } catch (err) {
+    // Barrado com conta ativa: sem vínculo com o escritório (ou vínculo desligado).
+    if (err instanceof AccessDenied && err.status === 403 && access.isActive) registrarRecusa(access.email, err.message);
+    throw err;
+  }
 }
 
 /**

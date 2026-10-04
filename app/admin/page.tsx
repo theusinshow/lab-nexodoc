@@ -18,6 +18,8 @@ type OverviewResponse = {
     motivo: string;
   };
   atencao?: Array<{ chave: string; texto: string; gravidade: "critico" | "aviso" }>;
+  /** O uso de verdade (03/10/2026): quem entrou, e quanto do convite virou uso. Ver [[lib/uso-do-escritorio.ts]]. */
+  uso?: { ativos7: number; ativos30: number; serieAtivos: { dias: string[]; ativos: number[] }; funil: { convidados: number; entraram: number; auditaram: number } };
   /** Uma contagem por dia de Brasília, os últimos 14 dias. */
   series?: { dias: string[]; auditorias: number[]; falhas: number[]; lds: number[]; eventosLd: number[] };
   acoes?: Array<{
@@ -192,12 +194,39 @@ export default function AdminHomePage() {
 
       {/* ZERO NÃO É "NÃO SEI": sem resposta do servidor, o número é "—". */}
       <section className="adm-numeros" aria-label="Números">
-        <Numero rotulo="Usuários ativos" valor={t ? t.activeUsers : "—"} detalhe={t ? plural(t.admins, "admin", "admins") : semDados} para="Pessoas" href="/admin/pessoas" />
+        {/* "Ativos" é quem ENTROU, não conta habilitada (03/10/2026): o acesso é registrado desde essa data. */}
+        <Numero
+          rotulo="Ativos em 7 dias"
+          valor={data?.uso ? data.uso.ativos7 : "—"}
+          detalhe={data?.uso && t ? `${data.uso.ativos30} em 30 dias · ${plural(t.activeUsers, "conta", "contas")}` : semDados}
+          para="Pessoas"
+          href="/admin/pessoas"
+          serie={data?.uso?.serieAtivos.ativos}
+        />
         <Numero rotulo="Auditorias" valor={t ? t.audits : "—"} detalhe={t ? `${t.recentAudits} nos últimos 7 dias` : semDados} para="Dados" href="/admin/dados" serie={sr?.auditorias} />
         <Numero rotulo="Falhas" valor={t ? t.failedAudits : "—"} detalhe={t ? "auditorias com erro" : semDados} alerta={Boolean(t && t.failedAudits > 0)} para="as auditorias que falharam" href="/admin/dados?status=FAILED" serie={sr?.falhas} />
         <Numero rotulo="LDs" valor={t ? t.ldDrafts : "—"} detalhe={t ? `${plural(t.generatedLds, "gerada", "geradas")} · ${t.recentLds} nos últimos 7 dias` : semDados} para="Dados" href="/admin/dados" serie={sr?.lds} />
         <Numero rotulo="Eventos LD" valor={t ? t.ldEvents : "—"} detalhe={t ? `${t.recentLdEvents} nos últimos 7 dias` : semDados} para="Dados" href="/admin/dados" serie={sr?.eventosLd} />
       </section>
+
+      {data?.uso && (
+        <section className="adm-funil" aria-label="Adoção do escritório">
+          <span className="adm-funil-titulo">Adoção</span>
+          {(
+            [
+              ["no escritório", data.uso.funil.convidados, data.uso.funil.convidados],
+              ["já usaram", data.uso.funil.entraram, data.uso.funil.convidados],
+              ["já auditaram", data.uso.funil.auditaram, data.uso.funil.convidados],
+            ] as const
+          ).map(([rotulo, n, de], i) => (
+            <span key={rotulo} className="adm-funil-passo">
+              {i > 0 && <i aria-hidden>→</i>}
+              <b className="ds-num">{n}</b> {rotulo}
+              {i > 0 && de > 0 && <small className="ds-num">{Math.round((n / de) * 100)}%</small>}
+            </span>
+          ))}
+        </section>
+      )}
 
       <div className="adm-duas">
         <Bloco id="adm-aud" titulo="Auditorias recentes">

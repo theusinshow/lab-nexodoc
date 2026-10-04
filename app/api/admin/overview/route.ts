@@ -9,6 +9,7 @@ import { resumoDeAtencao } from "@/lib/atencao-do-admin";
 import { ultimasAcoes } from "@/lib/trilha-administrativa";
 import { checkAdminRequest } from "@/lib/admin-gate";
 import { diaEmBrasilia, somarDiasNaChave } from "@/lib/fuso-de-brasilia";
+import { usoDoEscritorio } from "@/lib/uso-do-escritorio";
 
 export const runtime = "nodejs";
 
@@ -127,11 +128,16 @@ export async function GET(request: Request) {
    * Duas bases dariam, mais cedo ou mais tarde, dois números diferentes para
    * "N fluxos sem chave" em duas telas do mesmo painel.
    */
-  const atencao = resumoDeAtencao({
-    fluxos: listarFluxosDeIa(),
-    falhas: getLastProviderFailures(),
-    databaseConfigured: isDatabaseConfigured(),
-  });
+  // O uso de verdade (03/10/2026): ativos por acesso, funil e alertas de pessoas e gasto.
+  const uso = await usoDoEscritorio();
+  const atencao = [
+    ...resumoDeAtencao({
+      fluxos: listarFluxosDeIa(),
+      falhas: getLastProviderFailures(),
+      databaseConfigured: isDatabaseConfigured(),
+    }),
+    ...uso.alertas,
+  ];
 
   // As últimas ações administrativas: até agora nada era registrado, e o
   // cockpit é onde "quem apagou o quê" precisa aparecer sem ninguém procurar.
@@ -167,6 +173,7 @@ export async function GET(request: Request) {
   return NextResponse.json({
     status,
     atencao,
+    uso: { ativos7: uso.ativos7, ativos30: uso.ativos30, serieAtivos: uso.serieAtivos, funil: uso.funil },
     acoes,
     series,
     totals: {

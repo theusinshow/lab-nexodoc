@@ -21,6 +21,8 @@
 
 export interface EventoDeConsumo {
   conversationId: string | null;
+  /** Para auditoria, o id dela: é por ele que o consumo sem conversa acha a obra. */
+  taskId?: string | null;
   estimatedCostUsd: number | null;
   totalTokens: number;
 }
@@ -37,7 +39,7 @@ export interface CustoDaObra {
   /** O nome que aparece na tela. */
   obra: string;
   /** De onde saiu o nome: a pasta, a conversa avulsa, ou a falta de vínculo. */
-  origem: "pasta" | "conversa" | "sem-vinculo" | "conversa-removida";
+  origem: "pasta" | "conversa" | "auditoria" | "sem-vinculo" | "conversa-removida";
   estimatedCostUsd: number;
   totalTokens: number;
   requests: number;
@@ -53,11 +55,25 @@ const REMOVIDA = "__removida__";
  * para o mesmo período — o que não estiver nela é tratado como removida, nunca
  * descartado.
  */
+/*
+ * A OBRA DA AUDITORIA, para o consumo que não passou por conversa (03/10/2026).
+ * A auditoria disparada fora do chat (ou a validação dela) grava o `taskId` =
+ * id da auditoria e nenhuma conversa; antes isso tudo caía em "sem vínculo" —
+ * metade do gasto da semana. `obraDaAuditoria` mapeia id → código da obra.
+ */
+const CODIGO = /^([A-Z]{0,4}\d{2,4}-\d{2})/i;
+
 export function custoPorObra(
   eventos: readonly EventoDeConsumo[],
   conversas: readonly ConversaConhecida[],
+  obraDaAuditoria: ReadonlyMap<string, string> = new Map(),
 ): CustoDaObra[] {
   const porId = new Map(conversas.map((c) => [c.id, c]));
+  // Pasta e auditoria da mesma obra viram UMA linha: a chave é o código ("017-26").
+  const chaveDoCodigo = (texto: string) => {
+    const m = CODIGO.exec(texto.trim());
+    return m ? `codigo:${m[1].toUpperCase()}` : null;
+  };
   const grupos = new Map<string, CustoDaObra & { idsDeConversa: Set<string> }>();
 
   for (const evento of eventos) {
@@ -67,7 +83,12 @@ export function custoPorObra(
     let obra: string;
     let origem: CustoDaObra["origem"];
 
-    if (!evento.conversationId) {
+    const daAuditoria = !evento.conversationId && evento.taskId ? obraDaAuditoria.get(evento.taskId) : undefined;
+    if (daAuditoria) {
+      chave = chaveDoCodigo(daAuditoria) ?? `auditoria:${daAuditoria}`;
+      obra = daAuditoria;
+      origem = "auditoria";
+    } else if (!evento.conversationId) {
       chave = SEM_VINCULO;
       obra = "sem vínculo com obra";
       origem = "sem-vinculo";
@@ -76,7 +97,7 @@ export function custoPorObra(
       obra = "conversa removida";
       origem = "conversa-removida";
     } else if (conversa.folderKey?.trim()) {
-      chave = `pasta:${conversa.folderKey.trim()}`;
+      chave = chaveDoCodigo(conversa.folderKey) ?? `pasta:${conversa.folderKey.trim()}`;
       obra = conversa.folderKey.trim();
       origem = "pasta";
     } else {
