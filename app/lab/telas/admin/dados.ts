@@ -69,10 +69,10 @@ export const LDS: Ld[] = [
 ];
 
 export const ACOES = [
-  { id: "x1", acao: "promoveu a admin", alcance: "fernanda@prosul.com.br", quem: "matheus@prosul.com.br", quando: "29/09 18:02" },
-  { id: "x2", acao: "declarou cotação", alcance: "US$ 1 = R$ 5,41", quem: "matheus@prosul.com.br", quando: "28/09 09:15" },
-  { id: "x3", acao: "apagou auditorias", alcance: "12 anteriores a 01/08", quem: "matheus@prosul.com.br", quando: "25/09 19:40" },
-  { id: "x4", acao: "convidou", alcance: "rafael@prosul.com.br", quem: "fernanda@prosul.com.br", quando: "23/09 14:08" },
+  { id: "x1", acao: "promoveu a admin", alcance: "fernanda@exemplo.com.br", quem: "matheus@exemplo.com.br", quando: "29/09 18:02" },
+  { id: "x2", acao: "declarou cotação", alcance: "US$ 1 = R$ 5,41", quem: "matheus@exemplo.com.br", quando: "28/09 09:15" },
+  { id: "x3", acao: "apagou auditorias", alcance: "12 anteriores a 01/08", quem: "matheus@exemplo.com.br", quando: "25/09 19:40" },
+  { id: "x4", acao: "convidou", alcance: "rafael@exemplo.com.br", quem: "fernanda@exemplo.com.br", quando: "23/09 14:08" },
 ];
 
 /** As frases de falha do app (lib/estado-da-carga.ts). */

@@ -222,7 +222,7 @@ function Adicionar({ porta, onAdicionar }: { porta: Porta; onAdicionar: (n: Nova
             type="email"
             value={email}
             onChange={(e) => (setEmail(e.target.value), setErro(""))}
-            placeholder="nome@prosul.com.br"
+            placeholder="nome@exemplo.com.br"
             autoComplete="off"
             aria-invalid={!!erro}
             aria-describedby="pb-adicionar-retorno"
@@ -378,7 +378,7 @@ export function Pessoas({ variante }: { variante: VariantePessoas }) {
                 </span>
                 <span className="pb-pedido-meta">
                   conta criada em <span className="ds-num">{p.criada}</span>
-                  {!p.email.endsWith("@prosul.com.br") && <em className="pb-fora-do-dominio">e-mail fora da PROSUL</em>}
+                  {!p.email.endsWith("@exemplo.com.br") && <em className="pb-fora-do-dominio">e-mail fora da PROSUL</em>}
                 </span>
                 <span className="pb-pedido-acoes">
                   <Botao variante="quiet" tamanho="sm" onClick={() => mudar(p.id, (x) => ({ ...x, ativo: false }))}>

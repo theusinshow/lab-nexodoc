@@ -28,7 +28,7 @@ export type SituacaoEntrada =
 
 const VERSAO = "b18a14d";
 const LIMITE = 2000;
-const ADMINS = ["matheus@prosul.com.br", "fernanda@prosul.com.br"];
+const ADMINS = ["matheus@exemplo.com.br", "fernanda@exemplo.com.br"];
 
 /** O "G" do Google fica colorido: é a única cor de fora em toda a tela (marca de terceiro, sinal de confiança). */
 function MarcaDoGoogle() {
@@ -64,7 +64,7 @@ function Aviso({ tom, children }: { tom: "ok" | "atencao" | "erro" | "info"; chi
 /** Falar com o responsável: abre NO LUGAR, embaixo do que deu errado (não é modal). */
 function Contato({ aberto, onAbrir, desfecho }: { aberto: boolean; onAbrir: (a: boolean) => void; desfecho?: Recado }) {
   const [texto, setTexto] = useState(desfecho ? "Sou do escritório e a tela disse que a conta não está liberada." : "");
-  const [email, setEmail] = useState(desfecho ? "victor@prosul.com.br" : "");
+  const [email, setEmail] = useState(desfecho ? "victor@exemplo.com.br" : "");
   const [enviando, setEnviando] = useState(false);
   const [resposta, setResposta] = useState<Recado | undefined>(desfecho);
   const primeiro = useRef<HTMLInputElement>(null);
@@ -183,7 +183,7 @@ function SemAcesso({ comResponsavel }: { comResponsavel: boolean }) {
     <>
       <h1 className="en-titulo">Sua conta está certa, falta a liberação</h1>
       <p className="en-lede">
-        Você entrou como <span className="en-mono en-email">victor@prosul.com.br</span>. A conta é válida; ela só ainda não foi habilitada para o Nexo.
+        Você entrou como <span className="en-mono en-email">victor@exemplo.com.br</span>. A conta é válida; ela só ainda não foi habilitada para o Nexo.
       </p>
 
       {comResponsavel ? (

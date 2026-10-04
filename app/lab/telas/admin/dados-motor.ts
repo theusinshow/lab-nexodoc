@@ -5,7 +5,7 @@
  * Números são amostra; rótulos, variáveis e frases são os do app.
  */
 
-export const METAS = { falsoPositivoMax: 15, coberturaMin: 40, declaradaEm: "22/09", declaradaPor: "matheus@prosul.com.br" };
+export const METAS = { falsoPositivoMax: 15, coberturaMin: 40, declaradaEm: "22/09", declaradaPor: "matheus@exemplo.com.br" };
 
 /** Visão geral das auditorias concluídas (o que o painel de qualidade soma). */
 export const VISAO = { concluidas: 128, revisadas: 52, confirmados: 311, taxaConfirmacao: 81, falsoPositivo: 13, perdidos: 7, cobertura: 41 };

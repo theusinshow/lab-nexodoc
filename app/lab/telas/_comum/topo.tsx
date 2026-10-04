@@ -421,7 +421,7 @@ function MenuDaConta({ atual, onAtalhos, abertoInicial }: { atual: Destino | nul
               </span>
               <span className="pn-menu-nome">
                 <b>Victor Alves</b>
-                <small className="mp-mono">victor@prosul.com.br</small>
+                <small className="mp-mono">victor@exemplo.com.br</small>
               </span>
             </div>
             <dl className="pn-menu-alcada">

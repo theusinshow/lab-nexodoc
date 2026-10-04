@@ -24,16 +24,16 @@ export type Vinculo = { papel: "OWNER" | "ADMIN" | "MEMBER"; situacao: "ACTIVE" 
 export type Pessoa = { id: string; nome: string; email: string; papel: "ADMIN" | "USER"; ativo: boolean; vinculo: Vinculo; auditorias: number; lds: number; geradas: number; criada: string; atualizado: string };
 
 export const PESSOAS: Pessoa[] = [
-  { id: "p1", criada: "02/06", nome: "Matheus Mendes", email: "matheus@prosul.com.br", papel: "ADMIN", ativo: true, vinculo: { papel: "OWNER", situacao: "ACTIVE" }, auditorias: 41, lds: 12, geradas: 9, atualizado: "30/09 21:12" },
-  { id: "p2", criada: "02/06", nome: "Fernanda Duarte", email: "fernanda@prosul.com.br", papel: "ADMIN", ativo: true, vinculo: { papel: "ADMIN", situacao: "ACTIVE" }, auditorias: 23, lds: 8, geradas: 6, atualizado: "30/09 16:40" },
-  { id: "p3", criada: "14/06", nome: "Victor Alves", email: "victor@prosul.com.br", papel: "USER", ativo: true, vinculo: { papel: "MEMBER", situacao: "ACTIVE" }, auditorias: 29, lds: 11, geradas: 8, atualizado: "30/09 11:05" },
-  { id: "p4", criada: "14/06", nome: "Rafael Souza", email: "rafael@prosul.com.br", papel: "USER", ativo: true, vinculo: { papel: "MEMBER", situacao: "ACTIVE" }, auditorias: 18, lds: 7, geradas: 5, atualizado: "29/09 18:22" },
-  { id: "p5", criada: "03/07", nome: "Camila Rocha", email: "camila@prosul.com.br", papel: "USER", ativo: true, vinculo: { papel: "MEMBER", situacao: "ACTIVE" }, auditorias: 9, lds: 4, geradas: 2, atualizado: "29/09 09:47" },
-  { id: "p6", criada: "21/07", nome: "Bruno Lima", email: "bruno@prosul.com.br", papel: "USER", ativo: true, vinculo: { papel: "MEMBER", situacao: "ACTIVE" }, auditorias: 6, lds: 2, geradas: 1, atualizado: "26/09 14:02" },
-  { id: "p7", criada: "24/09", nome: "Juliana Prado", email: "juliana@prosul.com.br", papel: "USER", ativo: true, vinculo: { papel: "MEMBER", situacao: "INVITED" }, auditorias: 0, lds: 0, geradas: 0, atualizado: "24/09 14:08" },
-  { id: "p8", criada: "21/09", nome: "Diego Ferraz", email: "diego.ferraz@gmail.com", papel: "USER", ativo: true, vinculo: null, auditorias: 2, lds: 1, geradas: 0, atualizado: "21/09 10:30" },
-  { id: "p10", criada: "30/09", nome: "Lucas Teixeira", email: "lucas.teixeira@prosul.com.br", papel: "USER", ativo: true, vinculo: null, auditorias: 0, lds: 0, geradas: 0, atualizado: "30/09 08:12" },
-  { id: "p9", criada: "14/06", nome: "Tiago Martins", email: "tiago@prosul.com.br", papel: "USER", ativo: false, vinculo: { papel: "MEMBER", situacao: "DISABLED" }, auditorias: 14, lds: 3, geradas: 3, atualizado: "02/09 17:44" },
+  { id: "p1", criada: "02/06", nome: "Matheus Mendes", email: "matheus@exemplo.com.br", papel: "ADMIN", ativo: true, vinculo: { papel: "OWNER", situacao: "ACTIVE" }, auditorias: 41, lds: 12, geradas: 9, atualizado: "30/09 21:12" },
+  { id: "p2", criada: "02/06", nome: "Fernanda Duarte", email: "fernanda@exemplo.com.br", papel: "ADMIN", ativo: true, vinculo: { papel: "ADMIN", situacao: "ACTIVE" }, auditorias: 23, lds: 8, geradas: 6, atualizado: "30/09 16:40" },
+  { id: "p3", criada: "14/06", nome: "Victor Alves", email: "victor@exemplo.com.br", papel: "USER", ativo: true, vinculo: { papel: "MEMBER", situacao: "ACTIVE" }, auditorias: 29, lds: 11, geradas: 8, atualizado: "30/09 11:05" },
+  { id: "p4", criada: "14/06", nome: "Rafael Souza", email: "rafael@exemplo.com.br", papel: "USER", ativo: true, vinculo: { papel: "MEMBER", situacao: "ACTIVE" }, auditorias: 18, lds: 7, geradas: 5, atualizado: "29/09 18:22" },
+  { id: "p5", criada: "03/07", nome: "Camila Rocha", email: "camila@exemplo.com.br", papel: "USER", ativo: true, vinculo: { papel: "MEMBER", situacao: "ACTIVE" }, auditorias: 9, lds: 4, geradas: 2, atualizado: "29/09 09:47" },
+  { id: "p6", criada: "21/07", nome: "Bruno Lima", email: "bruno@exemplo.com.br", papel: "USER", ativo: true, vinculo: { papel: "MEMBER", situacao: "ACTIVE" }, auditorias: 6, lds: 2, geradas: 1, atualizado: "26/09 14:02" },
+  { id: "p7", criada: "24/09", nome: "Juliana Prado", email: "juliana@exemplo.com.br", papel: "USER", ativo: true, vinculo: { papel: "MEMBER", situacao: "INVITED" }, auditorias: 0, lds: 0, geradas: 0, atualizado: "24/09 14:08" },
+  { id: "p8", criada: "21/09", nome: "Diego Ferraz", email: "diego.ferraz@exemplo.com", papel: "USER", ativo: true, vinculo: null, auditorias: 2, lds: 1, geradas: 0, atualizado: "21/09 10:30" },
+  { id: "p10", criada: "30/09", nome: "Lucas Teixeira", email: "lucas.teixeira@exemplo.com.br", papel: "USER", ativo: true, vinculo: null, auditorias: 0, lds: 0, geradas: 0, atualizado: "30/09 08:12" },
+  { id: "p9", criada: "14/06", nome: "Tiago Martins", email: "tiago@exemplo.com.br", papel: "USER", ativo: false, vinculo: { papel: "MEMBER", situacao: "DISABLED" }, auditorias: 14, lds: 3, geradas: 3, atualizado: "02/09 17:44" },
 ];
 
 /** escritorioLabel do app. */
@@ -59,9 +59,9 @@ export const OBRAS_GUARDADAS: ObraGuardada[] = [
     rotulo: "117-25 · UBS da Rua São Francisco de Assis",
     bytes: 412_000_000,
     conversas: [
-      { id: "c1", titulo: "Auditar o memorial geral", tipo: "auditoria", dono: "victor@prosul.com.br", atualizada: "30/09 21:12" },
-      { id: "c2", titulo: "Montar o volume", tipo: "montagem", dono: "victor@prosul.com.br", atualizada: "30/09 20:58" },
-      { id: "c3", titulo: "LD, capa e separatrizes", tipo: "montagem", dono: "fernanda@prosul.com.br", atualizada: "29/09 15:10" },
+      { id: "c1", titulo: "Auditar o memorial geral", tipo: "auditoria", dono: "victor@exemplo.com.br", atualizada: "30/09 21:12" },
+      { id: "c2", titulo: "Montar o volume", tipo: "montagem", dono: "victor@exemplo.com.br", atualizada: "30/09 20:58" },
+      { id: "c3", titulo: "LD, capa e separatrizes", tipo: "montagem", dono: "fernanda@exemplo.com.br", atualizada: "29/09 15:10" },
     ],
   },
   {
@@ -69,8 +69,8 @@ export const OBRAS_GUARDADAS: ObraGuardada[] = [
     rotulo: "SIM047-26 · Quadra poliesportiva",
     bytes: 186_000_000,
     conversas: [
-      { id: "c4", titulo: "Memorial de climatização", tipo: "auditoria", dono: "rafael@prosul.com.br", atualizada: "30/09 16:40" },
-      { id: "c5", titulo: "Conferir as folhas", tipo: "conferência", dono: "rafael@prosul.com.br", atualizada: "28/09 10:31" },
+      { id: "c4", titulo: "Memorial de climatização", tipo: "auditoria", dono: "rafael@exemplo.com.br", atualizada: "30/09 16:40" },
+      { id: "c5", titulo: "Conferir as folhas", tipo: "conferência", dono: "rafael@exemplo.com.br", atualizada: "28/09 10:31" },
     ],
   },
   {
@@ -78,16 +78,16 @@ export const OBRAS_GUARDADAS: ObraGuardada[] = [
     rotulo: "088-25 · Criciúma, escola do Pinheirinho (entregue)",
     bytes: 640_000_000,
     conversas: [
-      { id: "c6", titulo: "Auditoria final do memorial", tipo: "auditoria", dono: "tiago@prosul.com.br", atualizada: "12/08 09:20" },
-      { id: "c7", titulo: "Volumes 1 a 3", tipo: "montagem", dono: "tiago@prosul.com.br", atualizada: "11/08 18:02" },
-      { id: "c8", titulo: "Revisão do memorial, rev C", tipo: "auditoria", dono: "matheus@prosul.com.br", atualizada: "05/08 14:40" },
+      { id: "c6", titulo: "Auditoria final do memorial", tipo: "auditoria", dono: "tiago@exemplo.com.br", atualizada: "12/08 09:20" },
+      { id: "c7", titulo: "Volumes 1 a 3", tipo: "montagem", dono: "tiago@exemplo.com.br", atualizada: "11/08 18:02" },
+      { id: "c8", titulo: "Revisão do memorial, rev C", tipo: "auditoria", dono: "matheus@exemplo.com.br", atualizada: "05/08 14:40" },
     ],
   },
   {
     chave: "sem-obra",
     rotulo: "Sem obra",
     bytes: 22_000_000,
-    conversas: [{ id: "c9", titulo: "Teste do Nexo", tipo: "conversa", dono: "diego.ferraz@gmail.com", atualizada: "21/09 10:30" }],
+    conversas: [{ id: "c9", titulo: "Teste do Nexo", tipo: "conversa", dono: "diego.ferraz@exemplo.com", atualizada: "21/09 10:30" }],
   },
 ];
 
@@ -98,20 +98,20 @@ export const megas = (b: number) => `${(b / 1_000_000).toFixed(1).replace(".", "
 
 export type AuditoriaGuardada = { id: string; titulo: string; projeto: string; status: "Concluída" | "Processando" | "Falha" | "Cancelada"; modo: "memorial" | "volume"; nivel: "Padrão" | "Profundo"; pdfs: number; achados: number; tempo: string; usuario: string; criada: string };
 export const AUDITORIAS_GUARDADAS: AuditoriaGuardada[] = [
-  { id: "g1", titulo: "Memorial geral, revisão A", projeto: "117-25", status: "Concluída", modo: "memorial", nivel: "Profundo", pdfs: 1, achados: 9, tempo: "6 min 02 s", usuario: "victor@prosul.com.br", criada: "30/09 21:06" },
-  { id: "g2", titulo: "Memorial de climatização", projeto: "SIM047-26", status: "Concluída", modo: "memorial", nivel: "Padrão", pdfs: 1, achados: 4, tempo: "2 min 31 s", usuario: "rafael@prosul.com.br", criada: "30/09 16:37" },
-  { id: "g3", titulo: "Memorial estrutural, revisão B", projeto: "SIM031-26", status: "Falha", modo: "memorial", nivel: "Profundo", pdfs: 1, achados: 0, tempo: "1 min 40 s", usuario: "camila@prosul.com.br", criada: "30/09 11:03" },
-  { id: "g4", titulo: "Memorial de PCI", projeto: "117-25", status: "Concluída", modo: "memorial", nivel: "Padrão", pdfs: 1, achados: 2, tempo: "2 min 12 s", usuario: "victor@prosul.com.br", criada: "29/09 18:20" },
-  { id: "g5", titulo: "Volume 1, conferência", projeto: "SIM099-26", status: "Processando", modo: "volume", nivel: "Padrão", pdfs: 7, achados: 0, tempo: "—", usuario: "bruno@prosul.com.br", criada: "29/09 09:44" },
-  { id: "g6", titulo: "Memorial hidrossanitário", projeto: "SIM099-26", status: "Cancelada", modo: "memorial", nivel: "Padrão", pdfs: 1, achados: 0, tempo: "0 min 22 s", usuario: "bruno@prosul.com.br", criada: "28/09 15:01" },
+  { id: "g1", titulo: "Memorial geral, revisão A", projeto: "117-25", status: "Concluída", modo: "memorial", nivel: "Profundo", pdfs: 1, achados: 9, tempo: "6 min 02 s", usuario: "victor@exemplo.com.br", criada: "30/09 21:06" },
+  { id: "g2", titulo: "Memorial de climatização", projeto: "SIM047-26", status: "Concluída", modo: "memorial", nivel: "Padrão", pdfs: 1, achados: 4, tempo: "2 min 31 s", usuario: "rafael@exemplo.com.br", criada: "30/09 16:37" },
+  { id: "g3", titulo: "Memorial estrutural, revisão B", projeto: "SIM031-26", status: "Falha", modo: "memorial", nivel: "Profundo", pdfs: 1, achados: 0, tempo: "1 min 40 s", usuario: "camila@exemplo.com.br", criada: "30/09 11:03" },
+  { id: "g4", titulo: "Memorial de PCI", projeto: "117-25", status: "Concluída", modo: "memorial", nivel: "Padrão", pdfs: 1, achados: 2, tempo: "2 min 12 s", usuario: "victor@exemplo.com.br", criada: "29/09 18:20" },
+  { id: "g5", titulo: "Volume 1, conferência", projeto: "SIM099-26", status: "Processando", modo: "volume", nivel: "Padrão", pdfs: 7, achados: 0, tempo: "—", usuario: "bruno@exemplo.com.br", criada: "29/09 09:44" },
+  { id: "g6", titulo: "Memorial hidrossanitário", projeto: "SIM099-26", status: "Cancelada", modo: "memorial", nivel: "Padrão", pdfs: 1, achados: 0, tempo: "0 min 22 s", usuario: "bruno@exemplo.com.br", criada: "28/09 15:01" },
 ];
 
 export type LdGuardada = { id: string; codigo: string; obra: string; status: "Rascunho" | "Gerada" | "Arquivada"; usuario: string; pranchas: number; pdfs: number; tomos: number; eventos: number; atualizada: string };
 export const LDS_GUARDADAS: LdGuardada[] = [
-  { id: "d1", codigo: "117-25", obra: "UBS da Rua São Francisco de Assis", status: "Gerada", usuario: "victor@prosul.com.br", pranchas: 33, pdfs: 33, tomos: 2, eventos: 48, atualizada: "30/09 20:58" },
-  { id: "d2", codigo: "SIM099-26", obra: "Praça da Juventude", status: "Gerada", usuario: "fernanda@prosul.com.br", pranchas: 24, pdfs: 24, tomos: 1, eventos: 31, atualizada: "29/09 15:10" },
-  { id: "d3", codigo: "SIM047-26", obra: "Quadra poliesportiva", status: "Rascunho", usuario: "rafael@prosul.com.br", pranchas: 12, pdfs: 12, tomos: 1, eventos: 9, atualizada: "28/09 10:31" },
-  { id: "d4", codigo: "088-25", obra: "Escola do Pinheirinho", status: "Arquivada", usuario: "tiago@prosul.com.br", pranchas: 61, pdfs: 61, tomos: 3, eventos: 102, atualizada: "11/08 18:02" },
+  { id: "d1", codigo: "117-25", obra: "UBS da Rua São Francisco de Assis", status: "Gerada", usuario: "victor@exemplo.com.br", pranchas: 33, pdfs: 33, tomos: 2, eventos: 48, atualizada: "30/09 20:58" },
+  { id: "d2", codigo: "SIM099-26", obra: "Praça da Juventude", status: "Gerada", usuario: "fernanda@exemplo.com.br", pranchas: 24, pdfs: 24, tomos: 1, eventos: 31, atualizada: "29/09 15:10" },
+  { id: "d3", codigo: "SIM047-26", obra: "Quadra poliesportiva", status: "Rascunho", usuario: "rafael@exemplo.com.br", pranchas: 12, pdfs: 12, tomos: 1, eventos: 9, atualizada: "28/09 10:31" },
+  { id: "d4", codigo: "088-25", obra: "Escola do Pinheirinho", status: "Arquivada", usuario: "tiago@exemplo.com.br", pranchas: 61, pdfs: 61, tomos: 3, eventos: 102, atualizada: "11/08 18:02" },
 ];
 
 export const CONFIRMA_EXCLUSAO = {
