@@ -1,0 +1,41 @@
+/*
+ * PROJETOS. Usa o painel, as abas, a busca, a tabela, o lado e o rodapé do
+ * Mapa (mapa.css): aqui só o que é da lista de obras.
+ */
+.ds .pj .mp-miolo { min-height: 600px; }
+.ds .pj-busca { width: 320px; }
+.ds .pj-grade { --mp-colunas: 36px 112px minmax(0, 1fr) 110px 170px 92px 16px; }
+.ds .pj-linha { height: 56px; }
+.ds .pj-codigo { display: inline-flex; align-items: center; gap: 8px; }
+.ds .pj-nome { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 13px; line-height: 1.35; }
+.ds .pj-espera .mp-conf { font-size: 12.5px; color: var(--ds-text-primary); }
+.ds .pj-nada { color: var(--ds-text-tertiary); }
+.ds .pj-seta { color: var(--ds-text-tertiary); opacity: 0; transform: translateX(-4px); transition: opacity 0.25s, transform 0.25s cubic-bezier(0.22, 1, 0.36, 1); }
+.ds .pj-linha:hover .pj-seta, .ds .pj-linha[aria-selected="true"] .pj-seta { opacity: 1; transform: none; }
+.ds .pj-linha--arquivada .pj-nome, .ds .pj-linha--arquivada .mp-mono { color: var(--ds-text-secondary); }
+
+/* busca sem resultado: dentro da tabela, com a saída */
+.ds .pj-sem { display: grid; gap: 6px; justify-items: start; padding: 40px 12px; font-size: 13px; color: var(--ds-text-secondary); }
+.ds .pj-sem p { margin: 0; }
+.ds .pj-sem b { font-weight: 400; color: var(--ds-text-primary); }
+
+/* escritório novo: o painel inteiro é o convite */
+.ds .pj-vazio { display: grid; gap: 10px; justify-items: start; padding: 72px 40px 80px; }
+.ds .pj-vazio-titulo { margin: 0; font-size: 18px; color: var(--ds-text-primary); }
+.ds .pj-vazio .mp-lado-sub { max-width: 52ch; }
+.ds .pj-vazio-acoes { display: flex; gap: 8px; margin-top: 8px; }
+
+/* o lado */
+.ds .pj-lado-obra { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.35; }
+.ds .pj-lado-obra .mp-mono { margin-right: 4px; color: var(--ds-text-secondary); }
+.ds .pj-sep { margin: 6px 0 -4px; }
+.ds .pj-obra-cabeca { display: grid; gap: 6px; }
+.ds .pj-obra-cabeca .mp-trilha { margin: 0; }
+.ds .pj-arquivada { padding: 1px 6px; border-radius: 5px; box-shadow: inset 0 0 0 1px var(--ds-line-default); font-size: 11px; }
+.ds .pj-obra-nome { margin: 0; font-size: 16px; line-height: 1.35; letter-spacing: -0.01em; color: var(--ds-text-primary); }
+.ds .pj-ultimos { display: grid; gap: 8px; }
+.ds .pj-ultimos ol { display: grid; gap: 0; margin: 0; padding: 0; list-style: none; }
+.ds .pj-ultimos li { position: relative; display: grid; grid-template-columns: 76px 1fr; gap: 10px; padding: 5px 0 5px; font-size: 12.5px; color: var(--ds-text-secondary); }
+.ds .pj-ultimos li .ds-num { font-size: 11.5px; color: var(--ds-text-tertiary); }
+.ds .pj-acoes { gap: 10px; }
+.ds .pj .mp-form input::placeholder, .ds .pj .mp-form textarea::placeholder { color: var(--ds-text-tertiary); }

@@ -1,0 +1,143 @@
+/* PESSOAS e DADOS: tabelas do painel, confirmação na tela, expurgo com a palavra. */
+.ds .pb-campo { height: 32px; min-height: 32px; min-width: 0; padding: 0 10px; border: 0; border-radius: 8px; background: rgb(255 255 255 / 0.035); box-shadow: inset 0 0 0 1px var(--ds-line-default); font: inherit; font-size: 12.5px; color: var(--ds-text-primary); }
+.ds .pb-campo::placeholder { color: var(--ds-text-tertiary); }
+.ds .pb-campo:focus-visible { outline: none; box-shadow: inset 0 0 0 1px var(--ds-text-secondary); }
+.ds .pb-campo--mono { font-family: var(--ds-font-mono); font-size: 12px; }
+.ds .pb-select { padding-right: 6px; color-scheme: dark; }
+.ds .pb-check { width: 14px; height: 14px; margin: 0; accent-color: var(--ds-text-primary); cursor: pointer; }
+
+/* a porta de entrada */
+.ds .pb-porta { display: grid; gap: 12px; justify-items: start; padding: 0 16px 16px; }
+.ds .pb-opcoes { display: inline-flex; gap: 4px; padding: 3px; border-radius: 12px; background: rgb(255 255 255 / 0.03); box-shadow: inset 0 0 0 1px var(--ds-line-subtle); }
+.ds .pb-opcao { display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 12px; border: 0; border-radius: 9px; background: none; font: inherit; font-size: 12.5px; color: var(--ds-text-secondary); cursor: pointer; transition: background 0.2s, color 0.2s; }
+.ds .pb-opcao i { width: 12px; height: 12px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--ds-text-tertiary); }
+.ds .pb-opcao[aria-checked="true"] { background: rgb(255 255 255 / 0.07); color: var(--ds-text-primary); }
+.ds .pb-opcao[aria-checked="true"] i { box-shadow: inset 0 0 0 4px var(--ds-text-primary); }
+.ds .pb-porta-texto { margin: 0; max-width: 78ch; font-size: 12.5px; line-height: 1.55; color: var(--ds-text-secondary); }
+.ds .pb-porta-texto { display: flex; gap: 8px; align-items: flex-start; }
+.ds .pb-porta-texto svg { flex: none; margin-top: 2px; color: var(--ds-state-attention); }
+.ds .pb-porta .pb-campo { width: 280px; }
+.ds .pb-numeros { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+/* formulários em linha */
+.ds .pb-linha-form { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 0 16px 10px; }
+.ds .pb-linha-form .pb-campo:first-child { width: 260px; }
+.ds .pb-filtros { padding-bottom: 12px; }
+.ds .pb-busca { display: flex; align-items: center; gap: 8px; width: 300px; height: 32px; padding: 0 10px; border-radius: 8px; background: rgb(255 255 255 / 0.035); box-shadow: inset 0 0 0 1px var(--ds-line-default); color: var(--ds-text-tertiary); }
+.ds .pb-busca input { flex: 1; min-width: 0; border: 0; background: none; font: inherit; font-size: 12.5px; color: var(--ds-text-primary); outline: none; }
+.ds .pb-busca input::placeholder { color: var(--ds-text-tertiary); }
+
+/* lote e confirmação */
+.ds .pb-lote { display: flex; align-items: center; gap: 4px; margin: 0 16px 8px; padding: 6px 8px 6px 12px; border-radius: 10px; background: rgb(255 255 255 / 0.05); font-size: 12.5px; }
+.ds .pb-lote b { margin-right: 8px; font-weight: 500; }
+.ds .pb-confirma { margin: 0 16px; overflow: hidden; }
+.ds .pb-confirma-dentro { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; padding: 10px 12px; border-radius: 10px; background: rgb(255 255 255 / 0.04); box-shadow: inset 0 0 0 1px var(--ds-line-default); }
+.ds .pb-confirma-dentro p { flex: 1; margin: 0; font-size: 12.5px; line-height: 1.5; }
+.ds .pb-confirma-dentro > svg { flex: none; color: var(--ds-text-secondary); }
+.ds .pb-confirma--perigo .pb-confirma-dentro { box-shadow: inset 0 0 0 1px var(--ds-sev-block-line); background: var(--ds-sev-block-wash); }
+.ds .pb-confirma--perigo .pb-confirma-dentro > svg { color: var(--ds-state-error); }
+.ds .pb-perigo.ds-btn--primary { background: var(--ds-state-error); color: var(--ds-p-ink); }
+.ds .pb-perigo.ds-btn--primary:hover:not(:disabled) { background: #ff9385; }
+.ds .pb-perigo:disabled { opacity: 0.4; cursor: not-allowed; }
+.ds .pb-perigo-texto:not(:disabled) { color: var(--ds-state-error); }
+.ds .pb-perigo-texto { margin-left: auto; }
+
+/* a tabela de pessoas */
+.ds .pb-tabela .adm-linha { grid-template-columns: 24px minmax(170px, 1.5fr) 96px 120px minmax(96px, 0.8fr) minmax(100px, 240px) 36px 84px 28px; min-height: 52px; }
+.ds .pb-pessoa--marcada { background: rgb(255 255 255 / 0.03); border-radius: 8px; }
+.ds .pb-pessoa--fora .adm-tit b { color: var(--ds-text-secondary); }
+.ds .pb-papel { justify-self: start; padding: 1px 7px; border-radius: 5px; box-shadow: inset 0 0 0 1px var(--ds-line-default); font-size: 11.5px; color: var(--ds-text-secondary); }
+.ds .pb-papel--admin { background: var(--ds-nexo-wash); box-shadow: none; color: var(--ds-nexo-soft); }
+.ds .pb-vinculo-rotulo { font-family: var(--ds-font-mono); font-size: 11px; color: var(--ds-text-secondary); }
+.ds .pb-vinculo--convidado { color: var(--ds-state-info); }
+.ds .pb-vinculo--desligado { color: var(--ds-text-tertiary); text-decoration: line-through; }
+.ds .pb-aud { display: grid; grid-template-columns: minmax(0, 1fr) 24px; align-items: center; gap: 8px; }
+.ds .pb-aud b { font-weight: 450; text-align: right; }
+
+/* conversas e expurgo */
+.ds .pb-conversas .pb-obra { grid-template-columns: 24px minmax(0, 1fr) minmax(120px, 0.6fr) 84px 120px; min-height: 52px; margin-top: 6px; }
+.ds .pb-conversas .pb-conversa { grid-template-columns: 24px minmax(0, 1fr) 110px 220px 84px; min-height: 36px; padding-left: 40px; border-top: 0; font-size: 12px; }
+.ds .pb-acao-obra { justify-self: end; opacity: 0; transition: opacity 0.2s; }
+.ds .pb-obra:hover .pb-acao-obra, .ds .pb-acao-obra:focus-visible { opacity: 1; }
+.ds .pb-rodape-acoes { display: flex; gap: 8px; padding: 6px 16px 16px; }
+.ds .pb-zerar { margin-left: auto; color: var(--ds-text-tertiary); }
+.ds .pb-zerar:hover { color: var(--ds-state-error) !important; }
+.ds .pb-expurgo { margin: 0 16px 12px; overflow: hidden; }
+.ds .pb-expurgo-dentro { display: grid; gap: 14px; padding: 16px; border-radius: 12px; background: var(--ds-sev-block-wash); box-shadow: inset 0 0 0 1px var(--ds-sev-block-line); }
+.ds .pb-expurgo-tit { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 14px; font-weight: 500; }
+.ds .pb-expurgo-tit svg { color: var(--ds-state-error); }
+.ds .pb-expurgo-colunas { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.ds .pb-expurgo-colunas ul { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; font-size: 12.5px; }
+.ds .pb-expurgo-colunas li::before { content: ""; display: inline-block; width: 5px; height: 5px; margin-right: 8px; border-radius: 50%; background: currentColor; opacity: 0.5; vertical-align: 2px; }
+.ds .pb-rotulo { margin: 0 0 8px; font-family: var(--ds-font-mono); font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; }
+.ds .pb-rotulo--vai { color: var(--ds-state-error); }
+.ds .pb-rotulo--fica { color: var(--ds-state-ok); }
+.ds .pb-nota { margin: 8px 0 0; font-size: 12px; line-height: 1.5; color: var(--ds-text-secondary); }
+.ds .pb-palavra { display: grid; gap: 6px; font-size: 12.5px; color: var(--ds-text-secondary); }
+.ds .pb-palavra b { font-weight: 500; color: var(--ds-text-primary); }
+.ds .pb-palavra .pb-campo { width: min(100%, 460px); }
+.ds .pb-expurgo-acoes { display: flex; align-items: center; gap: 8px; }
+.ds .pb-ainda { font-size: 12px; color: var(--ds-text-tertiary); }
+
+/* histórico de auditorias e LDs */
+.ds .pb-auditorias .adm-linha { grid-template-columns: 24px minmax(0, 1.4fr) 88px 112px 70px 70px 44px 60px 84px minmax(0, 1fr) 84px; min-height: 44px; }
+.ds .pb-lds .adm-linha { grid-template-columns: 24px minmax(0, 1.4fr) 100px minmax(0, 1fr) 70px 50px 50px 60px 84px; min-height: 48px; }
+.ds .pb-corta { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+
+/* a fila de quem está sem escritório: é aqui que se aprova alguém */
+.ds .pb-fila { display: grid; padding: 0 8px 8px; }
+.ds .pb-pedido { display: grid; grid-template-columns: minmax(160px, 1fr) minmax(0, auto) auto; align-items: center; gap: 16px; padding: 10px 8px; border-top: 1px solid var(--ds-line-subtle); overflow: hidden; }
+.ds .pb-pedido-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; font-size: 12px; color: var(--ds-text-tertiary); }
+.ds .pb-fora-do-dominio { padding: 1px 7px; border-radius: 5px; background: var(--ds-state-attention-wash); font-style: normal; font-size: 11.5px; color: var(--ds-state-attention); }
+.ds .pb-pedido-acoes { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+.ds .pb-fila-vazia { margin: 0; padding: 14px 8px; border-top: 1px solid var(--ds-line-subtle); font-size: 12.5px; color: var(--ds-text-tertiary); }
+
+/* a linha abre a ficha de acesso */
+.ds .pb-pessoa { cursor: pointer; transition: background 0.2s; }
+.ds .pb-pessoa:hover { background: rgb(255 255 255 / 0.025); }
+.ds .pb-pessoa--aberta { background: rgb(255 255 255 / 0.04); }
+.ds .pb-abrir { display: grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 0; border-radius: 8px; background: none; color: var(--ds-text-tertiary); cursor: pointer; transition: transform 0.25s, color 0.2s, background 0.2s; }
+.ds .pb-abrir:hover { color: var(--ds-text-primary); background: rgb(255 255 255 / 0.06); }
+.ds .pb-abrir[aria-expanded="true"] { transform: rotate(180deg); color: var(--ds-text-primary); }
+.ds .pb-ficha { overflow: hidden; }
+.ds .pb-ficha-dentro { display: grid; gap: 12px; margin: 4px 0 10px; padding: 14px; border-radius: 12px; background: rgb(255 255 255 / 0.03); box-shadow: inset 0 0 0 1px var(--ds-line-default); }
+.ds .pb-chaves { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.ds .pb-chave { display: grid; align-content: start; gap: 8px; min-width: 0; padding: 12px; border-radius: 10px; box-shadow: inset 0 0 0 1px var(--ds-line-subtle); transition: box-shadow 0.2s, background 0.2s; }
+.ds .pb-chave--mudou { background: rgb(255 255 255 / 0.03); box-shadow: inset 0 0 0 1px var(--ds-text-tertiary); }
+.ds .pb-chave h4 { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 12.5px; font-weight: 500; }
+.ds .pb-chave p { margin: 0; font-size: 12px; line-height: 1.5; color: var(--ds-text-secondary); }
+.ds .pb-opcoes--chave { display: flex; flex-wrap: wrap; justify-self: start; max-width: 100%; }
+.ds .pb-opcoes--chave .pb-opcao { height: 28px; padding: 0 10px; font-size: 12px; }
+.ds .pb-opcao:disabled { cursor: default; opacity: 0.45; }
+.ds .pb-ficha-pe { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.ds .pb-ficha-resumo, .ds .pb-ficha-trava { flex: 1; min-width: 220px; margin: 0; font-size: 12.5px; }
+.ds .pb-ficha-resumo b { font-weight: 500; }
+.ds .pb-ficha-trava { display: flex; align-items: center; gap: 8px; color: var(--ds-state-error); }
+
+/* nada sai da caixa: o painel estreito larga as colunas de apoio */
+.ds .adm-bloco:has(.pb-tabela, .pb-fila, .pb-auditorias) { container-type: inline-size; }
+@container (max-width: 920px) {
+  .ds .pb-tabela .adm-linha { grid-template-columns: 24px minmax(150px, 1fr) 96px 110px minmax(90px, 0.8fr) 28px; }
+  .ds .pb-tabela .adm-linha > :nth-child(6), .ds .pb-tabela .adm-linha > :nth-child(7), .ds .pb-tabela .adm-linha > :nth-child(8) { display: none; }
+  .ds .pb-chaves { grid-template-columns: 1fr; }
+  .ds .pb-pedido { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .ds .pb-pedido-acoes { justify-content: flex-start; }
+  .ds .pb-auditorias .adm-linha > :nth-child(10), .ds .pb-auditorias .adm-linha > :nth-child(5), .ds .pb-auditorias .adm-linha > :nth-child(6) { display: none; }
+  .ds .pb-auditorias .adm-linha { grid-template-columns: 24px minmax(0, 1.4fr) 88px 112px 44px 60px 84px 84px; }
+}
+
+/* adicionar: o e-mail primeiro, grande, sem procurar */
+.ds .pb-adicionar { display: grid; grid-template-columns: minmax(240px, 1.6fr) minmax(160px, 1fr) auto auto auto; align-items: end; gap: 12px; padding: 0 16px 16px; }
+.ds .pb-adicionar label, .ds .pb-adicionar-chave { display: grid; gap: 6px; min-width: 0; }
+.ds .pb-adicionar label > span, .ds .pb-adicionar-chave > span { font-size: 11.5px; color: var(--ds-text-tertiary); }
+.ds .pb-campo--grande { height: 38px; min-height: 38px; width: 100%; font-size: 13.5px; }
+.ds .pb-campo--erro { box-shadow: inset 0 0 0 1px var(--ds-state-error); }
+.ds .pb-adicionar .pb-opcoes--chave .pb-opcao { height: 32px; }
+.ds .pb-adicionar-botao { height: 38px; }
+.ds .pb-adicionar-retorno { margin: -6px 16px 14px; font-size: 12.5px; color: var(--ds-text-secondary); }
+.ds .pb-adicionar-retorno--erro { color: var(--ds-state-error); }
+.ds .adm-bloco:has(.pb-adicionar) { container-type: inline-size; }
+@container (max-width: 1080px) {
+  .ds .pb-adicionar { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); }
+  .ds .pb-adicionar-botao { justify-self: start; }
+}

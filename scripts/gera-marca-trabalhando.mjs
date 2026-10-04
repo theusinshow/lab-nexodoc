@@ -9,7 +9,7 @@
  *
  * NÃO É UM SEGUNDO DESENHO. Ele parte do mesmo quadro capturado do orbe
  * (`public/marca/orbe-NN.png`, a marca segundo o §6 da DESIGN.md) e acrescenta
- * o ponto teal — "variação afinada", como a proposta pede. Desenhar um orbe
+ * o ponto na cor do aro — "variação afinada", como a proposta pede. Desenhar um orbe
  * novo para o estado de trabalho quebraria a escada de reduções, que existe
  * justamente para o objeto ser o mesmo em todo tamanho.
  */
@@ -19,14 +19,14 @@ import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
 const UPNG = require("@pdf-lib/upng").default;
 
-/** O teal do sistema (`--primary`), em RGB. */
-const TEAL = [91, 218, 198];
+/** A cor do aro do orbe (`CORES_DO_ORBE.aro`, violeta #c3a3ff), em RGB. */
+const ARO = [195, 163, 255];
 
 /**
  * O ponto ocupa um quarto da largura, no canto inferior direito, com uma borda
  * escura de 1px em volta.
  *
- * A borda não é enfeite: sobre a parte clara do orbe, um ponto teal sem
+ * A borda não é enfeite: sobre a parte clara do orbe, um ponto claro sem
  * separação some dentro do brilho — e um indicador que só aparece em metade dos
  * fundos não é indicador.
  */
@@ -44,9 +44,9 @@ function comPonto(caminhoEntrada, caminhoSaida) {
       const d = Math.hypot(x - cx, y - cy);
       const i = (y * width + x) * 4;
       if (d <= raio) {
-        rgba[i] = TEAL[0];
-        rgba[i + 1] = TEAL[1];
-        rgba[i + 2] = TEAL[2];
+        rgba[i] = ARO[0];
+        rgba[i + 1] = ARO[1];
+        rgba[i + 2] = ARO[2];
         rgba[i + 3] = 255;
       } else if (d <= raio + 1.2) {
         // O anel escuro que separa o ponto do brilho do orbe.
@@ -59,7 +59,7 @@ function comPonto(caminhoEntrada, caminhoSaida) {
   }
 
   // `0` = sem perda: um ícone de 32px não tem o que economizar, e paleta
-  // reduzida faria o teal do sistema virar um teal parecido.
+  // reduzida faria o violeta do aro virar um violeta parecido.
   const saida = UPNG.encode([rgba.buffer], width, height, 0);
   writeFileSync(caminhoSaida, Buffer.from(saida));
   console.log(`  ${caminhoSaida} — ${width}x${height}`);

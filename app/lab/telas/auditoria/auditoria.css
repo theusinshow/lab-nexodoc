@@ -1,0 +1,310 @@
+/* AUDITORIA RODANDO. Técnica e densa. Só tokens --ds-*. */
+
+.ds .au { position: relative; min-height: 100%; padding-bottom: 56px; background: var(--ds-surface-page); }
+.ds .au-corpo { width: min(1120px, calc(100% - 64px)); margin: 0 auto; }
+
+.ds .au-cabeca { margin: 36px 0 18px; }
+.ds .au-obra { display: flex; align-items: center; gap: 8px; font-size: var(--ds-text-xs); color: var(--ds-text-secondary); }
+.ds .au-obra .ds-code { font-size: 11px; padding: 0 5px; }
+.ds .au-titulo { display: flex; align-items: center; gap: 16px; margin-top: 8px; }
+.ds .au-titulo h1 { margin: 0; font-size: 30px; font-weight: 300; letter-spacing: -0.035em; line-height: 1.1; }
+.ds .au-titulo-dir { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.ds .au-relogio { font-family: var(--ds-font-mono); font-size: 13px; color: var(--ds-text-secondary); height: 28px; display: inline-flex; align-items: center; padding: 0 11px; border-radius: 999px; background: rgb(255 255 255 / 0.05); }
+.ds .au-arquivo { display: flex; align-items: center; gap: 7px; margin: 8px 0 0; font-size: var(--ds-text-xs); color: var(--ds-text-tertiary); }
+
+.ds .au-confirmar { overflow: hidden; }
+.ds .au-confirmar > div {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding: 10px 10px 10px 16px;
+  border-radius: var(--ds-radius-row);
+  background: var(--ds-state-error-wash);
+  box-shadow: inset 0 0 0 1px var(--ds-sev-block-line);
+  font-size: var(--ds-text-xs);
+  color: #f3c3bc;
+}
+.ds .au-confirmar > div > svg { color: var(--ds-state-error); flex: none; }
+.ds .au-confirmar b { color: var(--ds-state-error); font-weight: 500; }
+.ds .au-confirmar > div > span { flex: 1; }
+.ds .au-perigo { color: var(--ds-state-error) !important; box-shadow: inset 0 0 0 1px var(--ds-sev-block-line) !important; }
+
+.ds .au-progresso { margin-bottom: 16px; }
+.ds .au-barra { height: 4px; border-radius: 999px; background: rgb(255 255 255 / 0.07); overflow: hidden; }
+.ds .au-barra i { position: relative; display: block; height: 100%; border-radius: 999px; background: var(--ds-nexo); overflow: hidden; }
+.ds .au-barra i::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.5), transparent); transform: translateX(-100%); animation: au-correr 1.8s var(--ds-ease-out) infinite; }
+.ds .au-barra i.au-barra--ok { background: var(--ds-state-ok); }
+.ds .au-barra i.au-barra--ok::after, .ds .au-barra i.au-barra--erro::after { display: none; }
+.ds .au-barra i.au-barra--erro { background: var(--ds-state-error); }
+@keyframes au-correr { to { transform: translateX(100%); } }
+.ds .au-progresso-texto { display: flex; justify-content: space-between; margin-top: 8px; font-size: var(--ds-text-2xs); color: var(--ds-text-tertiary); }
+
+.ds .au-pronto {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+  padding: 12px 12px 12px 16px;
+  border-radius: var(--ds-radius-card);
+  background: var(--ds-surface-card);
+  box-shadow: var(--ds-edge-strong);
+}
+.ds .au-pronto-veredito { display: flex; align-items: center; gap: 12px; font-size: var(--ds-text-xs); color: var(--ds-text-secondary); }
+.ds .au-pronto-acoes { margin-left: auto; display: flex; gap: 8px; }
+.ds .au-falha {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding: 12px 12px 12px 16px;
+  border-radius: var(--ds-radius-card);
+  background: var(--ds-state-error-wash);
+  box-shadow: inset 0 0 0 1px var(--ds-sev-block-line);
+}
+.ds .au-falha > div { flex: 1; display: grid; gap: 2px; font-size: var(--ds-text-xs); }
+.ds .au-falha b { font-weight: 500; color: var(--ds-state-error); }
+.ds .au-falha span { color: var(--ds-text-secondary); }
+
+/* ---------- grade: etapas + registro ---------- */
+.ds .au-grade { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 12px; align-items: start; }
+.ds .au-bloco { border-radius: var(--ds-radius-card); background: var(--ds-surface-card); box-shadow: var(--ds-edge); padding: 6px 6px 8px; }
+.ds .au-bloco h2 { display: flex; align-items: center; gap: 8px; margin: 8px 12px 6px; font-size: var(--ds-text-xs); font-weight: 500; }
+.ds .au-nota { font-size: var(--ds-text-2xs); color: var(--ds-text-tertiary); }
+
+.ds .au-etapas { width: 100%; border-collapse: separate; border-spacing: 0; font-size: var(--ds-text-xs); }
+.ds .au-etapas th { padding: 6px 10px; text-align: left; font-weight: 400; font-size: 11.5px; color: var(--ds-text-tertiary); border-bottom: 1px solid var(--ds-line-subtle); }
+.ds .au-etapas td { padding: 10px; vertical-align: top; border-bottom: 1px solid var(--ds-line-subtle); }
+.ds .au-etapas tbody tr:last-child td { border-bottom: 0; }
+.ds .au-dir { text-align: right !important; white-space: nowrap; }
+.ds .au-marca { width: 28px; padding-right: 0 !important; }
+.ds .au-m { display: grid; place-items: center; width: 18px; height: 18px; margin-top: 1px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px rgb(255 255 255 / 0.14); }
+.ds .au-m--feita { background: color-mix(in srgb, var(--ds-nexo) 14%, transparent); box-shadow: none; color: var(--ds-nexo); }
+.ds .au-m--erro { background: var(--ds-state-error-wash); box-shadow: none; color: var(--ds-state-error); }
+.ds .au-m--agora { position: relative; box-shadow: inset 0 0 0 1.5px var(--ds-nexo); }
+.ds .au-m--agora i { width: 6px; height: 6px; border-radius: 50%; background: var(--ds-nexo); animation: au-pulso 1.6s ease-in-out infinite; }
+.ds .au-m--agora::after { content: ""; position: absolute; inset: -4px; border-radius: 50%; box-shadow: 0 0 0 1px var(--ds-nexo-line); animation: au-anel 1.6s var(--ds-ease-out) infinite; }
+@keyframes au-pulso { 50% { transform: scale(0.6); opacity: 0.6; } }
+@keyframes au-anel { from { transform: scale(0.8); opacity: 1; } to { transform: scale(1.4); opacity: 0; } }
+.ds .au-nome { display: flex; align-items: center; gap: 8px; font-weight: 500; }
+.ds .au-futura .au-nome { font-weight: 400; color: var(--ds-text-tertiary); }
+.ds .au-feita .au-nome { font-weight: 400; color: var(--ds-text-secondary); }
+.ds .au-detalhe { display: block; margin-top: 3px; font-size: var(--ds-text-2xs); color: var(--ds-text-tertiary); line-height: 1.45; }
+.ds .au-agora .au-detalhe { color: var(--ds-text-secondary); }
+.ds .au-erro .au-detalhe { color: var(--ds-state-error); }
+.ds .au-sub { display: block; width: 240px; height: 3px; margin-top: 8px; border-radius: 999px; background: rgb(255 255 255 / 0.07); overflow: hidden; }
+.ds .au-sub i { display: block; height: 100%; border-radius: 999px; background: var(--ds-nexo); }
+.ds .au-tempo { font-family: var(--ds-font-mono); font-size: 12px; color: var(--ds-text-secondary); }
+.ds .au-tempo--passou { color: var(--ds-sev-decide); }
+.ds .au-previsto { font-family: var(--ds-font-mono); font-size: 12px; color: var(--ds-text-tertiary); }
+.ds .au-retomada { display: grid; gap: 12px; padding: 4px 12px 12px; }
+.ds .au-retomada p { margin: 0; font-size: var(--ds-text-xs); }
+
+.ds .au-registro ol { list-style: none; margin: 0; padding: 0 6px; max-height: 330px; overflow-y: auto; }
+.ds .au-registro li { display: grid; grid-template-columns: 62px minmax(0, 1fr); gap: 10px; padding: 6px 6px; font-size: var(--ds-text-2xs); line-height: 1.45; border-top: 1px solid var(--ds-line-subtle); }
+.ds .au-registro li:first-child { border-top: 0; }
+.ds .au-registro time { font-family: var(--ds-font-mono); font-size: 11px; color: var(--ds-text-tertiary); }
+.ds .au-registro li span { color: var(--ds-text-secondary); }
+.ds .au-registro li:last-child span { color: var(--ds-text-primary); }
+.ds .au-registro-fim span { color: var(--ds-state-ok) !important; }
+.ds .au-sair { display: grid; gap: 10px; margin: 8px 6px 2px; padding: 12px; border-radius: var(--ds-radius-row); background: var(--ds-surface-sunken); font-size: var(--ds-text-2xs); color: var(--ds-text-secondary); line-height: 1.5; }
+.ds .au-sair label { display: flex; align-items: center; gap: 10px; color: var(--ds-text-primary); cursor: pointer; }
+.ds .au-chave { position: relative; width: 32px; height: 18px; flex: none; padding: 0; border: 0; border-radius: 999px; background: var(--ds-surface-overlay); box-shadow: var(--ds-edge-strong); cursor: pointer; transition: background var(--ds-dur-state); }
+.ds .au-chave[aria-checked="true"] { background: var(--ds-nexo-strong); }
+.ds .au-chave span { position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: var(--ds-p-paper); }
+
+/* ---------- v2: linha do tempo + mapa das páginas ---------- */
+.ds .au-metrica { display: grid; justify-items: end; line-height: 1.1; margin-right: 6px; }
+.ds .au-metrica small { font-size: 11px; color: var(--ds-text-tertiary); }
+.ds .au-metrica b { font-family: var(--ds-font-mono); font-size: 16px; font-weight: 400; color: var(--ds-text-primary); }
+.ds .au-ambar { color: var(--ds-sev-decide) !important; }
+.ds .au-bloco--linha { padding: 6px 20px 16px 12px; margin-bottom: 12px; }
+.ds .au-bloco-cabeca { display: flex; align-items: center; gap: 10px; margin: 8px 6px 14px 12px; }
+.ds .au-bloco-cabeca h2 { margin: 0 !important; }
+.ds .au-bloco-cabeca .au-nota, .ds .au-legenda { margin-left: auto; }
+.ds .au-legenda { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--ds-text-tertiary); }
+.ds .au-leg { width: 18px; height: 8px; border-radius: 999px; margin-left: 8px; }
+.ds .au-leg--feito { background: #5b5f6b; }
+.ds .au-leg--lento { background: #c9ccd4; }
+.ds .au-leg--agora { background: var(--ds-nexo); }
+.ds .au-leg--futuro { box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.2); }
+.ds .au-brilho {
+  background: linear-gradient(90deg, var(--ds-text-tertiary) 0%, var(--ds-text-primary) 40%, var(--ds-text-tertiary) 80%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: ds-varrer 2.4s linear infinite;
+}
+.ds .au-grade { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr) !important; }
+.ds .au-grade .au-bloco { padding: 6px 16px 14px; }
+.ds .au-grade .au-bloco-cabeca { margin-left: 2px; }
+
+/* ---------- v3: fatos, blocos, achados até agora, o que vem depois ---------- */
+.ds .au-fatos { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 0 0 12px; padding: 12px 0; border-top: 1px solid var(--ds-line-subtle); border-bottom: 1px solid var(--ds-line-subtle); }
+.ds .au-fato { display: grid; gap: 2px; padding: 0 20px; border-left: 1px solid var(--ds-line-subtle); }
+.ds .au-fato:first-child { padding-left: 0; border-left: 0; }
+.ds .au-fato b { font-size: 22px; font-weight: 300; letter-spacing: -0.03em; line-height: 1.15; font-variant-numeric: tabular-nums; }
+.ds .au-fato > span { font-size: 11.5px; color: var(--ds-text-tertiary); }
+.ds .au-traco { color: var(--ds-text-tertiary); }
+.ds .au-nota-erro { color: var(--ds-state-error); }
+
+.ds .au-blocos { display: grid; gap: 8px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--ds-line-subtle); }
+.ds .au-blocos-faixa { display: flex; gap: 3px; }
+.ds .au-bloco-pil {
+  flex-basis: 0;
+  min-width: 0;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: rgb(255 255 255 / 0.04);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.08);
+  font: inherit;
+  cursor: pointer;
+  transition: background var(--ds-dur-state), box-shadow var(--ds-dur-state), opacity var(--ds-dur-feedback);
+}
+.ds .au-bloco-pil span { font-size: 10px; color: var(--ds-text-tertiary); }
+.ds .au-bloco-pil--feito { background: #5b5f6b; box-shadow: none; }
+.ds .au-bloco-pil--feito span { color: rgb(255 255 255 / 0.8); }
+.ds .au-bloco-pil--lendo { background: var(--ds-nexo-wash); box-shadow: inset 0 0 0 1.5px var(--ds-nexo); animation: gr-ler 1.4s ease-in-out infinite; }
+.ds .au-bloco-pil--lendo span { color: var(--ds-nexo-soft); }
+.ds .au-bloco-pil--erro { background: var(--ds-state-error-wash); box-shadow: inset 0 0 0 1.5px var(--ds-state-error); }
+.ds .au-bloco-pil--erro span { color: var(--ds-state-error); }
+.ds .au-blocos-faixa:hover .au-bloco-pil:not(.au-bloco-pil--sobre) { opacity: 0.45; }
+.ds .au-blocos-rodape { margin: 0; min-height: 18px; font-size: var(--ds-text-2xs); color: var(--ds-text-tertiary); }
+.ds .au-blocos-rodape b { font-weight: 500; color: var(--ds-text-primary); }
+
+.ds .au-coluna { display: grid; gap: 12px; align-content: start; min-width: 0; }
+.ds .au-achados--agora span { color: var(--ds-text-primary); }
+.ds .au-achados--agora b { color: var(--ds-nexo) !important; }
+.ds .au-achados--depois b { font-size: var(--ds-text-2xs) !important; color: var(--ds-text-tertiary) !important; }
+.ds .au-achados .au-nota { margin: 0; padding: 0 2px; line-height: 1.5; }
+.ds .au-registro ol { max-height: 196px; }
+
+.ds .au-depois { display: flex; align-items: center; gap: 24px; margin-top: 12px; padding: 12px 16px; border-radius: var(--ds-radius-card); box-shadow: var(--ds-edge); font-size: var(--ds-text-2xs); color: var(--ds-text-secondary); }
+.ds .au-depois-texto { flex: 1; line-height: 1.5; }
+.ds .au-depois-texto svg { margin-left: 4px; vertical-align: -2px; color: var(--ds-nexo); }
+.ds .au-depois label { display: flex; align-items: center; gap: 10px; flex: none; color: var(--ds-text-primary); cursor: pointer; }
+
+/* ---------- tipos de erro / prévia ---------- */
+.ds .au-tipos .au-bloco-cabeca { margin-bottom: 16px; }
+.ds .au-tipos .au-bloco-cabeca .ds-seg { margin-left: auto; }
+.ds .au-tipos-nota { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 14px 0 0; }
+.ds .au-tipos-nota span { flex-basis: 100%; }
+.ds .au-tipos-cor { width: 14px; height: 3px; border-radius: 999px; margin-left: 6px; }
+.ds .au-tipos-cor:first-child { margin-left: 0; }
+.ds .au-tipos-cor--block { background: var(--ds-sev-block); }
+.ds .au-tipos-cor--texto { background: var(--ds-sev-texto); }
+.ds .au-previa { display: grid; gap: 8px; padding: 6px 4px 4px; }
+.ds .au-previa .gr-faixa { padding-bottom: 58px; }
+
+/* ---------- v4: estrutura. Duas colunas da mesma altura, registro na largura toda ---------- */
+.ds .au-grade { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) !important; align-items: stretch !important; }
+.ds .au-paginas, .ds .au-achados { display: flex; flex-direction: column; }
+.ds .au-maiores { display: flex; align-items: center; gap: 8px; margin-top: auto; padding-top: 12px; border-top: 1px solid var(--ds-line-subtle); font-size: var(--ds-text-2xs); color: var(--ds-text-tertiary); }
+.ds .au-maiores button { height: 24px; padding: 0 9px; border: 0; border-radius: 999px; background: rgb(255 255 255 / 0.06); font: inherit; font-size: 11.5px; color: var(--ds-text-primary); cursor: pointer; font-variant-numeric: tabular-nums; }
+.ds .au-maiores button:hover { background: rgb(255 255 255 / 0.1); }
+.ds .au-paginas .au-blocos { margin-bottom: 14px; }
+.ds .au-achados .gr-niveis { margin-bottom: 14px; }
+.ds .au-etapas-conta { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: auto; padding-top: 12px; border-top: 1px solid var(--ds-line-subtle); }
+.ds .au-etapas-conta span { display: grid; gap: 2px; padding: 0 12px; border-left: 1px solid var(--ds-line-subtle); }
+.ds .au-etapas-conta span:first-child { padding-left: 2px; border-left: 0; }
+.ds .au-etapas-conta small { font-size: 11px; color: var(--ds-text-tertiary); white-space: nowrap; }
+.ds .au-etapas-conta b { font-size: 16px; font-weight: 400; color: var(--ds-text-primary); }
+.ds .au-etapas-conta--agora small { color: var(--ds-nexo-soft); }
+.ds .au-etapas-conta--agora b { color: var(--ds-nexo); }
+.ds .au-etapas-conta--depois b { font-size: 12px; line-height: 19px; color: var(--ds-text-tertiary); }
+.ds .au-registro--largo { margin-top: 12px; }
+.ds .au-registro--largo ol { max-height: 150px; }
+.ds .au-registro--largo li { grid-template-columns: 70px minmax(0, 1fr); }
+
+/* ---------- v5: o painel de cima ---------- */
+.ds .au-painel {
+  position: relative;
+  margin: 28px 0 12px;
+  border-radius: var(--ds-radius-panel);
+  background: var(--ds-surface-card);
+  box-shadow: var(--ds-edge-strong);
+  overflow: hidden;
+  --au-tom: var(--ds-nexo);
+}
+.ds .au-painel--passou { --au-tom: var(--ds-sev-decide); }
+.ds .au-painel--concluida { --au-tom: var(--ds-state-ok); }
+.ds .au-painel--falhou { --au-tom: var(--ds-state-error); }
+.ds .au-painel--enviando, .ds .au-painel--retomada { --au-tom: var(--ds-text-secondary); }
+/* o fio de luz no topo, na cor do estado — o mesmo gesto do veredito no Resultado */
+.ds .au-painel::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--au-tom), transparent); opacity: 0.7; }
+.ds .au-painel-topo { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 32px; padding: 22px 24px 20px; }
+.ds .au-painel-texto { display: grid; gap: 8px; min-width: 0; }
+.ds .au-painel-linha { display: flex; align-items: center; gap: 14px; }
+.ds .au-estado { display: inline-flex; align-items: center; gap: 8px; height: 24px; padding: 0 10px 0 9px; border-radius: 999px; background: color-mix(in srgb, var(--au-tom) 12%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--au-tom) 30%, transparent); font-size: 12px; font-weight: 500; color: var(--au-tom); }
+.ds .au-estado i { position: relative; width: 6px; height: 6px; border-radius: 50%; background: var(--au-tom); }
+.ds .au-painel--rodando .au-estado i::after, .ds .au-painel--passou .au-estado i::after, .ds .au-painel--enviando .au-estado i::after, .ds .au-painel--retomada .au-estado i::after {
+  content: ""; position: absolute; inset: -3px; border-radius: 50%; box-shadow: 0 0 0 1px var(--au-tom); animation: au-anel 1.6s var(--ds-ease-out) infinite;
+}
+.ds .au-painel .au-obra { font-size: var(--ds-text-xs); }
+.ds .au-painel h1 { margin: 2px 0 0; font-size: 30px; font-weight: 300; letter-spacing: -0.035em; line-height: 1.1; }
+.ds .au-painel .au-arquivo { flex-wrap: wrap; margin: 0; gap: 8px; }
+.ds .au-sep { width: 3px; height: 3px; border-radius: 50%; background: var(--ds-text-tertiary); opacity: 0.6; }
+
+.ds .au-cronometro { display: flex; align-items: center; gap: 16px; padding-right: 96px; }
+.ds .au-anel { width: 64px; height: 64px; flex: none; }
+.ds .au-anel circle { fill: none; stroke-width: 4; stroke-linecap: round; }
+.ds .au-anel-trilho { stroke: rgb(255 255 255 / 0.07); }
+.ds .au-anel-arco { stroke: var(--au-tom); }
+.ds .au-anel-giro { stroke: var(--au-tom); transform-origin: 32px 32px; animation: au-girar 1.4s linear infinite; }
+@keyframes au-girar { to { transform: rotate(360deg); } }
+.ds .au-cronometro-texto { display: grid; gap: 1px; }
+.ds .au-cronometro-texto b { font-family: var(--ds-font-mono); font-size: 26px; font-weight: 400; letter-spacing: -0.02em; line-height: 1.1; color: var(--ds-text-primary); }
+.ds .au-cronometro-texto small { font-size: 11px; color: var(--ds-text-tertiary); }
+.ds .au-cronometro-falta { margin-top: 4px; font-size: var(--ds-text-2xs); color: var(--ds-text-secondary); white-space: nowrap; }
+.ds .au-cancelar { position: absolute; top: 18px; right: 18px; }
+
+.ds .au-painel-fatos { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid var(--ds-line-subtle); background: rgb(255 255 255 / 0.012); }
+.ds .au-painel .au-fato { display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "n d" "r r"; align-items: end; column-gap: 14px; row-gap: 3px; padding: 14px 24px; border-left: 1px solid var(--ds-line-subtle); }
+.ds .au-painel .au-fato:first-child { border-left: 0; }
+.ds .au-painel .au-fato b { grid-area: n; font-size: 22px; font-weight: 300; letter-spacing: -0.03em; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.ds .au-painel .au-fato b small { font-size: 13px; color: var(--ds-text-tertiary); letter-spacing: 0; }
+.ds .au-painel .au-fato > span { grid-area: r; font-size: 11.5px; color: var(--ds-text-tertiary); }
+.ds .au-painel .au-fato > i { grid-area: d; display: flex; align-items: flex-end; gap: 2px; height: 16px; margin-bottom: 4px; }
+.ds .au-fato > i em { display: block; }
+.ds .au-fato-folhas em { flex: 1; height: 12px; border-radius: 2px; background: rgb(255 255 255 / 0.07); }
+.ds .au-fato-folhas em.au-fato--on { background: rgb(255 255 255 / 0.22); }
+.ds .au-fato-linha { align-items: center !important; }
+.ds .au-fato-linha em { height: 3px; border-radius: 999px; background: linear-gradient(90deg, rgb(255 255 255 / 0.05), rgb(255 255 255 / 0.35)); transition: width var(--ds-dur-layout) var(--ds-ease-out); }
+.ds .au-fato-blocos em { flex: 1; height: 12px; border-radius: 3px; box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.1); }
+.ds .au-fato-blocos em.au-fato--on { background: #5b5f6b; box-shadow: none; }
+.ds .au-fato-blocos em.au-fato--lendo { box-shadow: inset 0 0 0 1.5px var(--ds-nexo); background: var(--ds-nexo-wash); }
+.ds .au-fato-niveis { align-items: center !important; gap: 3px !important; }
+.ds .au-fato-niveis em { flex-basis: 0; height: 6px; border-radius: 999px; }
+.ds .au-fato-nivel--block { background: var(--ds-sev-block); }
+.ds .au-fato-nivel--decide { background: var(--ds-sev-decide); }
+.ds .au-fato-nivel--note { background: #9aa1ad; }
+.ds .au-fato-nivel--texto { background: var(--ds-sev-texto); }
+
+/* ---------- v6: enxuta ---------- */
+.ds .au-achados-total { margin-left: auto; font-size: 22px; font-weight: 300; letter-spacing: -0.03em; color: var(--ds-text-primary); cursor: help; }
+.ds .au-achados .gr-niveis { margin-bottom: 0; }
+.ds .au-paginas .au-blocos { margin-bottom: 0; margin-top: auto; }
+.ds .au-registro-fino { margin-top: 12px; border-radius: var(--ds-radius-card); box-shadow: var(--ds-edge); overflow: hidden; }
+.ds .au-registro-fino-barra { display: flex; align-items: center; gap: 16px; width: 100%; min-height: 44px; padding: 0 14px 0 16px; border: 0; background: none; font: inherit; font-size: var(--ds-text-2xs); color: var(--ds-text-secondary); text-align: left; cursor: pointer; }
+.ds .au-registro-fino-barra:disabled { cursor: default; }
+.ds .au-registro-fino-barra:hover:not(:disabled) { background: rgb(255 255 255 / 0.02); }
+.ds .au-registro-ultimo { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ds .au-registro-ultimo time { margin-right: 10px; font-family: var(--ds-font-mono); font-size: 11px; color: var(--ds-text-tertiary); }
+.ds .au-registro-ver { display: inline-flex; align-items: center; gap: 6px; flex: none; color: var(--ds-text-tertiary); }
+.ds .au-registro-fino-barra:hover .au-registro-ver { color: var(--ds-text-primary); }
+.ds .au-registro-aberto { overflow: hidden; border-top: 1px solid var(--ds-line-subtle); }
+.ds .au-registro-aberto ol { max-height: 220px; padding: 4px 10px 8px; }
+.ds .au-paginas .au-blocos { margin-top: 4px; }
+.ds .au-achados .gr-niveis-linha { padding: 6px 2px; }
+.ds .au-achados .au-bloco-cabeca { margin-bottom: 10px; }
+
+/* o texto do relógio ocupa a altura exata do anel: o tempo encosta no topo dele, o "para terminar" na base */
+.ds .au-cronometro { align-items: stretch; }
+.ds .au-cronometro-texto { display: flex; flex-direction: column; justify-content: space-between; height: 64px; padding: 3px 0 2px; }
+.ds .au-cronometro-tempo { display: flex; align-items: baseline; gap: 10px; }
+.ds .au-cronometro-texto b { line-height: 1; }
+.ds .au-cronometro-tempo small { line-height: 1; }
+.ds .au-cronometro-falta { margin-top: 0; line-height: 1; }

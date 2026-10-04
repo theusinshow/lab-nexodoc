@@ -1,0 +1,145 @@
+/*
+ * MONTAR VOLUMES — a mesa de hoje, organizada. Arquivos | (Montagem ou
+ * Conferência por aba). Usa painel, campos e listas do Mapa e de Projetos.
+ */
+.ds .vx-link { padding: 0; border: 0; background: none; font: inherit; font-size: 12px; color: var(--ds-text-secondary); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--ds-line-strong); cursor: pointer; transition: color 0.2s; }
+.ds .vx-link:hover:not(:disabled) { color: var(--ds-text-primary); }
+.ds .vx-link:disabled { opacity: 0.5; cursor: default; text-decoration: none; }
+.ds .vx-ajuda { margin: 0; font-size: 12px; line-height: 1.5; color: var(--ds-text-tertiary); }
+.ds .vx-recolhe { overflow: hidden; }
+
+/* dados do volume: um resumo numa linha; o formulário só abre quando se pede */
+.ds .vx-dados { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 40px; padding: 0 20px; border-bottom: 1px solid var(--ds-line-subtle); }
+.ds .vx-dados p { display: flex; flex-wrap: wrap; gap: 10px; margin: 0; font-size: 12.5px; color: var(--ds-text-secondary); }
+.ds .vx-dados-form { border-bottom: 1px solid var(--ds-line-subtle); }
+.ds .vx-dados-campos { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px 14px; padding: 14px 20px 16px; }
+
+/* a mesa */
+.ds .vx-mesa { display: grid; grid-template-columns: 340px minmax(0, 1fr); min-height: 680px; }
+.ds .vx-arquivos-col { position: relative; display: flex; flex-direction: column; min-width: 0; border-right: 1px solid var(--ds-line-subtle); }
+.ds .vx-col-cabeca { display: flex; align-items: baseline; justify-content: space-between; height: 48px; padding: 16px 18px 0; }
+.ds .vx-arquivos-rolagem { flex: 1; display: grid; align-content: start; gap: 4px; }
+.ds .vx-bloco { display: grid; gap: 10px; padding: 8px 18px 14px; }
+.ds .vx-bloco + .vx-bloco { border-top: 1px solid var(--ds-line-subtle); padding-top: 14px; }
+.ds .vx-bloco-cabeca { display: flex; align-items: baseline; justify-content: space-between; }
+.ds .vx-bloco-cabeca p { margin: 0; font-size: 12.5px; color: var(--ds-text-secondary); }
+.ds .vx-bloco-cabeca .ds-num { font-size: 11.5px; }
+.ds .vx-tipos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin: 8px 0; }
+.ds .vx-tipos button { display: flex; align-items: center; justify-content: space-between; gap: 6px; height: 30px; padding: 0 9px; border: 0; border-radius: 7px; background: none; box-shadow: inset 0 0 0 1px var(--ds-line-subtle); font: inherit; font-size: 12px; color: var(--ds-text-secondary); cursor: pointer; transition: background 0.2s, color 0.2s; }
+.ds .vx-tipos button[aria-checked="true"] { background: var(--ds-text-primary); box-shadow: none; color: var(--ds-surface-card); }
+.ds .vx-tipos .ds-num { font-size: 10.5px; opacity: 0.7; }
+.ds .vx-solta { margin: 0; }
+.ds .vx-fila { display: grid; gap: 4px; margin: 8px 0 0; padding: 0; list-style: none; }
+.ds .vx-fila li { position: relative; display: grid; gap: 2px; padding: 7px 28px 7px 10px; border-radius: 8px; background: rgb(255 255 255 / 0.025); font-size: 11.5px; }
+.ds .vx-fila li > .mp-mono { overflow: hidden; font-size: 11px; white-space: nowrap; text-overflow: ellipsis; color: var(--ds-text-primary); }
+.ds .vx-fila .mp-conf { white-space: normal; align-items: flex-start; }
+.ds .vx-fila .mp-conf i { margin-top: 5px; }
+.ds .vx-fila li button { position: absolute; top: 6px; right: 6px; display: grid; place-items: center; width: 18px; height: 18px; border: 0; border-radius: 5px; background: none; color: var(--ds-text-tertiary); cursor: pointer; }
+.ds .vx-busca { width: auto; }
+.ds .vx-filtros { display: flex; gap: 6px; }
+.ds .vx-arquivos { display: grid; margin: 0 -8px; padding: 0; list-style: none; }
+.ds .vx-arquivo { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 8px; padding: 0 8px; border-radius: 8px; transition: background 0.2s; }
+.ds .vx-arquivo:hover { background: rgb(255 255 255 / 0.025); }
+.ds .vx-arquivo-abre { display: flex; align-items: center; gap: 6px; min-width: 0; height: 36px; padding: 0; border: 0; background: none; font: inherit; color: var(--ds-text-primary); cursor: pointer; }
+.ds .vx-arquivo-nome { overflow: hidden; font-size: 11.5px; white-space: nowrap; text-overflow: ellipsis; }
+.ds .vx-tipo-do-arquivo { height: 22px; padding: 0 6px 0 8px; font-size: 11px; }
+.ds .vx-uso { min-width: 34px; font-size: 11px; text-align: right; color: var(--ds-text-tertiary); }
+.ds .vx-uso--nada { color: var(--ds-sev-decide); }
+.ds .vx-paginas { overflow: hidden; padding: 0 8px 10px 26px; }
+.ds .vx-todas { margin: 2px 0 6px; }
+.ds .vx-grade { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
+.ds .vx-pagina { padding: 0; }
+.ds .vx-pagina-marcar { display: grid; align-content: space-between; width: 100%; height: 100%; padding: 5px 6px; border: 0; background: none; font: inherit; text-align: left; cursor: pointer; }
+.ds .vx-ampliar { position: absolute; top: 4px; right: 4px; display: grid; place-items: center; width: 18px; height: 18px; border: 0; border-radius: 4px; background: none; color: var(--ds-text-tertiary); cursor: zoom-in; opacity: 0; transition: opacity 0.2s, background 0.2s; }
+.ds .vx-pagina:hover .vx-ampliar { opacity: 1; }
+.ds .vx-ampliar:hover { background: rgb(255 255 255 / 0.08); color: var(--ds-text-primary); }
+
+/* o destino: no pé dos Arquivos, sempre à vista */
+.ds .vx-destino { position: sticky; bottom: 0; display: grid; gap: 8px; padding: 12px 18px 14px; border-top: 1px solid var(--ds-line-default); background: var(--ds-surface-card); transition: background 0.3s; }
+.ds .vx-destino--ativo { background: var(--ds-surface-raised); }
+.ds .vx-destino-titulo { margin: 0; font-size: 12.5px; color: var(--ds-text-secondary); }
+.ds .vx-destino-seletores { display: flex; flex-wrap: wrap; gap: 4px; }
+.ds .vx-destino-seletores .vm-tipo { height: 26px; font-size: 11.5px; }
+.ds .vx-como { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
+.ds .vx-como button { height: 30px; padding: 0 4px; border: 0; border-radius: 7px; background: none; box-shadow: inset 0 0 0 1px var(--ds-line-default); font: inherit; font-size: 11.5px; color: var(--ds-text-primary); cursor: pointer; transition: background 0.2s, box-shadow 0.2s; }
+.ds .vx-como button:hover:not(:disabled) { box-shadow: inset 0 0 0 1px var(--ds-line-strong); background: rgb(255 255 255 / 0.04); }
+.ds .vx-como button:disabled { opacity: 0.4; cursor: default; }
+.ds .vx-como--sugerido { background: var(--ds-text-primary) !important; box-shadow: none !important; color: var(--ds-surface-card) !important; }
+
+/* a direita */
+.ds .vx-direita { position: relative; min-width: 0; }
+.ds .vx-abas { padding-right: 14px; }
+.ds .vx-aba-marca { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--ds-text-tertiary); }
+.ds .vx-area { display: grid; align-content: start; gap: 14px; padding: 16px 20px 24px; }
+.ds .vx-explica { margin-top: -2px; }
+
+/* pré-montagem com IA: opcional, recolhida */
+.ds .vx-ia { border-radius: 10px; box-shadow: inset 0 0 0 1px var(--ds-line-subtle); }
+.ds .vx-ia-cabeca { display: flex; align-items: center; gap: 10px; width: 100%; height: 42px; padding: 0 12px; border: 0; background: none; font: inherit; font-size: 12.5px; color: var(--ds-text-primary); text-align: left; cursor: pointer; }
+.ds .vx-ia-cabeca svg { color: var(--ds-text-tertiary); }
+.ds .vx-ia-cabeca .mp-g-fraco { font-size: 12px; }
+.ds .vx-ia-seta { display: inline-flex; margin-left: auto; color: var(--ds-text-tertiary); }
+.ds .vx-ia-corpo { display: flex; align-items: center; gap: 18px; padding: 4px 12px 12px; }
+.ds .vx-ia-metricas { display: flex; gap: 16px; margin: 0; }
+.ds .vx-ia-metricas div { display: grid; gap: 1px; }
+.ds .vx-ia-metricas dt { font-size: 11px; color: var(--ds-text-tertiary); }
+.ds .vx-ia-metricas dd { margin: 0; font-size: 14px; color: var(--ds-text-primary); }
+.ds .vx-ia-corpo .vx-ajuda { flex: 1; }
+.ds .vx-confianca { padding: 1px 6px; border-radius: 5px; box-shadow: inset 0 0 0 1px var(--ds-line-default); color: var(--ds-text-secondary); }
+
+/* o volume */
+.ds .vx-volume { border-radius: 12px; box-shadow: inset 0 0 0 1px var(--ds-line-default); overflow: hidden; }
+.ds .vx-volume-cabeca { display: flex; align-items: center; gap: 10px; height: 50px; padding: 0 10px 0 14px; border-bottom: 1px solid var(--ds-line-subtle); background: rgb(255 255 255 / 0.02); }
+.ds .vx-volume-n { font-size: 13px; color: var(--ds-text-tertiary); }
+.ds .vx-volume-titulo { flex: 0 1 280px; height: 30px; padding: 0 8px; border: 0; border-radius: 7px; background: none; font: inherit; font-size: 14px; color: var(--ds-text-primary); transition: background 0.2s, box-shadow 0.2s; }
+.ds .vx-volume-titulo:hover, .ds .vx-volume-titulo:focus { background: rgb(255 255 255 / 0.04); box-shadow: inset 0 0 0 1px var(--ds-line-default); outline: none; }
+.ds .vx-pags { font-size: 11px; }
+.ds .vx-icones { display: inline-flex; align-items: center; gap: 2px; margin-left: auto; }
+.ds .vx-icone { display: grid; place-items: center; width: 28px; height: 28px; border: 0; border-radius: 7px; background: none; color: var(--ds-text-tertiary); cursor: pointer; transition: background 0.2s, color 0.2s; }
+.ds .vx-icone:hover { background: rgb(255 255 255 / 0.06); color: var(--ds-text-primary); }
+.ds .vx-icone--perigo:hover { color: var(--ds-sev-block); }
+.ds .vx-previa-btn { height: 28px; margin-right: 4px; }
+.ds .vx-nome-final { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-bottom: 1px solid var(--ds-line-subtle); }
+.ds .vx-nome-final span { flex: none; font-size: 12px; color: var(--ds-text-tertiary); }
+.ds .vx-nome-final input { flex: 1; height: 30px; padding: 0 10px; border: 0; border-radius: 7px; background: rgb(255 255 255 / 0.035); box-shadow: inset 0 0 0 1px var(--ds-line-subtle); font-size: 12px; color: var(--ds-text-primary); }
+.ds .vx-volume-corpo { display: grid; }
+
+/* um lugar: o que é, o que tem, a ação */
+.ds .vx-lugar { display: grid; grid-template-columns: 96px minmax(0, 1fr) auto; align-items: center; gap: 12px; min-height: 44px; padding: 6px 14px 6px 46px; border-top: 1px solid var(--ds-line-subtle); font-size: 12.5px; }
+.ds .vx-volume-corpo > .vx-lugar:first-child { border-top: 0; padding-left: 14px; }
+.ds .vx-lugar-rotulo { color: var(--ds-text-tertiary); }
+.ds .vx-lugar-conteudo { min-width: 0; color: var(--ds-text-primary); }
+.ds .vx-peca { display: block; overflow: hidden; font-size: 11.5px; white-space: nowrap; text-overflow: ellipsis; }
+.ds .vx-lugar--vazio { background: rgb(from var(--ds-sev-decide) r g b / 0.05); }
+
+/* o grupo */
+.ds .vx-grupo { border-top: 1px solid var(--ds-line-default); }
+.ds .vx-grupo-cabeca { display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 10px 0 14px; }
+.ds .vx-grupo-nome { font-size: 12.5px; color: var(--ds-text-tertiary); }
+.ds .vx-grupo-nome b { margin-left: 4px; font-weight: 400; font-size: 13px; color: var(--ds-text-primary); }
+.ds .vx-grupo-nome .mp-mono { margin-left: 4px; font-size: 11px; }
+.ds .vx-destino-marca { padding: 1px 7px; border-radius: 6px; background: rgb(255 255 255 / 0.07); font-size: 11px; color: var(--ds-text-primary); }
+.ds .vx-grupo .vx-icones .vx-link { margin-right: 8px; }
+.ds .vx-campos { display: grid; grid-template-columns: 1fr 120px; gap: 10px 12px; padding: 4px 14px 14px 46px; }
+.ds .vx-campo-largo { grid-column: 1 / -1; }
+.ds .vx-ordem { display: grid; margin: 0; padding: 0 14px 8px 46px; list-style: none; overflow: hidden; }
+.ds .vx-ordem li { display: grid; grid-template-columns: 30px 60px minmax(0, 1fr) auto auto auto; align-items: center; gap: 8px; min-height: 34px; font-size: 12px; border-top: 1px dashed var(--ds-line-subtle); }
+.ds .vx-ordem-titulo { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: var(--ds-text-secondary); }
+.ds .vx-ordem .vm-tipo { height: 24px; font-size: 11px; }
+.ds .vx-ordem-mais { display: block !important; padding-top: 6px; }
+.ds .vx-mais { justify-self: start; margin: 6px 6px 8px; }
+
+/* conferência: três cartões; a ação principal é Gerar PDF */
+.ds .vx-conferencia { gap: 12px; }
+.ds .vx-cartao { border-radius: 12px; box-shadow: inset 0 0 0 1px var(--ds-line-default); overflow: hidden; }
+.ds .vx-cartao-cabeca { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 46px; padding: 6px 10px 6px 16px; border-bottom: 1px solid var(--ds-line-subtle); }
+.ds .vx-cartao-cabeca p { margin: 0; font-size: 13px; color: var(--ds-text-primary); }
+.ds .vx-cartao-cabeca .mp-g-fraco { font-size: 12px; }
+.ds .vx-lista { margin: 0; }
+.ds .vx-lista li { padding-left: 16px; padding-right: 12px; }
+.ds .vx-pad { padding: 12px 16px; }
+.ds .vx-saida { margin: 0; border-top: 0; }
+.ds .vx-saida .mp-campo { padding-left: 16px; padding-right: 16px; grid-template-columns: 140px minmax(0, 1fr); }
+.ds .vx-saida-acoes { display: grid; gap: 10px; }
+.ds .vx-saida-botoes { display: flex; flex-wrap: wrap; gap: 8px; }
+.ds .vx-aviso-export { margin: 0; font-size: 12px; color: var(--ds-sev-decide); }
