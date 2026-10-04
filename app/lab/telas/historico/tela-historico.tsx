@@ -55,11 +55,11 @@ function Marcado({ texto, busca }: { texto: string; busca: string }) {
   );
 }
 
-/** A cor de cada disciplina (os tokens --ds-disc-*); fundações é do grupo estrutural. */
+/** A cor de cada disciplina (os tokens --ds-disc-*); fundações tem a sua desde 03/10/2026. */
 const COR_DA_DISCIPLINA: Record<string, string> = {
   ARQ: "var(--ds-disc-arq)",
   EST: "var(--ds-disc-est)",
-  FND: "var(--ds-disc-est)",
+  FND: "var(--ds-disc-fnd)",
   HID: "var(--ds-disc-hid)",
   ELE: "var(--ds-disc-ele)",
   PCI: "var(--ds-disc-pci)",

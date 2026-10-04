@@ -127,6 +127,7 @@
   --ds-disc-cli: var(--discipline-cli);
   --ds-disc-ter: var(--discipline-ter);
   --ds-disc-pai: var(--discipline-pai);
+  --ds-disc-fnd: #c2ad86;
   /* as quatro que não tinham cor */
   --ds-disc-cab: #d6a472;
   --ds-disc-gas: #86c4a8;
