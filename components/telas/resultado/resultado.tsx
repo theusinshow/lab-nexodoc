@@ -45,6 +45,7 @@ export function ResultadoDoParecer({
   onVista,
   podeVerNoDocumento = false,
   achadoEmFoco,
+  filaInicial,
   aoGerarTexto,
   comparado,
 }: {
@@ -56,6 +57,8 @@ export function ResultadoDoParecer({
   onVista: (v: LeituraDoParecer) => void;
   podeVerNoDocumento?: boolean;
   achadoEmFoco?: string | null;
+  /** A fila abre filtrada ("meus": o link do e-mail). */
+  filaInicial?: "meus" | null;
   aoGerarTexto?: (findingId: string, texto: TextoCorrigido) => void;
   /** O que mudou desde a auditoria anterior desta conversa (o cartão "Desde 18/09" do lab). */
   comparado?: ComparadoComAnterior | null;
@@ -159,7 +162,7 @@ export function ResultadoDoParecer({
             />
           )}
           {vista === "findings" && (
-            <FilaDeAchados key={filaKey} nivelInicial={nivelDaFila} parecer={parecer} auditId={auditId} catalogo={catalogo} inicial={aberto} onVerNoMemorial={verNoMemorial} aoGerarTexto={aoGerarTexto} />
+            <FilaDeAchados key={filaKey} filtroInicial={filaInicial ?? null} nivelInicial={nivelDaFila} parecer={parecer} auditId={auditId} catalogo={catalogo} inicial={aberto} onVerNoMemorial={verNoMemorial} aoGerarTexto={aoGerarTexto} />
           )}
           {vista === "report" && <RelatorioDoParecer report={report} parecer={parecer} />}
           {vista === "documento" && <NoDocumento report={report} parecer={parecer} catalogo={catalogo} onVerNoMemorial={verNoMemorial} onAbrir={(chave) => abrirNaFila(chave)} />}

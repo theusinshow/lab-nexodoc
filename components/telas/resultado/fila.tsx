@@ -72,11 +72,14 @@ export function FilaDeAchados({
   catalogo,
   inicial,
   nivelInicial,
+  filtroInicial,
   onVerNoMemorial,
   aoGerarTexto,
 }: {
   /** Abre já filtrada num nível (o clique no nível do resumo completo). */
   nivelInicial?: Nivel | null;
+  /** Abre num filtro ("meus": o link do e-mail leva ao que é da pessoa). */
+  filtroInicial?: "meus" | null;
   parecer: ParecerVivo;
   auditId?: string | null;
   catalogo: FonteDoCatalogo[];
@@ -91,9 +94,17 @@ export function FilaDeAchados({
   const sugestoes = useMemo(() => parecer.achados.filter((a) => !a.confirmado), [parecer.achados]);
   const todos = parecer.achados;
 
-  const [filtro, setFiltro] = useState<Filtro>("todos");
+  const [filtro, setFiltro] = useState<Filtro>(filtroInicial ?? "todos");
   const [busca, setBusca] = useState("");
   const [selecionado, setSelecionado] = useState<string | null>(inicial ?? null);
+  /*
+   * ABERTA NUM FILTRO (o link do e-mail abre em "Meus"), o detalhe acompanha a
+   * LISTA até a pessoa escolher um achado: o foco que veio no pedido pode não
+   * ser dela, e o detalhe mostraria um achado que a lista filtrada nem lista. Os
+   * responsáveis chegam do servidor depois que a fila monta — por isso é regra
+   * de exibição, e não estado inicial.
+   */
+  const [escolheu, setEscolheu] = useState(false);
   const [direcao, setDirecao] = useState(1);
   const [decisao, setDecisao] = useState(false);
   const [motivo, setMotivo] = useState("");
@@ -177,13 +188,16 @@ export function FilaDeAchados({
       ? NIVEIS.map((n) => ({ id: n.id as string, nome: n.nome, marca: <i className={`rs-ponto rs-ponto--${n.id}`} />, itens: visiveis.filter((a) => a.nivel === n.id) }))
       : DISCIPLINAS.map((d) => ({ id: d.id as string, nome: d.nome, marca: <i className={`dc-ponto dc--${d.id}`} />, itens: visiveis.filter((a) => a.disc === d.id) }));
 
-  const atual = todos.find((a) => a.chave === selecionado) ?? visiveis[0] ?? confirmados[0] ?? todos[0];
+  const doFoco = todos.find((a) => a.chave === selecionado);
+  const focoVisivel = doFoco && visiveis.some((a) => a.chave === doFoco.chave);
+  const atual = (filtroInicial && !escolheu && !focoVisivel ? visiveis[0] : doFoco) ?? visiveis[0] ?? confirmados[0] ?? todos[0];
   const posicao = atual ? visiveis.findIndex((a) => a.chave === atual.chave) : -1;
   const temArquivo = (a: AchadoDaTela) => resolverFonte({ arquivo: a.estruturado.documento }, catalogo).tipo === "arquivo";
 
   const abrir = (chave: string, passo = 1) => {
     setDirecao(passo);
     setSelecionado(chave);
+    setEscolheu(true);
     setDecisao(false);
     setMotivo("");
     setAba("evidencia");
@@ -269,7 +283,7 @@ export function FilaDeAchados({
     const ativo = a.chave === atual?.chave;
     const marcado = marcados.includes(a.chave);
     return (
-      <div key={a.chave} className={`rs-linha${ativo ? " rs-linha--ativa" : ""}${a.desfecho ? " rs-linha--encerrada" : ""}${marcados.length ? " rs-linha--selecionando" : ""}`}>
+      <div key={a.chave} className={`rs-linha${ativo ? " rs-linha--ativa" : ""}${a.desfecho ? " rs-linha--encerrada" : ""}${a.desfecho?.tipo === "FIXED_IN_DOC" ? " rs-linha--corrigida" : ""}${marcados.length ? " rs-linha--selecionando" : ""}`}>
         {ativo && <motion.span layoutId="rs-linha-ativa" className="rs-linha-fundo" transition={mola("snappy")} />}
         <button type="button" role="checkbox" aria-checked={marcado} aria-label={`Selecionar ${a.id} para atribuir`} className="rs-marcar" disabled={Boolean(a.desfecho) || sugestao} onClick={() => alternar(a.chave)}>
           <AnimatePresence>
@@ -646,6 +660,12 @@ export function FilaDeAchados({
             transition={{ duration: dur("enter"), ease: ease(CURVA.out) }}
           >
             <h2>{atual.titulo}</h2>
+            {atual.desfecho?.tipo === "FIXED_IN_DOC" && (
+              <p className="rs-faixa-corrigido" role="status">
+                <Check size={14} aria-hidden /> Corrigido
+                {atual.desfecho.por ? ` por ${atual.desfecho.por}` : ""} · <time>{quando(atual.desfecho.quando)}</time>
+              </p>
+            )}
             {entrePaginas && (
               <p className="rs-entre-paginas">
                 <span aria-hidden>⇄</span> Conflito entre {emConflito.map((p) => `p. ${p}`).join(emConflito.length === 2 ? " e " : ", ")}

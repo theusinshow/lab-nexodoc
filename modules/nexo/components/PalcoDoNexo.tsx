@@ -401,6 +401,12 @@ export function PalcoDoNexo({
     setFocoDoLink(aberturaPorLink.achadoEmFoco);
     if (aberturaPorLink.achadoEmFoco) setVistaDoParecer("findings");
   }
+  // `&fila=meus` (o e-mail, os atalhos "com você"): a fila, já em Meus. Uma vez por pedido.
+  const [filaDoLink, setFilaDoLink] = useState<"meus" | null>(null);
+  if (aberturaPorLink.fila !== filaDoLink) {
+    setFilaDoLink(aberturaPorLink.fila);
+    if (aberturaPorLink.fila) setVistaDoParecer("findings");
+  }
   /*
    * A CONTAGEM DA ABA CONTA O QUE A LISTA MOSTRA.
    *
@@ -705,6 +711,7 @@ export function PalcoDoNexo({
                     }}
                     podeVerNoDocumento={podeVerNoDocumento}
                     achadoEmFoco={focoDoChat?.chave ?? aberturaPorLink.achadoEmFoco ?? null}
+                    filaInicial={focoDoChat ? null : aberturaPorLink.fila}
                     aoGerarTexto={aoGerarTextoCorrigido}
                     comparado={comparado}
                   />

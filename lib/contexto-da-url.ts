@@ -32,6 +32,12 @@ export interface ContextoDaUrl {
   auditoria: string | null;
   /** Só existe com `auditoria` — achado solto não diz de qual parecer é. */
   achado: string | null;
+  /**
+   * A FILA abre filtrada em "Meus" (05/10/2026): o link do e-mail e os atalhos
+   * "com você" levam ao que é da pessoa, e não ao Resumo do parecer inteiro.
+   * Só existe com `auditoria`.
+   */
+  fila: "meus" | null;
   intencao: IntencaoDeLink | null;
   /** Uma mensagem em texto livre (a busca do topo, "Perguntar ao Nexo"): chega
    *  ESCRITO no composer, sem enviar — a pessoa ainda confirma com Enter. */
@@ -62,6 +68,7 @@ export function lerContextoDaUrl(query: string | Leitor): ContextoDaUrl {
     conversa: id(p.get("conversa")),
     auditoria,
     achado: auditoria ? id(p.get("achado")) : null,
+    fila: auditoria && (p.get("fila") ?? "").trim().toLowerCase() === "meus" ? "meus" : null,
     intencao,
     mensagem: (p.get("mensagem") ?? "").trim().slice(0, MENSAGEM_MAX) || null,
   };
@@ -78,6 +85,7 @@ export function linkDoNexo(ctx: Partial<ContextoDaUrl>): string {
   if (ctx.conversa) q.set("conversa", ctx.conversa);
   if (ctx.auditoria) q.set("auditoria", ctx.auditoria);
   if (ctx.auditoria && ctx.achado) q.set("achado", ctx.achado);
+  if (ctx.auditoria && ctx.fila) q.set("fila", ctx.fila);
   if (ctx.intencao) q.set("intencao", ctx.intencao);
   if (ctx.mensagem) q.set("mensagem", ctx.mensagem.trim().slice(0, MENSAGEM_MAX));
   const s = q.toString();

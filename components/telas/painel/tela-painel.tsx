@@ -233,7 +233,7 @@ export function TelaPainel({
                 <ul className="d2-achados">
                   {comVoce.map((a) => {
                     // Com o achado no link a fila abre NELE; sem, o parecer caía no Resumo.
-                    const ir = () => router.push(linkDoAchado({ base: "", auditId: a.auditId, findingId: a.findingId }));
+                    const ir = () => router.push(linkDoAchado({ base: "", auditId: a.auditId, findingId: a.findingId, fila: "meus" }));
                     return (
                       <li key={a.chave} tabIndex={0} onClick={ir} onKeyDown={(e) => e.key === "Enter" && ir()}>
                         <i className={`d2-grav${a.nivel ? ` d2-grav--${a.nivel}` : ""}`} aria-hidden />

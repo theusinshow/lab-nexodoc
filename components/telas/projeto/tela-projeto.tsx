@@ -110,7 +110,7 @@ function Agora({ obra, tarefas }: { obra: ObraAberta; tarefas: TarefaDaObra[] })
       titulo: `${plural(obra.comVoce, "achado espera", "achados esperam")} por você`,
       sub: obra.tituloDoParecerComVoce ?? "",
       acao: "Abrir",
-      href: linkDoAchado({ base: "", auditId: obra.parecerComVoce, findingId: obra.achadoComVoce }),
+      href: linkDoAchado({ base: "", auditId: obra.parecerComVoce, findingId: obra.achadoComVoce, fila: "meus" }),
     });
   if (!auditoria.feito) passos.push({ titulo: "Nenhum memorial foi auditado", sub: "O Nexo lê o memorial e aponta o que não bate com a obra.", acao: "Auditar", href: auditoria.href });
   if (!ld.feito) passos.push({ titulo: "A lista de documentos não foi gerada", sub: "Sai dos carimbos das pranchas.", acao: "Montar", href: ld.href });

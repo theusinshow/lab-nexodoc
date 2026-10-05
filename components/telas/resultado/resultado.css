@@ -292,3 +292,16 @@
 .ds .rs-ponto--texto { background: var(--ds-sev-texto); }
 .ds .rs-pilula--texto { --rs-tom: var(--ds-sev-texto); }
 .ds .rs-tratado-numero b small { font-family: var(--ds-font-sans); letter-spacing: 0; }
+
+/*
+ * CORRIGIDO SE VÊ DE LONGE (05/10/2026, retorno de um colega): barra verde à
+ * esquerda, fundo verde leve e o título riscado. Falso positivo e risco aceito
+ * continuam só esmaecidos — "corrigido" é o desfecho que fecha o trabalho.
+ */
+.ds .rs-linha--corrigida { background: color-mix(in srgb, var(--ds-state-ok) 9%, transparent); box-shadow: inset 3px 0 0 var(--ds-state-ok); }
+.ds .rs-linha--corrigida:hover:not(.rs-linha--ativa) { background: color-mix(in srgb, var(--ds-state-ok) 13%, transparent); }
+.ds .rs-linha--corrigida .rs-linha-titulo { text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--ds-state-ok) 70%, transparent); text-decoration-thickness: 1.5px; }
+.ds .rs-linha--corrigida .rs-linha-id { color: var(--ds-state-ok); }
+.ds .rs-linha--corrigida .rs-linha-desfecho { font-weight: 500; }
+.ds .rs-linha--corrigida .rs-linha-fundo { background: color-mix(in srgb, var(--ds-state-ok) 14%, var(--ds-surface-raised)); box-shadow: inset 3px 0 0 var(--ds-state-ok), inset 0 0 0 1px color-mix(in srgb, var(--ds-state-ok) 40%, transparent); }
+.ds .rs-faixa-corrigido { display: flex; align-items: center; gap: 6px; margin: 4px 0 10px; padding: 7px 12px; border-radius: 8px; background: color-mix(in srgb, var(--ds-state-ok) 12%, transparent); box-shadow: inset 3px 0 0 var(--ds-state-ok); font-size: var(--ds-text-xs); font-weight: 500; color: var(--ds-state-ok); }

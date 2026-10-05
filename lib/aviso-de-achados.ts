@@ -330,6 +330,8 @@ export function corpoDoAviso(pessoa: PessoaAAvisar, contexto: Contexto) {
     base,
     auditId: contexto.auditId,
     findingId: pessoa.quantidade === 1 ? pessoa.achadoUnico : null,
+    // Abre na fila em "Meus", e não no Resumo (05/10/2026, retorno de um colega).
+    fila: "meus",
   });
   const orbe = `${base}/marca/orbe-faixa-256.png`;
   const quantos = pessoa.quantidade === 1 ? "1 achado" : `${pessoa.quantidade} achados`;

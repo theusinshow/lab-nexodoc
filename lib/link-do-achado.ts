@@ -25,10 +25,12 @@ export function linkDoAchado(args: {
   base: string;
   auditId: string;
   findingId?: string | null;
+  /** Abre a fila filtrada em "Meus" — o e-mail e os atalhos "com você". */
+  fila?: "meus" | null;
 }): string {
   const base = args.base.replace(/\/+$/, "");
   const achado = (args.findingId ?? "").trim();
-  const query = `auditoria=${encodeURIComponent(args.auditId)}`;
+  const query = `auditoria=${encodeURIComponent(args.auditId)}${args.fila ? `&fila=${args.fila}` : ""}`;
 
   return achado
     ? `${base}/nexo?${query}&achado=${encodeURIComponent(achado)}`

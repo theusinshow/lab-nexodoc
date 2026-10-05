@@ -61,11 +61,14 @@ export type AberturaPorLink = {
   abriu: boolean;
   /** O achado que o link pediu, ou nulo. */
   achadoEmFoco: string | null;
+  /** A fila pedida pelo link ("meus"): o e-mail abre no que é da pessoa. */
+  fila: "meus" | null;
 };
 
 export function useAbrirAuditoriaPorLink(params: {
   auditoria: string | null;
   achado: string | null;
+  fila?: "meus" | null;
   /**
    * Abre uma conversa que já existe (o `selectConv` da tela). Devolve se abriu.
    * Sem ele, o link sempre grava o parecer na conversa atual.
@@ -247,5 +250,6 @@ export function useAbrirAuditoriaPorLink(params: {
      * um cartão que ainda não existe.
      */
     achadoEmFoco: findingId,
+    fila: auditId ? (params.fila ?? null) : null,
   };
 }

@@ -303,7 +303,7 @@ function Sino({ dados }: { dados: DadosDaMoldura }) {
               dados.comVoce.map((c) => {
                 const d = desde(c.enviadoEm);
                 return (
-                  <button key={c.auditId} type="button" role="menuitem" className="pn-sino-item" onClick={() => (fechar(false), router.push(linkDoAchado({ base: "", auditId: c.auditId, findingId: c.findingId })))}>
+                  <button key={c.auditId} type="button" role="menuitem" className="pn-sino-item" onClick={() => (fechar(false), router.push(linkDoAchado({ base: "", auditId: c.auditId, findingId: c.findingId, fila: "meus" })))}>
                     <span className="pn-sino-linha">
                       <span className="ds-code">{c.codigo}</span>
                       <b>{c.titulo}</b>

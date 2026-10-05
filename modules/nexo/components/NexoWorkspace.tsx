@@ -60,6 +60,7 @@ const CONTEXTO_VAZIO: ContextoDaUrl = {
   conversa: null,
   auditoria: null,
   achado: null,
+  fila: null,
   intencao: null,
   mensagem: null,
 };
@@ -1723,6 +1724,7 @@ function NexoWorkspaceInner({
   const aberturaPorLink = useAbrirAuditoriaPorLink({
     auditoria: contexto.auditoria,
     achado: contexto.achado,
+    fila: contexto.fila,
     // A conversa que já guarda o parecer é reaberta, e não duplicada.
     // `selectConv` é declarada mais abaixo; só é chamada depois da montagem.
     abrirConversa: async (id) => Boolean(await selectConv(id)),
