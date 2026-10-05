@@ -117,6 +117,7 @@ const SEM_PONTE_ESPERADO = new Set(["geral"]);
 const disciplinasDeAchado: FindingDiscipline[] = [
   "arquitetura", "estrutural", "hidrossanitario", "eletrico", "ppci",
   "cabeamento", "climatizacao", "gases_medicinais", "terraplenagem",
+  "drenagem", "pavimentacao", "sinalizacao", "urbanizacao",
   "paisagismo", "acessibilidade", "geral",
 ];
 const orfas = disciplinasDeAchado.filter(

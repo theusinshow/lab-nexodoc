@@ -859,6 +859,11 @@
 .ds .dc--ppci { --dc-cor: var(--ds-disc-pci); }
 .ds .dc--climatizacao { --dc-cor: var(--ds-disc-cli); }
 .ds .dc--terraplenagem { --dc-cor: var(--ds-disc-ter); }
+/* A infraestrutura divide a cor da terraplenagem: a sigla separa, a paleta não cresce. */
+.ds .dc--drenagem,
+.ds .dc--pavimentacao,
+.ds .dc--sinalizacao,
+.ds .dc--urbanizacao { --dc-cor: var(--ds-disc-ter); }
 .ds .dc--paisagismo { --dc-cor: var(--ds-disc-pai); }
 .ds .dc--cabeamento { --dc-cor: var(--ds-disc-cab); }
 .ds .dc--gases_medicinais { --dc-cor: var(--ds-disc-gas); }

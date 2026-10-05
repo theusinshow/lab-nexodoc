@@ -19,6 +19,7 @@ import {
   disciplinaDoAchado,
   disciplinaQueVale,
 } from "../lib/disciplina-da-pagina.ts";
+import { disciplinaDoTexto } from "../lib/audit-report.ts";
 
 let passed = 0;
 function test(name: string, fn: () => void) {
@@ -152,16 +153,43 @@ test("e o capítulo inteiro vai junto, e não só a página do título", () => {
   assert.equal(mapa.get(3), "arquitetura");
 });
 
-test("mas urbanização SOZINHA continua sendo terraplenagem", () => {
+test("mas urbanização SOZINHA é urbanização, e não arquitetura", () => {
   /*
    * A metade que impede a correção de virar "arquitetura sempre ganha": o
-   * 117-25 tem "5 PROJETO DE URBANIZAÇÃO" como capítulo próprio, e ali os dez
-   * achados de espessura de camada e meio-fio são de terraplenagem de verdade.
+   * 117-25 tem "5 PROJETO DE URBANIZAÇÃO" como capítulo próprio. Até 05/10/2026
+   * ele caía no balde "Terraplenagem / Urbanização", com chip TER — e quem lia
+   * um achado do capítulo de urbanização via "terraplenagem" (141-26, ACH-006).
    */
   const mapa = disciplinaPorPagina([
     pagina(1, "5 - PROJETO DE URBANIZACAO camada de assentamento e meio-fio"),
   ]);
-  assert.equal(mapa.get(1), "terraplenagem");
+  assert.equal(mapa.get(1), "urbanizacao");
+});
+
+/*
+ * A INFRAESTRUTURA SEPARADA (05/10/2026). O memorial do 141-26 tem um capítulo
+ * para cada uma — terraplenagem, drenagem, pavimentação, sinalização,
+ * urbanização — e as cinco caíam no mesmo chip TER (sinalização nem isso: ficava
+ * sem disciplina nenhuma). Os títulos abaixo são os do documento.
+ */
+test("cada capítulo de infraestrutura do 141-26 vira a sua disciplina", () => {
+  const casos: [string, string][] = [
+    ["3 - TERRAPLENAGEM / DESENHO GEOMETRICO", "terraplenagem"],
+    ["4 - PROJETO DE DRENAGEM", "drenagem"],
+    ["5 - PAVIMENTACAO", "pavimentacao"],
+    ["6 - PROJETO DE SINALIZACAO", "sinalizacao"],
+    ["7 - PROJETO DE URBANIZACAO", "urbanizacao"],
+  ];
+  for (const [titulo, esperado] of casos) {
+    const mapa = disciplinaPorPagina([pagina(1, `${titulo} abertura do capitulo`)]);
+    assert.equal(mapa.get(1), esperado, titulo);
+  }
+});
+
+test("saneamento é hidrossanitário, e não página sem disciplina", () => {
+  // 141-26: "12 - PROJETO DE SANEAMENTO", 17 páginas que ficavam fora do mapa.
+  const mapa = disciplinaPorPagina([pagina(1, "12 - PROJETO DE SANEAMENTO rede coletora de esgoto")]);
+  assert.equal(mapa.get(1), "hidrossanitario");
 });
 
 /*
@@ -172,6 +200,15 @@ test("mas urbanização SOZINHA continua sendo terraplenagem", () => {
  * herdado — e herdado é a maioria, porque 86 a 95% do texto se repete entre
  * revisões. Estes três fecham a inversão e o seu limite.
  */
+test("sinalização de EMERGÊNCIA continua sendo PPCI, e não sinalização viária", () => {
+  /*
+   * A palavra nova casa demais se ninguém segurar: placa de rota de fuga é
+   * incêndio. PPCI vem antes na lista, e é ela quem tem de responder.
+   */
+  assert.equal(disciplinaDoTexto("placas de sinalizacao de emergencia e rota de fuga"), "ppci");
+  assert.equal(disciplinaDoTexto("tacha refletiva e faixa de pedestre na sinalizacao horizontal"), "sinalizacao");
+});
+
 test("a página vence a disciplina gravada", () => {
   const mapa = disciplinaPorPagina([
     pagina(1, "3 - PROJETO ARQUITETONICO E URBANIZACAO abertura do capitulo"),

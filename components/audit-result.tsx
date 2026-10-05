@@ -1718,6 +1718,10 @@ export function AuditResult({
     "climatizacao",
     "gases_medicinais",
     "terraplenagem",
+    "drenagem",
+    "pavimentacao",
+    "sinalizacao",
+    "urbanizacao",
     "paisagismo",
     "acessibilidade",
   ];

@@ -314,6 +314,11 @@ export function grupoDaDisciplinaDoAchado(disciplina: string): GrupoTecnico | un
     gases_medicinais: "complementares",
     climatizacao: "externo",
     terraplenagem: "externo",
+    // A infraestrutura que saiu do balde da terraplenagem vai junto com ela.
+    drenagem: "externo",
+    pavimentacao: "externo",
+    sinalizacao: "externo",
+    urbanizacao: "externo",
   };
 
   return mapa[disciplina];

@@ -570,6 +570,10 @@ export type FindingDiscipline =
   | "climatizacao"
   | "gases_medicinais"
   | "terraplenagem"
+  | "drenagem"
+  | "pavimentacao"
+  | "sinalizacao"
+  | "urbanizacao"
   | "paisagismo"
   | "acessibilidade"
   | "geral";
@@ -592,7 +596,11 @@ const DISCIPLINE_LABELS: Record<FindingDiscipline, string> = {
   cabeamento: "Cabeamento / CFTV",
   climatizacao: "Climatização",
   gases_medicinais: "Gases medicinais",
-  terraplenagem: "Terraplenagem / Urbanização",
+  terraplenagem: "Terraplenagem",
+  drenagem: "Drenagem",
+  pavimentacao: "Pavimentação",
+  sinalizacao: "Sinalização viária",
+  urbanizacao: "Urbanização",
   paisagismo: "Paisagismo",
   acessibilidade: "Acessibilidade",
   geral: "Geral / Documental",
@@ -624,7 +632,7 @@ function findingHaystack(finding: AuditFinding) {
 
 // ordem = prioridade (mais específico primeiro); PPCI antes porque cita várias disciplinas
 const DISCIPLINE_RULES: Array<{ key: FindingDiscipline; pattern: RegExp }> = [
-  { key: "ppci", pattern: /\b(?:ppci|incendio|cbmsc|smsci|preventivo|hidrante|extintor|brigada|trrf|iluminacao de emergencia|saidas de emergencia)/ },
+  { key: "ppci", pattern: /\b(?:ppci|incendio|cbmsc|smsci|preventivo|hidrante|extintor|brigada|trrf|iluminacao de emergencia|saidas de emergencia|sinalizacao de emergencia|rota de fuga)/ },
   /*
    * GASES MEDICINAIS ANTES DE HIDROSSANITÁRIO, e não em ordem alfabética.
    *
@@ -644,13 +652,26 @@ const DISCIPLINE_RULES: Array<{ key: FindingDiscipline; pattern: RegExp }> = [
    * `split` e `chiller` são nomes de equipamento e não aparecem em outro lugar.
    */
   { key: "climatizacao", pattern: /\b(?:climatiz|carga termica|ar condicionado|condicionamento de ar|condensadora|evaporadora|fancoil|fan coil|chiller|split|psicrometr|vrf|btu)/ },
-  { key: "hidrossanitario", pattern: /\b(?:hidrossanit|hidraulic|esgoto|agua fria|agua quente|reservatori|sanitari|bacia|louca|efluente|pluvial)/ },
+  { key: "hidrossanitario", pattern: /\b(?:hidrossanit|hidraulic|saneamento|esgoto|agua fria|agua quente|reservatori|sanitari|bacia|louca|efluente|pluvial)/ },
   { key: "eletrico", pattern: /\b(?:eletric|qgp|quadro geral|quadro de distribui|luminotecnic|spda|aterramento|baixa tensao|subestacao|concessionaria)/ },
   { key: "cabeamento", pattern: /\b(?:cabeamento|cftv|logica|telecom|rack)/ },
   { key: "estrutural", pattern: /\b(?:estrutural|concreto armado|fundac|pilar|viga|laje|estrutura de madeira|nbr 7480|nbr 14931)/ },
   { key: "paisagismo", pattern: /\b(?:paisagism|especie|botanic|arvore|arbust|vegeta|jardim|maranta|ipe)/ },
   { key: "acessibilidade", pattern: /\b(?:acessib|pcd|rota acess|piso tatil|piso podotatil|rampa|nbr 9050|vaga acess|vaga especial)/ },
-  { key: "terraplenagem", pattern: /\b(?:terraplenagem|pavimenta|urbaniza|drenagem|rodovia|aterro|meio-fio|estacionamento|paver|brita)/ },
+  /*
+   * A INFRAESTRUTURA, SEPARADA (05/10/2026). Era um balde só, "Terraplenagem /
+   * Urbanização", com chip TER: no 141-26 cinco capítulos (terraplenagem,
+   * drenagem, pavimentação, sinalização, urbanização) caíam nele, e um achado do
+   * capítulo de urbanização aparecia como terraplenagem. As cinco dividem a COR
+   * (ds.css), para a paleta não virar arco-íris; o nome e a sigla separam.
+   *
+   * Sinalização vem DEPOIS de PPCI, que segura "sinalização de emergência".
+   */
+  { key: "sinalizacao", pattern: /\b(?:sinalizac|tacha refletiva|faixa de pedestre|sinalizacao horizontal|sinalizacao vertical)/ },
+  { key: "drenagem", pattern: /\b(?:drenagem|boca de lobo|sarjeta|bueiro|caixa coletora|galeria de aguas pluviais)/ },
+  { key: "urbanizacao", pattern: /\b(?:urbaniza|passeio publico|calcada|mobiliario urbano)/ },
+  { key: "pavimentacao", pattern: /\b(?:pavimenta|paver|intertravad|asfalt|cbuq|imprimacao|meio-fio|sub-base)/ },
+  { key: "terraplenagem", pattern: /\b(?:terraplenagem|movimento de terra|desenho geometrico|rodovia|aterro|estacionamento|brita)/ },
   { key: "arquitetura", pattern: /\b(?:arquitetonic|bancada|granito|esquadria|telha|cobertura|revestimento|pintura|forro|porta de vidro|grade)/ },
 ];
 
