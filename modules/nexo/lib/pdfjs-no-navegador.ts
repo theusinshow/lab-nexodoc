@@ -15,6 +15,8 @@
  * duas cópias em vez de três, e a próxima a chegar já tem endereço.
  */
 
+import { contarTinta, type ContagemDeTinta } from "@/lib/tinta-da-folha";
+
 export type PdfjsModule = typeof import("pdfjs-dist/legacy/build/pdf.mjs");
 
 let pdfjsPromise: Promise<PdfjsModule> | null = null;
@@ -58,25 +60,16 @@ export async function loadPdfjs(): Promise<PdfjsModule> {
  * medida zero, e quem chama precisa poder distinguir as duas.
  */
 export async function medirTinta(
-  page: { getOperatorList: () => Promise<{ fnArray: number[] | Uint8Array }> },
+  page: {
+    getOperatorList: () => Promise<{ fnArray: ArrayLike<number>; argsArray: ArrayLike<unknown> }>;
+    view: ArrayLike<number>;
+  },
   OPS: Record<string, number>,
-): Promise<{ desenho: number; imagem: number } | undefined> {
+): Promise<ContagemDeTinta | undefined> {
   try {
-    const ops = await page.getOperatorList();
-    const desenhoOps = new Set([OPS.constructPath ?? -1]);
-    const imagemOps = new Set([
-      OPS.paintImageXObject ?? -1,
-      OPS.paintJpegXObject ?? -1,
-      OPS.paintImageMaskXObject ?? -1,
-      OPS.paintInlineImageXObject ?? -1,
-    ]);
-    let desenho = 0;
-    let imagem = 0;
-    for (const op of ops.fnArray) {
-      if (desenhoOps.has(op)) desenho += 1;
-      else if (imagemOps.has(op)) imagem += 1;
-    }
-    return { desenho, imagem };
+    // A MESMA conta do servidor — ver [[tinta-da-folha.ts]]: com o tamanho da
+    // imagem decidindo o portão, duas cópias seriam dois portões.
+    return contarTinta(await page.getOperatorList(), OPS, page.view);
   } catch {
     return undefined;
   }

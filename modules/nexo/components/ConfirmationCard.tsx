@@ -2539,7 +2539,14 @@ function AuditoriaConfirmation({
   const paginasMudas = usePaginasMudas(result ? null : memorialFile);
   const mudas =
     paginasMudas.estado === "pronto" ? paginasMudas.dados : null;
-  const temFolhaMuda = (mudas?.mudas.length ?? 0) > 0;
+  const quantasMudas = mudas?.mudas.length ?? 0;
+  /**
+   * Folhas de texto cujo quadro está em IMAGEM (a legenda "TABELA N" está, a
+   * tabela não) — ver `paginasComQuadroEmImagem`. Vão à mesma transcrição.
+   */
+  const quantosQuadros = mudas?.quadrosEmImagem?.length ?? 0;
+  /** Há folha que vale transcrever — muda ou com quadro em imagem. */
+  const temFolhaMuda = quantasMudas + quantosQuadros > 0;
   const estimativa = useMemo(
     () => (mudas ? previsaoTotal(params.nivel, mudas.totalDePaginas) : null),
     [mudas, params.nivel],
@@ -2713,7 +2720,7 @@ function AuditoriaConfirmation({
       if (comTranscricao && mudas) {
         try {
           const { transcreverPaginasMudas } = await import("../lib/pagina-muda-render");
-          setProgressoDaTranscricao({ prontas: 0, total: mudas.mudas.length });
+          setProgressoDaTranscricao({ prontas: 0, total: quantasMudas + quantosQuadros });
           transcricao = await transcreverPaginasMudas(mudas, {
             onProgresso: setProgressoDaTranscricao,
             signal: controle.signal,
@@ -3030,8 +3037,21 @@ function AuditoriaConfirmation({
           {temFolhaMuda && mudas && (
             <div className="nx-cut-6 border-0 bg-[var(--nexodoc-recessed)] px-3 py-2">
               <p className="font-mono text-microrrotulo uppercase tracking-[0.05em] text-[var(--status-warning)]">
-                Páginas sem texto
+                {quantasMudas > 0 ? "Páginas sem texto" : "Tabelas em imagem"}
               </p>
+              {quantosQuadros > 0 && (
+                <p className="mt-1 text-xs leading-relaxed text-foreground">
+                  <span className="tabular-nums">
+                    {quantosQuadros === 1
+                      ? `A página ${mudas.quadrosEmImagem[0]} tem`
+                      : `${quantosQuadros} páginas têm`}
+                  </span>{" "}
+                  tabela em imagem: a legenda está escrita, os valores estão
+                  desenhados. Sem transcrever, a auditoria não confere os números
+                  dela.
+                </p>
+              )}
+              {quantasMudas > 0 && (
               <p className="mt-1 text-xs leading-relaxed text-foreground">
                 <span className="tabular-nums">
                   {mudas.mudas.length} de {mudas.totalDePaginas}
@@ -3040,6 +3060,7 @@ function AuditoriaConfirmation({
                 na folha, não escrito. Sem transcrever, a auditoria não as lê — e
                 o parecer sai declarado como parcial.
               </p>
+              )}
             </div>
           )}
           {progressoDaTranscricao && (

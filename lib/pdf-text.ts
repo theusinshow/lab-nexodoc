@@ -1,6 +1,7 @@
-import { textoDosItens, type ItemDeTexto } from "./texto-do-pdf.ts";
+import { textoDaFolha, type ItemDeTexto } from "./texto-do-pdf.ts";
 import { tabelasDaPagina, type Tabela } from "./tabela-do-pdf.ts";
 import type { TintaDaPagina } from "./pagina-muda.ts";
+import { contarTinta } from "./tinta-da-folha.ts";
 
 export type ExtractedPdfPage = {
   page: number;
@@ -33,6 +34,17 @@ export type ExtractedPdfPage = {
    * procuraria por um trecho que a folha não sabe onde fica.
    */
   origem?: "visao";
+  /**
+   * O QUADRO EM IMAGEM DESTA FOLHA, lido por visão — ver
+   * `paginasComQuadroEmImagem` em [[pagina-muda.ts]].
+   *
+   * NUNCA vai para `text`. A folha tem texto próprio, e `text` é de onde a
+   * camada determinística tira a evidência e onde o grifo procura o trecho.
+   * Este campo só entra no texto que a IA lê (`textoDaPaginaParaIA`), no lugar
+   * da marca de imagem não lida — e por isso também no palheiro da trava
+   * anti-alucinação, que lê a mesma string.
+   */
+  textoDaImagem?: string;
 };
 
 export type ExtractedPdf = {
@@ -67,52 +79,28 @@ export function textoDoDocumentoParaIA(extracted: ExtractedPdf): string {
 }
 
 /**
- * A FRAÇÃO DA FOLHA a partir da qual uma imagem é conteúdo, e não enfeite.
- *
- * MEDIDA no 141-26 (174 páginas): os logos do cabeçalho, em toda folha, cobrem
- * 0,35% e 0,47%. A menor imagem de conteúdo (um pictograma da sinalização,
- * 154x166 pt) cobre 5,1%; a tabela de sinalização mais baixa (446x76 pt), 6,8%;
- * o Quadro de Áreas, 14,6%. 4% fica no vão, com folga para os dois lados.
- * Errar para cima aqui só acrescenta a marca a uma folha com figura — não custa
- * token de transcrição nem rebaixa achado que não fale de quadro ausente.
- */
-export const FRACAO_DA_IMAGEM_GRANDE = 0.04;
-
-function multiplicar(m: number[], n: number[]): number[] {
-  return [
-    m[0] * n[0] + m[2] * n[1],
-    m[1] * n[0] + m[3] * n[1],
-    m[0] * n[2] + m[2] * n[3],
-    m[1] * n[2] + m[3] * n[3],
-    m[0] * n[4] + m[2] * n[5] + m[4],
-    m[1] * n[4] + m[3] * n[5] + m[5],
-  ];
-}
-
-/**
  * Quantas figuras ou quadros desta página estão em IMAGEM e não foram lidos.
  *
- * Zero para a folha relida por visão (a transcrição já leu a folha inteira) e
+ * Zero para a folha relida por visão (a transcrição já leu a folha inteira),
+ * para a folha cujo quadro em imagem já foi transcrito (`textoDaImagem`) e
  * para a página sem a medida (parecer antigo, fixture): sem medida não se
  * afirma que há imagem.
  */
 export function imagensNaoLidas(page: ExtractedPdfPage): number {
-  if (page.origem === "visao") return 0;
+  if (page.origem === "visao" || page.textoDaImagem) return 0;
   return page.tinta?.imagensGrandes ?? 0;
 }
 
 /**
- * Conta os ops de DESENHO e de IMAGEM da folha.
+ * Conta os ops de DESENHO e de IMAGEM da folha — a conta mora em
+ * [[tinta-da-folha.ts]], a mesma que o navegador faz no portão.
  *
  * Os dois grupos existem separados porque são dois defeitos diferentes do mesmo
  * documento, e saber qual é ajuda a diagnosticar o PDF que chegou: no 114-19 a
  * página 7 tem 74 caminhos e nenhum texto (o parágrafo virou curva, saída
  * típica de "achatar" o PDF), e a página 9 tem 24 imagens de 944x92 px (cada
  * LINHA do parágrafo virou uma tira, saída típica de colar captura de tela).
- *
- * `?? -1` em cada op: a lista de `OPS` do pdf.js já mudou entre versões, e um
- * nome que suma daqui não pode derrubar a extração inteira — só faria a folha
- * contar menos tinta, e a página cai para o lado seguro (`muda`).
+ * E o TAMANHO de cada imagem separa o logo do cabeçalho do quadro em imagem.
  */
 async function medirTinta(
   pdfjs: typeof import("pdfjs-dist/legacy/build/pdf.mjs"),
@@ -122,53 +110,7 @@ async function medirTinta(
   if (!OPS) return undefined;
 
   try {
-    const ops = await page.getOperatorList();
-    const desenhoOps = new Set([OPS.constructPath ?? -1]);
-    const imagemOps = new Set([
-      OPS.paintImageXObject ?? -1,
-      OPS.paintJpegXObject ?? -1,
-      OPS.paintImageMaskXObject ?? -1,
-      OPS.paintInlineImageXObject ?? -1,
-    ]);
-
-    /*
-     * O TAMANHO DE CADA IMAGEM NA FOLHA, e não só quantas há.
-     *
-     * Contar não basta para a página de TEXTO: toda folha do 141-26 tem duas
-     * imagens (os logos do cabeçalho, 83x21 e 113x21 pt — meio por cento da
-     * folha). O que separa o logo do Quadro de Áreas é a área. A imagem é
-     * pintada no quadrado unitário, então a área que ela ocupa na folha é o
-     * determinante da matriz corrente — e a matriz se acompanha pelos ops de
-     * `save`/`restore`/`transform` e pela matriz de cada form XObject.
-     */
-    const [x0, y0, x1, y1] = page.view;
-    const areaDaFolha = Math.abs((x1 - x0) * (y1 - y0)) || 1;
-    let ctm = [1, 0, 0, 1, 0, 0];
-    const pilha: number[][] = [];
-
-    let desenho = 0;
-    let imagem = 0;
-    let imagensGrandes = 0;
-    ops.fnArray.forEach((op, i) => {
-      if (op === OPS.save || op === OPS.paintFormXObjectBegin) {
-        pilha.push(ctm);
-        const matriz = op === OPS.paintFormXObjectBegin ? ops.argsArray[i]?.[0] : null;
-        if (Array.isArray(matriz) && matriz.length === 6) ctm = multiplicar(ctm, matriz);
-      } else if (op === OPS.restore || op === OPS.paintFormXObjectEnd) {
-        ctm = pilha.pop() ?? ctm;
-      } else if (op === OPS.transform) {
-        const matriz = ops.argsArray[i];
-        if (Array.isArray(matriz) && matriz.length === 6) ctm = multiplicar(ctm, matriz);
-      } else if (desenhoOps.has(op)) {
-        desenho += 1;
-      } else if (imagemOps.has(op)) {
-        imagem += 1;
-        const area = Math.abs(ctm[0] * ctm[3] - ctm[1] * ctm[2]);
-        if (area / areaDaFolha >= FRACAO_DA_IMAGEM_GRANDE) imagensGrandes += 1;
-      }
-    });
-
-    return { desenho, imagem, imagensGrandes };
+    return contarTinta(await page.getOperatorList(), OPS, page.view);
   } catch {
     /*
      * Folha que o pdf.js não consegue reparsear não vira "vazia" por omissão:
@@ -223,11 +165,7 @@ export async function extractPdfText(buffer: Buffer): Promise<ExtractedPdf> {
      * quebras seguidas viram duas, porque parágrafo separado é informação e
      * dez linhas em branco são só o desenho da página.
      */
-    const text = textoDosItens(itens, { quebrarLinhas: true })
-      .replace(/[^\S\n]+/g, " ")
-      .replace(/ *\n */g, "\n")
-      .replace(/\n{3,}/g, "\n\n")
-      .trim();
+    const text = textoDaFolha(itens);
 
     /*
      * A GRADE, dos mesmos itens de que o texto saiu.
@@ -330,6 +268,18 @@ export const MARCA_DE_IMAGEM =
   "[IMAGEM NÃO LIDA] Esta página tem figura ou quadro desenhado como imagem: o conteúdo existe na folha, mas não chegou em texto.";
 
 /**
+ * A MOLDURA DA FOLHA LIDA POR VISÃO, no lugar da marca acima, quando o quadro
+ * em imagem foi transcrito — ver `textoDaImagem`.
+ *
+ * O que vem dentro é a FOLHA INTEIRA relida do render (o transcritor não sabe
+ * o que na folha era texto e o que era imagem), então a prosa da página se
+ * repete ali, e o quadro aparece com as células separadas por " | ". O
+ * `auditor-prompt.ts` diz isso ao modelo, como já diz da grade `[TABELA]`.
+ */
+export const ABRE_IMAGEM = "[FOLHA LIDA POR VISÃO]";
+export const FECHA_IMAGEM = "[/FOLHA LIDA POR VISÃO]";
+
+/**
  * O TEXTO DA PÁGINA COMO O MODELO PRECISA LÊ-LA: a prosa, e depois a grade.
  *
  * O defeito que isto conserta (24/08/2026): `page.tabelas` era reconstruída
@@ -362,7 +312,12 @@ export const MARCA_DE_IMAGEM =
  */
 export function textoDaPaginaParaIA(page: ExtractedPdfPage): string {
   const tabelas = page.tabelas ?? [];
-  const imagem = imagensNaoLidas(page) > 0 ? `\n${MARCA_DE_IMAGEM}` : "";
+  const lidaPorVisao = page.textoDaImagem?.trim();
+  const imagem = lidaPorVisao
+    ? `\n${ABRE_IMAGEM}\n${lidaPorVisao}\n${FECHA_IMAGEM}`
+    : imagensNaoLidas(page) > 0
+      ? `\n${MARCA_DE_IMAGEM}`
+      : "";
   if (tabelas.length === 0) return `${page.text}${imagem}`;
 
   const grades = tabelas.map((tabela) => {

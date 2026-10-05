@@ -194,3 +194,22 @@ export function textoDosItens(
 
   return texto;
 }
+
+/**
+ * O TEXTO DA FOLHA como a auditoria o guarda em `page.text`: as linhas
+ * costuradas por `textoDosItens`, o branco horizontal colapsado, no máximo uma
+ * linha em branco seguida.
+ *
+ * Mora aqui, e não dentro de `extractPdfText`, porque o portão do navegador
+ * (`modules/nexo/lib/pagina-muda-render.ts`) precisa da MESMA folha que o
+ * servidor lê: é nela que se procura a legenda "TABELA N" que decide se o
+ * quadro em imagem vai à transcrição. Dois textos diferentes seriam dois
+ * portões — o navegador pagando uma folha que o servidor depois recusa.
+ */
+export function textoDaFolha(items: ItemDeTexto[]): string {
+  return textoDosItens(items, { quebrarLinhas: true })
+    .replace(/[^\S\n]+/g, " ")
+    .replace(/ *\n */g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}

@@ -186,7 +186,9 @@ export function quantityFacts(rt: RevisionText): Fact[] {
   const facts: Fact[] = [];
   rt.pages.forEach((pageText, i) => {
     const page = i + 1;
-    const prose = pageText.split("[TABELA]")[0];
+    // A folha lida por visão (`[FOLHA LIDA POR VISÃO]`, ver `pdf-text.ts`) é
+    // releitura, não prosa da folha: os números dela não são fatos de prosa.
+    const prose = pageText.split(/\[TABELA\]|\[FOLHA LIDA POR VIS[AÃ]O\]/)[0];
     NUMBER.lastIndex = 0;
     for (const m of prose.matchAll(NUMBER)) {
       const numStart = m.index ?? 0;

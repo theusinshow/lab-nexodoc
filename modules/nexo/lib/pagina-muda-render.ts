@@ -29,8 +29,13 @@ import {
   LIMIAR_DE_CARACTERES,
   VERSAO_DO_TRANSCRITOR,
   classificarPagina,
+  anunciaQuadro,
+  paginasComQuadroEmImagem,
+  peAnunciaQuadro,
   type PaginaTranscrita,
 } from "@/lib/pagina-muda";
+import type { ExtractedPdfPage } from "@/lib/pdf-text";
+import { textoDaFolha, type ItemDeTexto } from "@/lib/texto-do-pdf";
 
 import { getTranscricaoCache, putTranscricaoCache } from "./nexo-db";
 import { loadPdfjs, medirTinta } from "./pdfjs-no-navegador";
@@ -59,6 +64,12 @@ export interface DiagnosticoDoArquivo {
   file: File;
   /** As páginas que valem transcrição, em ordem. */
   mudas: number[];
+  /**
+   * As folhas de texto cujo quadro está em IMAGEM — ver
+   * `paginasComQuadroEmImagem` em [[pagina-muda.ts]]. Vão à mesma transcrição
+   * das mudas; o servidor põe o resultado em `textoDaImagem`, não no texto.
+   */
+  quadrosEmImagem: number[];
   totalDePaginas: number;
   /** sha-256 do conteúdo — a metade estável da chave do cache. */
   checksum: string;
@@ -82,33 +93,55 @@ export async function diagnosticarArquivo(file: File): Promise<DiagnosticoDoArqu
   const totalDePaginas = doc.numPages;
   const OPS = (pdfjs as unknown as { OPS: Record<string, number> }).OPS;
   const mudas: number[] = [];
+  const folhas: ExtractedPdfPage[] = [];
 
   try {
+    let peAnteriorAnuncia = false;
     for (let n = 1; n <= totalDePaginas; n += 1) {
       const page = await doc.getPage(n);
       const content = await page.getTextContent();
-      const text = content.items
-        .map((item) => ("str" in item && typeof item.str === "string" ? item.str : ""))
-        .join(" ");
+      /*
+       * A MESMA FOLHA QUE O SERVIDOR LÊ (`textoDaFolha`), com as quebras de
+       * linha: é nela que se procura a legenda "TABELA N" que decide o quadro
+       * em imagem. Juntar os itens com espaço, como era, apagava as linhas.
+       */
+      const text = textoDaFolha(
+        content.items.filter(
+          (item): item is typeof item & ItemDeTexto =>
+            "str" in item && typeof item.str === "string",
+        ),
+      );
+      const anuncia = anunciaQuadro(text);
+      const peAnuncia = peAnunciaQuadro(text);
 
       /*
        * A TINTA custa um reparse do content stream, então só é medida quando a
-       * folha já é candidata — mesma economia do servidor. `classificarPagina`
-       * trata a ausência do campo como suspeita, e é por isso que a chamada
-       * pode ser condicional sem inverter a resposta.
+       * folha pode decidir alguma coisa: a magra (muda ou vazia?), a que anuncia
+       * quadro, a que tem legenda no pé e a seguinte a ela (o quadro em imagem
+       * pode estar em qualquer uma das duas). Fora disso, sem medida,
+       * `imagensNaoLidas` dá zero — e a resposta é a mesma do servidor, que
+       * mede tudo, porque o critério só olha imagem nessas folhas.
        */
       const magra = text.trim().length < LIMIAR_DE_CARACTERES;
-      const tinta = magra && OPS ? await medirTinta(page, OPS) : undefined;
+      const precisa = magra || anuncia || peAnuncia || peAnteriorAnuncia;
+      const tinta = precisa && OPS ? await medirTinta(page, OPS) : undefined;
+      peAnteriorAnuncia = peAnuncia;
 
-      if (classificarPagina({ page: n, text, ...(tinta ? { tinta } : {}) }).classe === "muda") {
-        mudas.push(n);
-      }
+      const folha: ExtractedPdfPage = { page: n, text, ...(tinta ? { tinta } : {}) };
+      folhas.push(folha);
+      if (classificarPagina(folha).classe === "muda") mudas.push(n);
     }
   } finally {
     await doc.destroy();
   }
 
-  return { file, mudas, totalDePaginas, checksum };
+  return {
+    file,
+    mudas,
+    quadrosEmImagem: paginasComQuadroEmImagem(folhas),
+    totalDePaginas,
+    checksum,
+  };
 }
 
 
@@ -137,7 +170,15 @@ export async function transcreverPaginasMudas(
   diagnostico: DiagnosticoDoArquivo,
   opcoes: OpcoesDeTranscricao = {},
 ): Promise<PaginaTranscrita[]> {
-  const { file, mudas, checksum } = diagnostico;
+  const { file, checksum } = diagnostico;
+  /*
+   * AS MUDAS E OS QUADROS EM IMAGEM, na mesma fila e no mesmo cache: é a mesma
+   * chamada (a folha inteira renderizada), e o servidor é quem decide para onde
+   * vai o texto de cada uma — ver `aplicarTranscricao`.
+   */
+  const mudas = [...new Set([...diagnostico.mudas, ...(diagnostico.quadrosEmImagem ?? [])])].sort(
+    (a, b) => a - b,
+  );
   if (mudas.length === 0) return [];
 
   const chave = (pagina: number) => `${checksum}:${pagina}:${VERSAO_DO_TRANSCRITOR}`;

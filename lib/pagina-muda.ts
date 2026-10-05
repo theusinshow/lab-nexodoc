@@ -187,12 +187,100 @@ export interface DiagnosticoDoDocumento {
    *
    * Lista separada de `mudas`, e não uma terceira classe, de propósito: a folha
    * tem texto próprio e a extração continua mandando nela (`aplicarTranscricao`
-   * só escreve onde estava mudo). O que estas páginas ganham hoje é a marca no
+   * nunca escreve no `text` dela). O que estas páginas ganham é a marca no
    * texto da IA — ver `textoDaPaginaParaIA` — e a trava que impede afirmar a
    * ausência de um quadro que pode estar na imagem — ver [[audit-verify.ts]].
+   * As que anunciam quadro (`quadrosEmImagem`) podem, além disso, ser
+   * transcritas.
    */
   comImagemNaoLida: number[];
+  /**
+   * O subconjunto de `comImagemNaoLida` que ANUNCIA um quadro — ver
+   * `paginasComQuadroEmImagem`. É o que o portão oferece transcrever junto com
+   * as mudas.
+   */
+  quadrosEmImagem: number[];
   totalDePaginas: number;
+}
+
+/**
+ * A LEGENDA DE QUADRO: a linha que COMEÇA com "Tabela N"/"Quadro N" e é título,
+ * não frase.
+ *
+ * Medido no 141-26. Casam: "1.2 Tabela 2: Quadro de Áreas", "TABELA 11 - LARGURA
+ * DAS LINHAS…", "TABELA 10 DEMOSTRATIVO…", "TABELA 20 – COORDENADAS", "TABELA 23"
+ * sozinha. Não casam, e é de propósito: "A Tabela 3, a seguir, apresenta…" (a
+ * menção no meio da frase — o quadro pode estar em qualquer lugar) e "Tabela 7."
+ * (fim de frase quebrada na linha). Depois do número só se aceita fim de linha,
+ * separador (`:`/`-`/`–`/`—`) ou título em CAIXA ALTA.
+ */
+const CABECA_DA_LEGENDA =
+  /^\s*(?:\d+(?:\.\d+)*\.?\s+)?(?:tabela|quadro)\s+(?:n[º°o]\.?\s*)?\d+(?:\.\d+)*/i;
+const RESTO_DA_LEGENDA = /^(?:\s*$|\s*[:\-–—]|\s+[A-ZÁÉÍÓÚÂÊÔÃÕÇ]{2})/;
+
+export function ehLegendaDeQuadro(linha: string): boolean {
+  const cabeca = linha.match(CABECA_DA_LEGENDA);
+  return Boolean(cabeca && RESTO_DA_LEGENDA.test(linha.slice(cabeca[0].length)));
+}
+
+/**
+ * Quantas linhas do fim da folha anterior contam como "pé". O rodapé do
+ * escritório ocupa 3 (obra, caminho do arquivo, direitos autorais); sobram 3
+ * linhas de corpo para a legenda que ficou na folha de cima.
+ */
+const LINHAS_DO_PE = 6;
+
+/** A folha traz, em alguma linha, a legenda de um quadro? */
+export function anunciaQuadro(texto: string): boolean {
+  return texto.split("\n").some(ehLegendaDeQuadro);
+}
+
+/** A legenda está no PÉ da folha (o quadro pode ter ido para a seguinte)? */
+export function peAnunciaQuadro(texto: string): boolean {
+  return texto
+    .split("\n")
+    .filter((l) => l.trim())
+    .slice(-LINHAS_DO_PE)
+    .some(ehLegendaDeQuadro);
+}
+
+/**
+ * AS FOLHAS CUJO QUADRO ESTÁ EM IMAGEM — as únicas, além das mudas, que vão à
+ * transcrição por visão.
+ *
+ * O caso (05/10/2026): 141-26, p12. O Quadro de Áreas é uma imagem sob a
+ * legenda "1.2 Tabela 2: Quadro de Áreas", e a IA afirmava que a tabela não
+ * existia. A folha tem imagem grande E anuncia um quadro — ou na própria folha,
+ * ou na legenda que ficou no pé da folha anterior (quando essa não tem imagem
+ * própria a que a legenda pertença).
+ *
+ * POR QUE NÃO TODA FOLHA COM IMAGEM GRANDE: medido no 141-26, são 53 de 174, e
+ * a maioria é foto, pictograma ou planta (estruturas, elétrica, luminotécnico).
+ * Pagar a visão nelas compra a transcrição de uma legenda. Com a legenda são
+ * 20 folhas, e 17 delas têm de fato um quadro em imagem (Quadro de Áreas,
+ * demonstrativo de pavimentação, as tabelas 11–26 da sinalização); as 3 que
+ * sobram (p72, p73, p167) anunciam um quadro que está em texto ao lado de uma
+ * figura — custo de uma folha cada, aceito.
+ *
+ * PURA e compartilhada: o portão do navegador e o servidor (que valida o que o
+ * cliente manda em `aplicarTranscricao`) chamam a mesma função sobre o mesmo
+ * texto (`textoDaFolha`).
+ */
+export function paginasComQuadroEmImagem(
+  pages: readonly Pick<ExtractedPdfPage, "page" | "text" | "tinta" | "origem" | "textoDaImagem">[],
+): number[] {
+  return pages
+    .filter((page, i) => {
+      if (classificarPagina(page as ExtractedPdfPage).classe !== "texto") return false;
+      if (imagensNaoLidas(page as ExtractedPdfPage) === 0) return false;
+      if (anunciaQuadro(page.text)) return true;
+
+      const anterior = pages[i - 1];
+      if (!anterior || anterior.page !== page.page - 1) return false;
+      if (imagensNaoLidas(anterior as ExtractedPdfPage) > 0) return false;
+      return peAnunciaQuadro(anterior.text);
+    })
+    .map((page) => page.page);
 }
 
 export function diagnosticarPaginasMudas(extracted: ExtractedPdf): DiagnosticoDoDocumento {
@@ -205,6 +293,7 @@ export function diagnosticarPaginasMudas(extracted: ExtractedPdf): DiagnosticoDo
     comImagemNaoLida: extracted.pages
       .filter((page) => textos.has(page.page) && imagensNaoLidas(page) > 0)
       .map((page) => page.page),
+    quadrosEmImagem: paginasComQuadroEmImagem(extracted.pages),
     totalDePaginas: extracted.pageCount,
   };
 }
@@ -232,6 +321,12 @@ export interface PaginaTranscrita {
  * a extração com o que o cliente mandou seria deixar a evidência de todo achado
  * daquela folha ser ditada de fora. Transcrição vazia também não entra: ela
  * apagaria a página sem que ninguém pedisse.
+ *
+ * A FOLHA COM QUADRO EM IMAGEM (`paginasComQuadroEmImagem`) é o outro caso
+ * aceito, e com destino diferente: ela tem texto próprio, que continua mandando.
+ * A transcrição vai para `textoDaImagem` — só o texto da IA a lê, no lugar da
+ * marca de imagem não lida —, e `text` não muda. Página que não é nem muda nem
+ * quadro em imagem continua ignorada.
  */
 export function aplicarTranscricao(
   extracted: ExtractedPdf,
@@ -239,11 +334,13 @@ export function aplicarTranscricao(
 ): ExtractedPdf {
   if (transcricoes.length === 0) return extracted;
 
-  const mudas = new Set(diagnosticarPaginasMudas(extracted).mudas);
+  const diagnostico = diagnosticarPaginasMudas(extracted);
+  const mudas = new Set(diagnostico.mudas);
+  const quadros = new Set(diagnostico.quadrosEmImagem);
   const porPagina = new Map<number, string>();
   for (const t of transcricoes) {
     const texto = t.texto.trim();
-    if (texto && mudas.has(t.pagina)) porPagina.set(t.pagina, texto);
+    if (texto && (mudas.has(t.pagina) || quadros.has(t.pagina))) porPagina.set(t.pagina, texto);
   }
 
   if (porPagina.size === 0) return extracted;
@@ -251,6 +348,7 @@ export function aplicarTranscricao(
   const pages = extracted.pages.map((page): ExtractedPdfPage => {
     const texto = porPagina.get(page.page);
     if (!texto) return page;
+    if (quadros.has(page.page)) return { ...page, textoDaImagem: texto };
     return { ...page, text: texto, origem: "visao" };
   });
 
