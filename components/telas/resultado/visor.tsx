@@ -13,8 +13,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 
 import { Botao, Tecla } from "@/components/ds/basicos";
-import { getHighlightNeedle } from "@/components/audit-result";
 import { CURVA } from "@/lib/ds/movimento";
+import { candidatosDoGrifo } from "@/lib/grifo-do-achado";
 import { useTempo } from "@/lib/ds/tempo";
 import { NIVEIS } from "@/lib/nivel-do-achado";
 
@@ -78,7 +78,9 @@ export function VisorDoMemorial({
 
   const daPagina = achados.filter((a) => a.paginas.includes(pagina));
   const doAtivo = achados.find((a) => a.chave === ativo && a.paginas.includes(pagina)) ?? daPagina[0];
-  const grifo = doAtivo ? getHighlightNeedle(doAtivo.estruturado) : undefined;
+  // Os candidatos DESTA página: no achado entre páginas, a p. 22 procura o
+  // trecho da p. 22, e não o da p. 10 (ver lib/grifo-do-achado.ts).
+  const grifo = useMemo(() => (doAtivo ? candidatosDoGrifo(doAtivo.bruto, pagina) : undefined), [doAtivo, pagina]);
 
   const ir = (p: number) => {
     setProcurando(false);

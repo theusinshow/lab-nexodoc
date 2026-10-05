@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import { Skeleton } from "@/components/ui/skeleton";
 import { marcacaoDoTrecho, type FaixasDaMarcacao } from "@/lib/marcacao-do-trecho";
@@ -26,7 +26,12 @@ export const LARGURA_BASE_DA_PAGINA = 520;
 type AuditPdfViewerInternalProps = {
   url: string;
   page: number;
-  highlight?: string;
+  /**
+   * O que grifar. Uma LISTA vale pelo primeiro que casar nesta página — ver
+   * `lib/grifo-do-achado.ts` (o trecho da página, o termo, as citações, os
+   * pedaços da evidência). Uma string é a lista de um.
+   */
+  highlight?: string | readonly string[];
   /** Multiplicador da largura da página. 1 = a página inteira na gaveta. */
   zoom?: number;
   /**
@@ -81,7 +86,13 @@ export default function AuditPdfViewerInternal({
 }: AuditPdfViewerInternalProps) {
   const [numPages, setNumPages] = useState(0);
   const [itens, setItens] = useState<ItemDeTexto[] | null>(null);
-  const needle = (highlight ?? "").trim();
+  const caixa = useRef<HTMLDivElement>(null);
+  const candidatos = useMemo(
+    () => (typeof highlight === "string" ? [highlight] : (highlight ?? [])).map((t) => t.trim()).filter((t) => t.length >= 3),
+    [highlight],
+  );
+  // Chave estável para os efeitos: a lista chega nova a cada render do dono.
+  const needle = candidatos.join("\u0000");
 
   /*
    * A página muda: os itens da anterior não valem mais. Sem isto o visor
@@ -92,8 +103,24 @@ export default function AuditPdfViewerInternal({
 
   const faixas: FaixasDaMarcacao | null = useMemo(() => {
     if (!itens || paginaDosItens !== page || needle.length < 3) return null;
-    return marcacaoDoTrecho(itens, needle);
+    // O primeiro candidato que casa NESTA página; a régua de cada um continua
+    // a de `marcacaoDoTrecho` (duas palavras no mínimo).
+    for (const termo of needle.split("\u0000")) {
+      const achadas = marcacaoDoTrecho(itens, termo);
+      if (achadas.size > 0) return achadas;
+    }
+    return new Map() as FaixasDaMarcacao;
   }, [itens, paginaDosItens, page, needle]);
+
+  /*
+   * ROLAR ATÉ O GRIFO. Com zoom acima de 100% a folha passa da gaveta, e a
+   * marca podia estar fora da vista — o visor dizia "achei" e mostrava o topo.
+   * Depois que a camada de texto pinta, a primeira marca vem para o centro.
+   */
+  const rolarAteOGrifo = useCallback(() => {
+    if (!faixas || faixas.size === 0) return;
+    caixa.current?.querySelector("mark")?.scrollIntoView({ block: "center", inline: "nearest", behavior: "smooth" });
+  }, [faixas]);
 
   // O resultado do casamento sobe uma vez por página lida (e por trecho).
   useEffect(() => {
@@ -127,6 +154,7 @@ export default function AuditPdfViewerInternal({
   const safePage = numPages > 0 ? Math.min(Math.max(1, page), numPages) : Math.max(1, page);
 
   return (
+    <div ref={caixa} className="contents">
     <Document
       file={url}
       onLoadSuccess={(pdf) => {
@@ -163,9 +191,11 @@ export default function AuditPdfViewerInternal({
           setPaginaDosItens(safePage);
         }}
         customTextRenderer={textRenderer}
+        onRenderTextLayerSuccess={rolarAteOGrifo}
         renderAnnotationLayer={false}
         className="shadow-sm"
       />
     </Document>
+    </div>
   );
 }

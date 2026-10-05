@@ -201,6 +201,8 @@
     "test:texto-do-pdf": "node scripts/test-texto-do-pdf.ts",
     "test:disciplina-da-pagina": "node scripts/test-disciplina-da-pagina.ts",
     "test:trechos-da-evidencia": "node scripts/test-trechos-da-evidencia.ts",
+    "test:grifo-do-achado": "node scripts/test-grifo-do-achado.ts",
+    "mede:grifo": "node scripts/mede-grifo.ts",
     "test:severidade": "node scripts/test-severidade.ts",
     "test:faixas-de-impacto": "node scripts/test-faixas-de-impacto.ts",
     "test:decisao-da-validacao": "node scripts/test-decisao-da-validacao.ts",
