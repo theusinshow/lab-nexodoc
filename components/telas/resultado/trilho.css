@@ -62,6 +62,18 @@
 .ds .re .rs-fila { height: 700px; }
 .ds .re .re-distribuicao { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; align-items: start; }
 .ds .re .re-distribuicao .rc-cartao { align-content: start; }
+/* O PANORAMA CABE NUMA FAIXA (04/10/2026). Antes, num memorial grande, ele
+   descia a tela inteira e a lista dos achados só vinha depois da rolagem:
+   - Por disciplina e Onde estão lado a lado, da mesma altura: com mais de 6
+     disciplinas a lista vira duas colunas (e a palavra "pendentes" sai — o
+     título do card já diz o que é a conta);
+   - O que foi lido numa faixa de largura inteira embaixo, o resumo em 2 linhas
+     (inteiro no title). */
+.ds .re .re-distribuicao .rc-leitura { grid-column: 1 / -1; }
+.ds .re .rc-leitura p { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.ds .re .rc-disc ul:has(> li:nth-child(7)) { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 8px; }
+.ds .re .rc-disc ul:has(> li:nth-child(7)) li button { height: 30px; }
+.ds .re .rc-disc ul:has(> li:nth-child(7)) .rc-disc-palavra { display: none; }
 
 /* ---------- ajuste: título fora da grade, coluna num bloco só ---------- */
 .ds .re-titulo { width: min(1280px, calc(100% - 48px)); margin: 24px auto 0; }

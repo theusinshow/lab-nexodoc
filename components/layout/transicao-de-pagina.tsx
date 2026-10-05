@@ -18,8 +18,13 @@
  * refaz a lista, `router.refresh`, a troca de conversa do Nexo (que tem a
  * própria transição, `runShellTransition`) — tudo isso segue como era.
  *
+ * O TOPO FICA (04/10/2026): ele tem nome próprio (`nx-topo`) e não entra no
+ * snapshot da página — só o conteúdo troca. No admin, os cinco destinos trocam
+ * pelo mesmo gesto, dentro da casca (`app/admin/template.tsx`).
+ *
  * Navegador sem View Transitions troca sem animação, como antes. Movimento
- * reduzido: o reset global zera a duração.
+ * reduzido: corte seco, por regra própria em globals.css (o reset global não
+ * alcança os pseudo-elementos da transição).
  */
 import { ViewTransition } from "react";
 

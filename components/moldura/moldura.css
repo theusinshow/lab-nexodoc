@@ -1,3 +1,9 @@
 /* A raiz de toda tela migrada: a página inteira no fundo do sistema novo. */
 .ds.md-raiz { min-height: var(--ds-altura-da-janela); background: var(--ds-surface-page); color: var(--ds-text-primary); }
 .ds .md-conteudo { outline: none; }
+
+/* O topo é o mesmo de uma página para a outra: nome próprio na transição, para
+   ficar parado enquanto só o conteúdo troca (app/globals.css, `nx-topo`). Aqui,
+   e não no Topo, porque só a moldura garante UM por página — nome repetido
+   cancela a transição. */
+.ds .md-tela > .pn-topo-caixa { view-transition-name: nx-topo; }
