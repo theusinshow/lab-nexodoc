@@ -35,6 +35,7 @@ export function VisorDoMemorial({
   url,
   arquivo,
   inicial,
+  paginaInicial,
   aberto,
   onFechar,
   onIrParaAchado,
@@ -44,6 +45,8 @@ export function VisorDoMemorial({
   url: string | null;
   arquivo: string;
   inicial: string | null;
+  /** A página pedida ("Abrir p. 22" num achado entre páginas); sem ela, a primeira do achado. */
+  paginaInicial?: number | null;
   aberto: boolean;
   onFechar: () => void;
   onIrParaAchado: (chave: string) => void;
@@ -51,7 +54,7 @@ export function VisorDoMemorial({
   const { dur, mola } = useTempo();
   const paginasComAchado = useMemo(() => [...new Set(achados.flatMap((a) => a.paginas))].sort((x, y) => x - y), [achados]);
   const primeiro = achados.find((a) => a.chave === inicial) ?? achados.find((a) => !a.desfecho) ?? achados[0];
-  const [pagina, setPagina] = useState(primeiro?.paginas[0] ?? 1);
+  const [pagina, setPagina] = useState(paginaInicial ?? primeiro?.paginas[0] ?? 1);
   const [ativo, setAtivo] = useState(primeiro?.chave ?? "");
   const [zoom, setZoom] = useState(1);
   const [total, setTotal] = useState(0);

@@ -53,6 +53,13 @@
 .ds .rs-sugestoes-barra { display: flex; align-items: center; gap: 8px; width: 100%; padding: 10px 10px 8px; border: 0; background: none; font: inherit; font-size: var(--ds-text-xs); color: var(--ds-text-secondary); cursor: pointer; text-align: left; }
 .ds .rs-sugestoes-barra span { flex: 1; font-size: 11.5px; color: var(--ds-text-tertiary); }
 .ds .rs-sugestoes-barra:hover { color: var(--ds-text-primary); }
+/* O achado entre páginas: o selo sob o título e um trecho por página na Evidência. */
+.ds .rs-entre-paginas { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; margin: -4px 0 10px; font-size: var(--ds-text-xs); font-weight: 500; color: var(--ds-text-primary); }
+.ds .rs-entre-paginas > span { color: var(--ds-text-secondary); }
+.ds .rs-entre-paginas small { font-size: 11.5px; font-weight: 400; color: var(--ds-text-tertiary); }
+.ds .rs-trecho-de-conflito figcaption b { font-weight: 500; color: var(--ds-text-primary); }
+.ds .rs-trecho-de-conflito + .rs-trecho-de-conflito { position: relative; }
+.ds .rs-trecho-de-conflito + .rs-trecho-de-conflito::before { content: "diverge de"; display: block; margin: -2px 0 6px; font-size: 11px; color: var(--ds-text-tertiary); }
 /* Notificar por e-mail: a faixa no topo da lista e a confirmação que ela abre. */
 .ds .rs-notificar { display: grid; gap: 8px; }
 .ds .rs-notificar-barra { display: flex; align-items: center; gap: 8px; width: 100%; padding: 7px 10px; border: 0; border-radius: var(--ds-radius-control); background: var(--ds-surface-sunken); box-shadow: inset 0 0 0 1px var(--ds-line-default); font: inherit; font-size: var(--ds-text-xs); color: var(--ds-text-secondary); cursor: pointer; text-align: left; }

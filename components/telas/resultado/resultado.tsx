@@ -64,6 +64,12 @@ export function ResultadoDoParecer({
   const [aberto, setAberto] = useState<string | null>(achadoEmFoco ?? null);
   const [filaKey, setFilaKey] = useState(0);
   const [visor, setVisor] = useState<string | null>(null);
+  const [paginaDoVisor, setPaginaDoVisor] = useState<number | null>(null);
+  /** Abre o visor no achado; com `pagina`, nela (o trecho 2 de um achado entre páginas). */
+  const verNoMemorial = (chave: string, pagina?: number) => {
+    setPaginaDoVisor(pagina ?? null);
+    setVisor(chave);
+  };
   const [anterior, setAnterior] = useState(vista);
   const [dir, setDir] = useState(1);
 
@@ -143,25 +149,26 @@ export function ResultadoDoParecer({
               parecer={parecer}
               temArquivo={temArquivo}
               onAbrir={abrirNaFila}
-              onVerNoMemorial={setVisor}
+              onVerNoMemorial={verNoMemorial}
               onAbrirDisciplina={(d: FindingDiscipline) => abrirNaFila(parecer.achados.find((a) => a.confirmado && a.disc === d && !a.desfecho)?.chave)}
               onNoDocumento={podeVerNoDocumento ? () => onVista("documento") : undefined}
             />
           )}
           {vista === "findings" && (
-            <FilaDeAchados key={filaKey} nivelInicial={nivelDaFila} parecer={parecer} auditId={auditId} catalogo={catalogo} inicial={aberto} onVerNoMemorial={setVisor} aoGerarTexto={aoGerarTexto} />
+            <FilaDeAchados key={filaKey} nivelInicial={nivelDaFila} parecer={parecer} auditId={auditId} catalogo={catalogo} inicial={aberto} onVerNoMemorial={verNoMemorial} aoGerarTexto={aoGerarTexto} />
           )}
           {vista === "report" && <RelatorioDoParecer report={report} parecer={parecer} />}
-          {vista === "documento" && <NoDocumento report={report} parecer={parecer} catalogo={catalogo} onVerNoMemorial={setVisor} onAbrir={(chave) => abrirNaFila(chave)} />}
+          {vista === "documento" && <NoDocumento report={report} parecer={parecer} catalogo={catalogo} onVerNoMemorial={verNoMemorial} onAbrir={(chave) => abrirNaFila(chave)} />}
         </motion.div>
       </AnimatePresence>
 
       <VisorDoMemorial
-        key={visor ?? "fechado"}
+        key={visor ? `${visor}:${paginaDoVisor ?? ""}` : "fechado"}
         achados={achadosDoVisor}
         url={urlDoVisor}
         arquivo={fonteDoVisor?.tipo === "arquivo" ? fonteDoVisor.fonte.nome : (doVisor?.estruturado.documento ?? "Memorial")}
         inicial={visor}
+        paginaInicial={paginaDoVisor}
         aberto={Boolean(visor)}
         onFechar={() => setVisor(null)}
         onIrParaAchado={(chave) => {

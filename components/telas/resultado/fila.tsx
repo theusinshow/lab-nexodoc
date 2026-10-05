@@ -27,6 +27,7 @@ import { useTempo } from "@/lib/ds/tempo";
 import { resolverFonte, type FonteDoCatalogo } from "@/lib/fonte-da-evidencia";
 import { formatarEmBrasilia } from "@/lib/fuso-de-brasilia";
 import { linkDoAchado } from "@/lib/link-do-achado";
+import { paginasEmConflito, trechosDaEvidencia } from "@/lib/trechos-da-evidencia";
 import { DISCIPLINAS, NIVEIS, type Nivel } from "@/lib/nivel-do-achado";
 import type { TextoCorrigido } from "@/lib/texto-corrigido";
 
@@ -81,7 +82,8 @@ export function FilaDeAchados({
   catalogo: FonteDoCatalogo[];
   /** O achado que abre primeiro (link do e-mail, clique no resumo). */
   inicial?: string | null;
-  onVerNoMemorial: (chave: string) => void;
+  /** `pagina` abre o visor nela — o trecho 2 de um achado entre páginas. */
+  onVerNoMemorial: (chave: string, pagina?: number) => void;
   aoGerarTexto?: (findingId: string, texto: TextoCorrigido) => void;
 }) {
   const { dur, mola } = useTempo();
@@ -314,6 +316,15 @@ export function FilaDeAchados({
   const grifo = getHighlightNeedle(atual.estruturado);
   const paginaDoTitulo = atual.paginas.length ? (atual.paginas.length === 1 ? `p. ${atual.paginas[0]}` : `p. ${atual.paginas[0]} e mais ${atual.paginas.length - 1}`) : "";
   const linha = atual.linha;
+  /*
+   * O ACHADO ENTRE PÁGINAS. A regra grava "Pág. 10: … | Pág. 22: …" numa string
+   * só, e o cartão a mostrava num bloco — quem lia não via que o defeito é a
+   * DIVERGÊNCIA entre duas folhas (05/10/2026). Com dois trechos ou mais, o
+   * cartão diz "Conflito entre p. 10 e p. 22" e mostra um trecho por página.
+   */
+  const trechos = trechosDaEvidencia(atual.bruto.evidencia);
+  const emConflito = paginasEmConflito(atual.bruto.evidencia);
+  const entrePaginas = emConflito.length >= 2;
 
   return (
     <div className="rs-fila">
@@ -626,6 +637,12 @@ export function FilaDeAchados({
             transition={{ duration: dur("enter"), ease: ease(CURVA.out) }}
           >
             <h2>{atual.titulo}</h2>
+            {entrePaginas && (
+              <p className="rs-entre-paginas">
+                <span aria-hidden>⇄</span> Conflito entre {emConflito.map((p) => `p. ${p}`).join(emConflito.length === 2 ? " e " : ", ")}
+                <small>o defeito é a divergência entre as páginas, não uma delas sozinha</small>
+              </p>
+            )}
             <div className="rs-dono">
               {atual.responsavel ? (
                 <>
@@ -708,6 +725,26 @@ export function FilaDeAchados({
               <motion.div key={aba} className="rs-aba" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: dur("feedback") }}>
                 {aba === "evidencia" && (
                   <div className="rs-evidencias">
+                    {entrePaginas ? (
+                      trechos.map((t, i) => (
+                        <figure key={i} className="rs-trecho-de-conflito">
+                          <figcaption>
+                            <b>
+                              Trecho {i + 1} de {trechos.length}
+                              {t.pagina !== null ? `, p. ${t.pagina}` : ""}
+                            </b>
+                            {fonteAtual.tipo === "arquivo" && t.pagina !== null && (
+                              <button type="button" className="rs-link" onClick={() => onVerNoMemorial(atual.chave, t.pagina!)}>
+                                Abrir p. {t.pagina}
+                              </button>
+                            )}
+                          </figcaption>
+                          <blockquote>
+                            <Trecho texto={t.texto} marca={grifo} />
+                          </blockquote>
+                        </figure>
+                      ))
+                    ) : (
                     <figure>
                       <figcaption>
                         {atual.estruturado.documento ?? "Memorial"}
@@ -720,6 +757,7 @@ export function FilaDeAchados({
                       </figcaption>
                       <blockquote>{atual.bruto.evidencia ? <Trecho texto={atual.bruto.evidencia} marca={grifo} /> : "Evidência não informada no parecer."}</blockquote>
                     </figure>
+                    )}
                     {atual.bruto.referencia_comparada && (
                       <figure>
                         <figcaption>Comparado com</figcaption>
