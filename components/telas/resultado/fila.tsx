@@ -325,6 +325,15 @@ export function FilaDeAchados({
   const trechos = trechosDaEvidencia(atual.bruto.evidencia);
   const emConflito = paginasEmConflito(atual.bruto.evidencia);
   const entrePaginas = emConflito.length >= 2;
+  /*
+   * VÁRIAS PÁGINAS SEM TRECHO POR PÁGINA (05/10/2026): o achado da IA cita
+   * "pág. 10" e "pág. 22" no conflito, mas a evidência vem num bloco só. O
+   * cartão diz quais páginas o defeito envolve e dá um "Abrir p. N" para cada;
+   * no visor, cada página procura o pedaço da evidência que está nela.
+   */
+  const variasPaginas = !entrePaginas && atual.paginas.length >= 2;
+  // Em ordem de leitura na exibição; `atual.paginas[0]` continua sendo a principal (pin, visor).
+  const paginasEmOrdem = [...atual.paginas].sort((x, y) => x - y);
 
   return (
     <div className="rs-fila">
@@ -643,6 +652,12 @@ export function FilaDeAchados({
                 <small>o defeito é a divergência entre as páginas, não uma delas sozinha</small>
               </p>
             )}
+            {variasPaginas && (
+              <p className="rs-entre-paginas">
+                <span aria-hidden>⇄</span> Envolve {paginasEmOrdem.map((p) => `p. ${p}`).join(paginasEmOrdem.length === 2 ? " e " : ", ")}
+                <small>confira todas: o achado se apoia em mais de uma página</small>
+              </p>
+            )}
             <div className="rs-dono">
               {atual.responsavel ? (
                 <>
@@ -752,11 +767,18 @@ export function FilaDeAchados({
                       <figcaption>
                         {atual.estruturado.documento ?? "Memorial"}
                         {atual.paginas.length ? `, p. ${atual.paginas.join(", ")}` : ""}
-                        {fonteAtual.tipo === "arquivo" && (
-                          <button type="button" className="rs-link" onClick={() => onVerNoMemorial(atual.chave)}>
-                            Abrir a página
-                          </button>
-                        )}
+                        {fonteAtual.tipo === "arquivo" &&
+                          (variasPaginas ? (
+                            paginasEmOrdem.map((p) => (
+                              <button key={p} type="button" className="rs-link" onClick={() => onVerNoMemorial(atual.chave, p)}>
+                                Abrir p. {p}
+                              </button>
+                            ))
+                          ) : (
+                            <button type="button" className="rs-link" onClick={() => onVerNoMemorial(atual.chave)}>
+                              Abrir a página
+                            </button>
+                          ))}
                       </figcaption>
                       <blockquote>{atual.bruto.evidencia ? <Trecho texto={atual.bruto.evidencia} marca={grifo} /> : "Evidência não informada no parecer."}</blockquote>
                     </figure>

@@ -33,6 +33,29 @@ function numeroDoCapitulo(capitulo: string): string {
   return capitulo.match(/^\s*(\d{1,2})\b/)?.[1] ?? "";
 }
 
+/** O título sem o número, normalizado: "8 - PROJETO ELÉTRICO" → "PROJETO ELETRICO". */
+function tituloSemNumero(capitulo: string): string {
+  return capitulo
+    .replace(/^\s*\d{1,2}\s*[-–—.]?\s*/, "")
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toUpperCase()
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * Outro capítulo de verdade, e não o mesmo título com sobra: "8 - PROJETO DE
+ * PAISAGISMO PATA DE VACA" é o paisagismo com a primeira linha da página
+ * colada; "8 - PROJETO ELÉTRICO" não é.
+ */
+function outroTitulo(novo: string, emVigor: string): boolean {
+  const a = tituloSemNumero(novo);
+  const b = tituloSemNumero(emVigor);
+  if (!a || !b) return false;
+  return !a.startsWith(b) && !b.startsWith(a);
+}
+
 /**
  * A disciplina de cada página, quando dá para saber. Página fora do mapa é
  * página sem cabeçalho reconhecível — e aí quem responde é a inferência antiga.
@@ -65,6 +88,17 @@ export function disciplinaPorPagina(
       const numeroEmVigor = numeroDoCapitulo(capituloEmVigor);
 
       if (numeroNovo !== numeroEmVigor) {
+        disciplinaEmVigor = disciplinaDoTitulo(cabecalho);
+      } else if (outroTitulo(cabecalho, capituloEmVigor)) {
+        /*
+         * MESMO NÚMERO, OUTRO TÍTULO (05/10/2026, 141-26). A separatriz do
+         * capítulo de elétrica dizia "8 PROJETO ELÉTRICO" e o cabeçalho das
+         * páginas de paisagismo, logo antes, "8 – PROJETO DE PAISAGISMO": a
+         * numeração das separatrizes estava um atrás. Pela regra do número a
+         * separatriz herdava paisagismo, e todo achado dela ia para a
+         * disciplina errada. Título diferente é capítulo novo, como número diferente:
+         * vale o que ELE diz — inclusive nada ("13 EQUIPE TÉCNICA").
+         */
         disciplinaEmVigor = disciplinaDoTitulo(cabecalho);
       } else {
         disciplinaEmVigor = disciplinaEmVigor ?? disciplinaDoTitulo(cabecalho);

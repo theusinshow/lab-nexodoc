@@ -1026,7 +1026,8 @@ function NexoWorkspaceInner({
          */
         `Li as primeiras páginas: é o memorial descritivo. Esta ficha é a referência ` +
         `da auditoria — um nome de outra obra no texto é o que denuncia reaproveitamento. ` +
-        `Se algum campo estiver errado, corrija no lápis da linha.`,
+        `Confira os dados, principalmente o NOME DA OBRA, antes de auditar; se algum ` +
+        `estiver errado, corrija no lápis da linha.`,
       fichaDoMemorial: fichaDoMemorial(dossie, memorial.name, divergencia ? `Atenção: ${divergencia}.` : null),
       slotRequest: {
         slotId: "memorial",

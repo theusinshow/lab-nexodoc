@@ -72,6 +72,17 @@ check("pagina repetida aparece uma vez", igual(repetida, [8, 60]), repetida.join
 const comAno = paginasDoAchado({ pagina: "9", referencia: "páginas 9 e 3000." });
 check("numero fora do teto de paginas sai", igual(comAno, [9]), comAno.join(","));
 
+// --- A prosa da IA conta a outra página (141-26, 05/10/2026).
+const daProsa = paginasDoAchado({
+  pagina: "10",
+  textos: ["Terraplenagem = Prefeitura (pág. 10) × contratada executa movimento de terra (pág. 22).", "conforme NBR 9050 de 2020"],
+});
+check("a pagina citada no conflito entra, e a principal continua a do campo", igual(daProsa, [10, 22]), daProsa.join(","));
+const variadas = paginasDoAchado({ pagina: "5", textos: ["nas páginas 12 e 30, e na p. 41; ver pp. 50-52"] });
+check("'páginas 12 e 30', 'p. 41' e 'pp. 50-52'", igual(variadas, [5, 12, 30, 41, 50, 51, 52]), variadas.join(","));
+const soltoNaProsa = paginasDoAchado({ pagina: "7", textos: ["o item 4.2 exige 3 camadas de 25 mm"] });
+check("numero solto na prosa nao vira pagina", igual(soltoNaProsa, [7]), soltoNaProsa.join(","));
+
 if (falhas > 0) {
   console.error(`\nFALHOU  paginas do achado (${falhas})`);
   process.exit(1);

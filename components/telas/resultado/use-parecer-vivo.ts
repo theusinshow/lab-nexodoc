@@ -84,7 +84,8 @@ function montarAchado(f: AuditFinding, linha: SavedFeedback | undefined, euSou: 
     titulo: reportFindingToStructured(f).title,
     nivel: nivelDoAchado(f),
     disc: disciplinaDoAchado(f),
-    paginas: paginasDoAchado({ pagina: f.pagina, referencia: f.referencia_comparada }),
+    // A prosa também: a IA escreve "(pág. 10) × (pág. 22)" no conflito e grava só "10" em `pagina`.
+    paginas: paginasDoAchado({ pagina: f.pagina, referencia: f.referencia_comparada, textos: [f.conflito, f.descricao, f.evidencia] }),
     pagina: f.pagina || null,
     origem: f.origem,
     confirmado: classifyFindingTier(f) === "principal",

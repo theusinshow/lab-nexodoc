@@ -6,6 +6,20 @@ import { pularTourGuiado } from "../../lib/sessao-de-teste.mjs";
 import { consultar } from "./banco.mjs";
 import { garantirFixtures } from "./fixtures.mjs";
 
+/**
+ * Marca "Conferi os dados da obra" no cartão de auditoria mais novo, se estiver
+ * desmarcada. Desde 05/10/2026 os botões de auditar esperam essa conferência
+ * (ConfirmationCard); sem marcar, toda jornada ficaria parada no botão.
+ */
+export async function conferirDados(pagina) {
+  const caixa = pagina.getByRole("checkbox", { name: /Conferi os dados da obra/ }).last();
+  if ((await caixa.count()) === 0) return false;
+  if (!(await caixa.isChecked().catch(() => true))) await caixa.check().catch(() => {});
+  return true;
+}
+
+const BOTAO_DE_AUDITAR = /auditar|Conferindo páginas/i;
+
 export async function criarContexto({ browser, base }) {
   const contexto = await browser.newContext({ viewport: { width: 1600, height: 1000 } });
   const page = await contexto.newPage();
@@ -123,7 +137,10 @@ export async function criarContexto({ browser, base }) {
       const botao = page.getByRole("button", { name: regex }).last();
       await botao.waitFor({ timeout: ms });
       const fim = Date.now() + ms;
-      while (Date.now() < fim && (await botao.isDisabled())) await page.waitForTimeout(500);
+      while (Date.now() < fim && (await botao.isDisabled())) {
+        if (BOTAO_DE_AUDITAR.test(String(regex))) await conferirDados(page);
+        await page.waitForTimeout(500);
+      }
       return botao;
     },
 

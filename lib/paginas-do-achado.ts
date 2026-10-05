@@ -29,6 +29,12 @@ export function paginasDoAchado(args: {
   pagina?: string | null;
   /** `referencia_comparada`, onde as regras escrevem a frase com as páginas. */
   referencia?: string | null;
+  /**
+   * Prosa do achado — `conflito`, `descricao`, `evidencia` — onde a IA escreve
+   * "(pág. 10) × (pág. 22)" sem repetir no campo `pagina`. Só entra o número
+   * colado a "pág."/"página"/"p.": número solto em prosa é norma, valor ou item.
+   */
+  textos?: readonly (string | null | undefined)[];
 }): number[] {
   const daPagina = extrair(args.pagina ?? "");
 
@@ -44,7 +50,15 @@ export function paginasDoAchado(args: {
     ? extrair(recortarTrechoDePaginas(args.referencia ?? ""))
     : [];
 
-  const todas = [...daPagina, ...daReferencia].filter(
+  /*
+   * O ACHADO ENTRE PÁGINAS QUE SÓ A PROSA CONTA (05/10/2026, 141-26): a IA
+   * gravava `pagina: "10"` e escrevia no conflito "Prefeitura (pág. 10) ×
+   * contratada (pág. 22)". O cartão mostrava só a p. 10, e quem abria não via a
+   * outra metade do defeito.
+   */
+  const daProsa = (args.textos ?? []).flatMap((t) => paginasCitadas(t ?? ""));
+
+  const todas = [...daPagina, ...daReferencia, ...daProsa].filter(
     (n) => Number.isInteger(n) && n >= 1 && n <= PAGINA_MAXIMA,
   );
 
@@ -77,6 +91,15 @@ export function rotuloDePaginas(paginas: number[], paginaCrua?: string | null) {
   if (paginas.length === 1) return `página ${paginas[0]}`;
 
   return `${paginas.length} páginas`;
+}
+
+/** "pág. 10", "página 22", "páginas 10 e 22", "p. 12", "pp. 3-5" → os números. */
+const PAGINA_CITADA = /(?<![\p{L}\d])(?:p[áa]g(?:ina)?s?\.?|pp?\.)\s*(\d{1,4}(?:\s*(?:,|e|a|-|–|\/)\s*\d{1,4})*)/giu;
+
+export function paginasCitadas(texto: string): number[] {
+  const saida: number[] = [];
+  for (const m of texto.matchAll(PAGINA_CITADA)) saida.push(...extrair(m[1].replace(/\s+e\s+/g, ", ")));
+  return saida;
 }
 
 function mencionaPagina(valor: string) {

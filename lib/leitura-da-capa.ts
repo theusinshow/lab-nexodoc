@@ -113,6 +113,25 @@ function cidadeDoTimbre(
   return espacos(corte ? bruta.slice(0, corte.index) : bruta);
 }
 
+/**
+ * A SECRETARIA QUE QUEBROU EM DUAS LINHAS (05/10/2026, 141-26).
+ *
+ * A capa de Chapecó imprime "SECRETARIA DE DESENVOLVIMENTO SUSTENTÁVEL E
+ * OBRAS" e, na linha de baixo, "ESTRUTURANTES - SEDES". A segunda linha não
+ * tem papel reconhecido, e o nome da obra saía "ESTRUTURANTES - SEDES ARENA
+ * BELVEDERE". Ela é continuação quando:
+ *  - termina na SIGLA da secretaria (" - SEDES", " – SMO"): nome de obra não
+ *    termina em sigla depois de travessão; ou
+ *  - a linha da secretaria termina em conectivo ("… DE", "… E"): a frase não
+ *    acabou.
+ */
+const SIGLA_NO_FIM = /\s[-–—]\s*[A-ZÀ-Ú]{3,8}$/;
+const CONECTIVO_NO_FIM = /\s(?:DE|DO|DA|DOS|DAS|E)$/i;
+
+function continuaASecretaria(secretaria: string, linha: string): boolean {
+  return SIGLA_NO_FIM.test(linha.trim()) || CONECTIVO_NO_FIM.test(secretaria.trim());
+}
+
 export function lerCapa(
   texto: string,
   candidatosDeMunicipio: readonly string[] = [],
@@ -133,7 +152,13 @@ export function lerCapa(
 
   let i = iTimbre + 1;
   const secretarias: string[] = [];
-  while (i < iFim && papeis[i] === "secretaria") secretarias.push(linhas[i++].texto);
+  while (i < iFim && papeis[i] === "secretaria") {
+    let secretaria = linhas[i++].texto;
+    while (i < iFim && papeis[i] === "livre" && continuaASecretaria(secretaria, linhas[i].texto)) {
+      secretaria = `${secretaria} ${linhas[i++].texto}`;
+    }
+    secretarias.push(secretaria);
+  }
   const nome: string[] = [];
   while (i < iFim && papeis[i] === "livre") nome.push(linhas[i++].texto);
 

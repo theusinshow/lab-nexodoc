@@ -79,6 +79,23 @@ test("capítulo novo COM outra disciplina troca de verdade", () => {
   assert.equal(mapa.get(3), "hidrossanitario");
 });
 
+test("141-26: separatriz com o número do capítulo ANTERIOR não herda a disciplina dele", () => {
+  // A separatriz dizia "8 PROJETO ELÉTRICO" e o cabeçalho de paisagismo, antes
+  // dela, "8 – PROJETO DE PAISAGISMO": pelo número, a elétrica virava paisagismo.
+  const mapa = disciplinaPorPagina([
+    pagina(1, "8 – PROJETO DE PAISAGISMO\n8 PROJETO DE PAISAGISMO\n8.1 Considerações gerais"),
+    pagina(2, "8 – PROJETO DE PAISAGISMO PATA DE VACA - Bauhinia forficata"),
+    pagina(3, "8 PROJETO ELÉTRICO"),
+    pagina(4, "9 – PROJETO ELÉTRICO\n9 PROJETO ELÉTRICO\n9.1 Objetivo"),
+    pagina(5, "13 EQUIPE TÉCNICA"),
+    pagina(6, "13 – EQUIPE TÉCNICA\nResponsável técnico"),
+  ]);
+  assert.equal(mapa.get(2), "paisagismo", "o mesmo título com sobra continua o mesmo capítulo");
+  assert.equal(mapa.get(3), "eletrico");
+  assert.equal(mapa.get(4), "eletrico");
+  assert.equal(mapa.get(5), undefined, "título sem disciplina não herda a anterior");
+});
+
 test("página fora do mapa não vira 'geral' — vira ausência", () => {
   /*
    * A diferença importa: `undefined` deixa a inferência antiga responder;

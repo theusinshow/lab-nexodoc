@@ -587,13 +587,16 @@ function SummaryRow({
   label,
   value,
   missing,
+  destaque,
 }: {
   label: string;
   value: string;
   missing?: boolean;
+  /** A linha que mais pesa na conferência (o nome da obra): maior e marcada. */
+  destaque?: boolean;
 }) {
   return (
-    <div className="flex items-baseline gap-3">
+    <div className={destaque ? "cx-linha-destaque flex items-baseline gap-3" : "flex items-baseline gap-3"}>
       <span className={`${LABEL_CLASS} w-24 shrink-0`}>{label}</span>
       {/* `whitespace-pre-line`: o título documental tem PARÁGRAFOS ("PROJETO
           ESTRUTURAL CONCRETO / IMPLANTAÇÃO / TOMO 04"). Numa linha só o
@@ -2846,6 +2849,14 @@ function AuditoriaConfirmation({
    */
   const conferindoPaginas = paginasMudas.estado === "lendo";
   /*
+   * OS DADOS DA OBRA SÃO CONFERIDOS ANTES DE GASTAR (05/10/2026, 141-26). A
+   * capa saiu lida como "ESTRUTURANTES - SEDES ARENA BELVEDERE" e a auditoria
+   * correu com esse gabarito — o nome é a régua que denuncia reaproveitamento,
+   * e um gabarito errado acusa o documento certo. Quem audita marca que
+   * conferiu; o botão espera.
+   */
+  const [dadosConferidos, setDadosConferidos] = useState(false);
+  /*
    * Cartão com parecer não reabre o formulário: rodar de novo é outra proposta
    * (`auditarDeNovo`). Reabrir aqui gravaria a rodada nova por cima desta.
    */
@@ -2879,7 +2890,7 @@ function AuditoriaConfirmation({
               value={memorialFile ? memorialFile.name : "arraste o PDF do memorial →"}
               missing={!memorialFile}
             />
-            <SummaryRow label="Obra (gabarito)" value={obra ?? "—"} missing={!obra} />
+            <SummaryRow label="Obra (gabarito)" value={obra ?? "—"} missing={!obra} destaque />
             <SummaryRow
               label="Prefeitura"
               value={prefeitura ?? "—"}
@@ -3073,6 +3084,21 @@ function AuditoriaConfirmation({
               {progressoDaTranscricao.total}…
             </p>
           )}
+          <label className="cx-conferi flex items-start gap-2 text-xs leading-relaxed">
+            <input
+              type="checkbox"
+              className="mt-0.5"
+              checked={dadosConferidos}
+              onChange={(e) => setDadosConferidos(e.target.checked)}
+              disabled={busy}
+            />
+            <span>
+              <b className="font-medium text-foreground">Conferi os dados da obra</b>{" "}
+              <span className="text-muted-foreground">
+                — nome, prefeitura, município e código. Algum errado? Corrija no lápis da ficha do memorial, acima, antes de auditar.
+              </span>
+            </span>
+          </label>
           <div className="flex flex-wrap items-center gap-2">
             {/*
               Com folha muda são DOIS caminhos, e o de transcrever é o primário:
@@ -3082,7 +3108,7 @@ function AuditoriaConfirmation({
             */}
             <ConfirmButton
               busy={busy}
-              disabled={!memorialFile || conferindoPaginas}
+              disabled={!memorialFile || conferindoPaginas || !dadosConferidos}
               label={
                 conferindoPaginas
                   ? "Conferindo páginas…"
@@ -3097,7 +3123,7 @@ function AuditoriaConfirmation({
               <Button
                 size="sm"
                 variant="ghost"
-                disabled={busy || !memorialFile}
+                disabled={busy || !memorialFile || !dadosConferidos}
                 onClick={() => confirm(false)}
               >
                 Auditar sem transcrever

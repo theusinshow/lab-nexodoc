@@ -148,6 +148,27 @@ test("nome com mais de 4 linhas não é nome: obra vazia, o resto vale", () => {
   assert.equal(capa?.codigo, "027-24");
 });
 
+test("141-26: a secretaria quebrada em duas linhas não entra no nome da obra", () => {
+  const capa = lerCapa(
+    pagina(
+      "PREFEITURA MUNICIPAL DE CHAPECÓ\nSECRETARIA DE DESENVOLVIMENTO SUSTENTÁVEL E OBRAS\nESTRUTURANTES - SEDES\nARENA BELVEDERE\nPROJETO EXECUTIVO\nMEMORIAL DESCRITIVO\nVol. I\nSETEMBRO/2026\n141_26\n",
+    ),
+  );
+  assert.equal(capa?.obra, "ARENA BELVEDERE");
+  assert.equal(capa?.secretaria, "SECRETARIA DE DESENVOLVIMENTO SUSTENTÁVEL E OBRAS ESTRUTURANTES - SEDES");
+});
+
+test("secretaria que termina em conectivo puxa a linha de baixo", () => {
+  const capa = lerCapa(pagina("PREFEITURA MUNICIPAL DE ICARA\nSECRETARIA MUNICIPAL DE\nOBRAS E URBANISMO\nCRECHE CENTRAL\nPROJETO EXECUTIVO\n"));
+  assert.equal(capa?.obra, "CRECHE CENTRAL");
+  assert.equal(capa?.secretaria, "SECRETARIA MUNICIPAL DE OBRAS E URBANISMO");
+});
+
+test("nome de obra com travessão comum continua sendo nome", () => {
+  const capa = lerCapa(pagina("PREFEITURA MUNICIPAL DE CHAPECÓ\nSECRETARIA DE OBRAS\nGINÁSIO - BAIRRO EFAPI\nPROJETO EXECUTIVO\n"));
+  assert.equal(capa?.obra, "GINÁSIO - BAIRRO EFAPI");
+});
+
 test("divergência de código: iguais com _ ou - não divergem", () => {
   assert.equal(divergenciaDeCodigo("027_24", "027-24"), null);
   assert.equal(divergenciaDeCodigo("", "027-24"), null);

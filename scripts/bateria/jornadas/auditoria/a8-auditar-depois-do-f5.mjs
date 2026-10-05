@@ -19,6 +19,8 @@
 // que é o certo — e que não é o desta jornada.
 
 /** Rótulo e estado do botão primário do cartão de auditoria mais novo. */
+import { conferirDados } from "../../lib/contexto.mjs";
+
 async function estadoDoAuditar(pagina) {
   const botao = pagina.getByRole("button", { name: /^(Auditar|Conferindo páginas…|Transcrever e auditar)$/ }).last();
   if ((await botao.count()) === 0) return { existe: false, rotulo: null, habilitado: false };
@@ -48,6 +50,7 @@ async function esperarAuditarHabilitado(pagina, ms) {
   const linha = [];
   let ultimo = "";
   while (Date.now() - inicio < ms) {
+    await conferirDados(pagina);
     const e = await estadoDoAuditar(pagina);
     const marca = `${e.existe ? e.rotulo : "(sem botão)"}|${e.habilitado ? "enabled" : "disabled"}`;
     if (marca !== ultimo) {
