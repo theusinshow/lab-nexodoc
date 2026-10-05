@@ -20,6 +20,25 @@ export function lerAlcance(corpo: unknown): Alcance | null {
     return { tipo: "obra", chave: chave.trim() };
   }
 
+  if (tipo === "projeto") {
+    const projectId = (alcance as { projectId?: unknown }).projectId;
+    if (typeof projectId !== "string" || !projectId.trim()) return null;
+    return { tipo: "projeto", projectId: projectId.trim() };
+  }
+
+  if (tipo === "itens") {
+    const lista = (campo: string) => {
+      const valor = (alcance as Record<string, unknown>)[campo];
+      return Array.isArray(valor)
+        ? valor.filter((id): id is string => typeof id === "string" && Boolean(id.trim())).map((id) => id.trim())
+        : [];
+    };
+    const itens = { conversas: lista("conversas"), auditorias: lista("auditorias"), lds: lista("lds") };
+    // Mesma postura da seleção: nada escolhido é defeito da tela, não "ok".
+    if (!itens.conversas.length && !itens.auditorias.length && !itens.lds.length) return null;
+    return { tipo: "itens", ...itens };
+  }
+
   if (tipo === "selecao") {
     const ids = (alcance as { ids?: unknown }).ids;
     if (!Array.isArray(ids)) return null;

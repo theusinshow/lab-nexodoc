@@ -1,0 +1,14 @@
+/* PROJETOS do admin: a lista de projetos e, aberto, o que cada um guarda. */
+.ds .pj-lista .pj-projeto { grid-template-columns: minmax(0, 1fr) minmax(180px, auto) 84px auto; min-height: 52px; }
+.ds .pj-projeto--aberto { background: rgb(255 255 255 / 0.02); }
+.ds .pj-contas { white-space: nowrap; }
+.ds .pj-excluir { justify-self: end; opacity: 0; transition: opacity 0.2s; }
+.ds .pj-projeto:hover .pj-excluir, .ds .pj-projeto--aberto .pj-excluir, .ds .pj-excluir:focus-visible { opacity: 1; }
+.ds .pj-detalhe { display: grid; gap: 14px; padding: 8px 8px 16px 24px; }
+.ds .pj-grupo { display: grid; gap: 2px; }
+.ds .pj-grupo h3 { margin: 4px 0 2px; font-size: var(--ds-text-2xs); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ds-text-tertiary); }
+.ds .pj-nota { margin: 0 0 4px; font-size: 11.5px; color: var(--ds-text-tertiary); }
+.ds .pj-item { display: grid; grid-template-columns: 24px minmax(0, 1fr) minmax(130px, auto) minmax(0, 220px) 84px; align-items: center; gap: 12px; min-height: 34px; padding: 2px 8px; font-size: 12px; cursor: pointer; }
+.ds .pj-item--fixo { cursor: default; }
+.ds .pj-item > span { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.ds .pj-item-tit { color: var(--ds-text-primary); }

@@ -449,7 +449,7 @@ export function RuntimeEChaves({ c }: { c: ReturnType<typeof useConfiguracao> })
       ]
     : [];
   // cada chave pelo nome da variável de ambiente, que é como se procura no painel da Render
-  const NOMES: Record<string, string> = { primaryApiKeyConfigured: "chave do provider principal", openaiApiKeyConfigured: "OPENAI_API_KEY", openaiAdminKeyConfigured: "OPENAI_ADMIN_KEY", adminTokenConfigured: "NEXODOC_ADMIN_TOKEN" };
+  const NOMES: Record<string, string> = { primaryApiKeyConfigured: "chave do provider principal", openaiApiKeyConfigured: "OPENAI_API_KEY", openaiAdminKeyConfigured: "OPENAI_ADMIN_KEY" };
   const impressoes: Record<string, Impressao | undefined> = { openaiApiKeyConfigured: d?.secretFingerprints?.openaiApiKey, openaiAdminKeyConfigured: d?.secretFingerprints?.openaiAdminKey };
   const vazio = <p className="adm-vazio">{c.fase === "sem-token" ? "Aguardando o token de administração." : c.fase === "erro" ? "Não carregado." : "Carregando…"}</p>;
   return (

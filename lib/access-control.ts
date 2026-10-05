@@ -377,14 +377,9 @@ export async function requireActor(): Promise<Actor> {
 /**
  * O PORTÃO DA PLATAFORMA, para `/api/admin/*`.
  *
- * NÃO substitui o `NEXODOC_ADMIN_TOKEN` que aquelas rotas já exigem — soma-se a
- * ele. Hoje o token é a única barreira da API administrativa: as PÁGINAS de
- * `/admin` checam `isAdmin` da sessão (`app/admin/layout.tsx`), mas as ROTAS
- * checam só o Bearer. Quem tiver o token entra sem sessão nenhuma, e o token
- * mora no `sessionStorage` do navegador de quem o digitou.
- *
- * Com os dois, são dois fatores independentes: uma sessão de administrador e um
- * segredo digitado. Perder um não abre a porta.
+ * É a ÚNICA barreira da API administrativa desde 05/10/2026: o token
+ * `NEXODOC_ADMIN_TOKEN`, que se somava a ela, saiu a pedido — ser
+ * administrador no cadastro basta. Ver [[lib/admin-gate.ts]].
  */
 export async function requirePlatformAdmin(): Promise<PlatformAdmin> {
   const session = await auth();

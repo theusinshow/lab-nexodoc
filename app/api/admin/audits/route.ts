@@ -45,16 +45,6 @@ function jsonError(request: Request, message: string, status = 400) {
   return withCors(NextResponse.json({ error: message }, { status }), request);
 }
 
-function getBearerToken(request: Request) {
-  const header = request.headers.get("authorization") ?? "";
-
-  if (!header.toLowerCase().startsWith("bearer ")) {
-    return "";
-  }
-
-  return header.slice(7).trim();
-}
-
 function getLimit(request: Request) {
   const url = new URL(request.url);
   const limit = Number(url.searchParams.get("limit") ?? 50);

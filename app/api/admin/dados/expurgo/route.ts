@@ -48,9 +48,13 @@ export async function POST(request: Request) {
   const descricaoDoAlcance =
     alcance.tipo === "obra"
       ? `obra:${alcance.chave}`
-      : alcance.tipo === "tudo"
-        ? "tudo"
-        : "selecao";
+      : alcance.tipo === "projeto"
+        ? `projeto:${alcance.projectId}`
+        : alcance.tipo === "tudo"
+          ? "tudo"
+          : alcance.tipo === "itens"
+            ? "itens"
+            : "selecao";
 
   await registrarAcao({
     quem: portao.email,

@@ -9,8 +9,6 @@ const BASE = process.argv[2] ?? "http://localhost:3400";
 const OUT = process.argv[3] ?? "prova-admin";
 const SO = (process.argv[4] ?? "").split(",").filter(Boolean);
 fs.mkdirSync(OUT, { recursive: true });
-const env = fs.readFileSync(".env.local", "utf8");
-const TOKEN = (env.match(/^NEXODOC_ADMIN_TOKEN=(.*)$/m)?.[1] ?? "").trim().replace(/^["']|["']$/g, "");
 const falhas = [];
 const ok = (cond, nome, extra = "") => {
   console.log(`${cond ? "ok  " : "FALHA"} ${nome.padEnd(58)} ${extra}`);
@@ -27,14 +25,10 @@ await p.waitForTimeout(1500);
 await p.locator('button:has-text("Entrar como dev")').click();
 await p.waitForTimeout(3500);
 
-// sem token: o painel diz que nada foi consultado e pede o token no trilho
+// sem token (05/10/2026): a sessão de admin basta — sem campo no trilho, e os dados já vêm
 await p.goto(`${BASE}/admin`, { waitUntil: "domcontentloaded" });
-await p.waitForTimeout(4000);
-ok((await p.locator('[data-carga="sem-token"]').count()) === 1 && (await p.locator("#adm-token").count()) === 1, "sem token: aviso e campo no trilho");
-await p.locator("#adm-token").fill(TOKEN);
-await p.locator(".adm-token-form button[type=submit]").click();
 await p.waitForTimeout(6000);
-ok((await p.locator(".adm-token-form").count()) === 0 && /sessão admin/.test(await p.locator(".adm-token").innerText()), "token aceito: o campo recolhe para 'sessão admin'");
+ok((await p.locator("#adm-token").count()) === 0 && /sessão admin/.test(await p.locator(".adm-token").innerText()), "sem campo de token: o trilho diz 'sessão admin'");
 ok(/operacional|degradado|parado/.test(await p.locator(".adm-veredito").innerText()), "o veredito do trilho vem de /api/admin/status");
 
 const destinos = [

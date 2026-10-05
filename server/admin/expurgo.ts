@@ -44,6 +44,10 @@ export interface ConversaListada extends ConversaParaExpurgo {
 }
 
 export interface PreviaDoExpurgo {
+  /** 1 quando o alcance é o projeto inteiro: a linha do `Project` vai junto. */
+  projetos: number;
+  /** Documentos e envios guardados no projeto (`ProjectDocument`, `ProjectUpload`). */
+  documentos: number;
   conversas: number;
   auditorias: number;
   achados: number;
@@ -63,6 +67,8 @@ interface AlvoResolvido {
   auditIds: string[];
   ldIds: string[];
   donos: Set<string>;
+  /** O projeto que sai inteiro (alcance `projeto`), se existir no banco. */
+  projectId: string | null;
 }
 
 /**
@@ -185,6 +191,18 @@ async function resolverAlvo(alcance: Alcance): Promise<AlvoResolvido> {
   if (alcance.tipo === "tudo") {
     for (const { id } of await prisma.audit.findMany({ select: { id: true } })) auditIds.add(id);
     for (const { id } of await prisma.ldDraft.findMany({ select: { id: true } })) ldIds.add(id);
+  } else if (alcance.tipo === "itens") {
+    // Escolhidos um a um: entram como vieram, e a checagem de existência abaixo
+    // descarta o que não está no banco.
+    for (const id of alcance.auditorias) auditIds.add(id);
+    for (const id of alcance.lds) ldIds.add(id);
+  } else if (alcance.tipo === "projeto") {
+    for (const { id } of await prisma.audit.findMany({ where: { projectId: alcance.projectId }, select: { id: true } })) {
+      auditIds.add(id);
+    }
+    for (const { id } of await prisma.ldDraft.findMany({ where: { projectId: alcance.projectId }, select: { id: true } })) {
+      ldIds.add(id);
+    }
   } else if (alcance.tipo === "obra" && alcance.chave !== SEM_OBRA) {
     /*
      * A chave da obra é um `projectId` quando a conversa foi endereçada. Quando
@@ -218,11 +236,20 @@ async function resolverAlvo(alcance: Alcance): Promise<AlvoResolvido> {
       })
     : [];
 
+  const lds = ldIds.size
+    ? await prisma.ldDraft.findMany({ where: { id: { in: [...ldIds] } }, select: { id: true } })
+    : [];
+  const projeto =
+    alcance.tipo === "projeto"
+      ? await prisma.project.findUnique({ where: { id: alcance.projectId }, select: { id: true } })
+      : null;
+
   return {
     conversaIds,
     auditIds: existentes.map((a) => a.id),
-    ldIds: [...ldIds],
+    ldIds: lds.map((l) => l.id),
     donos,
+    projectId: projeto?.id ?? null,
   };
 }
 
@@ -241,9 +268,30 @@ async function arquivosQueMorrem(alvo: AlvoResolvido) {
     }
   }
 
+  /*
+   * O PROJETO INTEIRO leva também o que foi guardado nele: documentos, envios e
+   * artefatos. Sem isto as linhas iam embora e os bytes ficavam no
+   * `StoredFile` sem ninguém apontando — espaço pago para sempre.
+   */
+  if (alvo.projectId) {
+    const doProjeto = { projectId: alvo.projectId, checksumSha256: { not: null } };
+    const [docs, envios, artefatos] = await Promise.all([
+      prisma.projectDocument.findMany({ where: doProjeto, select: { checksumSha256: true } }),
+      prisma.projectUpload.findMany({ where: doProjeto, select: { checksumSha256: true } }),
+      prisma.documentArtifact.findMany({ where: doProjeto, select: { checksumSha256: true } }),
+    ]);
+    for (const linha of [...docs, ...envios, ...artefatos]) {
+      if (linha.checksumSha256) candidatos.add(linha.checksumSha256);
+    }
+  }
+
   if (!candidatos.size) return { checksums: [] as string[], bytes: 0 };
 
   const lista = [...candidatos];
+  // As linhas do projeto que sai não contam como "ainda aponta".
+  // `OR` com o nulo explícito: `NOT { projectId }` em SQL descarta a linha de
+  // projectId NULL, e o arquivo que ela usa seria dado como órfão.
+  const foraDoProjeto = alvo.projectId ? { OR: [{ projectId: null }, { NOT: { projectId: alvo.projectId } }] } : {};
 
   /*
    * QUEM AINDA APONTA, depois de tirar o que vai morrer. As quatro tabelas que
@@ -257,17 +305,20 @@ async function arquivosQueMorrem(alvo: AlvoResolvido) {
       select: { checksumSha256: true },
     }),
     prisma.projectUpload.findMany({
-      where: { checksumSha256: { in: lista } },
+      where: { checksumSha256: { in: lista }, ...foraDoProjeto },
       select: { checksumSha256: true },
     }),
     prisma.projectDocument.findMany({
-      where: { checksumSha256: { in: lista } },
+      where: { checksumSha256: { in: lista }, ...foraDoProjeto },
       select: { checksumSha256: true },
     }),
     prisma.documentArtifact.findMany({
       where: {
         checksumSha256: { in: lista },
-        NOT: [{ auditId: { in: alvo.auditIds } }, { ldDraftId: { in: alvo.ldIds } }],
+        AND: [
+          { NOT: [{ auditId: { in: alvo.auditIds } }, { ldDraftId: { in: alvo.ldIds } }] },
+          ...(alvo.projectId ? [{ OR: [{ projectId: null }, { NOT: { projectId: alvo.projectId } }] }] : []),
+        ],
       },
       select: { checksumSha256: true },
     }),
@@ -297,7 +348,8 @@ export async function previaDoExpurgo(alcance: Alcance): Promise<PreviaDoExpurgo
   const alvo = await resolverAlvo(alcance);
   const arquivos = await arquivosQueMorrem(alvo);
 
-  const [achados, mensagens, artefatos, consumo] = await Promise.all([
+  const doProjeto = alvo.projectId ? [{ projectId: alvo.projectId }] : [];
+  const [achados, mensagens, artefatos, consumo, documentos] = await Promise.all([
     alvo.auditIds.length
       ? prisma.auditFeedback.count({ where: { auditId: { in: alvo.auditIds } } })
       : 0,
@@ -308,7 +360,7 @@ export async function previaDoExpurgo(alcance: Alcance): Promise<PreviaDoExpurgo
       : 0,
     prisma.documentArtifact.count({
       where: {
-        OR: [{ auditId: { in: alvo.auditIds } }, { ldDraftId: { in: alvo.ldIds } }],
+        OR: [{ auditId: { in: alvo.auditIds } }, { ldDraftId: { in: alvo.ldIds } }, ...doProjeto],
       },
     }),
     /*
@@ -323,9 +375,17 @@ export async function previaDoExpurgo(alcance: Alcance): Promise<PreviaDoExpurgo
           where: { conversationId: { in: alvo.conversaIds } },
         })
       : null,
+    alvo.projectId
+      ? Promise.all([
+          prisma.projectDocument.count({ where: { projectId: alvo.projectId } }),
+          prisma.projectUpload.count({ where: { projectId: alvo.projectId } }),
+        ]).then(([d, u]) => d + u)
+      : 0,
   ]);
 
   return {
+    projetos: alvo.projectId ? 1 : 0,
+    documentos,
     conversas: alvo.conversaIds.length,
     auditorias: alvo.auditIds.length,
     achados,
@@ -388,9 +448,15 @@ export async function executarExpurgo(alcance: Alcance, quem: string) {
    * então ele sobreviveria órfão — um registro de arquivo que aponta para nada,
    * contado para sempre nas telas que contam artefatos.
    */
-  if (alvo.auditIds.length || alvo.ldIds.length) {
+  if (alvo.auditIds.length || alvo.ldIds.length || alvo.projectId) {
     await prisma.documentArtifact.deleteMany({
-      where: { OR: [{ auditId: { in: alvo.auditIds } }, { ldDraftId: { in: alvo.ldIds } }] },
+      where: {
+        OR: [
+          { auditId: { in: alvo.auditIds } },
+          { ldDraftId: { in: alvo.ldIds } },
+          ...(alvo.projectId ? [{ projectId: alvo.projectId }] : []),
+        ],
+      },
     });
   }
 
@@ -403,6 +469,18 @@ export async function executarExpurgo(alcance: Alcance, quem: string) {
   // `LdDraftEvent` sai por cascade.
   if (alvo.ldIds.length) {
     await prisma.ldDraft.deleteMany({ where: { id: { in: alvo.ldIds } } });
+  }
+
+  /*
+   * O PROJETO por último entre as linhas: documentos e envios antes (eles têm
+   * `SetNull` e ficariam órfãos segurando checksum); `ProjectEvent` sai por
+   * cascade; `AiTask` e `AiUsageEvent` ficam, como em todo expurgo — o gasto é
+   * histórico.
+   */
+  if (alvo.projectId) {
+    await prisma.projectDocument.deleteMany({ where: { projectId: alvo.projectId } });
+    await prisma.projectUpload.deleteMany({ where: { projectId: alvo.projectId } });
+    await prisma.project.delete({ where: { id: alvo.projectId } });
   }
 
   if (arquivos.checksums.length) {

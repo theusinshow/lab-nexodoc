@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "motion/react";
-import { BarChart3, Database, Gauge, KeyRound, RefreshCcw, ShieldCheck, UsersRound } from "lucide-react";
+import { BarChart3, Database, FolderOpen, Gauge, KeyRound, RefreshCcw, ShieldCheck, UsersRound } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
@@ -17,8 +17,8 @@ import "./admin.css";
 
 /*
  * O CENTRO DE CONTROLE no sistema novo. Cinco destinos agrupados pela pergunta
- * que se faz, o veredito sempre à vista no trilho e o token pedido uma vez, no
- * pé dele. A lógica é a do painel de antes (o token é do painel, não da tela —
+ * que se faz, o veredito sempre à vista no trilho. Token não há mais: ser
+ * admin no cadastro basta. A lógica é a do painel de antes (o token é do painel, não da tela —
  * `components/admin/admin-token.tsx`); muda a pele.
  */
 
@@ -28,6 +28,7 @@ export const DESTINOS_DO_ADMIN = [
   { href: "/admin/motor", nome: "Motor", pergunta: "está melhorando?", icone: ShieldCheck },
   { href: "/admin/pessoas", nome: "Pessoas", pergunta: "quem entra?", icone: UsersRound },
   { href: "/admin/dados", nome: "Dados", pergunta: "o que o banco guarda?", icone: Database },
+  { href: "/admin/projetos", nome: "Projetos", pergunta: "o que cada obra guarda?", icone: FolderOpen },
 ] as const;
 
 /** O que a tela aberta conta ao cabeçalho: de quando são os dados e o que mais vai lá (o período do Dinheiro). */
@@ -51,10 +52,10 @@ export function CascaDoAdmin({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { aceito, recarregar } = useAdminToken();
   const [cabeca, setCabeca] = useState<Cabeca>({});
-  // IGUALDADE EXATA: "/admin" é prefixo dos outros quatro
+  // IGUALDADE EXATA: "/admin" é prefixo dos outros
   const atual = DESTINOS_DO_ADMIN.find((d) => d.href === caminho) ?? DESTINOS_DO_ADMIN[0];
 
-  // 1–5 trocam de destino; R relê os dados
+  // 1–6 trocam de destino; R relê os dados
   useEffect(() => {
     const tecla = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.metaKey || e.altKey || digitando(e.target)) return;
@@ -104,9 +105,8 @@ type Status = { veredito: "operacional" | "degradado" | "parado"; linha: string;
 
 function TrilhoDoAdmin({ atual }: { atual: string }) {
   const { k } = useTempo();
-  const { token, restaurado, recarga, aceito, recusado, definirToken, recarregar, sair } = useAdminToken();
+  const { token, restaurado, recarga, aceito, recusado, recarregar } = useAdminToken();
   const [status, setStatus] = useState<Status | null>(null);
-  const [editando, setEditando] = useState(false);
 
   // O veredito vem de /api/admin/status: quatro contagens, não a visão geral inteira.
   useEffect(() => {
@@ -116,13 +116,12 @@ function TrilhoDoAdmin({ atual }: { atual: string }) {
     fetch("/api/admin/status", { cache: "no-store", signal: controlador.signal, headers: { Authorization: `Bearer ${limpo}` } })
       .then((r) => (r.ok ? r.json() : null))
       .then((corpo) => !controlador.signal.aborted && setStatus(corpo?.status ?? null))
-      // Silêncio aqui é certo: quem diz que o token falhou é a tela, com a frase dela.
+      // Silêncio aqui é certo: quem diz que o acesso falhou é a tela, com a frase dela.
       .catch(() => !controlador.signal.aborted && setStatus(null));
     return () => controlador.abort();
   }, [token, restaurado, recarga]);
 
   const mostrarStatus = token.trim() ? status : null;
-  const recolhido = token && aceito && !editando;
   const [titulo, ...resto] = (mostrarStatus?.linha ?? "").split(" · ");
 
   return (
@@ -137,7 +136,7 @@ function TrilhoDoAdmin({ atual }: { atual: string }) {
             </span>
           </>
         ) : (
-          <span>{aceito ? "veredito indisponível" : "aguardando token"}</span>
+          <span>{aceito ? "veredito indisponível" : "sem acesso de admin"}</span>
         )}
       </p>
       {mostrarStatus?.motivo && mostrarStatus.veredito !== "operacional" && <p className="adm-motivo">{mostrarStatus.motivo}</p>}
@@ -160,56 +159,15 @@ function TrilhoDoAdmin({ atual }: { atual: string }) {
       </div>
 
       <div className="adm-token">
-        {recolhido ? (
-          <>
-            <p className="adm-token-rotulo">
-              <KeyRound size={13} aria-hidden /> sessão admin
-            </p>
-            <p className="adm-token-acoes">
-              <button type="button" onClick={recarregar}>
-                atualizar
-              </button>
-              <span aria-hidden>·</span>
-              <button type="button" onClick={() => setEditando(true)}>
-                trocar
-              </button>
-              <span aria-hidden>·</span>
-              {/* sair esquece o token desta aba: o painel volta a pedir */}
-              <button type="button" onClick={sair}>
-                sair
-              </button>
-            </p>
-          </>
-        ) : (
-          <form
-            className="adm-token-form"
-            onSubmit={(e) => {
-              e.preventDefault();
-              setEditando(false);
-              recarregar();
-            }}
-          >
-            <label htmlFor="adm-token">Token de administração</label>
-            <input
-              id="adm-token"
-              type="password"
-              autoComplete="off"
-              value={token}
-              onChange={(e) => {
-                // digitar é editar: sem isto o campo se recolheria na primeira tecla
-                setEditando(true);
-                definirToken(e.target.value);
-              }}
-              aria-invalid={recusado}
-              placeholder="NEXODOC_ADMIN_TOKEN"
-            />
-            {recusado && <p className="adm-token-erro">O servidor recusou este token.</p>}
-            <Botao variante="ghost" tamanho="sm" type="submit">
-              Entrar
-            </Botao>
-            <p className="adm-token-nota">Fica só nesta aba do navegador.</p>
-          </form>
-        )}
+        {/* Sem token desde 05/10/2026: quem é admin no cadastro entra direto (ver lib/admin-gate.ts). */}
+        <p className="adm-token-rotulo">
+          <KeyRound size={13} aria-hidden /> {recusado ? "sessão sem acesso de admin" : "sessão admin"}
+        </p>
+        <p className="adm-token-acoes">
+          <button type="button" onClick={recarregar}>
+            atualizar
+          </button>
+        </p>
       </div>
     </nav>
   );

@@ -59,16 +59,6 @@ function withCors(response: NextResponse, request: Request) {
   return response;
 }
 
-function getBearerToken(request: Request) {
-  const header = request.headers.get("authorization") ?? "";
-
-  if (!header.toLowerCase().startsWith("bearer ")) {
-    return "";
-  }
-
-  return header.slice(7).trim();
-}
-
 function jsonError(request: Request, message: string, status = 400) {
   return withCors(NextResponse.json({ error: message }, { status }), request);
 }
@@ -165,7 +155,6 @@ async function buildConfigPayload() {
       primaryApiKeyConfigured: ai.audit.keyConfigured,
       openaiApiKeyConfigured: getSecretFingerprint("OPENAI_API_KEY").configured,
       openaiAdminKeyConfigured: ai.administrationUsage.keyConfigured,
-      adminTokenConfigured: Boolean(process.env.NEXODOC_ADMIN_TOKEN),
     },
     /*
      * O CÂMBIO NASCE AQUI, não em `/admin/usage`. Cotação é configuração: quem

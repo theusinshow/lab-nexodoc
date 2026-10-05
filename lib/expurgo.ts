@@ -19,6 +19,18 @@ export const SEM_OBRA = "__sem-obra__";
 export type Alcance =
   | { tipo: "selecao"; ids: readonly string[] }
   | { tipo: "obra"; chave: string }
+  /**
+   * O PROJETO INTEIRO (aba Projetos, 05/10/2026): a obra dele e, além dela, a
+   * própria linha do `Project` com documentos, envios e artefatos. A obra deixa
+   * o `Project` de pé por desenho — o projeto continuava na home, vazio.
+   */
+  | { tipo: "projeto"; projectId: string }
+  /**
+   * ITENS ESCOLHIDOS dentro de um projeto: conversas (com as auditorias que
+   * elas registraram), auditorias avulsas e LDs. É o que a `selecao` não
+   * alcança: auditoria e LD não têm conversa no schema.
+   */
+  | { tipo: "itens"; conversas: readonly string[]; auditorias: readonly string[]; lds: readonly string[] }
   | { tipo: "tudo" };
 
 export interface ConversaParaExpurgo {
@@ -71,7 +83,18 @@ export function conversasDoAlcance(
       .map((conversa) => conversa.id);
   }
 
-  const pedidos = new Set(alcance.ids);
+  /*
+   * Pelo `projectId`, e não pela chave da obra: a conversa antiga só com
+   * `folderKey` não pertence a projeto nenhum no banco, e apagá-la junto seria
+   * adivinhar o dono por uma string do navegador.
+   */
+  if (alcance.tipo === "projeto") {
+    return conversas
+      .filter((conversa) => conversa.projectId?.trim() === alcance.projectId)
+      .map((conversa) => conversa.id);
+  }
+
+  const pedidos = new Set(alcance.tipo === "itens" ? alcance.conversas : alcance.ids);
 
   return conversas.filter((conversa) => pedidos.has(conversa.id)).map((conversa) => conversa.id);
 }
@@ -115,6 +138,9 @@ export function auditoriasDasConversas(datas: readonly unknown[]): string[] {
 export function palavraDeConfirmacao(alcance: Alcance, rotuloDaObra?: string): string {
   if (alcance.tipo === "tudo") return "ZERAR TUDO";
   if (alcance.tipo === "obra") return rotuloDaObra?.trim() || alcance.chave;
+  // O projeto se confirma pelo CÓDIGO ("141-26"): é o que se lê na lista e o
+  // que distingue dois projetos de nome parecido.
+  if (alcance.tipo === "projeto") return rotuloDaObra?.trim() || alcance.projectId;
   return "EXPURGAR SELECAO";
 }
 

@@ -13,11 +13,6 @@ import { usoDoEscritorio } from "@/lib/uso-do-escritorio";
 
 export const runtime = "nodejs";
 
-function getBearerToken(request: Request) {
-  const header = request.headers.get("authorization") ?? "";
-  return header.toLowerCase().startsWith("bearer ") ? header.slice(7).trim() : "";
-}
-
 function jsonError(message: string, status: number) {
   return NextResponse.json({ error: message }, { status });
 }

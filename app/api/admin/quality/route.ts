@@ -76,16 +76,6 @@ function jsonError(request: Request, message: string, status = 400) {
   return withCors(NextResponse.json({ error: message }, { status }), request);
 }
 
-function getBearerToken(request: Request) {
-  const header = request.headers.get("authorization") ?? "";
-
-  if (!header.toLowerCase().startsWith("bearer ")) {
-    return "";
-  }
-
-  return header.slice(7).trim();
-}
-
 function createBucket(key: string, label: string): QualityBucket {
   return {
     key,

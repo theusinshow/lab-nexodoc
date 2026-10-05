@@ -102,6 +102,26 @@ test("seleção vazia não alcança nada", () => {
   assert.deepEqual(conversasDoAlcance([c("1")], { tipo: "selecao", ids: [] }), []);
 });
 
+test("projeto alcança só as conversas com aquele projectId — a antiga só com folderKey fica", () => {
+  // Apagar a conversa sem `projectId` seria adivinhar o dono por uma string do navegador.
+  const conversas = [c("1", "proj-a"), c("2", null, "088-25-CRICIUMA"), c("3", "proj-b")];
+  assert.deepEqual(conversasDoAlcance(conversas, { tipo: "projeto", projectId: "proj-a" }), ["1"]);
+});
+
+test("itens: só as conversas escolhidas que existem", () => {
+  const conversas = [c("1", "proj-a"), c("2", "proj-a")];
+  assert.deepEqual(
+    conversasDoAlcance(conversas, { tipo: "itens", conversas: ["2", "fantasma"], auditorias: ["a1"], lds: [] }),
+    ["2"],
+  );
+});
+
+test("o projeto se confirma pelo código", () => {
+  assert.equal(palavraDeConfirmacao({ tipo: "projeto", projectId: "cmf3x" }, "141-26"), "141-26");
+  assert.equal(palavraDeConfirmacao({ tipo: "projeto", projectId: "cmf3x" }), "cmf3x");
+  assert.equal(palavraDeConfirmacao({ tipo: "itens", conversas: [], auditorias: ["a"], lds: [] }), "EXPURGAR SELECAO");
+});
+
 /* ───────────────────── as auditorias da conversa ──────────────────── */
 
 test("colhe os auditId de dentro do JSON, sem repetir", () => {
