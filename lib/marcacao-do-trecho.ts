@@ -151,6 +151,40 @@ function faixasDoCasamento(costura: Costura, at: number, tamanho: number): Faixa
   return faixas;
 }
 
+// Só LETRA: o número colado a uma palavra ("construída1.234,56m²") é casado
+// sozinho de propósito, e estendê-lo pintaria a palavra vizinha.
+const LETRA = /\p{L}/u;
+
+/**
+ * A MARCA FECHA A PALAVRA nas pontas.
+ *
+ * A evidência da camada de regra é uma janela de caracteres em volta do
+ * casamento (`snippet` em `audit-coherence.ts`), e corta palavra: no INC-006 do
+ * 141-26 a p. 22 começava em "NDIÇÕES" e terminava em "arquitetônic", e o grifo
+ * pintava meia palavra. Consertar a janela na origem mudaria a impressão do
+ * achado (os 20 primeiros caracteres da citação — ver `impressao-do-achado.ts`)
+ * e o parecer novo perderia o desfecho do anterior. Então quem completa é a
+ * marca: estende a primeira faixa para trás e a última para a frente até a
+ * borda da palavra, dentro do mesmo item.
+ */
+function fecharPalavras(faixas: FaixasDaMarcacao, itens: ItemDeTexto[]): FaixasDaMarcacao {
+  const chaves = [...faixas.keys()];
+  if (!chaves.length) return faixas;
+  const primeiro = Math.min(...chaves);
+  const ultimo = Math.max(...chaves);
+
+  const inicio = faixas.get(primeiro)![0];
+  const strInicio = itens[primeiro]?.str ?? "";
+  while (inicio[0] > 0 && LETRA.test(strInicio[inicio[0] - 1]) && LETRA.test(strInicio[inicio[0]] ?? "")) inicio[0] -= 1;
+
+  const lista = faixas.get(ultimo)!;
+  const fim = lista[lista.length - 1];
+  const strFim = itens[ultimo]?.str ?? "";
+  while (fim[1] < strFim.length && LETRA.test(strFim[fim[1]]) && LETRA.test(strFim[fim[1] - 1] ?? "")) fim[1] += 1;
+
+  return faixas;
+}
+
 /**
  * ONDE MARCAR o trecho `termo` na página feita de `itens`.
  *
@@ -174,7 +208,7 @@ export function marcacaoDoTrecho(itens: ItemDeTexto[], termo: string): FaixasDaM
     if (recorte.length < MIN_TERMO) continue;
 
     const at = costura.texto.indexOf(recorte);
-    if (at >= 0) return faixasDoCasamento(costura, at, recorte.length);
+    if (at >= 0) return fecharPalavras(faixasDoCasamento(costura, at, recorte.length), itens);
   }
 
   /*
@@ -187,7 +221,7 @@ export function marcacaoDoTrecho(itens: ItemDeTexto[], termo: string): FaixasDaM
     const unica = agulha(palavras[0]);
     if (unica.length >= 6) {
       const at = costura.texto.indexOf(unica);
-      if (at >= 0) return faixasDoCasamento(costura, at, unica.length);
+      if (at >= 0) return fecharPalavras(faixasDoCasamento(costura, at, unica.length), itens);
     }
   }
 

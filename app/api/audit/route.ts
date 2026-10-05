@@ -745,6 +745,9 @@ function contarPaginasDoDocumento(extracted: ExtractedPdf) {
     // total é a soma: é ele que `paginasMudasPendentes` subtrai.
     paginas_mudas: diagnostico.mudas.length + transcritas,
     paginas_transcritas: transcritas,
+    paginas_por_visao: extracted.pages.filter((p) => p.origem === "visao").map((p) => p.page),
+    quadros_por_visao: extracted.pages.filter((p) => p.origem !== "visao" && p.textoDaImagem?.trim()).map((p) => p.page),
+    imagens_nao_lidas: diagnostico.comImagemNaoLida,
   };
 }
 

@@ -107,3 +107,7 @@
   .ds .ds-btn.rs-ver-memorial::after { animation: none; opacity: 0; }
 }
 .ds .rc-acoes .rc-memorial:hover { background: rgb(255 255 255 / 0.1); color: var(--ds-text-primary); }
+
+/* SEM GRIFO: o trecho veio da leitura por visão (ou não casou) — o visor diz por quê. */
+.ds .vm-pdf { display: grid; gap: 12px; justify-items: center; }
+.ds .vm-sem-grifo { max-width: 520px; margin: 0; padding: 8px 12px; border-radius: var(--ds-radius-row); background: var(--ds-surface-card); box-shadow: var(--ds-edge); font-size: var(--ds-text-2xs); line-height: 1.45; color: var(--ds-text-secondary); }

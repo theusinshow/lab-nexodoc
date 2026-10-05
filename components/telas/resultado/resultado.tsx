@@ -121,6 +121,10 @@ export function ResultadoDoParecer({
         return a.confirmado && f.tipo === "arquivo" && f.fonte.url === urlDoVisor;
       })
     : [];
+  // A cobertura do mesmo arquivo: diz onde o texto não está na camada do PDF.
+  const nomeDoVisor = fonteDoVisor?.tipo === "arquivo" ? fonteDoVisor.fonte.nome : doVisor?.estruturado.documento;
+  const analisados = report.arquivos_analisados ?? [];
+  const folhasDoVisor = (analisados.find((a) => a.arquivo === nomeDoVisor) ?? (analisados.length === 1 ? analisados[0] : undefined))?.cobertura ?? null;
 
   return (
     <div className="re-conteudo rs rd re re--embutido">
@@ -169,6 +173,7 @@ export function ResultadoDoParecer({
         arquivo={fonteDoVisor?.tipo === "arquivo" ? fonteDoVisor.fonte.nome : (doVisor?.estruturado.documento ?? "Memorial")}
         inicial={visor}
         paginaInicial={paginaDoVisor}
+        folhas={folhasDoVisor}
         aberto={Boolean(visor)}
         onFechar={() => setVisor(null)}
         onIrParaAchado={(chave) => {

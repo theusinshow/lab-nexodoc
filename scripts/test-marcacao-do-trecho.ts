@@ -159,4 +159,19 @@ check("o separador da grade não impede o casamento", () => {
   assert.deepEqual(marcado(itens, "TOTAL | 4.530,98"), ["TOTAL", "4.530,98"]);
 });
 
+check("evidência cortada no meio da palavra: a marca fecha a palavra nas pontas (INC-006, p. 22)", () => {
+  const itens = [
+    ...linha(700, ["CONDIÇÕES GERAIS E PRELIMINARES"]),
+    ...linha(680, ["no projeto arquitetônico e urbanístico."]),
+  ];
+  const marcas = marcado(itens, "NDIÇÕES GERAIS E PRELIMINARES no projeto arquitetônic");
+  assert.equal(marcas[0], "CONDIÇÕES");
+  assert.equal(marcas.at(-1), "arquitetônico");
+});
+
+check("a palavra inteira não cresce para a vizinha", () => {
+  const itens = linha(700, ["piso cerâmico, rodapé"]);
+  assert.deepEqual(marcado(itens, "piso cerâmico"), ["piso", "cerâmico"]);
+});
+
 console.log(`\n${passed} teste(s) de marcação do trecho OK`);

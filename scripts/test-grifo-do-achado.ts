@@ -8,7 +8,7 @@
  */
 import assert from "node:assert/strict";
 
-import { candidatosDoGrifo } from "../lib/grifo-do-achado.ts";
+import { candidatosDoGrifo, porQueSemGrifo } from "../lib/grifo-do-achado.ts";
 
 let passed = 0;
 function test(name: string, fn: () => void) {
@@ -62,6 +62,15 @@ test("pedaço de uma palavra curta não vira agulha (marcaria a folha toda)", ()
 
 test("sem nada para procurar, a lista é vazia", () => {
   assert.deepEqual(candidatosDoGrifo({}, 1), []);
+});
+
+test("sem grifo numa folha de quadro em imagem, o visor diz que o trecho está na imagem", () => {
+  const folhas = { paginas_por_visao: [3], quadros_por_visao: [12], imagens_nao_lidas: [40] };
+  assert.match(porQueSemGrifo(12, folhas), /quadro em imagem/);
+  assert.match(porQueSemGrifo(3, folhas), /lida por visão/);
+  assert.match(porQueSemGrifo(40, folhas), /imagem que não foi lida/);
+  assert.match(porQueSemGrifo(7, folhas), /não foi encontrado/);
+  assert.match(porQueSemGrifo(12, undefined), /não foi encontrado/);
 });
 
 console.log(`${passed} teste(s) OK`);

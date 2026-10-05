@@ -3037,7 +3037,11 @@ function AuditoriaConfirmation({
           {temFolhaMuda && mudas && (
             <div className="nx-cut-6 border-0 bg-[var(--nexodoc-recessed)] px-3 py-2">
               <p className="font-mono text-microrrotulo uppercase tracking-[0.05em] text-[var(--status-warning)]">
-                {quantasMudas > 0 ? "Páginas sem texto" : "Tabelas em imagem"}
+                {quantasMudas > 0 && quantosQuadros > 0
+                  ? "Páginas sem texto e tabelas em imagem"
+                  : quantasMudas > 0
+                    ? "Páginas sem texto"
+                    : "Tabelas em imagem"}
               </p>
               {quantosQuadros > 0 && (
                 <p className="mt-1 text-xs leading-relaxed text-foreground">

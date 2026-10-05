@@ -141,6 +141,11 @@ export function resumoDoEsforco(c?: CoberturaDoArquivo): string {
     partes.push(`${c.paginas_transcritas} páginas sem texto recuperadas por visão`);
   }
 
+  const quadros = c.quadros_por_visao?.length ?? 0;
+  if (quadros > 0) {
+    partes.push(`${quadros} ${quadros === 1 ? "página com quadro em imagem lida" : "páginas com quadro em imagem lidas"} por visão`);
+  }
+
   const frase = `${partes.join(", ")}.`;
 
   /*
@@ -165,7 +170,18 @@ export function resumoDoEsforco(c?: CoberturaDoArquivo): string {
    * documento — foi a ausência disso que deixou uma leitura de 16% parecer
    * completa.
    */
+  /*
+   * A IMAGEM NÃO LIDA é nota, não ATENÇÃO: na maioria é figura ou pictograma, e
+   * a trava de `audit-verify.ts` já impede o parecer de afirmar que falta o que
+   * pode estar nela. Quem lê precisa saber só que ali a IA não enxergou.
+   */
+  const semLeitura = c.imagens_nao_lidas?.length ?? 0;
+  const nota =
+    semLeitura > 0
+      ? ` ${semLeitura} ${semLeitura === 1 ? "página tem imagem que não foi lida" : "páginas têm imagem que não foi lida"} (figura ou quadro sem legenda).`
+      : "";
+
   return coberturaCompleta(c)
-    ? frase
-    : `${frase} ATENÇÃO: partes do documento não foram lidas nesta auditoria.`;
+    ? `${frase}${nota}`
+    : `${frase}${nota} ATENÇÃO: partes do documento não foram lidas nesta auditoria.`;
 }

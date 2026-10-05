@@ -181,6 +181,25 @@ export type CoberturaDoArquivo = {
   paginas_mudas?: number;
   /** Quantas dessas folhas foram recuperadas por visão antes da leitura. */
   paginas_transcritas?: number;
+  /**
+   * ONDE o texto não está na camada do PDF — por página, e não só a conta.
+   *
+   * O visor grifa procurando o trecho na camada de texto; numa folha muda
+   * transcrita ou num quadro em imagem lido por visão o trecho NÃO está lá, e o
+   * visor abria a página sem marca nenhuma, como se tivesse errado. Com a lista
+   * ele diz o porquê (05/10/2026, 141-26).
+   *
+   *  - `paginas_por_visao`: folhas mudas relidas por visão (`origem: "visao"`).
+   *  - `quadros_por_visao`: folhas com texto próprio cujo quadro em imagem foi
+   *    relido (`textoDaImagem`).
+   *  - `imagens_nao_lidas`: folhas com imagem grande que ninguém leu — figura,
+   *    pictograma ou quadro sem legenda. Não tira a cobertura de completa: é
+   *    aviso, não buraco (a trava de `audit-verify.ts` já impede afirmar
+   *    ausência sobre elas).
+   */
+  paginas_por_visao?: number[];
+  quadros_por_visao?: number[];
+  imagens_nao_lidas?: number[];
 };
 
 export type AuditFileSummary = {

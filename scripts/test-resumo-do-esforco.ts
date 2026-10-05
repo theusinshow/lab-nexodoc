@@ -207,4 +207,18 @@ test("parecer antigo, sem os campos novos, não muda de comportamento", () => {
   assert.doesNotMatch(resumoDoEsforco(COMPLETA), /desenhado na folha/);
 });
 
+test("quadro em imagem lido por visão entra na frase, e não mexe na completude", () => {
+  const c = { ...COMPLETA, quadros_por_visao: [12, 30, 31] };
+  assert.equal(coberturaCompleta(c), true);
+  assert.match(resumoDoEsforco(c), /3 p.ginas com quadro em imagem lidas por vis.o/);
+});
+
+test("imagem não lida é nota, não ATENÇÃO (141-26: pictogramas da sinalização)", () => {
+  const c = { ...COMPLETA, imagens_nao_lidas: [40, 41] };
+  assert.equal(coberturaCompleta(c), true);
+  const frase = resumoDoEsforco(c);
+  assert.match(frase, /2 p.ginas t.m imagem que n.o foi lida/);
+  assert.doesNotMatch(frase, /ATEN..O/);
+});
+
 console.log(`\n${passed} teste(s) de resumo do esforço OK`);

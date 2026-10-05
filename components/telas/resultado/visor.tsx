@@ -14,7 +14,7 @@ import { createPortal } from "react-dom";
 
 import { Botao, Tecla } from "@/components/ds/basicos";
 import { CURVA } from "@/lib/ds/movimento";
-import { candidatosDoGrifo } from "@/lib/grifo-do-achado";
+import { candidatosDoGrifo, porQueSemGrifo, type FolhasSemCamada } from "@/lib/grifo-do-achado";
 import { useTempo } from "@/lib/ds/tempo";
 import { NIVEIS } from "@/lib/nivel-do-achado";
 
@@ -36,6 +36,7 @@ export function VisorDoMemorial({
   arquivo,
   inicial,
   paginaInicial,
+  folhas,
   aberto,
   onFechar,
   onIrParaAchado,
@@ -47,6 +48,8 @@ export function VisorDoMemorial({
   inicial: string | null;
   /** A página pedida ("Abrir p. 22" num achado entre páginas); sem ela, a primeira do achado. */
   paginaInicial?: number | null;
+  /** Onde o texto não está na camada do PDF (cobertura do parecer) — para dizer por que não há grifo. */
+  folhas?: FolhasSemCamada | null;
   aberto: boolean;
   onFechar: () => void;
   onIrParaAchado: (chave: string) => void;
@@ -65,8 +68,11 @@ export function VisorDoMemorial({
    * trecho não está aqui, vai à próxima página do achado — uma volta só.
    */
   const [procurando, setProcurando] = useState(true);
+  // O último veredito do grifo, por página: é ele que acende o aviso "sem grifo".
+  const [casou, setCasou] = useState<{ pagina: number; achou: boolean } | null>(null);
   const aoGrifo = useCallback(
     (achou: boolean, p: number) => {
+      setCasou({ pagina: p, achou });
       if (!procurando) return;
       const doAtivoAgora = achados.find((a) => a.chave === ativo);
       const proxima = doAtivoAgora?.paginas.find((x) => x > p);
@@ -80,7 +86,8 @@ export function VisorDoMemorial({
   const doAtivo = achados.find((a) => a.chave === ativo && a.paginas.includes(pagina)) ?? daPagina[0];
   // Os candidatos DESTA página: no achado entre páginas, a p. 22 procura o
   // trecho da p. 22, e não o da p. 10 (ver lib/grifo-do-achado.ts).
-  const grifo = useMemo(() => (doAtivo ? candidatosDoGrifo(doAtivo.bruto, pagina) : undefined), [doAtivo, pagina]);
+  // Sem memo: o visor do PDF já reduz a lista a uma chave estável (`needle`).
+  const grifo = doAtivo ? candidatosDoGrifo(doAtivo.bruto, pagina) : undefined;
 
   const ir = (p: number) => {
     setProcurando(false);
@@ -171,7 +178,14 @@ export function VisorDoMemorial({
             <div className="vm-corpo">
               <div className="vm-mesa vm-mesa--pdf">
                 {url ? (
-                  <AuditPdfViewer url={url} page={pagina} highlight={grifo} zoom={zoom} onNumPages={setTotal} onGrifo={aoGrifo} />
+                  <div className="vm-pdf">
+                    {!procurando && casou?.pagina === pagina && !casou.achou && grifo?.length ? (
+                      <p className="vm-sem-grifo" role="status">
+                        {porQueSemGrifo(pagina, folhas)}
+                      </p>
+                    ) : null}
+                    <AuditPdfViewer url={url} page={pagina} highlight={grifo} zoom={zoom} onNumPages={setTotal} onGrifo={aoGrifo} />
+                  </div>
                 ) : (
                   <p className="vm-sem">O arquivo deste memorial não está nesta máquina. Anexe-o de novo na conversa para ver o trecho na página.</p>
                 )}

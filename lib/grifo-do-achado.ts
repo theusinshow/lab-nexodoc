@@ -104,3 +104,32 @@ export function candidatosDoGrifo(achado: AchadoParaGrifar, pagina: number | nul
 
   return saida;
 }
+
+/** As listas da cobertura que dizem onde o texto NÃO está na camada do PDF. */
+export interface FolhasSemCamada {
+  paginas_por_visao?: readonly number[];
+  quadros_por_visao?: readonly number[];
+  imagens_nao_lidas?: readonly number[];
+}
+
+/**
+ * POR QUE A PÁGINA ABRIU SEM GRIFO — a frase que o visor mostra quando nenhum
+ * candidato casou.
+ *
+ * O trecho de um achado tirado de folha muda ou de quadro em imagem veio da
+ * leitura por visão: ele não existe na camada de texto, e o grifo não tem onde
+ * cair. Sem dizer isso o visor parecia ter errado de página (05/10/2026, 141-26).
+ * Parecer antigo não tem as listas e cai na frase genérica.
+ */
+export function porQueSemGrifo(pagina: number, folhas: FolhasSemCamada | null | undefined): string {
+  if (folhas?.paginas_por_visao?.includes(pagina)) {
+    return "Esta folha não tem texto no PDF — foi lida por visão. Não há onde grifar o trecho: procure-o na página.";
+  }
+  if (folhas?.quadros_por_visao?.includes(pagina)) {
+    return "O trecho deve estar no quadro em imagem desta página, que foi lido por visão. Imagem não tem texto para grifar.";
+  }
+  if (folhas?.imagens_nao_lidas?.includes(pagina)) {
+    return "O trecho não aparece no texto desta página. Ela tem uma imagem que não foi lida — confira a figura.";
+  }
+  return "O trecho citado não foi encontrado no texto desta página.";
+}

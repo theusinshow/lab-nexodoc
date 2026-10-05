@@ -740,7 +740,10 @@ export function FilaDeAchados({
                             )}
                           </figcaption>
                           <blockquote>
+                            {/* A regra cita uma JANELA do texto, que corta palavra nas pontas: as reticências dizem que o trecho continua. */}
+                            {atual.bruto.origem === "regra" && "…"}
                             <Trecho texto={t.texto} marca={grifo} />
+                            {atual.bruto.origem === "regra" && "…"}
                           </blockquote>
                         </figure>
                       ))
