@@ -10,7 +10,7 @@
  * F falso positivo, Z desfaz, / busca, Esc fecha o que estiver aberto.
  */
 import { AnimatePresence, motion } from "motion/react";
-import { Check, ChevronDown, ChevronUp, FileSearch, Link2, Search, SlidersHorizontal, Undo2, UserPlus, X } from "lucide-react";
+import { Check, ChevronDown, ChevronUp, FileSearch, Link2, Mail, Search, SlidersHorizontal, Undo2, UserPlus, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Avatar, Botao, Menu, Segmento, Selo, Seletor, Tecla } from "@/components/ds/basicos";
@@ -107,6 +107,7 @@ export function FilaDeAchados({
   const [painel, setPainel] = useState(false);
   const [verSugestoes, setVerSugestoes] = useState(false);
   const [faltou, setFaltou] = useState<string | null>(null);
+  const [confirmandoAviso, setConfirmandoAviso] = useState(false);
   const [rascunhos, setRascunhos] = useState<Record<string, string>>({});
   const buscaRef = useRef<HTMLInputElement>(null);
 
@@ -343,6 +344,47 @@ export function FilaDeAchados({
               { valor: "encerrados", rotulo: <>Encerrados <em>{contagem.encerrados}</em></> },
             ]}
           />
+          {/*
+            NOTIFICAR POR E-MAIL — o gesto que fecha a distribuição. Atribuir não
+            manda e-mail (seriam cinco avisos em dez minutos para a mesma pessoa);
+            este manda UM por pessoa, do que é dela. Só existe com alguém a avisar,
+            e abre uma confirmação antes: e-mail não tem desfazer.
+          */}
+          {parecer.aAvisar.length > 0 && (
+            <div className="rs-notificar">
+              <button type="button" className="rs-notificar-barra" aria-expanded={confirmandoAviso} onClick={() => setConfirmandoAviso((v) => !v)}>
+                <Mail size={14} />
+                <span>
+                  {conta(parecer.aAvisar.length, "pessoa espera", "pessoas esperam")} aviso por e-mail
+                </span>
+                <b>Notificar por e-mail</b>
+              </button>
+              {confirmandoAviso && (
+                <div className="rs-notificar-painel">
+                  <ul>
+                    {parecer.aAvisar.map((p) => (
+                      <li key={p.email}>
+                        <span>
+                          {p.nome}
+                          {p.convidado && <em> convidado, ainda não entrou</em>}
+                        </span>
+                        <span className="ds-num">{conta(p.quantidade, "achado", "achados")}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <p>O e-mail leva a contagem, o projeto e o link para o achado. O conteúdo dos achados não sai do sistema.</p>
+                  <span className="rs-notificar-acoes">
+                    <Botao variante="quiet" tamanho="sm" onClick={() => setConfirmandoAviso(false)}>
+                      Cancelar
+                    </Botao>
+                    <Botao variante="primary" tamanho="sm" disabled={parecer.avisando} onClick={() => void parecer.avisarPorEmail().then((ok) => ok && setConfirmandoAviso(false))}>
+                      <Mail size={14} /> {parecer.avisando ? "Enviando…" : `Notificar ${conta(parecer.aAvisar.length, "pessoa", "pessoas")}`}
+                    </Botao>
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
           <div className="fl-barra">
             <button type="button" className={`fl-botao${painel || nFiltros ? " fl-botao--ligado" : ""}`} aria-expanded={painel} onClick={() => setPainel((v) => !v)}>
               <SlidersHorizontal size={14} />

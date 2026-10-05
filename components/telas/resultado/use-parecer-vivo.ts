@@ -61,6 +61,21 @@ export interface AchadoDaTela {
 
 export type AvisoDoParecer = { tom: "ok" | "falha"; texto: string } | null;
 
+/** Quem recebeu achado nesta auditoria e ainda não foi avisado por e-mail (GET /avisar). */
+export type PessoaAAvisar = { email: string; nome: string; quantidade: number; convidado: boolean };
+
+const plural = (n: number, um: string, varios: string) => `${n} ${n === 1 ? um : varios}`;
+
+/** Quem falhou e por quê, agrupado por motivo — o mesmo texto da tela antiga. */
+function porQue(falharam: readonly { email: string; erro?: string }[]) {
+  const porMotivo = new Map<string, string[]>();
+  for (const f of falharam) {
+    const motivo = f.erro?.trim() || "motivo não informado";
+    porMotivo.set(motivo, [...(porMotivo.get(motivo) ?? []), f.email]);
+  }
+  return [...porMotivo.entries()].map(([motivo, emails]) => `${emails.join(", ")} (${motivo})`).join("; ");
+}
+
 function montarAchado(f: AuditFinding, linha: SavedFeedback | undefined, euSou: string): AchadoDaTela {
   const resolvido = Boolean(linha?.resolvedAt);
   return {
@@ -105,6 +120,8 @@ export function useParecerVivo({
   const [releituras, setReleituras] = useState(0);
   const [salvando, setSalvando] = useState<string | null>(null);
   const [aviso, setAviso] = useState<AvisoDoParecer>(null);
+  const [aAvisar, setAAvisar] = useState<PessoaAAvisar[]>([]);
+  const [avisando, setAvisando] = useState(false);
 
   useEffect(() => {
     if (!auditId) return;
@@ -118,6 +135,29 @@ export function useParecerVivo({
       })
       .catch(() => {
         /* o parecer continua legível sem o que o escritório fez com ele */
+      });
+    return () => {
+      vivo = false;
+    };
+  }, [auditId, releituras]);
+
+  /*
+   * QUEM ESPERA AVISO POR E-MAIL. Consulta própria (ela depende do status do
+   * membro, que a rota de feedback não devolve), relida junto com o feedback:
+   * atribuir acabou de criar pendência, e o botão tem de aparecer sem recarregar.
+   * A fila nova (02/10) nasceu SEM este botão — ele só existia na tela antiga, e
+   * ninguém achava como mandar o achado por e-mail (05/10/2026).
+   */
+  useEffect(() => {
+    if (!auditId) return;
+    let vivo = true;
+    fetch(`/api/audits/${encodeURIComponent(auditId)}/avisar`, { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((p: { pendentes?: PessoaAAvisar[] } | null) => {
+        if (vivo && p) setAAvisar(p.pendentes ?? []);
+      })
+      .catch(() => {
+        /* sem a lista o botão não aparece; o parecer segue utilizável */
       });
     return () => {
       vivo = false;
@@ -250,7 +290,7 @@ export function useParecerVivo({
         });
         const p = (await r.json().catch(() => null)) as { error?: string } | null;
         if (!r.ok) throw new Error(p?.error ?? "Não foi possível atribuir.");
-        setAviso({ tom: "ok", texto: `${chaves.length === 1 ? "Achado" : `${chaves.length} achados`} com ${nome || email}.` });
+        setAviso({ tom: "ok", texto: `${chaves.length === 1 ? "Achado" : `${chaves.length} achados`} com ${nome || email}. Quando terminar de distribuir, use "Notificar por e-mail" no topo da lista.` });
         return true;
       } catch (e) {
         setAviso({ tom: "falha", texto: e instanceof Error ? e.message : "Não foi possível atribuir." });
@@ -277,7 +317,40 @@ export function useParecerVivo({
     [postar],
   );
 
-  return { achados, membros, euSou, salvando, aviso, setAviso, encerrar, reabrir, julgar, atribuir, faltou, reler };
+  /**
+   * AVISAR POR E-MAIL — manda para pessoa de verdade e não tem desfazer: a tela
+   * só chama isto depois da confirmação que lista quem vai receber. Cada estado
+   * do servidor tem a frase dele (ver a rota `/avisar`), e nenhuma é "pronto!".
+   */
+  const avisarPorEmail = useCallback(async () => {
+    if (!auditId || aAvisar.length === 0) return false;
+    setAvisando(true);
+    setAviso(null);
+    try {
+      const r = await fetch(`/api/audits/${encodeURIComponent(auditId)}/avisar`, { method: "POST", headers: { "Content-Type": "application/json" } });
+      const p = (await r.json().catch(() => null)) as { estado?: string; avisados?: PessoaAAvisar[]; falharam?: { email: string; erro: string }[]; error?: string } | null;
+      if (!r.ok) throw new Error(p?.error ?? "Não foi possível avisar.");
+      const avisados = p?.avisados ?? [];
+      const falharam = p?.falharam ?? [];
+      if (p?.estado === "nada-a-avisar") setAviso({ tom: "ok", texto: "Todo mundo já foi avisado." });
+      else if (p?.estado === "nao-configurado") setAviso({ tom: "falha", texto: "O envio de e-mail não está configurado neste ambiente. Ninguém foi avisado." });
+      else if (p?.estado === "gravado") setAviso({ tom: "ok", texto: `Modo de desenvolvimento: ${plural(avisados.length, "aviso gravado", "avisos gravados")} em scratchpad/qa/correio.jsonl. Nenhum e-mail saiu.` });
+      else if (avisados.length === 0) setAviso({ tom: "falha", texto: `Não foi possível avisar ninguém. ${porQue(falharam)}` });
+      else {
+        const base = `${plural(avisados.length, "pessoa avisada", "pessoas avisadas")} por e-mail.`;
+        setAviso(falharam.length ? { tom: "falha", texto: `${base} ${plural(falharam.length, "não chegou", "não chegaram")}: ${porQue(falharam)}.` } : { tom: "ok", texto: base });
+      }
+      return true;
+    } catch (e) {
+      setAviso({ tom: "falha", texto: e instanceof Error ? e.message : "Não foi possível avisar." });
+      return false;
+    } finally {
+      setAvisando(false);
+      reler();
+    }
+  }, [auditId, aAvisar.length, reler]);
+
+  return { achados, membros, euSou, salvando, aviso, setAviso, encerrar, reabrir, julgar, atribuir, faltou, reler, aAvisar, avisando, avisarPorEmail };
 }
 
 export type ParecerVivo = ReturnType<typeof useParecerVivo>;
