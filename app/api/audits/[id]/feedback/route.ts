@@ -107,6 +107,8 @@ export async function GET(
   ];
 
   const nomes = new Map<string, string>();
+  // E o e-mail: é por ele que a fila sabe "fui eu que corrigi" (Meus · corrigidos).
+  const emailsDeQuemResolveu = new Map<string, string>();
 
   if (idsDeQuemResolveu.length > 0) {
     const membros = await getPrisma().organizationMember.findMany({
@@ -118,7 +120,10 @@ export async function GET(
     });
 
     for (const membro of membros) {
-      if (membro.userId) nomes.set(membro.userId, membro.name || membro.email);
+      if (membro.userId) {
+        nomes.set(membro.userId, membro.name || membro.email);
+        emailsDeQuemResolveu.set(membro.userId, membro.email.toLowerCase());
+      }
     }
   }
 
@@ -154,6 +159,7 @@ export async function GET(
       ...f,
       comentarios: _count.mensagens,
       resolvedByName: f.resolvedById ? (nomes.get(f.resolvedById) ?? null) : null,
+      resolvedByEmail: f.resolvedById ? (emailsDeQuemResolveu.get(f.resolvedById) ?? null) : null,
       // Cai para o e-mail quando ninguém preencheu o nome: melhor um endereço
       // do que uma tarja sem dono.
       assigneeName: f.assigneeEmail

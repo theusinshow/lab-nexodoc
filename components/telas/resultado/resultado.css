@@ -305,3 +305,5 @@
 .ds .rs-linha--corrigida .rs-linha-desfecho { font-weight: 500; }
 .ds .rs-linha--corrigida .rs-linha-fundo { background: color-mix(in srgb, var(--ds-state-ok) 14%, var(--ds-surface-raised)); box-shadow: inset 3px 0 0 var(--ds-state-ok), inset 0 0 0 1px color-mix(in srgb, var(--ds-state-ok) 40%, transparent); }
 .ds .rs-faixa-corrigido { display: flex; align-items: center; gap: 6px; margin: 4px 0 10px; padding: 7px 12px; border-radius: 8px; background: color-mix(in srgb, var(--ds-state-ok) 12%, transparent); box-shadow: inset 3px 0 0 var(--ds-state-ok); font-size: var(--ds-text-xs); font-weight: 500; color: var(--ds-state-ok); }
+.ds .rs-grupo--meus-corrigidos h4 { color: var(--ds-state-ok); }
+.ds .rs-meus-vazio { margin: 12px 10px 4px; font-size: var(--ds-text-xs); color: var(--ds-text-tertiary); }

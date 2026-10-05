@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Botao, Tecla } from "@/components/ds/basicos";
+import { corrigidoPor, type AchadoCorrigido } from "@/lib/achados-corrigidos-tipos";
 import type { ParecerEmAberto } from "@/lib/achados-em-aberto";
 import { useTempo } from "@/lib/ds/tempo";
 import { linkDoAchado } from "@/lib/link-do-achado";
@@ -13,6 +14,7 @@ import { NIVEIS, type Nivel } from "@/lib/nivel-do-achado";
 import { MarcaDaPrefeitura } from "@/modules/nexo/components/MarcaDaPrefeitura";
 
 import { SeloDaDisciplina } from "../comum/disciplina";
+import { CorrigidosDoEscritorio } from "./corrigidos";
 import { diasDesde, quandoNaLinha } from "../comum/quando";
 import { RITMO, SUAVE } from "../comum/ritmo";
 import { plural, semAcento } from "../comum/texto";
@@ -21,7 +23,7 @@ import "../projetos/projetos.css";
 import "../projeto/projeto.css";
 import "./achados.css";
 
-type Lado = "com-voce" | "passou";
+type Lado = "com-voce" | "passou" | "corrigidos";
 type Filtro = "todos" | Nivel;
 const total = (ps: ParecerEmAberto[]) => ps.reduce((s, p) => s + p.achados.length, 0);
 /** ", 2 impedem a entrega" — só quando o nível é conhecido: sem relatório, "0" seria mentira. */
@@ -145,7 +147,20 @@ function DoParecer({ p, lado, onAbrir }: { p: ParecerEmAberto; lado: Lado; onAbr
  * pareceres com os níveis contados; à direita, o resumo ou os achados do
  * parecer escolhido, antes de abrir. Abrir leva ao parecer no Nexo.
  */
-export function TelaAchados({ comVoce, passou, semBanco }: { comVoce: ParecerEmAberto[]; passou: ParecerEmAberto[]; semBanco: boolean }) {
+export function TelaAchados({
+  comVoce,
+  passou,
+  corrigidos = [],
+  euSou = "",
+  semBanco,
+}: {
+  comVoce: ParecerEmAberto[];
+  passou: ParecerEmAberto[];
+  /** O que foi corrigido no documento, de todas as obras — ver lib/achados-corrigidos.ts. */
+  corrigidos?: AchadoCorrigido[];
+  euSou?: string;
+  semBanco: boolean;
+}) {
   const { k } = useTempo();
   const router = useRouter();
   const [lado, setLado] = useState<Lado>(comVoce.length === 0 && passou.length > 0 ? "passou" : "com-voce");
@@ -153,7 +168,8 @@ export function TelaAchados({ comVoce, passou, semBanco }: { comVoce: ParecerEmA
   const [busca, setBusca] = useState("");
   const [sel, setSel] = useState<string | null>(null);
   const campo = useRef<HTMLInputElement>(null);
-  const lista = lado === "com-voce" ? comVoce : passou;
+  const lista = lado === "passou" ? passou : comVoce;
+  const meusCorrigidos = euSou ? corrigidos.filter((a) => corrigidoPor(a, euSou)).length : 0;
   const visiveis = useMemo(
     () =>
       lista.filter(
@@ -187,14 +203,14 @@ export function TelaAchados({ comVoce, passou, semBanco }: { comVoce: ParecerEmA
       else if (e.key === "ArrowUp" || e.key === "k") (e.preventDefault(), andar(-1));
       else if (e.key === "/") (e.preventDefault(), campo.current?.focus());
       else if (e.key === "Enter" && parecer && !alvo.closest("button, a")) (e.preventDefault(), router.push(abrirParecer(parecer)));
-      else if (e.key === "Tab" && !e.shiftKey && alvo === document.body) (e.preventDefault(), trocarLado(lado === "com-voce" ? "passou" : "com-voce"));
+      else if (e.key === "Tab" && !e.shiftKey && alvo === document.body) (e.preventDefault(), trocarLado(lado === "com-voce" ? "passou" : lado === "passou" ? "corrigidos" : "com-voce"));
       else if (e.key === "Escape" && sel) (e.preventDefault(), setSel(null));
     };
     document.addEventListener("keydown", tecla, true);
     return () => document.removeEventListener("keydown", tecla, true);
   });
 
-  const nada = comVoce.length === 0 && passou.length === 0;
+  const nada = comVoce.length === 0 && passou.length === 0 && corrigidos.length === 0;
   const antigo = (ps: ParecerEmAberto[]) => Math.max(0, ...ps.map((p) => diasDesde(p.desde)));
 
   return (
@@ -248,8 +264,18 @@ export function TelaAchados({ comVoce, passou, semBanco }: { comVoce: ParecerEmA
                   {lado === id && <motion.i layoutId="ac-tile-marca" className="mp-tile-marca" transition={{ duration: RITMO.troca * k, ease: SUAVE }} />}
                 </button>
               ))}
+              {/* O terceiro lado: o que já foi feito, e que não some ao ser marcado (05/10/2026). */}
+              <button type="button" role="tab" aria-selected={lado === "corrigidos"} className="mp-tile pr-tarefa" data-secao-achados="corrigidos" onClick={() => trocarLado("corrigidos")}>
+                <span className="mp-tile-rotulo">Corrigidos</span>
+                <span className="pr-tarefa-estado ac-tile-ok">{meusCorrigidos ? plural(meusCorrigidos, "seu", "seus") : "nenhum seu"}</span>
+                <span className="mp-tile-sub">{corrigidos.length ? `${plural(corrigidos.length, "achado corrigido", "achados corrigidos")} no escritório` : "nada corrigido ainda"}</span>
+                {lado === "corrigidos" && <motion.i layoutId="ac-tile-marca" className="mp-tile-marca" transition={{ duration: RITMO.troca * k, ease: SUAVE }} />}
+              </button>
             </div>
 
+            {lado === "corrigidos" ? (
+              <CorrigidosDoEscritorio lista={corrigidos} euSou={euSou} />
+            ) : (
             <div className="mp-miolo">
               <div className="mp-principal">
                 <div className="mp-ferramentas">
@@ -354,6 +380,7 @@ export function TelaAchados({ comVoce, passou, semBanco }: { comVoce: ParecerEmA
                 </div>
               </aside>
             </div>
+            )}
           </>
         )}
 
@@ -367,7 +394,7 @@ export function TelaAchados({ comVoce, passou, semBanco }: { comVoce: ParecerEmA
               <Tecla>↵</Tecla> abrir o parecer
             </span>
             <span>
-              <Tecla>Tab</Tecla> com você / que você passou
+              <Tecla>Tab</Tecla> com você / que você passou / corrigidos
             </span>
             <span>
               <Tecla>/</Tecla> buscar

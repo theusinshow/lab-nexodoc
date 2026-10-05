@@ -188,9 +188,25 @@ export function FilaDeAchados({
       ? NIVEIS.map((n) => ({ id: n.id as string, nome: n.nome, marca: <i className={`rs-ponto rs-ponto--${n.id}`} />, itens: visiveis.filter((a) => a.nivel === n.id) }))
       : DISCIPLINAS.map((d) => ({ id: d.id as string, nome: d.nome, marca: <i className={`dc-ponto dc--${d.id}`} />, itens: visiveis.filter((a) => a.disc === d.id) }));
 
+  /*
+   * MEUS CORRIGIDOS (05/10/2026, retorno de um colega): o corrigido saía do
+   * "Meus" no instante em que era marcado, e quem trabalhou perdia de vista o
+   * que já fez. Em "Meus" eles ficam num grupo próprio, abaixo dos pendentes.
+   * "Meu" = estava comigo OU fui eu que marquei (ver `AchadoDaTela.meu`).
+   */
+  const meusCorrigidos = useMemo(() => {
+    if (filtro !== "meus") return [];
+    const q = busca.trim().toLowerCase();
+    return confirmados
+      .filter((a) => a.meu && a.desfecho?.tipo === "FIXED_IN_DOC")
+      .filter((a) => !q || [a.id, a.chave, a.titulo, a.bruto.evidencia ?? ""].some((t) => t.toLowerCase().includes(q)))
+      .sort((x, y) => String(y.desfecho?.quando ?? "").localeCompare(String(x.desfecho?.quando ?? "")));
+  }, [filtro, busca, confirmados]);
+
   const doFoco = todos.find((a) => a.chave === selecionado);
-  const focoVisivel = doFoco && visiveis.some((a) => a.chave === doFoco.chave);
-  const atual = (filtroInicial && !escolheu && !focoVisivel ? visiveis[0] : doFoco) ?? visiveis[0] ?? confirmados[0] ?? todos[0];
+  const focoVisivel = doFoco && [...visiveis, ...meusCorrigidos].some((a) => a.chave === doFoco.chave);
+  const primeiroDaLista = visiveis[0] ?? meusCorrigidos[0];
+  const atual = (filtroInicial && !escolheu && !focoVisivel ? primeiroDaLista : doFoco) ?? primeiroDaLista ?? confirmados[0] ?? todos[0];
   const posicao = atual ? visiveis.findIndex((a) => a.chave === atual.chave) : -1;
   const temArquivo = (a: AchadoDaTela) => resolverFonte({ arquivo: a.estruturado.documento }, catalogo).tipo === "arquivo";
 
@@ -515,7 +531,9 @@ export function FilaDeAchados({
         </div>
 
         <div className="rs-linhas">
-          {visiveis.length === 0 ? (
+          {visiveis.length === 0 && meusCorrigidos.length > 0 ? (
+            <p className="rs-meus-vazio">Nada pendente com você.</p>
+          ) : visiveis.length === 0 ? (
             <div className="rs-vazio">
               <b>Nenhum achado com {busca ? `“${busca}”` : "esse filtro"}.</b>
               <span>A busca olha o título, a referência, a disciplina, a página e o trecho.</span>
@@ -544,6 +562,17 @@ export function FilaDeAchados({
                 </div>
               ) : null,
             )
+          )}
+
+          {meusCorrigidos.length > 0 && (
+            <div className="rs-grupo rs-grupo--meus-corrigidos">
+              <h4>
+                <Check size={12} aria-hidden />
+                Corrigidos por você
+                <span className="ds-num">{meusCorrigidos.length}</span>
+              </h4>
+              {meusCorrigidos.map((a) => linhaDaLista(a))}
+            </div>
           )}
 
           {/* As sugestões da IA: rebaixadas pela validação, não contam em nada. */}

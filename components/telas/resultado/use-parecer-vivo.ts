@@ -53,6 +53,12 @@ export interface AchadoDaTela {
   bruto: AuditFinding;
   estruturado: StructuredFinding;
   responsavel: { email: string; nome: string; souEu: boolean } | null;
+  /**
+   * O achado é MEU mesmo depois de encerrado: estava comigo, ou fui eu que
+   * encerrei. `responsavel` some quando o achado fecha (a tarja "com X" deixa
+   * de valer); este não, e é o que mantém o corrigido no "Meus" (05/10/2026).
+   */
+  meu: boolean;
   desfecho: DesfechoDaTela | null;
   validade: FeedbackVerdict | null;
   comentarios: number;
@@ -95,6 +101,9 @@ function montarAchado(f: AuditFinding, linha: SavedFeedback | undefined, euSou: 
       linha?.assigneeEmail && !resolvido
         ? { email: linha.assigneeEmail, nome: linha.assigneeName ?? linha.assigneeEmail, souEu: Boolean(euSou) && linha.assigneeEmail.toLowerCase() === euSou }
         : null,
+    meu:
+      Boolean(euSou) &&
+      (linha?.assigneeEmail?.toLowerCase() === euSou || (resolvido && linha?.resolvedByEmail?.toLowerCase() === euSou)),
     // Reaberto = resolvedAt nulo, mesmo com o tipo gravado: o desfecho só vale encerrado.
     desfecho: resolvido
       ? { tipo: (linha!.resolutionKind ?? "FIXED_IN_DOC") as Desfecho, por: linha!.resolvedByName, quando: linha!.resolvedAt, nota: linha!.note || null }

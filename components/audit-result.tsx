@@ -317,6 +317,8 @@ export type SavedFeedback = {
   resolutionKind: DesfechoDoAchado | null;
   /** Quem encerrou, já resolvido em nome pela rota. */
   resolvedByName: string | null;
+  /** E o e-mail dessa pessoa, em minúsculas — "fui eu que corrigi". */
+  resolvedByEmail?: string | null;
   /** Quantos comentários a conversa do achado tem (A08: a fila mostra sem abrir). */
   comentarios?: number;
   assignedAt?: string | null;
