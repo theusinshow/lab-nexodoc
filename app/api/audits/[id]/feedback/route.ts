@@ -16,12 +16,15 @@ export const runtime = "nodejs";
 
 const VALID_ID = /^[A-Za-z0-9-]{8,80}$/;
 
-function isFeedbackEnabled() {
-  return (
-    process.env.NODE_ENV !== "production" ||
-    process.env.NEXODOC_ENABLE_PUBLIC_AUDIT_HISTORY === "true"
-  );
-}
+/*
+ * SEM A TRAVA `NEXODOC_ENABLE_PUBLIC_AUDIT_HISTORY` (05/10/2026). Ela nasceu em
+ * maio, quando esta rota não pedia sessão nenhuma e o feedback era "público".
+ * Desde 31/08 a rota exige `requireActor` e só enxerga auditoria do escritório
+ * (`auditByIdWhereForActor`) — a trava não protegia mais nada, e como a
+ * variável nunca existiu na Render, em PRODUÇÃO o "Marcar corrigido" voltava
+ * 403 e a lista nunca mostrava o que foi encerrado. Em dev passava, porque a
+ * trava só valia com `NODE_ENV=production`.
+ */
 
 function jsonError(message: string, status = 400) {
   return NextResponse.json({ error: message }, { status });
@@ -57,7 +60,7 @@ export async function GET(
     throw err;
   }
 
-  if (!isFeedbackEnabled() || !isDatabaseConfigured()) {
+  if (!isDatabaseConfigured()) {
     return NextResponse.json({ feedback: [], enabled: false });
   }
 
@@ -189,10 +192,6 @@ export async function POST(
     const negado = accessDeniedResponse(err);
     if (negado) return negado;
     throw err;
-  }
-
-  if (!isFeedbackEnabled()) {
-    return jsonError("Feedback público desabilitado neste ambiente.", 403);
   }
 
   if (!isDatabaseConfigured()) {

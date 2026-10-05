@@ -36,7 +36,7 @@ import type { AchadoDaTela, ParecerVivo } from "./use-parecer-vivo";
 import "./enxuta.css";
 import "./filtros.css";
 
-type Filtro = "todos" | "meus" | "sem" | "pendentes" | "encerrados";
+type Filtro = "todos" | "meus" | "sem" | "pendentes" | "corrigidos" | "encerrados";
 type Ordem = "impacto" | "pagina" | "disciplina" | "referencia";
 type Agrupar = "impacto" | "disciplina";
 type Aba = "evidencia" | "conversa" | "historico";
@@ -134,6 +134,8 @@ export function FilaDeAchados({
     meus: confirmados.filter((a) => a.responsavel?.souEu && !a.desfecho).length,
     sem: confirmados.filter((a) => !a.responsavel && !a.desfecho).length,
     pendentes: confirmados.filter((a) => !a.desfecho).length,
+    // Só o corrigido no documento; "Encerrados" junta também falso positivo e decisão técnica.
+    corrigidos: confirmados.filter((a) => a.desfecho?.tipo === "FIXED_IN_DOC").length,
     encerrados: confirmados.filter((a) => a.desfecho).length,
   };
 
@@ -159,6 +161,7 @@ export function FilaDeAchados({
       if (filtro === "meus" && !(a.responsavel?.souEu && !a.desfecho)) return false;
       if (filtro === "sem" && !(!a.responsavel && !a.desfecho)) return false;
       if (filtro === "pendentes" && a.desfecho) return false;
+      if (filtro === "corrigidos" && a.desfecho?.tipo !== "FIXED_IN_DOC") return false;
       if (filtro === "encerrados" && !a.desfecho) return false;
       if (!q) return true;
       const disc = DISCIPLINAS.find((d) => d.id === a.disc)?.nome ?? "";
@@ -336,6 +339,7 @@ export function FilaDeAchados({
               { valor: "meus", rotulo: <>Meus <em>{contagem.meus}</em></> },
               { valor: "sem", rotulo: <>Sem dono <em>{contagem.sem}</em></> },
               { valor: "pendentes", rotulo: <>Pendentes <em>{contagem.pendentes}</em></> },
+              { valor: "corrigidos", rotulo: <>Corrigidos <em>{contagem.corrigidos}</em></> },
               { valor: "encerrados", rotulo: <>Encerrados <em>{contagem.encerrados}</em></> },
             ]}
           />
