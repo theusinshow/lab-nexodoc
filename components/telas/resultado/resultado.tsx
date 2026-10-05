@@ -27,7 +27,7 @@ import { RelatorioDoParecer } from "./relatorio";
 import { ResumoDoParecer, type ComparadoComAnterior } from "./resumo";
 import { VisaoGeralDoParecer } from "./geral";
 import type { AchadoDaTela, ParecerVivo } from "./use-parecer-vivo";
-import { VisorDoMemorial } from "./visor";
+import { VisorDoMemorial, type ChatDoVisor } from "./visor";
 import "./resultado.css";
 import "./documento.css";
 import "./embutido.css";
@@ -46,6 +46,7 @@ export function ResultadoDoParecer({
   podeVerNoDocumento = false,
   achadoEmFoco,
   filaInicial,
+  chatDoVisor,
   aoGerarTexto,
   comparado,
 }: {
@@ -59,6 +60,8 @@ export function ResultadoDoParecer({
   achadoEmFoco?: string | null;
   /** A fila abre filtrada ("meus": o link do e-mail). */
   filaInicial?: "meus" | null;
+  /** A conversa do Nexo, para perguntar sem fechar o visor. */
+  chatDoVisor?: ChatDoVisor;
   aoGerarTexto?: (findingId: string, texto: TextoCorrigido) => void;
   /** O que mudou desde a auditoria anterior desta conversa (o cartão "Desde 18/09" do lab). */
   comparado?: ComparadoComAnterior | null;
@@ -176,6 +179,7 @@ export function ResultadoDoParecer({
         arquivo={fonteDoVisor?.tipo === "arquivo" ? fonteDoVisor.fonte.nome : (doVisor?.estruturado.documento ?? "Memorial")}
         inicial={visor}
         paginaInicial={paginaDoVisor}
+        chat={chatDoVisor}
         folhas={folhasDoVisor}
         aberto={Boolean(visor)}
         onFechar={() => setVisor(null)}

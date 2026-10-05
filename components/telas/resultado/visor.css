@@ -111,3 +111,18 @@
 /* SEM GRIFO: o trecho veio da leitura por visão (ou não casou) — o visor diz por quê. */
 .ds .vm-pdf { display: grid; gap: 12px; justify-items: center; }
 .ds .vm-sem-grifo { max-width: 520px; margin: 0; padding: 8px 12px; border-radius: var(--ds-radius-row); background: var(--ds-surface-card); box-shadow: var(--ds-edge); font-size: var(--ds-text-2xs); line-height: 1.45; color: var(--ds-text-secondary); }
+
+/* O CHAT EMBAIXO DO PDF (05/10/2026): a mesma conversa do Nexo, sem fechar o visor. */
+.ds .vm-esquerda { display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+.ds .vm-esquerda > .vm-mesa { flex: 1; min-height: 0; }
+.ds .vm-chat { display: grid; gap: 8px; padding: 10px 14px 12px; border-top: 1px solid var(--ds-line-subtle); background: var(--ds-surface-page); }
+.ds .vm-chat-mensagens { display: grid; gap: 6px; max-height: 220px; overflow-y: auto; padding-right: 4px; }
+.ds .vm-chat-msg { margin: 0; padding: 7px 10px; border-radius: 10px; font-size: var(--ds-text-xs); line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+.ds .vm-chat-msg--eu { justify-self: end; max-width: 80%; background: var(--ds-surface-raised); color: var(--ds-text-primary); }
+.ds .vm-chat-msg--nexo { justify-self: start; max-width: 92%; background: var(--ds-surface-card); box-shadow: var(--ds-edge); color: var(--ds-text-secondary); }
+.ds .vm-chat-pensando { font-style: italic; color: var(--ds-text-tertiary); }
+.ds .vm-chat-campo { display: flex; align-items: center; gap: 8px; height: 38px; padding: 0 6px 0 12px; border-radius: 10px; background: var(--ds-surface-sunken); box-shadow: inset 0 0 0 1px var(--ds-line-default); }
+.ds .vm-chat-campo:focus-within { box-shadow: inset 0 0 0 1px var(--ds-text-secondary); }
+.ds .vm-chat-campo input { flex: 1; min-width: 0; min-height: 0; height: 100%; border: 0; background: none; font: inherit; font-size: var(--ds-text-xs); color: var(--ds-text-primary); outline: none; box-shadow: none; }
+.ds .vm-chat-campo button { display: grid; place-items: center; width: 28px; height: 28px; border: 0; border-radius: 8px; background: var(--ds-text-primary); color: var(--ds-surface-page); cursor: pointer; }
+.ds .vm-chat-campo button:disabled { opacity: 0.3; cursor: default; }

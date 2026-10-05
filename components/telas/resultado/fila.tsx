@@ -54,13 +54,65 @@ const iniciais = (nome: string) =>
 const quando = (iso?: string | null) => (iso ? formatarEmBrasilia(iso, { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "");
 
 /** O trecho com o grifo, como no lab: a parte que importa marcada. */
+/** Copia para a área de transferência; sem a API (contexto inseguro), o caminho antigo. */
+async function copiarTexto(texto: string): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(texto);
+    return true;
+  } catch {
+    const campo = document.createElement("textarea");
+    campo.value = texto;
+    campo.style.position = "fixed";
+    campo.style.opacity = "0";
+    document.body.appendChild(campo);
+    campo.select();
+    const ok = document.execCommand("copy");
+    campo.remove();
+    return ok;
+  }
+}
+
+/*
+ * O GRIFO COPIA (05/10/2026, retorno de um usuário): o trecho em roxo é
+ * exatamente o que se procura no arquivo editável. Um clique copia, e o "Copiado"
+ * confirma — dali é Ctrl+F no Writer e colar.
+ */
 function Trecho({ texto, marca }: { texto: string; marca?: string }) {
+  const [copiado, setCopiado] = useState(false);
+  useEffect(() => {
+    if (!copiado) return;
+    const t = setTimeout(() => setCopiado(false), 1800);
+    return () => clearTimeout(t);
+  }, [copiado]);
+
   const i = marca ? texto.toLowerCase().indexOf(marca.toLowerCase()) : -1;
   if (!marca || i < 0) return <>{texto}</>;
+  const grifado = texto.slice(i, i + marca.length);
+  const copiar = async () => setCopiado(await copiarTexto(grifado.trim()));
   return (
     <>
       {texto.slice(0, i)}
-      <mark>{texto.slice(i, i + marca.length)}</mark>
+      <mark
+        className="rs-grifo-copiavel"
+        role="button"
+        tabIndex={0}
+        title="Clique para copiar — e procure com Ctrl+F no arquivo editável"
+        onClick={() => void copiar()}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            e.stopPropagation();
+            void copiar();
+          }
+        }}
+      >
+        {grifado}
+      </mark>
+      {copiado && (
+        <span className="rs-copiado" role="status">
+          <Check size={11} aria-hidden /> Copiado — cole no Ctrl+F
+        </span>
+      )}
       {texto.slice(i + marca.length)}
     </>
   );
@@ -310,7 +362,19 @@ export function FilaDeAchados({
             )}
           </AnimatePresence>
         </button>
-        <button type="button" className="rs-linha-corpo" onClick={() => abrir(a.chave, visiveis.indexOf(a) > posicao ? 1 : -1)}>
+        <button
+          type="button"
+          className="rs-linha-corpo"
+          onClick={() => {
+            abrir(a.chave, visiveis.indexOf(a) > posicao ? 1 : -1);
+            /*
+             * O CLIQUE ABRE O PDF, já no trecho (05/10/2026, retorno de um
+             * usuário): quem clica num achado quer ver onde ele está. J/K e as
+             * setas continuam só andando na lista, para triagem pelo teclado.
+             */
+            if (temArquivo(a)) onVerNoMemorial(a.chave);
+          }}
+        >
           <span className="rs-linha-id">{a.id}</span>
           <span className="rs-linha-titulo">{a.titulo}</span>
           <span className="rs-linha-meta">

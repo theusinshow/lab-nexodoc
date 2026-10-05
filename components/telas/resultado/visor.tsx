@@ -7,9 +7,9 @@
  * achado. ← → folheiam; J K pulam entre páginas com achado; Esc fecha.
  */
 import { AnimatePresence, motion } from "motion/react";
-import { ArrowRight, ChevronLeft, ChevronRight, Minus, Plus, X } from "lucide-react";
+import { ArrowRight, ArrowUp, ChevronLeft, ChevronRight, Minus, Plus, X } from "lucide-react";
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import { Botao, Tecla } from "@/components/ds/basicos";
@@ -28,6 +28,73 @@ const AuditPdfViewer = dynamic(() => import("@/components/audit-pdf-viewer-inter
 });
 
 const ZOOMS = [0.75, 1, 1.25, 1.5, 2];
+
+/** A conversa do Nexo vista pelo visor: o que já foi dito e como perguntar. */
+export type ChatDoVisor = {
+  mensagens: readonly { id: string; role: string; content: string }[];
+  enviar: (texto: string) => void;
+};
+
+/*
+ * O CHAT EMBAIXO DO PDF (05/10/2026, retorno de um usuário). O visor cobre a
+ * conversa da direita; a dúvida sobre o achado nascia e não tinha onde ir sem
+ * fechar o documento. É a MESMA conversa do Nexo: a pergunta sai pelo composer
+ * dela, com o achado e a página no começo, e a resposta é lida das mensagens.
+ */
+function ChatNoVisor({ chat, achado, pagina }: { chat: ChatDoVisor; achado: AchadoDaTela | undefined; pagina: number }) {
+  const [texto, setTexto] = useState("");
+  const [desde, setDesde] = useState<number | null>(null);
+  const fim = useRef<HTMLDivElement>(null);
+  const novas = desde === null ? [] : chat.mensagens.slice(desde).filter((m) => m.content.trim());
+  const esperando = desde !== null && (novas.length === 0 || novas[novas.length - 1].role === "user");
+
+  const ultima = novas[novas.length - 1]?.content ?? "";
+  useEffect(() => {
+    fim.current?.scrollIntoView({ block: "nearest" });
+  }, [novas.length, ultima]);
+
+  const enviar = () => {
+    const pergunta = texto.trim();
+    if (!pergunta || !achado) return;
+    if (desde === null) setDesde(chat.mensagens.length);
+    chat.enviar(`Sobre o ${achado.id} (“${achado.titulo}”, p. ${pagina}): ${pergunta}`);
+    setTexto("");
+  };
+
+  return (
+    <section className="vm-chat" aria-label="Perguntar ao Nexo sobre o achado">
+      {novas.length > 0 || esperando ? (
+        <div className="vm-chat-mensagens">
+          {novas.map((m) => (
+            <p key={m.id} className={`vm-chat-msg vm-chat-msg--${m.role === "user" ? "eu" : "nexo"}`}>
+              {m.content}
+            </p>
+          ))}
+          {esperando && <p className="vm-chat-msg vm-chat-msg--nexo vm-chat-pensando">Nexo está lendo o memorial…</p>}
+          <div ref={fim} />
+        </div>
+      ) : null}
+      <form
+        className="vm-chat-campo"
+        onSubmit={(e) => {
+          e.preventDefault();
+          enviar();
+        }}
+      >
+        <input
+          value={texto}
+          onChange={(e) => setTexto(e.target.value)}
+          placeholder={achado ? `Dúvida sobre o ${achado.id}? Pergunte ao Nexo` : "Escolha um achado para perguntar"}
+          aria-label="Pergunta ao Nexo sobre este achado"
+          disabled={!achado}
+        />
+        <button type="submit" aria-label="Enviar pergunta" disabled={!texto.trim() || !achado}>
+          <ArrowUp size={14} />
+        </button>
+      </form>
+    </section>
+  );
+}
 const ease = (c: readonly number[]) => [...c] as [number, number, number, number];
 
 export function VisorDoMemorial({
@@ -37,6 +104,7 @@ export function VisorDoMemorial({
   inicial,
   paginaInicial,
   folhas,
+  chat,
   aberto,
   onFechar,
   onIrParaAchado,
@@ -50,6 +118,8 @@ export function VisorDoMemorial({
   paginaInicial?: number | null;
   /** Onde o texto não está na camada do PDF (cobertura do parecer) — para dizer por que não há grifo. */
   folhas?: FolhasSemCamada | null;
+  /** A conversa do Nexo: sem ela (fora do palco), o visor não mostra o chat. */
+  chat?: ChatDoVisor;
   aberto: boolean;
   onFechar: () => void;
   onIrParaAchado: (chave: string) => void;
@@ -107,7 +177,11 @@ export function VisorDoMemorial({
   useEffect(() => {
     if (!aberto) return;
     const tecla = (e: KeyboardEvent) => {
-      if ((e.target as HTMLElement).closest("input, textarea")) return;
+      if ((e.target as HTMLElement).closest("input, textarea")) {
+        // No campo do chat, Esc só sai do campo; o visor fecha no segundo Esc.
+        if (e.key === "Escape") (e.target as HTMLElement).blur();
+        return;
+      }
       if (e.key === "Escape") {
         e.preventDefault();
         e.stopPropagation();
@@ -176,6 +250,7 @@ export function VisorDoMemorial({
             </header>
 
             <div className="vm-corpo">
+              <div className="vm-esquerda">
               <div className="vm-mesa vm-mesa--pdf">
                 {url ? (
                   <div className="vm-pdf">
@@ -189,6 +264,8 @@ export function VisorDoMemorial({
                 ) : (
                   <p className="vm-sem">O arquivo deste memorial não está nesta máquina. Anexe-o de novo na conversa para ver o trecho na página.</p>
                 )}
+              </div>
+              {chat && <ChatNoVisor chat={chat} achado={doAtivo} pagina={pagina} />}
               </div>
 
               <aside className="vm-lado">

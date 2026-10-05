@@ -86,6 +86,7 @@ export function PalcoDoNexo({
     marcarAchadoResolvido,
     conversationId,
     saveResult,
+    messages,
   } = useConversation();
   const { emCurso: emCursoGlobal, escolha, escolherVista } = useAuditoria();
   /*
@@ -181,6 +182,22 @@ export function PalcoDoNexo({
     if (areasDoPalco.chat) areasDoPalco.alternarChat();
     requestAnimationFrame(() => composer.focus());
   };
+  /*
+   * O CHAT DENTRO DO VISOR (05/10/2026, retorno de um usuário): o visor do PDF
+   * cobre a conversa da direita, então a pergunta sobre o achado é feita ali
+   * mesmo. É a MESMA conversa — a pergunta vai pelo composer do Nexo, e a
+   * resposta é lida das mensagens dela —, e não um terceiro chat.
+   */
+  const chatDoVisor = useMemo(
+    () => ({
+      mensagens: messages,
+      enviar: (texto: string) => {
+        if (areasDoPalco.chat) areasDoPalco.alternarChat();
+        requestAnimationFrame(() => composer.send(texto));
+      },
+    }),
+    [messages, areasDoPalco, composer],
+  );
   const salvo = maisRecente?.salvo;
   const report = salvo?.report;
   /*
@@ -712,6 +729,7 @@ export function PalcoDoNexo({
                     podeVerNoDocumento={podeVerNoDocumento}
                     achadoEmFoco={focoDoChat?.chave ?? aberturaPorLink.achadoEmFoco ?? null}
                     filaInicial={focoDoChat ? null : aberturaPorLink.fila}
+                    chatDoVisor={chatDoVisor}
                     aoGerarTexto={aoGerarTextoCorrigido}
                     comparado={comparado}
                   />
