@@ -2419,3 +2419,28 @@ a[data-navegando] {
     transform: translateY(6px);
   }
 }
+
+/* O QUE NAO MUDA NAO SE MEXE (04/10/2026). O topo em pilula e o mesmo nas duas
+   paginas; dentro do snapshot da pagina ele apagava e subia 6px junto com o
+   resto -- a tela inteira piscava para trocar so o meio. Com nome proprio
+   (`nx-topo`, em components/moldura/moldura.css) ele sai do snapshot: o grupo
+   nao viaja, e so o realce do destino troca, num crossfade de 120ms. */
+::view-transition-group(nx-topo) {
+  animation: none;
+}
+::view-transition-old(nx-topo),
+::view-transition-new(nx-topo) {
+  animation-duration: var(--duration-fast);
+  animation-timing-function: var(--ease-feedback);
+}
+
+/* MOVIMENTO REDUZIDO DE VERDADE. O reset global (`*, *::before, *::after`) nao
+   alcanca os pseudo-elementos `::view-transition-*` -- a transicao seguia
+   rodando inteira para quem pediu menos movimento. Aqui ela vira corte seco. */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}

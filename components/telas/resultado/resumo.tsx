@@ -114,6 +114,13 @@ export function ResumoDoParecer({
   // Onde estão: um ponto por achado em cada página citada.
   const totalDePaginas = Math.max(0, ...report.arquivos_analisados.map((a) => a.paginas ?? 0), ...achados.flatMap((a) => a.paginas));
   const pontos = Array.from({ length: totalDePaginas }, (_, i) => achados.filter((a) => a.paginas.includes(i + 1)).length);
+  /*
+   * NO MÁXIMO ~6 LINHAS (04/10/2026). Com 9 colunas fixas, num memorial de 120
+   * páginas e no palco largo, cada página virava um quadrado de 65px e o mapa
+   * descia a tela inteira — a lista dos achados ia para depois da rolagem.
+   * Agora as colunas crescem com as páginas e o quadrado encolhe.
+   */
+  const colunasDoMapa = Math.min(40, Math.max(9, Math.ceil(totalDePaginas / 6)));
 
   return (
     <div className="rc">
@@ -267,11 +274,14 @@ export function ResumoDoParecer({
                   <li key={d.id}>
                     <button type="button" className={`dc--${d.id}`} onClick={() => onAbrirDisciplina(d.id)}>
                       <i className="dc-ponto" />
-                      <span className="rc-disc-nome">{d.nome}</span>
+                      <span className="rc-disc-nome" title={d.nome}>
+                        {d.nome}
+                      </span>
                       <span className="rc-disc-conta ds-num">
                         {d.pendentes ? (
                           <>
-                            <b>{d.pendentes}</b> de {d.total} {d.pendentes === 1 ? "pendente" : "pendentes"}
+                            <b>{d.pendentes}</b> de {d.total}
+                            <span className="rc-disc-palavra"> {d.pendentes === 1 ? "pendente" : "pendentes"}</span>
                           </>
                         ) : (
                           <span className="rc-disc-ok">{d.total === 1 ? "1 tratado" : `${d.total} tratados`}</span>
@@ -285,7 +295,7 @@ export function ResumoDoParecer({
             </section>
           )}
           {totalDePaginas > 0 && (
-            <section className="rc-cartao">
+            <section className="rc-cartao rc-onde">
               <h3>
                 Onde estão
                 {onNoDocumento && (
@@ -294,7 +304,7 @@ export function ResumoDoParecer({
                   </button>
                 )}
               </h3>
-              <MapaDasPaginas colunas={9} paginas={pontos} lidas={totalDePaginas} atuais={[]} />
+              <MapaDasPaginas colunas={colunasDoMapa} paginas={pontos} lidas={totalDePaginas} atuais={[]} />
             </section>
           )}
           <section className="rc-cartao rc-leitura">
@@ -307,7 +317,7 @@ export function ResumoDoParecer({
                     {arq.paginas ? `${arq.paginas} páginas` : ""}
                     {arq.caracteres_extraidos ? `${arq.paginas ? ", " : ""}${arq.caracteres_extraidos.toLocaleString("pt-BR")} caracteres` : ""}
                   </span>
-                  {arq.resumo && <p>{arq.resumo}</p>}
+                  {arq.resumo && <p title={arq.resumo}>{arq.resumo}</p>}
                 </li>
               ))}
             </ul>

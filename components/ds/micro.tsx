@@ -3,6 +3,7 @@
 import { Bell, BellRing, Check } from "lucide-react";
 import { motion } from "motion/react";
 import { useEffect, useRef, useState, type ButtonHTMLAttributes, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 
 import { useTempo } from "@/lib/ds/tempo";
 import "./micro.css";
@@ -132,6 +133,19 @@ export function Cronometro({ desde }: { desde: number }) {
 let ultimaFechou = 0;
 
 /**
+ * A raiz `.ds` mais de fora: é onde a dica é desenhada. Dentro do palco do Nexo
+ * algum ancestral cria bloco de contenção (transform/contain) — o `fixed` da
+ * dica passava a contar dali, ela nascia ~280px à direita, atrás do chat, e o
+ * z-index preso naquele contexto não a tirava de lá (04/10/2026). Na raiz, o
+ * `fixed` volta a ser a janela. Precisa ser uma `.ds`: o CSS é `.ds .ds-dica`.
+ */
+function raizDoSistema(el: HTMLElement | null) {
+  let raiz: HTMLElement | null = null;
+  for (let no = el; no; no = no.parentElement) if (no.classList.contains("ds")) raiz = no;
+  return raiz;
+}
+
+/**
  * A dica de um botão só de ícone: o nome e a tecla. A primeira espera 400 ms
  * (passar o mouse por cima não acende nada); as seguintes, se vierem logo,
  * abrem na hora. Abre também com o foco do teclado.
@@ -164,12 +178,17 @@ export function Dica({ texto, tecla, lado = "cima", children }: { texto: string;
   return (
     <span ref={ancora} className="ds-dica-ancora" onPointerEnter={abrir} onPointerLeave={fechar} onFocus={abrir} onBlur={fechar}>
       {children}
-      {aberta && (
-        <span className="ds-dica" data-lado={lado} role="tooltip" style={{ left: pos.x, top: pos.y }}>
-          {texto}
-          {tecla && <kbd className="ds-kbd">{tecla}</kbd>}
-        </span>
-      )}
+      {aberta &&
+        (() => {
+          const dica = (
+            <span className="ds-dica" data-lado={lado} role="tooltip" style={{ left: pos.x, top: pos.y }}>
+              {texto}
+              {tecla && <kbd className="ds-kbd">{tecla}</kbd>}
+            </span>
+          );
+          const raiz = raizDoSistema(ancora.current);
+          return raiz ? createPortal(dica, raiz) : dica;
+        })()}
     </span>
   );
 }
