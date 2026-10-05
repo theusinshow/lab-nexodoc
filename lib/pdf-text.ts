@@ -1,6 +1,6 @@
 import { textoDosItens, type ItemDeTexto } from "./texto-do-pdf.ts";
 import { tabelasDaPagina, type Tabela } from "./tabela-do-pdf.ts";
-import { LIMIAR_DE_CARACTERES, type TintaDaPagina } from "./pagina-muda.ts";
+import type { TintaDaPagina } from "./pagina-muda.ts";
 
 export type ExtractedPdfPage = {
   page: number;
@@ -67,6 +67,41 @@ export function textoDoDocumentoParaIA(extracted: ExtractedPdf): string {
 }
 
 /**
+ * A FRAÇÃO DA FOLHA a partir da qual uma imagem é conteúdo, e não enfeite.
+ *
+ * MEDIDA no 141-26 (174 páginas): os logos do cabeçalho, em toda folha, cobrem
+ * 0,35% e 0,47%. A menor imagem de conteúdo (um pictograma da sinalização,
+ * 154x166 pt) cobre 5,1%; a tabela de sinalização mais baixa (446x76 pt), 6,8%;
+ * o Quadro de Áreas, 14,6%. 4% fica no vão, com folga para os dois lados.
+ * Errar para cima aqui só acrescenta a marca a uma folha com figura — não custa
+ * token de transcrição nem rebaixa achado que não fale de quadro ausente.
+ */
+export const FRACAO_DA_IMAGEM_GRANDE = 0.04;
+
+function multiplicar(m: number[], n: number[]): number[] {
+  return [
+    m[0] * n[0] + m[2] * n[1],
+    m[1] * n[0] + m[3] * n[1],
+    m[0] * n[2] + m[2] * n[3],
+    m[1] * n[2] + m[3] * n[3],
+    m[0] * n[4] + m[2] * n[5] + m[4],
+    m[1] * n[4] + m[3] * n[5] + m[5],
+  ];
+}
+
+/**
+ * Quantas figuras ou quadros desta página estão em IMAGEM e não foram lidos.
+ *
+ * Zero para a folha relida por visão (a transcrição já leu a folha inteira) e
+ * para a página sem a medida (parecer antigo, fixture): sem medida não se
+ * afirma que há imagem.
+ */
+export function imagensNaoLidas(page: ExtractedPdfPage): number {
+  if (page.origem === "visao") return 0;
+  return page.tinta?.imagensGrandes ?? 0;
+}
+
+/**
  * Conta os ops de DESENHO e de IMAGEM da folha.
  *
  * Os dois grupos existem separados porque são dois defeitos diferentes do mesmo
@@ -96,14 +131,44 @@ async function medirTinta(
       OPS.paintInlineImageXObject ?? -1,
     ]);
 
+    /*
+     * O TAMANHO DE CADA IMAGEM NA FOLHA, e não só quantas há.
+     *
+     * Contar não basta para a página de TEXTO: toda folha do 141-26 tem duas
+     * imagens (os logos do cabeçalho, 83x21 e 113x21 pt — meio por cento da
+     * folha). O que separa o logo do Quadro de Áreas é a área. A imagem é
+     * pintada no quadrado unitário, então a área que ela ocupa na folha é o
+     * determinante da matriz corrente — e a matriz se acompanha pelos ops de
+     * `save`/`restore`/`transform` e pela matriz de cada form XObject.
+     */
+    const [x0, y0, x1, y1] = page.view;
+    const areaDaFolha = Math.abs((x1 - x0) * (y1 - y0)) || 1;
+    let ctm = [1, 0, 0, 1, 0, 0];
+    const pilha: number[][] = [];
+
     let desenho = 0;
     let imagem = 0;
-    for (const op of ops.fnArray) {
-      if (desenhoOps.has(op)) desenho += 1;
-      else if (imagemOps.has(op)) imagem += 1;
-    }
+    let imagensGrandes = 0;
+    ops.fnArray.forEach((op, i) => {
+      if (op === OPS.save || op === OPS.paintFormXObjectBegin) {
+        pilha.push(ctm);
+        const matriz = op === OPS.paintFormXObjectBegin ? ops.argsArray[i]?.[0] : null;
+        if (Array.isArray(matriz) && matriz.length === 6) ctm = multiplicar(ctm, matriz);
+      } else if (op === OPS.restore || op === OPS.paintFormXObjectEnd) {
+        ctm = pilha.pop() ?? ctm;
+      } else if (op === OPS.transform) {
+        const matriz = ops.argsArray[i];
+        if (Array.isArray(matriz) && matriz.length === 6) ctm = multiplicar(ctm, matriz);
+      } else if (desenhoOps.has(op)) {
+        desenho += 1;
+      } else if (imagemOps.has(op)) {
+        imagem += 1;
+        const area = Math.abs(ctm[0] * ctm[3] - ctm[1] * ctm[2]);
+        if (area / areaDaFolha >= FRACAO_DA_IMAGEM_GRANDE) imagensGrandes += 1;
+      }
+    });
 
-    return { desenho, imagem };
+    return { desenho, imagem, imagensGrandes };
   } catch {
     /*
      * Folha que o pdf.js não consegue reparsear não vira "vazia" por omissão:
@@ -174,20 +239,21 @@ export async function extractPdfText(buffer: Buffer): Promise<ExtractedPdf> {
     const tabelas = tabelasDaPagina(itens, pageNumber);
 
     /*
-     * A TINTA, e SÓ na página suspeita.
+     * A TINTA, EM TODA PÁGINA — e não só na suspeita, como era até 05/10/2026.
      *
-     * `getOperatorList()` reparseia o content stream inteiro da folha — é caro
-     * o bastante para não se pagar num volume de 400 páginas que está todo
-     * certo. E não precisa: quem já entregou texto acima do limiar não é
-     * candidato a transcrição, e a tinta dela não seria olhada por ninguém.
+     * Medir só abaixo do limiar partia de "quem entregou texto já foi lido". É
+     * falso para a folha que tem texto E um quadro em imagem: a p12 do 141-26
+     * entrega 878 caracteres de título e prosa, e o Quadro de Áreas dela é uma
+     * imagem que ninguém via. A IA leu o título seguido de nada e afirmou que a
+     * tabela não existia.
      *
-     * O sinal só existe para separar duas folhas que chegam aqui idênticas
-     * (`text: ""`) e não são a mesma coisa: o verso em branco, que não vale
-     * nada, e a folha cujo texto virou curva vetorial, que vale o memorial
-     * inteiro. Ver [[pagina-muda.ts]].
+     * O custo foi medido, e era o que segurava isto: `getOperatorList()` nas
+     * 174 folhas do 141-26 somou 1,2 s à extração (0,5 s → 1,7 s), numa
+     * auditoria que leva minutos. A separação entre folha muda e vazia não
+     * muda — ver [[pagina-muda.ts]]; a página de texto só passa a carregar
+     * `imagensGrandes`.
      */
-    const tinta =
-      text.trim().length < LIMIAR_DE_CARACTERES ? await medirTinta(pdfjs, page) : undefined;
+    const tinta = await medirTinta(pdfjs, page);
 
     pages.push({
       page: pageNumber,
@@ -249,6 +315,21 @@ const ABRE_TABELA = "[TABELA]";
 const FECHA_TABELA = "[/TABELA]";
 
 /**
+ * A MARCA DA IMAGEM NÃO LIDA no texto que a IA lê — ver `imagensNaoLidas`.
+ *
+ * Sem ela, o título "Tabela 2: Quadro de Áreas" chegava ao modelo seguido de
+ * nada, e o prompt manda abrir achado do que o documento promete e não
+ * entrega. O modelo não errava sobre o que recebeu; faltava dizer a ele que a
+ * folha tinha mais do que aquilo.
+ *
+ * SEM DÍGITO de propósito: os fatos de quantidade (`lib/audit-engine/facts.ts`)
+ * leem a prosa da página até o primeiro `[TABELA]`, e um "1 figura" aqui seria
+ * um número a mais na folha. O `auditor-prompt.ts` explica a marca ao modelo.
+ */
+export const MARCA_DE_IMAGEM =
+  "[IMAGEM NÃO LIDA] Esta página tem figura ou quadro desenhado como imagem: o conteúdo existe na folha, mas não chegou em texto.";
+
+/**
  * O TEXTO DA PÁGINA COMO O MODELO PRECISA LÊ-LA: a prosa, e depois a grade.
  *
  * O defeito que isto conserta (24/08/2026): `page.tabelas` era reconstruída
@@ -281,7 +362,8 @@ const FECHA_TABELA = "[/TABELA]";
  */
 export function textoDaPaginaParaIA(page: ExtractedPdfPage): string {
   const tabelas = page.tabelas ?? [];
-  if (tabelas.length === 0) return page.text;
+  const imagem = imagensNaoLidas(page) > 0 ? `\n${MARCA_DE_IMAGEM}` : "";
+  if (tabelas.length === 0) return `${page.text}${imagem}`;
 
   const grades = tabelas.map((tabela) => {
     const linhas = tabela.linhas
@@ -292,7 +374,7 @@ export function textoDaPaginaParaIA(page: ExtractedPdfPage): string {
     return `${ABRE_TABELA}\n${linhas}\n${FECHA_TABELA}`;
   });
 
-  return `${page.text}\n${grades.join("\n")}`;
+  return `${page.text}\n${grades.join("\n")}${imagem}`;
 }
 
 export type AuditTextChunk = {

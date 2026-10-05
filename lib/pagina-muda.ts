@@ -28,20 +28,22 @@
  * engenheiro, no portão da entrada.
  */
 /*
- * CICLO DE IMPORT, DELIBERADO E FRÁGIL — leia antes de mexer.
+ * O IMPORT É DE MÃO ÚNICA desde 05/10/2026: este módulo importa de
+ * [[pdf-text.ts]], e [[pdf-text.ts]] só importa TIPO daqui (`TintaDaPagina`),
+ * que some na compilação. Até ali ele importava `LIMIAR_DE_CARACTERES` para
+ * medir a tinta só na página suspeita — e o ciclo só resolvia porque os dois
+ * lados tocavam o importado dentro de funções. Hoje a tinta é medida em toda
+ * página e o limiar não é mais preciso lá.
  *
- * Este módulo importa `montarDocumento` de [[pdf-text.ts]], e [[pdf-text.ts]]
- * importa `LIMIAR_DE_CARACTERES` daqui. O ciclo resolve porque os dois lados só
- * tocam o que importaram DENTRO de funções, avaliadas depois de os dois módulos
- * terem carregado — provado nas duas ordens de import.
- *
- * O que o quebra: usar qualquer um desses símbolos no TOPO do módulo (uma
- * constante derivada, um `Set` pré-montado, um valor padrão de parâmetro
- * avaliado na carga). Aí um dos lados lê `undefined` conforme quem entrar
- * primeiro — e falha só em um dos pontos de entrada, que é a pior forma de
- * falhar. Se precisar disso, quebre o ciclo antes.
+ * Não reabra o ciclo importando VALOR deste módulo em [[pdf-text.ts]]: se
+ * precisar, mova o valor para lá (como `imagensNaoLidas`).
  */
-import { montarDocumento, type ExtractedPdf, type ExtractedPdfPage } from "./pdf-text.ts";
+import {
+  imagensNaoLidas,
+  montarDocumento,
+  type ExtractedPdf,
+  type ExtractedPdfPage,
+} from "./pdf-text.ts";
 
 /**
  * O limiar de caracteres abaixo do qual a página é suspeita.
@@ -87,6 +89,20 @@ export interface TintaDaPagina {
   desenho: number;
   /** Ops de imagem (`paintImage*`). Linha de texto virada tira mora aqui. */
   imagem: number;
+  /**
+   * Quantas dessas imagens são GRANDES — cobrem ao menos
+   * `FRACAO_DA_IMAGEM_GRANDE` da folha. Ver `imagensNaoLidas` em [[pdf-text.ts]].
+   *
+   * É o sinal da página PARCIALMENTE muda: tem texto acima do limiar, e por
+   * isso passa por lida, mas um quadro ou figura dela está desenhado como
+   * imagem. No 141-26 (05/10/2026) o Quadro de Áreas inteiro da p12 era uma
+   * imagem de 849x945 px sob um título e dois parágrafos — e a auditoria
+   * afirmou que a tabela não existia.
+   *
+   * Opcional: parecer antigo e fixture montada à mão não a têm, e ausência
+   * aqui vale "não medido", nunca "tem imagem".
+   */
+  imagensGrandes?: number;
 }
 
 export type ClasseDaPagina =
@@ -165,15 +181,30 @@ export interface DiagnosticoDoDocumento {
   paginas: PaginaClassificada[];
   /** As páginas que valem transcrição, em ordem. É o que o portão mostra. */
   mudas: number[];
+  /**
+   * As páginas de TEXTO com figura ou quadro desenhado como imagem — o que a
+   * extração entregou é verdade, mas não é a folha inteira.
+   *
+   * Lista separada de `mudas`, e não uma terceira classe, de propósito: a folha
+   * tem texto próprio e a extração continua mandando nela (`aplicarTranscricao`
+   * só escreve onde estava mudo). O que estas páginas ganham hoje é a marca no
+   * texto da IA — ver `textoDaPaginaParaIA` — e a trava que impede afirmar a
+   * ausência de um quadro que pode estar na imagem — ver [[audit-verify.ts]].
+   */
+  comImagemNaoLida: number[];
   totalDePaginas: number;
 }
 
 export function diagnosticarPaginasMudas(extracted: ExtractedPdf): DiagnosticoDoDocumento {
   const paginas = extracted.pages.map(classificarPagina);
+  const textos = new Set(paginas.filter((p) => p.classe === "texto").map((p) => p.pagina));
 
   return {
     paginas,
     mudas: paginas.filter((p) => p.classe === "muda").map((p) => p.pagina),
+    comImagemNaoLida: extracted.pages
+      .filter((page) => textos.has(page.page) && imagensNaoLidas(page) > 0)
+      .map((page) => page.page),
     totalDePaginas: extracted.pageCount,
   };
 }

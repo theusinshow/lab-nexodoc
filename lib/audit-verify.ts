@@ -7,7 +7,8 @@ import type { ExtractedPdf } from "@/lib/pdf-text";
  * podem usar `@/` porque somem na compilacao; este e de runtime.
  */
 import { sugestaoEhAcionavel } from "./qualidade-da-sugestao.ts";
-import { textoDoDocumentoParaIA } from "./pdf-text.ts";
+import { imagensNaoLidas, textoDoDocumentoParaIA } from "./pdf-text.ts";
+import { paginasDoAchado } from "./paginas-do-achado.ts";
 
 // ---------------------------------------------------------------------------
 // Trava anti-alucinação (Fase B).
@@ -187,8 +188,87 @@ export function isEditorialExtractionArtifact(finding: AuditFinding, haystack: H
   return false;
 }
 
+// --- Ausência afirmada sobre imagem não lida --------------------------------
+
+/*
+ * "NÃO EXISTE TABELA" NUMA FOLHA EM QUE A TABELA É IMAGEM.
+ *
+ * O caso (05/10/2026): 141-26, p12. O título "1.2 Tabela 2: Quadro de Áreas"
+ * está em texto; o quadro inteiro, numa imagem de 849x945 px. A IA recebia o
+ * título seguido de nada e abria INC-001 "não existe tabela". O 117-25 tem o
+ * gêmeo: "Não existem linhas ou valores da tabela após esse título".
+ *
+ * O prompt já é avisado pela marca `[IMAGEM NÃO LIDA]`, mas prompt é pedido,
+ * não garantia. Esta é a garantia: o achado de IA que afirma AUSÊNCIA de
+ * quadro/tabela numa página (ou na seguinte — título no pé, quadro na próxima)
+ * que tem imagem não lida não sai como fato. Ele é REBAIXADO a sugestão de
+ * confiança baixa, com o motivo no texto — e não apagado, porque a imagem pode
+ * ser uma figura e a tabela faltar de verdade (peque pelo excesso).
+ */
+const QUADRO = /\b(tabela|quadro)s?\b/;
+const AUSENCIA =
+  /\b(nao (existe|existem|ha|apresenta|apresentam|consta|constam|contem|traz|foi (apresentad|encontrad|inserid|incluid)\w*)|ausen\w*|inexist\w*|faltante|sem (linhas|valores|conteudo|dados|preenchimento)|vazi[oa]s?)\b/;
+const VIZINHANCA = 80;
+
+/** O texto do achado fala de quadro/tabela AUSENTE (as duas ideias perto)? */
+function afirmaQuadroAusente(finding: AuditFinding): boolean {
+  const scope = normalizeCollapsed(
+    [finding.tipo, finding.descricao, finding.evidencia, finding.conflito].join(" \n "),
+  );
+  for (const m of scope.matchAll(new RegExp(QUADRO.source, "g"))) {
+    const ini = Math.max(0, (m.index ?? 0) - VIZINHANCA);
+    const fim = (m.index ?? 0) + m[0].length + VIZINHANCA;
+    if (AUSENCIA.test(scope.slice(ini, fim))) return true;
+  }
+  return false;
+}
+
+/** A página do achado (ou a seguinte) tem imagem que a auditoria não leu? */
+function paginaComImagemNaoLida(finding: AuditFinding, extracted: ExtractedPdf): number | null {
+  const comImagem = new Set(
+    extracted.pages.filter((p) => imagensNaoLidas(p) > 0).map((p) => p.page),
+  );
+  if (comImagem.size === 0) return null;
+
+  for (const n of paginasDoAchado({ pagina: finding.pagina })) {
+    if (comImagem.has(n)) return n;
+    if (comImagem.has(n + 1)) return n + 1;
+  }
+  return null;
+}
+
+/**
+ * O achado rebaixado, ou `null` quando a trava não se aplica a ele.
+ *
+ * Exportado para o teste; quem usa é `filterGroundedFindings`.
+ */
+export function rebaixarAusenciaSobreImagem(
+  finding: AuditFinding,
+  extracted: ExtractedPdf,
+): AuditFinding | null {
+  if (finding.origem === "regra" || !afirmaQuadroAusente(finding)) return null;
+  const pagina = paginaComImagemNaoLida(finding, extracted);
+  if (pagina === null) return null;
+
+  const motivo =
+    `Não verificável: a página ${pagina} tem figura ou quadro em imagem, que a auditoria não lê — ` +
+    "a tabela pode estar nela. Confira na folha antes de tratar como ausente.";
+
+  return {
+    ...finding,
+    tier: "sugestao",
+    confianca: "baixa",
+    conflito: finding.conflito ? `${finding.conflito} ${motivo}` : motivo,
+  };
+}
+
 export type EvidenceGateResult = {
   kept: AuditFinding[];
+  /**
+   * Quantos dos MANTIDOS foram rebaixados a sugestão por afirmarem ausência de
+   * quadro numa folha com imagem não lida — ver `rebaixarAusenciaSobreImagem`.
+   */
+  rebaixadosPorImagem: number;
   /** descartados por falta de evidência no texto (alucinação) */
   dropped: AuditFinding[];
   /** suprimidos por ruído: meta-achado da auditoria ou artefato de extração */
@@ -223,8 +303,13 @@ export function filterGroundedFindings(
   const kept: AuditFinding[] = [];
   const dropped: AuditFinding[] = [];
   const suppressed: AuditFinding[] = [];
+  const rebaixados = new Set<AuditFinding>();
 
-  for (const finding of findings) {
+  for (const original of findings) {
+    const rebaixado = rebaixarAusenciaSobreImagem(original, extracted);
+    if (rebaixado) rebaixados.add(rebaixado);
+    const finding = rebaixado ?? original;
+
     if (finding.origem === "regra") {
       kept.push(finding);
       continue;
@@ -255,5 +340,7 @@ export function filterGroundedFindings(
     (f) => f.origem !== "regra" && !sugestaoEhAcionavel(f.sugestao_correcao ?? "").ok,
   ).length;
 
-  return { kept, dropped, suppressed, sugestoesFracas };
+  const rebaixadosPorImagem = kept.filter((f) => rebaixados.has(f)).length;
+
+  return { kept, dropped, suppressed, sugestoesFracas, rebaixadosPorImagem };
 }

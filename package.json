@@ -317,6 +317,7 @@
     "test:ld:rodape": "node --import ./scripts/lib/resolver-de-imports.mjs scripts/test-ld-rodape.ts",
     "test:marcacao": "node scripts/test-marcacao-do-trecho.ts",
   "test:pagina-muda": "node scripts/test-pagina-muda.ts",
+  "test:imagem-nao-lida": "node scripts/test-imagem-nao-lida.ts",
   "test:parse-filename": "node scripts/test-parse-filename.ts",
   "test:base-anterior": "node scripts/test-base-anterior.ts",
   "prova:pagina-muda": "node scripts/prova-pagina-muda.ts",
