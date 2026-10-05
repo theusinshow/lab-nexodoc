@@ -319,6 +319,8 @@ export type SavedFeedback = {
   resolvedByName: string | null;
   /** E o e-mail dessa pessoa, em minúsculas — "fui eu que corrigi". */
   resolvedByEmail?: string | null;
+  /** Com "gravidade errada": para onde quem revisou acha que devia ir. */
+  severidadeSugerida?: "MAIS_GRAVE" | "MENOS_GRAVE" | null;
   /** Quantos comentários a conversa do achado tem (A08: a fila mostra sem abrir). */
   comentarios?: number;
   assignedAt?: string | null;

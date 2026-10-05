@@ -374,6 +374,11 @@ model AuditFeedback {
   findingLabel   String?
   page           String?
   verdict        AuditFeedbackVerdict?
+  /// Com `verdict = WRONG_SEVERITY`: para onde quem revisou acha que a
+  /// gravidade devia ir — "MAIS_GRAVE" ou "MENOS_GRAVE". É o dado que ensina o
+  /// motor a calibrar o nível, e não só que errou (05/10/2026). Nulo = sem
+  /// sugestão.
+  severidadeSugerida String?
   /// Quando foi marcado como corrigido. Nulo = não corrigido — o instante fica
   /// registrado porque "quando" é a pergunta seguinte de quem revisa em dupla.
   resolvedAt     DateTime?

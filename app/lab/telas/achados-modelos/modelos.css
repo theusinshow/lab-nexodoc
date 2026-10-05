@@ -1,0 +1,130 @@
+/*
+ * ACHADOS: QUATRO MODELOS DE LAYOUT (laboratório, 05/10/2026).
+ * As peças são as da fila de hoje (classes rs-*); aqui só o ARRANJO de cada modelo.
+ */
+
+/* ------------------------------ a bancada ------------------------------ */
+.ds .am-bancada { display: grid; gap: 10px; }
+.ds .am-controles { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.ds .am-controles .ds-seg { width: auto; }
+.ds .am-parecer { display: inline-flex; align-items: center; gap: 8px; font-size: var(--ds-text-xs); color: var(--ds-text-tertiary); }
+.ds .am-parecer select { height: 30px; padding: 0 8px; border: 0; border-radius: 8px; background: var(--ds-surface-card); box-shadow: var(--ds-edge); font: inherit; font-size: 12.5px; color: var(--ds-text-primary); }
+.ds .am-ideia { margin: 0 0 4px; max-width: 90ch; font-size: var(--ds-text-xs); line-height: 1.5; color: var(--ds-text-secondary); }
+.ds .am-palco { display: block; }
+
+/* ------------------------------ MODELO B ------------------------------ */
+.ds .am-b { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 12px; height: 780px; }
+.ds .am-b-facetas { display: grid; align-content: start; gap: 16px; padding: 12px 10px; overflow-y: auto; border-radius: var(--ds-radius-card); background: var(--ds-surface-card); box-shadow: var(--ds-edge); }
+.ds .am-faceta { display: grid; gap: 2px; }
+.ds .am-faceta h4 { margin: 0 6px 4px; font-size: 10.5px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ds-text-tertiary); }
+.ds .am-faceta-item { display: flex; align-items: center; gap: 8px; height: 28px; padding: 0 8px; border: 0; border-radius: 7px; background: none; font: inherit; font-size: var(--ds-text-xs); color: var(--ds-text-secondary); text-align: left; cursor: pointer; }
+.ds .am-faceta-item em { margin-left: auto; font-style: normal; font-size: 11px; color: var(--ds-text-tertiary); }
+.ds .am-faceta-item:hover { background: rgb(255 255 255 / 0.04); color: var(--ds-text-primary); }
+.ds .am-faceta-item[aria-pressed="true"] { background: var(--ds-nexo-wash); color: var(--ds-text-primary); box-shadow: inset 0 0 0 1px var(--ds-nexo-line); }
+.ds .am-faceta .ds-seletor, .ds .am-faceta > div { width: 100%; }
+.ds .am-b-facetas .rs-faltou { margin: 0; padding: 0 6px; }
+.ds .am-b-caixa { position: relative; display: flex; flex-direction: column; min-height: 0; border-radius: var(--ds-radius-card); background: var(--ds-surface-card); box-shadow: var(--ds-edge); overflow: hidden; }
+.ds .am-b-topo { display: flex; align-items: center; gap: 10px; padding: 12px; border-bottom: 1px solid var(--ds-line-subtle); }
+.ds .am-b-topo .rs-busca { flex: 1; }
+.ds .am-b-conta { font-size: 11.5px; color: var(--ds-text-tertiary); }
+.ds .am-b-caixa > .am-rolagem { flex: 1; padding: 6px; }
+.ds .am-b-item { border-radius: 12px; }
+.ds .am-b-cabeca { position: relative; display: flex; align-items: center; }
+.ds .am-b-cabeca .rs-linha { flex: 1; }
+.ds .am-b-seta { flex: none; margin: 0 10px 0 2px; color: var(--ds-text-tertiary); transition: transform 0.15s; }
+.ds .am-b-aberto { margin: 6px 0; background: var(--ds-surface-raised); box-shadow: var(--ds-edge-strong); }
+.ds .am-b-aberto .rs-linha-fundo { display: none; }
+.ds .am-b-corpo { display: grid; gap: 12px; padding: 0 16px 14px 44px; }
+.ds .am-b-corpo .am-cabeca { margin: 0 0 0 -24px; padding-left: 0; border: 0; }
+.ds .am-b-grade { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.ds .am-b-grade .rs-partes { margin: 0; }
+.ds .am-b-grade .rs-dono { margin: 10px 0 0; flex-wrap: wrap; }
+.ds .am-b-grade .rs-previa { margin: 0; }
+.ds .am-b-corpo .rs-acoes { margin: 0 -16px -14px -44px; border-radius: 0 0 12px 12px; }
+
+/* ------------------------------ MODELO C ------------------------------ */
+.ds .am-c { display: grid; grid-template-columns: 210px minmax(0, 1fr) 380px; gap: 12px; height: 800px; }
+.ds .am-c-paginas { position: relative; display: flex; flex-direction: column; gap: 8px; min-height: 0; padding: 10px; border-radius: var(--ds-radius-card); background: var(--ds-surface-card); box-shadow: var(--ds-edge); overflow: hidden; }
+.ds .am-c-paginas .am-situacoes .ds-seg button { padding: 0 7px; font-size: 11.5px; }
+.ds .am-c-regua { flex: 1; display: grid; align-content: start; gap: 2px; }
+.ds .am-c-pagina { display: flex; align-items: center; gap: 8px; height: 30px; padding: 0 8px; border: 0; border-radius: 7px; background: none; font: inherit; font-size: 12px; color: var(--ds-text-secondary); cursor: pointer; text-align: left; }
+.ds .am-c-pagina:hover { background: rgb(255 255 255 / 0.04); }
+.ds .am-c-pagina[aria-current="page"] { background: var(--ds-nexo-wash); color: var(--ds-text-primary); box-shadow: inset 0 0 0 1px var(--ds-nexo-line); }
+.ds .am-c-pontos { display: flex; flex-wrap: wrap; gap: 3px; margin-left: auto; }
+.ds .am-c-ponto-feito { opacity: 0.35; }
+.ds .am-c-paginas .rs-faltou { margin: 0; }
+.ds .am-c-documento { display: grid; grid-template-rows: auto minmax(0, 1fr); min-height: 0; border-radius: var(--ds-radius-card); background: var(--ds-surface-sunken); box-shadow: var(--ds-edge); overflow: hidden; }
+.ds .am-c-barra { display: flex; align-items: center; gap: 6px; padding: 8px 10px; border-bottom: 1px solid var(--ds-line-subtle); background: var(--ds-surface-card); font-size: var(--ds-text-xs); color: var(--ds-text-secondary); }
+.ds .am-c-barra-meio { flex: 1; }
+.ds .am-c-folha { overflow: auto; padding: 20px; display: flex; justify-content: center; }
+.ds .am-c-carregando { display: grid; place-items: center; height: 100%; font-size: 12px; color: var(--ds-text-tertiary); }
+.ds .am-c-lado { position: relative; display: grid; grid-template-rows: auto auto auto minmax(0, 1fr) auto; min-height: 0; border-radius: var(--ds-radius-card); background: var(--ds-surface-card); box-shadow: var(--ds-edge-strong); overflow: hidden; }
+.ds .am-c-titulo { margin: 0; padding: 12px 14px 4px; font-size: var(--ds-text-xs); font-weight: 500; }
+.ds .am-c-dapagina { display: grid; padding: 0 6px 8px; max-height: 170px; overflow-y: auto; border-bottom: 1px solid var(--ds-line-subtle); }
+.ds .am-c-detalhe { display: grid; align-content: start; gap: 10px; padding: 0 16px 16px; }
+.ds .am-c-detalhe .am-cabeca { margin: 0 -16px; }
+.ds .am-c-detalhe h2 { margin: 0; font-size: 17px; font-weight: 400; line-height: 1.3; }
+.ds .am-c-detalhe .rs-faixa, .ds .am-c-detalhe .rs-dono { margin: 0; }
+.ds .am-c-detalhe .rs-partes > div { grid-template-columns: 1fr; gap: 3px; }
+.ds .am-c-acoes .rs-acoes { padding: 10px 12px; }
+
+/* ------------------------------ MODELO D ------------------------------ */
+.ds .am-d { display: grid; gap: 10px; }
+.ds .am-d-topo { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.ds .am-d-topo .rs-busca { flex: 1; min-width: 240px; }
+.ds .am-d-topo .am-selecao-fixa { margin: 0; }
+.ds .am-d-quadro { position: relative; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; height: 700px; }
+.ds .am-d-coluna { display: grid; grid-template-rows: auto minmax(0, 1fr); min-height: 0; border-radius: var(--ds-radius-card); background: var(--ds-surface-card); box-shadow: var(--ds-edge); overflow: hidden; }
+.ds .am-d-coluna header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; padding: 12px 12px 8px; border-bottom: 1px solid var(--ds-line-subtle); }
+.ds .am-d-coluna header b { font-weight: 500; font-size: var(--ds-text-xs); }
+.ds .am-d-coluna header .ds-num { font-size: 11.5px; color: var(--ds-text-tertiary); }
+.ds .am-d-coluna header small { flex-basis: 100%; font-size: 11px; color: var(--ds-text-tertiary); }
+.ds .am-d-coluna--corrigidos header b { color: var(--ds-state-ok); }
+.ds .am-d-coluna .am-rolagem { display: grid; align-content: start; gap: 6px; padding: 8px; }
+.ds .am-d-cartao { position: relative; display: grid; gap: 4px; padding: 8px 10px 10px; border-radius: 10px; background: var(--ds-surface-raised); box-shadow: var(--ds-edge); }
+.ds .am-d-cartao:hover { box-shadow: var(--ds-edge-strong); }
+.ds .am-d-cartao--ativo { box-shadow: inset 0 0 0 1px var(--ds-nexo-line); }
+.ds .am-d-cartao--ok { background: var(--ds-state-ok-wash); }
+.ds .am-d-cartao--ok b { color: var(--ds-text-secondary); text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--ds-state-ok) 60%, transparent); }
+.ds .am-d-cartao-topo { display: flex; align-items: center; gap: 6px; min-height: 22px; }
+.ds .am-d-cartao-topo .rs-marcar { opacity: 0.6; }
+.ds .am-d-cartao-topo .am-rapidas { top: 6px; right: 6px; transform: none; }
+.ds .am-d-cartao-corpo { display: grid; gap: 6px; padding: 0; border: 0; background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+.ds .am-d-cartao-corpo b { font-weight: 400; font-size: var(--ds-text-xs); line-height: 1.4; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
+.ds .am-d-cartao-pe { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 11px; color: var(--ds-text-tertiary); }
+.ds .am-d-dono { display: inline-flex; align-items: center; gap: 4px; margin-left: auto; }
+.ds .am-d-vazia { margin: 8px; font-size: 11.5px; color: var(--ds-text-tertiary); }
+.ds .am-d-gaveta { position: absolute; top: 0; right: 0; bottom: 0; z-index: 5; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; width: min(560px, 60%); border-radius: var(--ds-radius-card); background: var(--ds-surface-card); box-shadow: var(--ds-edge-strong), -18px 0 40px rgb(0 0 0 / 0.45); overflow: hidden; }
+.ds .am-d-gaveta-topo { display: flex; align-items: center; padding-right: 8px; border-bottom: 1px solid var(--ds-line-subtle); }
+.ds .am-d-gaveta-topo .am-cabeca { flex: 1; border: 0; }
+.ds .am-d-gaveta .am-rolagem { display: grid; align-content: start; gap: 10px; padding: 14px 18px; }
+.ds .am-d-gaveta h2 { margin: 0; font-size: 19px; font-weight: 400; line-height: 1.25; }
+.ds .am-d-gaveta .rs-faixa, .ds .am-d-gaveta .rs-dono, .ds .am-d-gaveta .rs-previa { margin: 0; }
+.ds .am-d-gaveta-pe .rs-acoes { padding: 10px 14px; }
+.ds .am-d-rodape { display: flex; flex-wrap: wrap; align-items: start; gap: 16px; }
+.ds .am-d-rodape .rs-grupo--sugestoes { flex: 1; min-width: 320px; border-radius: var(--ds-radius-card); background: var(--ds-surface-card); box-shadow: var(--ds-edge); padding: 4px 6px; }
+
+/* Colunas estreitas (C à direita, D na gaveta): tudo quebra linha em vez de vazar. */
+.ds .am-c-lado > *, .ds .am-c-detalhe > *, .ds .am-d-gaveta .am-rolagem > * { min-width: 0; }
+.ds .am-c-detalhe, .ds .am-d-gaveta .am-rolagem { overflow-x: hidden; }
+.ds .am-c-lado .am-cabeca, .ds .am-d-gaveta .am-cabeca { flex-wrap: wrap; row-gap: 4px; padding-left: 16px; }
+.ds .am-c-lado .am-cabeca .rs-origem { display: none; }
+.ds .am-c-lado .rs-faixa, .ds .am-d-gaveta .rs-faixa { flex-wrap: wrap; }
+.ds .am-c-lado .rs-faixa-paginas, .ds .am-d-gaveta .rs-faixa-paginas { margin-left: 0; }
+.ds .am-c-lado .rs-dono { flex-wrap: wrap; }
+.ds .am-c-lado .rs-botoes .ds-grupo { width: 100%; }
+.ds .am-c-paginas .ds-seletor, .ds .am-c-paginas > div:has(> button[aria-haspopup]) { width: 100%; }
+.ds .am-c-detalhe .rs-evidencias, .ds .am-d-gaveta .rs-evidencias { min-width: 0; }
+.ds .am-c-detalhe .rs-evidencias figcaption, .ds .am-d-gaveta .rs-evidencias figcaption { flex-wrap: wrap; gap: 4px; }
+.ds .am-c-detalhe .rs-evidencias blockquote, .ds .am-d-gaveta .rs-evidencias blockquote { overflow-wrap: anywhere; }
+
+/* ------------------------------ o chat ao lado ------------------------------ */
+.ds .am-com-chat { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 14px; align-items: stretch; }
+.ds .am-chat { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 10px; padding: 12px; border-radius: var(--ds-radius-card); background: var(--ds-surface-card); box-shadow: var(--ds-edge); font-size: var(--ds-text-xs); }
+.ds .am-chat header { display: flex; align-items: center; gap: 8px; font-weight: 500; }
+.ds .am-chat header small { margin-left: auto; font-weight: 400; font-size: 10.5px; color: var(--ds-text-tertiary); }
+.ds .am-chat-orbe { width: 12px; height: 12px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, var(--ds-nexo-soft), var(--ds-nexo-strong)); }
+.ds .am-chat-msgs { display: grid; align-content: start; gap: 8px; overflow-y: auto; }
+.ds .am-chat-msg { margin: 0; line-height: 1.5; color: var(--ds-text-secondary); }
+.ds .am-chat-msg--eu { justify-self: end; max-width: 85%; padding: 6px 10px; border-radius: 10px; background: var(--ds-surface-raised); color: var(--ds-text-primary); }
+.ds .am-chat-campo { padding: 10px 12px; border-radius: 10px; background: var(--ds-surface-sunken); box-shadow: inset 0 0 0 1px var(--ds-line-default); color: var(--ds-text-tertiary); }

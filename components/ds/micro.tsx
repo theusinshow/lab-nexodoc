@@ -131,6 +131,8 @@ export function Cronometro({ desde }: { desde: number }) {
 // Quando uma dica acabou de fechar, a próxima abre na hora: quem anda pela
 // fileira de ícones lê uma atrás da outra sem esperar de novo.
 let ultimaFechou = 0;
+/** O relógio fora do componente: chamado só em evento (abrir/fechar), nunca no render. */
+const agora = () => Date.now();
 
 /**
  * A raiz `.ds` mais de fora: é onde a dica é desenhada. Dentro do palco do Nexo
@@ -146,6 +148,22 @@ function raizDoSistema(el: HTMLElement | null) {
 }
 
 /**
+ * Onde a dica nasce, medida no botão e convertida para dentro da raiz.
+ *
+ * O ZOOM DA RAIZ: em tela de 2300px ou mais a `.ds` tem `zoom: 1,125`, e a
+ * posição medida na janela, usada como `left`/`top` lá dentro, saía
+ * multiplicada por ele — a dica nascia longe do botão (05/10/2026).
+ */
+function posicaoDaDica(el: HTMLElement | null, lado: "cima" | "baixo" | "esquerda") {
+  const r = el?.getBoundingClientRect();
+  if (!r) return null;
+  const raiz = raizDoSistema(el);
+  const z = raiz ? parseFloat(getComputedStyle(raiz).zoom || "1") || 1 : 1;
+  const p = lado === "esquerda" ? { x: r.left - 8, y: r.top + r.height / 2 } : lado === "baixo" ? { x: r.left + r.width / 2, y: r.bottom + 7 } : { x: r.left + r.width / 2, y: r.top - 7 };
+  return { x: p.x / z, y: p.y / z };
+}
+
+/**
  * A dica de um botão só de ícone: o nome e a tecla. A primeira espera 400 ms
  * (passar o mouse por cima não acende nada); as seguintes, se vierem logo,
  * abrem na hora. Abre também com o foco do teclado.
@@ -157,12 +175,12 @@ export function Dica({ texto, tecla, lado = "cima", children }: { texto: string;
   const ancora = useRef<HTMLSpanElement>(null);
   const espera = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mostrar = () => {
-    const r = ancora.current?.getBoundingClientRect();
-    if (r) setPos(lado === "esquerda" ? { x: r.left - 8, y: r.top + r.height / 2 } : lado === "baixo" ? { x: r.left + r.width / 2, y: r.bottom + 7 } : { x: r.left + r.width / 2, y: r.top - 7 });
+    const p = posicaoDaDica(ancora.current, lado);
+    if (p) setPos(p);
     setAberta(true);
   };
   const abrir = () => {
-    const quente = Date.now() - ultimaFechou < 300;
+    const quente = agora() - ultimaFechou < 300;
     if (espera.current) clearTimeout(espera.current);
     if (quente) mostrar();
     else espera.current = setTimeout(mostrar, 400);
@@ -170,7 +188,7 @@ export function Dica({ texto, tecla, lado = "cima", children }: { texto: string;
   const fechar = () => {
     if (espera.current) clearTimeout(espera.current);
     setAberta((a) => {
-      if (a) ultimaFechou = Date.now();
+      if (a) ultimaFechou = agora();
       return false;
     });
   };

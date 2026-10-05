@@ -61,6 +61,8 @@ export interface AchadoDaTela {
   meu: boolean;
   desfecho: DesfechoDaTela | null;
   validade: FeedbackVerdict | null;
+  /** Com "gravidade errada": "MAIS_GRAVE" ou "MENOS_GRAVE" (05/10/2026). */
+  severidade: "MAIS_GRAVE" | "MENOS_GRAVE" | null;
   comentarios: number;
   linha: SavedFeedback | null;
 }
@@ -109,6 +111,7 @@ function montarAchado(f: AuditFinding, linha: SavedFeedback | undefined, euSou: 
       ? { tipo: (linha!.resolutionKind ?? "FIXED_IN_DOC") as Desfecho, por: linha!.resolvedByName, quando: linha!.resolvedAt, nota: linha!.note || null }
       : null,
     validade: linha?.verdict ?? null,
+    severidade: linha?.severidadeSugerida ?? null,
     comentarios: linha?.comentarios ?? 0,
     linha: linha ?? null,
   };
@@ -269,14 +272,33 @@ export function useParecerVivo({
   );
 
   /** Validade para o benchmark (procede, gravidade errada) — não encerra o achado. */
+  /*
+   * O VOTO NA IA. `null` desfaz; com "gravidade errada", `severidade` diz para
+   * onde ela devia ir — é o que ensina o motor a calibrar, e não só que errou.
+   */
   const julgar = useCallback(
-    async (a: AchadoDaTela, validade: FeedbackVerdict) => {
+    async (a: AchadoDaTela, validade: FeedbackVerdict | null, severidade: "MAIS_GRAVE" | "MENOS_GRAVE" | null = null) => {
       setSalvando(a.chave);
       setAviso(null);
       try {
-        await postar({ findingId: a.chave, findingLabel: a.titulo, page: a.pagina ?? undefined, verdict: validade }, "Não foi possível salvar a avaliação.");
-        mexerNaLinha(a.chave, { verdict: validade });
-        setAviso({ tom: "ok", texto: validade === "WRONG_SEVERITY" ? "Avisei o motor: a gravidade está errada." : "Anotado: o achado procede." });
+        await postar(
+          { findingId: a.chave, findingLabel: a.titulo, page: a.pagina ?? undefined, verdict: validade, ...(validade === "WRONG_SEVERITY" ? { severidadeSugerida: severidade } : {}) },
+          "Não foi possível salvar a avaliação.",
+        );
+        mexerNaLinha(a.chave, { verdict: validade, severidadeSugerida: validade === "WRONG_SEVERITY" ? severidade : null });
+        setAviso({
+          tom: "ok",
+          texto:
+            validade === null
+              ? "Voto desfeito."
+              : validade === "WRONG_SEVERITY"
+                ? severidade === "MAIS_GRAVE"
+                  ? "Avisei o motor: o achado é mais grave do que ele disse."
+                  : severidade === "MENOS_GRAVE"
+                    ? "Avisei o motor: o achado é menos grave do que ele disse."
+                    : "Avisei o motor: a gravidade está errada."
+                : "Anotado: o achado procede.",
+        });
       } catch (e) {
         setAviso({ tom: "falha", texto: e instanceof Error ? e.message : "Não foi possível salvar a avaliação." });
       } finally {

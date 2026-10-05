@@ -78,7 +78,7 @@ async function copiarTexto(texto: string): Promise<boolean> {
  * exatamente o que se procura no arquivo editável. Um clique copia, e o "Copiado"
  * confirma — dali é Ctrl+F no Writer e colar.
  */
-function Trecho({ texto, marca }: { texto: string; marca?: string }) {
+export function Trecho({ texto, marca }: { texto: string; marca?: string }) {
   const [copiado, setCopiado] = useState(false);
   useEffect(() => {
     if (!copiado) return;

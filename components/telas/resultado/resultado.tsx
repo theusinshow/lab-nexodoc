@@ -21,7 +21,7 @@ import { resolverFonte, type FonteDoCatalogo } from "@/lib/fonte-da-evidencia";
 import type { TextoCorrigido } from "@/lib/texto-corrigido";
 import type { Nivel } from "@/lib/nivel-do-achado";
 
-import { FilaDeAchados } from "./fila";
+import { FilaDeAchadosA } from "./fila-a/fila-a";
 import { NoDocumento } from "./no-documento";
 import { RelatorioDoParecer } from "./relatorio";
 import { ResumoDoParecer, type ComparadoComAnterior } from "./resumo";
@@ -165,7 +165,7 @@ export function ResultadoDoParecer({
             />
           )}
           {vista === "findings" && (
-            <FilaDeAchados key={filaKey} filtroInicial={filaInicial ?? null} nivelInicial={nivelDaFila} parecer={parecer} auditId={auditId} catalogo={catalogo} inicial={aberto} onVerNoMemorial={verNoMemorial} aoGerarTexto={aoGerarTexto} />
+            <FilaDeAchadosA key={filaKey} filtroInicial={filaInicial ?? null} nivelInicial={nivelDaFila} parecer={parecer} auditId={auditId} catalogo={catalogo} inicial={aberto} onVerNoMemorial={verNoMemorial} aoGerarTexto={aoGerarTexto} teclado={!visor} />
           )}
           {vista === "report" && <RelatorioDoParecer report={report} parecer={parecer} />}
           {vista === "documento" && <NoDocumento report={report} parecer={parecer} catalogo={catalogo} onVerNoMemorial={verNoMemorial} onAbrir={(chave) => abrirNaFila(chave)} />}

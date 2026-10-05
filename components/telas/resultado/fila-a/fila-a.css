@@ -1,0 +1,146 @@
+/*
+ * A FILA DE ACHADOS, modelo A ("Três faixas") — aprovado em 05/10/2026.
+ * As peças usam as classes da fila anterior (rs-*); aqui, o arranjo, o que
+ * flutua e os acabamentos do modelo.
+ */
+
+/* ------------------------------ comuns ------------------------------ */
+.ds .am-rolagem { min-height: 0; overflow-y: auto; }
+.ds .am-linha-de-controles { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+.ds .am-situacoes { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.ds .am-situacoes .ds-seg { width: auto; }
+.ds .am-situacoes .ds-seg button { flex: none; padding: 0 10px; }
+.ds .am-sem-previa { margin: 0; }
+.ds .am-selecao-fixa { position: static; margin: 0 10px 8px; box-shadow: var(--ds-edge-strong); }
+.ds .am-selecao-fixa .ds-menu { top: calc(100% + 6px) !important; bottom: auto; transform-origin: top left !important; }
+
+/* As ações rápidas do hover da linha: corrigir e atribuir sem abrir o achado. */
+.ds .am-linha-com-rapidas { position: relative; }
+.ds .am-rapidas { position: absolute; right: 6px; top: 50%; display: flex; align-items: center; gap: 2px; padding: 2px; border-radius: 9px; background: var(--ds-surface-raised); box-shadow: var(--ds-edge-strong); transform: translateY(-50%); opacity: 0; pointer-events: none; transition: opacity 0.12s; }
+.ds .rs-linha:hover .am-rapidas, .ds .am-d-cartao:hover .am-rapidas, .ds .am-rapidas:focus-within { opacity: 1; pointer-events: auto; }
+.ds .am-rapida { display: grid; place-items: center; width: 26px; height: 26px; border: 0; border-radius: 7px; background: none; color: var(--ds-state-ok); cursor: pointer; }
+.ds .am-rapida:hover { background: var(--ds-state-ok-wash); }
+.ds .am-rapidas .ds-btn { height: 26px; width: 26px; padding: 0; justify-content: center; }
+
+/* As partes "juntas": errado em destaque; importa e fazer mais compactos. */
+.ds .am-partes-juntas > div { grid-template-columns: 1fr; gap: 4px; }
+.ds .am-partes-juntas > div:first-child dd { font-size: var(--ds-text-sm); color: var(--ds-text-primary); }
+
+/* ------------------------------ MODELO A (polido) ------------------------------ */
+.ds .am-a { display: grid; grid-template-columns: minmax(300px, 34%) minmax(0, 1fr); gap: 12px; height: 780px; }
+.ds .am-a > * { min-width: 0; }
+
+/* a lista */
+.ds .am-a-lista { position: relative; display: flex; flex-direction: column; min-height: 0; border-radius: var(--ds-radius-card); background: var(--ds-surface-card); box-shadow: var(--ds-edge); overflow: hidden; }
+.ds .am-a-lista-topo { display: grid; gap: 8px; padding: 12px; border-bottom: 1px solid var(--ds-line-subtle); }
+.ds .am-a-busca { display: flex; align-items: center; gap: 8px; }
+.ds .am-a-busca .rs-busca { flex: 1; min-width: 0; }
+.ds .am-a-lista-topo .am-situacoes { justify-content: space-between; }
+.ds .am-a-lista-topo .am-situacoes .ds-seg { flex: 1; }
+.ds .am-a-lista-topo .am-situacoes .ds-seg button { flex: 1; padding: 0 8px; }
+.ds .am-a-linhas { flex: 1; padding: 4px 6px 72px; }
+.ds .am-a-linhas .rs-linha-titulo { white-space: normal; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; line-height: 1.35; }
+.ds .am-a-linhas .rs-linha-corpo { height: auto; min-height: 44px; padding-top: 6px; padding-bottom: 6px; }
+.ds .am-exibicao-botao { justify-content: center; width: 34px; height: 32px; padding: 0; gap: 4px; }
+.ds .am-exibicao-botao:has(b) { width: auto; padding: 0 10px; }
+
+/* o detalhe */
+.ds .am-a-detalhe { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; min-height: 0; border-radius: var(--ds-radius-card); background: var(--ds-surface-card); box-shadow: var(--ds-edge-strong); overflow: hidden; }
+.ds .am-a-topo { display: grid; gap: 10px; padding: 12px 20px 14px; border-bottom: 1px solid var(--ds-line-subtle); }
+.ds .am-a-identidade { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.ds .am-a-identidade > * { flex-shrink: 0; }
+.ds .am-a-origem { flex-shrink: 1 !important; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 11.5px; color: var(--ds-text-tertiary); }
+.ds .am-a-navegar { display: flex; align-items: center; gap: 2px; margin-left: auto; font-size: 11.5px; color: var(--ds-text-tertiary); }
+.ds .am-a-navegar > .ds-num { margin-right: 4px; }
+.ds .am-a-topo h2 { margin: 0; font-size: 20px; font-weight: 400; letter-spacing: -0.02em; line-height: 1.25; text-wrap: balance; }
+.ds .am-a-topo .rs-faixa { margin: 0; }
+.ds .am-a-topo .rs-faixa--paginas { flex-wrap: wrap; row-gap: 8px; }
+.ds .am-a-meta { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; }
+.ds .am-a-meta .rs-dono { margin: 0; }
+
+/* o voto na IA: botões com ícone, o voto dado fica aceso */
+.ds .am-avaliar { display: flex; align-items: center; gap: 6px; }
+.ds .am-avaliar-rotulo { margin-right: 2px; font-size: 11.5px; color: var(--ds-text-tertiary); }
+.ds .am-voto { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border: 0; border-radius: 8px; background: none; box-shadow: inset 0 0 0 1px var(--ds-line-default); font: inherit; font-size: var(--ds-text-xs); color: var(--ds-text-secondary); cursor: pointer; transition: background 0.15s, color 0.15s, box-shadow 0.15s; }
+.ds .am-voto svg { width: 14px; height: 14px; }
+.ds .am-voto:hover:not(:disabled) { background: rgb(255 255 255 / 0.04); color: var(--ds-text-primary); box-shadow: inset 0 0 0 1px var(--ds-line-strong); }
+.ds .am-voto[aria-pressed="true"] { background: var(--ds-nexo-wash); color: var(--ds-text-primary); box-shadow: inset 0 0 0 1px var(--ds-nexo-line); }
+.ds .am-voto[aria-pressed="true"] svg { color: var(--ds-nexo); }
+.ds .am-voto:disabled { opacity: 0.5; cursor: default; }
+.ds .am-voto:focus-visible { outline: 2px solid var(--ds-focus-ring); outline-offset: 2px; }
+
+/* o meio: texto ao lado da prévia; abaixo, as abas */
+.ds .am-a-meio { display: grid; align-content: start; gap: 18px; padding: 16px 20px 24px; overflow-y: auto; }
+.ds .am-a-lado-a-lado { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+.ds .am-a-lado-a-lado > * { min-width: 0; }
+.ds .am-a-lado-a-lado .rs-partes { margin: 0; }
+.ds .am-a-lado-a-lado .rs-partes > div:first-child { border-top: 0; padding-top: 0; }
+.ds .am-a-lado-a-lado .rs-previa { margin: 0; min-width: 0; grid-template-columns: minmax(0, 1fr); }
+.ds .am-a-lado-a-lado .rs-previa > * { min-width: 0; }
+.ds .am-a-lado-a-lado .rs-previa-janela { height: 240px; }
+.ds .am-a-meio .rs-aba { margin-top: 10px; }
+.ds .am-a-meio .ds-seg { width: auto; }
+
+/* o rodapé: as ações do tamanho do conteúdo, atalhos à direita */
+.ds .am-a-rodape { display: flex; align-items: center; gap: 12px; padding: 10px 20px; border-top: 1px solid var(--ds-line-subtle); background: rgb(255 255 255 / 0.012); }
+.ds .am-a-rodape .rs-acoes { flex: 1; min-width: 0; padding: 0; border: 0; background: none; }
+.ds .am-a-rodape .rs-atalhos { display: none; }
+.ds .am-a-rodape .rs-botoes { justify-content: flex-start; }
+.ds .am-a-rodape .ds-grupo { container-type: normal; flex: none; width: auto; }
+.ds .am-a-rodape .ds-grupo-botao { flex: none; padding: 0 14px; }
+.ds .am-a-atalhos { display: inline-flex; align-items: center; gap: 4px; flex: none; font-size: 11px; color: var(--ds-text-tertiary); white-space: nowrap; }
+.ds .am-a-rodape .rs-decisao { width: 100%; }
+
+/* o que flutua (menus e o popover de Exibição) */
+.ds .am-ancora { display: inline-flex; }
+.ds .am-flutuante.ds-menu { position: fixed; }
+.ds .am-exibicao { padding: 0; border-radius: 14px; background: var(--ds-surface-overlay); box-shadow: var(--ds-shadow-overlay); max-height: 70vh; overflow-y: auto; }
+.ds .am-exibicao .fl-painel-dentro { border: 0; }
+.ds .am-menu-vazio { margin: 6px 10px; font-size: var(--ds-text-xs); color: var(--ds-text-tertiary); }
+
+
+/* ------------------------------ acabamentos de 05/10 ------------------------------ */
+
+/* As ações rápidas da linha sentam NA BORDA de cima, como um selo — não cobrem o título. */
+.ds .am-a-linhas .am-rapidas { top: 0; right: 10px; transform: translateY(-45%); padding: 2px 3px; border-radius: 10px; }
+.ds .am-a-linhas .rs-linha:first-child .am-rapidas, .ds .am-a-linhas .rs-grupo h4 + .rs-linha .am-rapidas { transform: translateY(-20%); }
+.ds .am-a-linhas .rs-linha:hover { z-index: 2; }
+
+/* As situações com a divisão visível entre os botões. */
+.ds .am-a-lista-topo .am-situacoes .ds-seg { padding: 2px; gap: 0; }
+.ds .am-a-lista-topo .am-situacoes .ds-seg button { position: relative; }
+.ds .am-a-lista-topo .am-situacoes .ds-seg button + button::before { content: ""; position: absolute; left: 0; top: 7px; bottom: 7px; width: 1px; background: var(--ds-line-default); }
+.ds .am-a-lista-topo .am-situacoes .ds-seg button[aria-pressed="true"]::before, .ds .am-a-lista-topo .am-situacoes .ds-seg button[aria-pressed="true"] + button::before { opacity: 0; }
+
+/* A seta dos botões que abrem algo. */
+.ds .am-voto-seta { width: 12px !important; height: 12px !important; margin-left: -2px; opacity: 0.6; }
+
+/* O atribuidor do card: o ícone da lista (pessoa com +), ou o avatar de quem está com o achado. */
+.ds .am-atribuidor { display: inline-flex; align-items: center; gap: 8px; height: 30px; padding: 0 10px 0 4px; border: 0; border-radius: 999px; background: none; box-shadow: inset 0 0 0 1px var(--ds-line-default); font: inherit; font-size: var(--ds-text-xs); color: var(--ds-text-secondary); cursor: pointer; transition: background 0.15s, box-shadow 0.15s, color 0.15s; }
+.ds .am-atribuidor:hover:not(:disabled) { background: rgb(255 255 255 / 0.04); box-shadow: inset 0 0 0 1px var(--ds-line-strong); color: var(--ds-text-primary); }
+.ds .am-atribuidor[aria-expanded="true"] { box-shadow: inset 0 0 0 1px var(--ds-nexo-line); color: var(--ds-text-primary); }
+.ds .am-atribuidor--com { color: var(--ds-text-primary); }
+.ds .am-atribuidor--fixo { box-shadow: none; padding-left: 0; cursor: default; }
+.ds .am-atribuidor-icone { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--ds-nexo-wash); color: var(--ds-nexo); }
+.ds .am-atribuidor:focus-visible { outline: 2px solid var(--ds-focus-ring); outline-offset: 2px; }
+
+/* A lista de pessoas que o atribuidor abre. */
+.ds .am-pessoas { padding: 6px; border-radius: 14px; background: var(--ds-surface-overlay); box-shadow: var(--ds-shadow-overlay); }
+.ds .am-pessoas-dentro { display: grid; gap: 6px; }
+.ds .am-pessoas-busca { display: flex; align-items: center; gap: 6px; height: 32px; padding: 0 10px; border-radius: 9px; background: var(--ds-surface-sunken); box-shadow: inset 0 0 0 1px var(--ds-line-default); color: var(--ds-text-tertiary); }
+.ds .am-pessoas-busca input { flex: 1; min-width: 0; min-height: 0; height: 100%; border: 0; background: none; box-shadow: none; font: inherit; font-size: var(--ds-text-xs); color: var(--ds-text-primary); outline: none; }
+.ds .am-pessoas-lista { display: grid; gap: 1px; max-height: 280px; overflow-y: auto; }
+.ds .am-pessoa { display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 4px 8px; border: 0; border-radius: 9px; background: none; font: inherit; color: var(--ds-text-primary); text-align: left; cursor: pointer; }
+.ds .am-pessoa:hover, .ds .am-pessoa:focus-visible { background: rgb(255 255 255 / 0.06); outline: none; }
+.ds .am-pessoa[aria-selected="true"] { background: var(--ds-nexo-wash); }
+.ds .am-pessoa-nome { display: grid; flex: 1; min-width: 0; font-size: var(--ds-text-xs); }
+.ds .am-pessoa-nome small { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 11px; color: var(--ds-text-tertiary); }
+
+/* O popover da gravidade. */
+.ds .am-menu-titulo { margin: 4px 10px 6px; font-size: 11px; color: var(--ds-text-tertiary); }
+.ds .am-menu-marca { margin-left: auto; align-self: center; color: var(--ds-nexo); }
+.ds .am-menu-desfazer { margin-top: 4px; box-shadow: inset 0 1px 0 var(--ds-line-subtle); border-radius: 0 0 9px 9px !important; }
+
+/* No palco do Nexo a fila tinha 700px; a A segue a mesma altura lá. */
+.ds .re .am-a { height: 720px; }
+.ds .am-a--vazia { display: grid; align-content: start; gap: 12px; height: auto; padding: 24px; border-radius: var(--ds-radius-card); background: var(--ds-surface-card); box-shadow: var(--ds-edge); }

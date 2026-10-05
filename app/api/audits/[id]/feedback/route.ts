@@ -214,15 +214,21 @@ export async function POST(
     findingId?: string;
     findingLabel?: string;
     page?: string;
-    verdict?: string;
+    /** `null` DESFAZ o voto (e a gravidade sugerida junto). */
+    verdict?: string | null;
+    /** Com "gravidade errada": "MAIS_GRAVE" | "MENOS_GRAVE"; `null` apaga. */
+    severidadeSugerida?: string | null;
     /** Corrigido no memorial. Independente do veredito — ver o schema. */
     resolved?: boolean;
     /** COMO foi encerrado — ver [[lib/desfecho-do-achado.ts]]. */
     resolutionKind?: string;
     note?: string;
   };
-  const verdict = parseVerdict(body.verdict);
+  const limparVoto = body.verdict === null;
+  const verdict = limparVoto ? null : parseVerdict(body.verdict ?? undefined);
   const temResolvido = typeof body.resolved === "boolean";
+  const severidade =
+    body.severidadeSugerida === "MAIS_GRAVE" || body.severidadeSugerida === "MENOS_GRAVE" ? body.severidadeSugerida : null;
 
   /*
    * O DESFECHO é a terceira coisa que esta rota grava — e ela continua sendo
@@ -255,11 +261,11 @@ export async function POST(
    * comum — quem marca corrigido não está, com isso, avaliando o motor.
    * Recusar só quando não vier nenhum: aí a requisição não pede nada.
    */
-  if (!verdict && !temResolvido && !desfecho) {
+  if (!verdict && !temResolvido && !desfecho && !limparVoto) {
     return jsonError("Informe a avaliação do achado, o desfecho, ou se ele foi corrigido.");
   }
 
-  if (body.verdict !== undefined && !verdict) {
+  if (body.verdict !== undefined && !limparVoto && !verdict) {
     return jsonError("Classificação de feedback inválida.");
   }
 
@@ -296,6 +302,7 @@ export async function POST(
      * `note` cru aqui desfaria a validação que acabou de acontecer.
      */
     verdict: desfecho?.verdict ?? verdict,
+    severidadeSugerida: verdict === AuditFeedbackVerdict.WRONG_SEVERITY ? severidade : null,
     resolvedAt: desfecho ? desfecho.resolvedAt : (resolvedAt ?? null),
     note: desfecho ? desfecho.note : note,
     ...(desfecho
@@ -320,6 +327,13 @@ export async function POST(
             findingLabel: data.findingLabel,
             page: data.page,
             ...(verdict ? { verdict } : {}),
+            /*
+             * O VOTO DESFEITO volta a nulo, e a sugestão de gravidade vai junto;
+             * um voto novo que não seja "gravidade errada" também a apaga — ela
+             * só faz sentido junto daquele voto.
+             */
+            ...(limparVoto ? { verdict: null, severidadeSugerida: null } : {}),
+            ...(verdict ? { severidadeSugerida: verdict === AuditFeedbackVerdict.WRONG_SEVERITY ? severidade : null } : {}),
             ...(resolvedAt !== undefined ? { resolvedAt } : {}),
             ...(body.note !== undefined ? { note } : {}),
             /*
