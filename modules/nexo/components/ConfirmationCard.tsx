@@ -3134,6 +3134,12 @@ function AuditoriaConfirmation({
                 Conferindo se o documento tem texto…
               </span>
             )}
+            {/* O botão desligado diz por quê: sem isto ele parece quebrado. */}
+            {!dadosConferidos && !conferindoPaginas && memorialFile && (
+              <span className="text-xs text-muted-foreground">
+                Marque “Conferi os dados da obra” para liberar.
+              </span>
+            )}
             {/*
               QUANTO VAI LEVAR (o "leva uns 4 minutos" da proposta no lab): a
               mediana das últimas auditorias deste navegador, escalada pelas

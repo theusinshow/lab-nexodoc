@@ -294,17 +294,37 @@
 .ds .rs-tratado-numero b small { font-family: var(--ds-font-sans); letter-spacing: 0; }
 
 /*
- * CORRIGIDO SE VÊ DE LONGE (05/10/2026, retorno de um colega): barra verde à
- * esquerda, fundo verde leve e o título riscado. Falso positivo e risco aceito
- * continuam só esmaecidos — "corrigido" é o desfecho que fecha o trabalho.
+ * CORRIGIDO SE VÊ DE LONGE (redesenho de 05/10/2026). Sem faixa lateral grossa
+ * (a DESIGN.md proíbe acento lateral > 1px): o verde vem do fundo leve, do anel
+ * de 1px, do ícone antes do código e do selo "Corrigido". O título riscado diz
+ * "feito" mesmo para quem não distingue o verde.
  */
-.ds .rs-linha--corrigida { background: color-mix(in srgb, var(--ds-state-ok) 9%, transparent); box-shadow: inset 3px 0 0 var(--ds-state-ok); }
-.ds .rs-linha--corrigida:hover:not(.rs-linha--ativa) { background: color-mix(in srgb, var(--ds-state-ok) 13%, transparent); }
-.ds .rs-linha--corrigida .rs-linha-titulo { text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--ds-state-ok) 70%, transparent); text-decoration-thickness: 1.5px; }
+.ds .rs-linha--corrigida { background: var(--ds-state-ok-wash); }
+.ds .rs-linha--corrigida:hover:not(.rs-linha--ativa) { background: color-mix(in srgb, var(--ds-state-ok) 14%, transparent); }
+.ds .rs-linha--corrigida .rs-linha-titulo { color: var(--ds-text-secondary); text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--ds-state-ok) 60%, transparent); text-decoration-thickness: 1px; }
 .ds .rs-linha--corrigida .rs-linha-id { color: var(--ds-state-ok); }
-.ds .rs-linha--corrigida .rs-linha-desfecho { font-weight: 500; }
-.ds .rs-linha--corrigida .rs-linha-fundo { background: color-mix(in srgb, var(--ds-state-ok) 14%, var(--ds-surface-raised)); box-shadow: inset 3px 0 0 var(--ds-state-ok), inset 0 0 0 1px color-mix(in srgb, var(--ds-state-ok) 40%, transparent); }
-.ds .rs-faixa-corrigido { display: flex; align-items: center; gap: 6px; margin: 4px 0 10px; padding: 7px 12px; border-radius: 8px; background: color-mix(in srgb, var(--ds-state-ok) 12%, transparent); box-shadow: inset 3px 0 0 var(--ds-state-ok); font-size: var(--ds-text-xs); font-weight: 500; color: var(--ds-state-ok); }
+.ds .rs-linha--corrigida .rs-linha-fundo { background: color-mix(in srgb, var(--ds-state-ok) 12%, var(--ds-surface-raised)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ds-state-ok) 45%, transparent); }
+.ds .rs-linha-id { display: inline-flex; align-items: center; gap: 4px; }
+.ds .rs-linha-ok { flex: none; color: var(--ds-state-ok); }
+
+/* As faixas do topo do detalhe: ícone, título, explicação e — quando há — os botões. */
+.ds .rs-faixa { display: flex; align-items: center; gap: 10px; margin: 6px 0 10px; padding: 9px 12px; border-radius: 10px; font-size: var(--ds-text-xs); line-height: 1.35; }
+.ds .rs-faixa > svg { flex: none; }
+.ds .rs-faixa > span:first-of-type { display: grid; gap: 1px; min-width: 0; }
+.ds .rs-faixa b { font-weight: 500; }
+.ds .rs-faixa small { font-size: 11.5px; color: var(--ds-text-tertiary); }
+.ds .rs-faixa--ok { background: var(--ds-state-ok-wash); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ds-state-ok) 35%, transparent); color: var(--ds-state-ok); }
+.ds .rs-faixa--ok small { color: color-mix(in srgb, var(--ds-state-ok) 75%, var(--ds-text-tertiary)); }
+.ds .rs-faixa--paginas { background: var(--ds-surface-card); box-shadow: var(--ds-edge); color: var(--ds-text-primary); }
+.ds .rs-faixa--paginas > svg { color: var(--ds-text-secondary); }
+.ds .rs-faixa-paginas { display: flex; flex-wrap: wrap; gap: 6px; margin-left: auto; }
+
+/* O grifo que copia: ícone de copiar dentro da marca, e a marca fica verde por um instante ao copiar. */
+.ds .rs-grifo-icone { display: inline-block; margin-left: 3px; vertical-align: -1px; opacity: 0.55; }
+.ds .rs-grifo-copiavel:hover .rs-grifo-icone { opacity: 1; }
+.ds .rs-grifo-copiavel--feito { background: var(--ds-state-ok-wash) !important; color: var(--ds-state-ok); }
+.ds .rs-dica-copiar { display: flex; align-items: center; gap: 6px; margin: 2px 0 0; font-size: 11.5px; color: var(--ds-text-tertiary); }
+
 .ds .rs-grupo--meus-corrigidos h4 { color: var(--ds-state-ok); }
 .ds .rs-meus-vazio { margin: 12px 10px 4px; font-size: var(--ds-text-xs); color: var(--ds-text-tertiary); }
 
@@ -313,3 +333,25 @@
 .ds .rs-grifo-copiavel:hover { box-shadow: 0 0 0 1.5px currentColor; }
 .ds .rs-grifo-copiavel:focus-visible { outline: 2px solid var(--ds-focus-ring); outline-offset: 1px; }
 .ds .rs-copiado { display: inline-flex; align-items: center; gap: 3px; margin: 0 4px; padding: 1px 6px; border-radius: 999px; background: color-mix(in srgb, var(--ds-state-ok) 16%, transparent); font-family: var(--ds-font-sans); font-size: 10.5px; font-weight: 500; color: var(--ds-state-ok); white-space: nowrap; vertical-align: 1px; }
+
+/*
+ * A PRÉVIA DO TRECHO no detalhe (05/10/2026): a página recortada em volta do
+ * grifo. A janela é fixa e rola por dentro (o visor de PDF centraliza a marca);
+ * clicar amplia no visor grande.
+ */
+.ds .rs-previa { display: grid; gap: 6px; margin: 4px 0 14px; }
+.ds .rs-previa figcaption { display: flex; align-items: center; gap: 6px; font-size: var(--ds-text-2xs); color: var(--ds-text-tertiary); }
+.ds .rs-previa figcaption > svg { color: var(--ds-text-secondary); }
+.ds .rs-previa-pagina { margin-left: auto; }
+.ds .rs-previa-paginas { display: inline-flex; gap: 2px; margin-left: auto; padding: 2px; border-radius: 8px; background: var(--ds-surface-sunken); }
+.ds .rs-previa-paginas button { height: 22px; padding: 0 8px; border: 0; border-radius: 6px; background: none; font: inherit; font-size: 11px; color: var(--ds-text-secondary); cursor: pointer; }
+.ds .rs-previa-paginas button[aria-selected="true"] { background: var(--ds-surface-raised); color: var(--ds-text-primary); box-shadow: var(--ds-edge); }
+.ds .rs-previa-moldura { position: relative; }
+.ds .rs-previa-janela { position: relative; display: block; width: 100%; height: 210px; padding: 0; overflow: hidden; border: 0; border-radius: 10px; background: var(--ds-surface-sunken); box-shadow: inset 0 0 0 1px var(--ds-line-default); cursor: zoom-in; text-align: left; }
+.ds .rs-previa-janela:hover { box-shadow: inset 0 0 0 1px var(--ds-nexo-line); }
+.ds .rs-previa-janela:focus-visible { outline: 2px solid var(--ds-focus-ring); outline-offset: 2px; }
+.ds .rs-previa-janela .react-pdf__Page { pointer-events: none; }
+.ds .rs-previa-ampliar { position: absolute; z-index: 3; pointer-events: none; right: 8px; bottom: 8px; display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 8px; border-radius: 7px; background: rgb(10 11 13 / 0.78); font-size: 11px; color: var(--ds-text-primary); opacity: 0.85; transition: opacity 0.15s; }
+.ds .rs-previa-moldura:hover .rs-previa-ampliar { opacity: 1; }
+.ds .rs-previa-carregando { display: grid; place-items: center; height: 210px; font-size: 11.5px; color: var(--ds-text-tertiary); }
+.ds .rs-previa-nota { margin: 0; font-size: 11.5px; color: var(--ds-text-tertiary); }

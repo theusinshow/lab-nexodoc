@@ -68,6 +68,8 @@ function Linha({
           <>
             {linha.valor ? <span className="nx-ficha-valor">{linha.valor}</span> : <span className="nx-ficha-vazio">não veio na capa</span>}
             {linha.corrigido && <span className="nx-ficha-corrigido">corrigido</span>}
+            {/* O nome da obra é a régua da auditoria: o selo pede o olhar antes do clique. */}
+            {linha.campo === "obra" && !linha.corrigido && <span className="ds-pill ds-pill--decide nx-ficha-confira">confira</span>}
           </>
         )}
       </dd>

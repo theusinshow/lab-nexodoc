@@ -7,12 +7,12 @@
  * achado. ← → folheiam; J K pulam entre páginas com achado; Esc fecha.
  */
 import { AnimatePresence, motion } from "motion/react";
-import { ArrowRight, ArrowUp, ChevronLeft, ChevronRight, Minus, Plus, X } from "lucide-react";
+import { ArrowRight, ArrowUp, ChevronLeft, ChevronRight, Minus, Plus, SearchX, X } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
-import { Botao, Tecla } from "@/components/ds/basicos";
+import { Botao, Orbe, Tecla } from "@/components/ds/basicos";
 import { CURVA } from "@/lib/ds/movimento";
 import { candidatosDoGrifo, porQueSemGrifo, type FolhasSemCamada } from "@/lib/grifo-do-achado";
 import { useTempo } from "@/lib/ds/tempo";
@@ -63,6 +63,11 @@ function ChatNoVisor({ chat, achado, pagina }: { chat: ChatDoVisor; achado: Acha
 
   return (
     <section className="vm-chat" aria-label="Perguntar ao Nexo sobre o achado">
+      <p className="vm-chat-cabeca">
+        <Orbe tamanho={12} estado={esperando ? "trabalhando" : "repouso"} />
+        <b>Pergunte ao Nexo</b>
+        <span>{achado ? `sobre o ${achado.id}, p. ${pagina} — a resposta também fica na conversa` : "escolha um achado"}</span>
+      </p>
       {novas.length > 0 || esperando ? (
         <div className="vm-chat-mensagens">
           {novas.map((m) => (
@@ -84,13 +89,13 @@ function ChatNoVisor({ chat, achado, pagina }: { chat: ChatDoVisor; achado: Acha
         <input
           value={texto}
           onChange={(e) => setTexto(e.target.value)}
-          placeholder={achado ? `Dúvida sobre o ${achado.id}? Pergunte ao Nexo` : "Escolha um achado para perguntar"}
+          placeholder={achado ? "Ex.: o que exatamente diverge entre as páginas?" : "Escolha um achado para perguntar"}
           aria-label="Pergunta ao Nexo sobre este achado"
           disabled={!achado}
         />
-        <button type="submit" aria-label="Enviar pergunta" disabled={!texto.trim() || !achado}>
-          <ArrowUp size={14} />
-        </button>
+        <Botao type="submit" variante="primary" tamanho="sm" icone aria-label="Enviar pergunta (Enter)" title="Enviar (Enter)" disabled={!texto.trim() || !achado}>
+          <ArrowUp />
+        </Botao>
       </form>
     </section>
   );
@@ -256,7 +261,8 @@ export function VisorDoMemorial({
                   <div className="vm-pdf">
                     {!procurando && casou?.pagina === pagina && !casou.achou && grifo?.length ? (
                       <p className="vm-sem-grifo" role="status">
-                        {porQueSemGrifo(pagina, folhas)}
+                        <SearchX size={15} strokeWidth={1.75} aria-hidden />
+                        <span>{porQueSemGrifo(pagina, folhas)}</span>
                       </p>
                     ) : null}
                     <AuditPdfViewer url={url} page={pagina} highlight={grifo} zoom={zoom} onNumPages={setTotal} onGrifo={aoGrifo} />

@@ -383,9 +383,10 @@
 .ds .nx-entrada-obra-nome { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: var(--ds-text-primary); }
 
 /* O NOME DA OBRA é a régua da auditoria (05/10/2026, 141-26): na ficha e na proposta ele pesa mais que as outras linhas. */
-.ds .nx-ficha-linha[data-campo="obra"] dd { font-size: var(--ds-text-md, 15px); font-weight: 600; }
-.ds .nx-ficha-linha[data-campo="obra"] { box-shadow: inset 2px 0 0 var(--ds-text-secondary); margin-left: -14px; padding-left: 12px; }
+.ds .nx-ficha-linha[data-campo="obra"] dd { flex-wrap: wrap; row-gap: 4px; font-weight: 600; }
+.ds .nx-ficha-linha[data-campo="obra"] .nx-ficha-valor { overflow-wrap: break-word; word-break: normal; hyphens: manual; }
 .ds .nx-ficha-linha[data-campo="obra"] .nx-ficha-botao { opacity: 1; }
 .ds .cx-linha-destaque > span:last-child { font-size: 15px; font-weight: 600; }
 .ds .cx-conferi { padding: 8px 10px; border-radius: var(--ds-radius-control); background: var(--ds-surface-sunken); cursor: pointer; }
 .ds .cx-conferi input { width: 14px; height: 14px; accent-color: var(--ds-text-primary); cursor: pointer; }
+.ds .nx-ficha-confira { flex: none; height: 18px; padding: 0 7px; font-size: 10.5px; }

@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
-import { ArrowRight, Check, Search } from "lucide-react";
+import { ArrowRight, Check, CircleCheck, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -108,7 +108,7 @@ export function CorrigidosDoEscritorio({ lista, euSou }: { lista: AchadoCorrigid
         ) : (
           <div className="mp-grade ac-grade ac-grade--corrigidos" role="grid">
             <div className="mp-g-cab" role="row">
-              <span>#</span>
+              <span />
               <span>Obra</span>
               <span>Achado</span>
               <span>Estava com</span>
@@ -121,7 +121,9 @@ export function CorrigidosDoEscritorio({ lista, euSou }: { lista: AchadoCorrigid
               return (
                 <div key={a.chave} role="row" aria-selected={ativo} className="mp-g-linha pj-linha ac-corrigido" onClick={() => setSel(ativo ? null : a.chave)} onDoubleClick={() => router.push(abrir(a))}>
                   {ativo && <motion.i layoutId="ac-sel-corrigido" className="mp-g-sel" transition={{ duration: RITMO.troca * k, ease: SUAVE }} />}
-                  <span className="mp-g-n ds-num">{i + 1}</span>
+                  <span className="mp-g-n ac-corrigido-n" title={`${i + 1}º`}>
+                    <CircleCheck size={14} strokeWidth={1.75} aria-label="Corrigido" />
+                  </span>
                   <span className="pj-codigo">
                     <MarcaDaPrefeitura prefeitura={a.cliente} forma="sinal" />
                     <span className="mp-mono">{a.codigo}</span>

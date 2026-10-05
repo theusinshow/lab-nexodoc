@@ -10,7 +10,7 @@
  * F falso positivo, Z desfaz, / busca, Esc fecha o que estiver aberto.
  */
 import { AnimatePresence, motion } from "motion/react";
-import { Check, ChevronDown, ChevronUp, FileSearch, Link2, Mail, Search, SlidersHorizontal, Undo2, UserPlus, X } from "lucide-react";
+import { Check, ChevronDown, ChevronUp, CircleCheck, Copy, FileSearch, Files, Link2, Mail, Search, SlidersHorizontal, Split, Undo2, UserPlus, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Avatar, Botao, Menu, Segmento, Selo, Seletor, Tecla } from "@/components/ds/basicos";
@@ -32,6 +32,7 @@ import { DISCIPLINAS, NIVEIS, type Nivel } from "@/lib/nivel-do-achado";
 import type { TextoCorrigido } from "@/lib/texto-corrigido";
 
 import { SeloDaDisciplina } from "../comum/disciplina";
+import { PreviaDoTrecho } from "./previa-do-trecho";
 import { NOME_DO_DESFECHO, conta } from "./textos";
 import type { AchadoDaTela, ParecerVivo } from "./use-parecer-vivo";
 import "./enxuta.css";
@@ -93,7 +94,7 @@ function Trecho({ texto, marca }: { texto: string; marca?: string }) {
     <>
       {texto.slice(0, i)}
       <mark
-        className="rs-grifo-copiavel"
+        className={`rs-grifo-copiavel${copiado ? " rs-grifo-copiavel--feito" : ""}`}
         role="button"
         tabIndex={0}
         title="Clique para copiar — e procure com Ctrl+F no arquivo editável"
@@ -107,6 +108,7 @@ function Trecho({ texto, marca }: { texto: string; marca?: string }) {
         }}
       >
         {grifado}
+        <Copy className="rs-grifo-icone" size={11} strokeWidth={1.75} aria-hidden />
       </mark>
       {copiado && (
         <span className="rs-copiado" role="status">
@@ -365,20 +367,22 @@ export function FilaDeAchados({
         <button
           type="button"
           className="rs-linha-corpo"
-          onClick={() => {
-            abrir(a.chave, visiveis.indexOf(a) > posicao ? 1 : -1);
-            /*
-             * O CLIQUE ABRE O PDF, já no trecho (05/10/2026, retorno de um
-             * usuário): quem clica num achado quer ver onde ele está. J/K e as
-             * setas continuam só andando na lista, para triagem pelo teclado.
-             */
-            if (temArquivo(a)) onVerNoMemorial(a.chave);
-          }}
+          /*
+           * O CLIQUE SÓ SELECIONA (05/10/2026). Abrir o visor no clique escondia o
+           * achado que se queria ler; o "onde está" virou a prévia recortada no
+           * próprio detalhe (`PreviaDoTrecho`), e o visor grande fica a um clique.
+           */
+          onClick={() => abrir(a.chave, visiveis.indexOf(a) > posicao ? 1 : -1)}
         >
-          <span className="rs-linha-id">{a.id}</span>
+          <span className="rs-linha-id">
+            {a.desfecho?.tipo === "FIXED_IN_DOC" && <CircleCheck className="rs-linha-ok" size={13} strokeWidth={1.75} aria-label="Corrigido" />}
+            {a.id}
+          </span>
           <span className="rs-linha-titulo">{a.titulo}</span>
           <span className="rs-linha-meta">
-            {a.desfecho ? (
+            {a.desfecho?.tipo === "FIXED_IN_DOC" ? (
+              <Selo tom="ok">Corrigido</Selo>
+            ) : a.desfecho ? (
               <span className="rs-linha-desfecho">
                 <Check size={12} /> {NOME_DO_DESFECHO[a.desfecho.tipo]}
               </span>
@@ -754,22 +758,44 @@ export function FilaDeAchados({
           >
             <h2>{atual.titulo}</h2>
             {atual.desfecho?.tipo === "FIXED_IN_DOC" && (
-              <p className="rs-faixa-corrigido" role="status">
-                <Check size={14} aria-hidden /> Corrigido
-                {atual.desfecho.por ? ` por ${atual.desfecho.por}` : ""} · <time>{quando(atual.desfecho.quando)}</time>
+              <p className="rs-faixa rs-faixa--ok" role="status">
+                <CircleCheck size={16} strokeWidth={1.75} aria-hidden />
+                <span>
+                  <b>Corrigido no documento</b>
+                  <small>
+                    {atual.desfecho.por ? `por ${atual.desfecho.por} · ` : ""}
+                    <time>{quando(atual.desfecho.quando)}</time>
+                  </small>
+                </span>
               </p>
             )}
-            {entrePaginas && (
-              <p className="rs-entre-paginas">
-                <span aria-hidden>⇄</span> Conflito entre {emConflito.map((p) => `p. ${p}`).join(emConflito.length === 2 ? " e " : ", ")}
-                <small>o defeito é a divergência entre as páginas, não uma delas sozinha</small>
-              </p>
-            )}
-            {variasPaginas && (
-              <p className="rs-entre-paginas">
-                <span aria-hidden>⇄</span> Envolve {paginasEmOrdem.map((p) => `p. ${p}`).join(paginasEmOrdem.length === 2 ? " e " : ", ")}
-                <small>confira todas: o achado se apoia em mais de uma página</small>
-              </p>
+            {(entrePaginas || variasPaginas) && (
+              /*
+               * VÁRIAS PÁGINAS, e cada uma é um botão (redesenho de 05/10/2026):
+               * a frase dizia "Conflito entre p. 10 e p. 22" e os links para as
+               * páginas moravam lá embaixo, na evidência. Agora o aviso É o
+               * caminho — clicar na página abre o PDF nela.
+               */
+              <div className="rs-faixa rs-faixa--paginas" role="note">
+                {entrePaginas ? <Split size={16} strokeWidth={1.75} aria-hidden /> : <Files size={16} strokeWidth={1.75} aria-hidden />}
+                <span>
+                  <b>{entrePaginas ? "Conflito entre páginas" : `Envolve ${paginasEmOrdem.length} páginas`}</b>
+                  <small>{entrePaginas ? "o defeito é a divergência entre elas, não uma sozinha" : "confira todas: o achado se apoia em mais de uma"}</small>
+                </span>
+                <span className="rs-faixa-paginas">
+                  {(entrePaginas ? emConflito : paginasEmOrdem).map((p) =>
+                    fonteAtual.tipo === "arquivo" ? (
+                      <Botao key={p} variante="ghost" tamanho="sm" onClick={() => onVerNoMemorial(atual.chave, p)} title={`Abrir o PDF na página ${p}`}>
+                        <FileSearch /> p. {p}
+                      </Botao>
+                    ) : (
+                      <Selo key={p} tom="line">
+                        p. {p}
+                      </Selo>
+                    ),
+                  )}
+                </span>
+              </div>
             )}
             <div className="rs-dono">
               {atual.responsavel ? (
@@ -800,6 +826,10 @@ export function FilaDeAchados({
                 <FileSearch /> Ver no memorial{paginaDoTitulo ? `, ${paginaDoTitulo}` : ""} <Tecla>M</Tecla>
               </Botao>
             </div>
+
+            {fonteAtual.tipo === "arquivo" && atual.paginas.length > 0 && (
+              <PreviaDoTrecho achado={atual} url={fonteAtual.fonte.url} onAmpliar={(p) => onVerNoMemorial(atual.chave, p)} />
+            )}
 
             {atual.estruturado.motor ? (
               <CartaoDoMotor
@@ -862,9 +892,9 @@ export function FilaDeAchados({
                               {t.pagina !== null ? `, p. ${t.pagina}` : ""}
                             </b>
                             {fonteAtual.tipo === "arquivo" && t.pagina !== null && (
-                              <button type="button" className="rs-link" onClick={() => onVerNoMemorial(atual.chave, t.pagina!)}>
-                                Abrir p. {t.pagina}
-                              </button>
+                              <Botao variante="quiet" tamanho="sm" onClick={() => onVerNoMemorial(atual.chave, t.pagina!)}>
+                                <FileSearch /> Abrir p. {t.pagina}
+                              </Botao>
                             )}
                           </figcaption>
                           <blockquote>
@@ -883,18 +913,23 @@ export function FilaDeAchados({
                         {fonteAtual.tipo === "arquivo" &&
                           (variasPaginas ? (
                             paginasEmOrdem.map((p) => (
-                              <button key={p} type="button" className="rs-link" onClick={() => onVerNoMemorial(atual.chave, p)}>
-                                Abrir p. {p}
-                              </button>
+                              <Botao key={p} variante="quiet" tamanho="sm" onClick={() => onVerNoMemorial(atual.chave, p)}>
+                                <FileSearch /> Abrir p. {p}
+                              </Botao>
                             ))
                           ) : (
-                            <button type="button" className="rs-link" onClick={() => onVerNoMemorial(atual.chave)}>
-                              Abrir a página
-                            </button>
+                            <Botao variante="quiet" tamanho="sm" onClick={() => onVerNoMemorial(atual.chave)}>
+                              <FileSearch /> Abrir no PDF
+                            </Botao>
                           ))}
                       </figcaption>
                       <blockquote>{atual.bruto.evidencia ? <Trecho texto={atual.bruto.evidencia} marca={grifo} /> : "Evidência não informada no parecer."}</blockquote>
                     </figure>
+                    )}
+                    {grifo && (atual.bruto.evidencia ?? "").toLowerCase().includes(grifo.toLowerCase()) && (
+                      <p className="rs-dica-copiar">
+                        <Copy size={12} strokeWidth={1.75} aria-hidden /> Clique no trecho destacado para copiar — e cole no Ctrl+F do arquivo editável.
+                      </p>
                     )}
                     {atual.bruto.referencia_comparada && (
                       <figure>

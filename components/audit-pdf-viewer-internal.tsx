@@ -45,6 +45,13 @@ type AuditPdfViewerInternalProps = {
    * O visor do Resultado usa para ir sozinho à página do achado que tem o grifo.
    */
   onGrifo?: (achou: boolean, pagina: number) => void;
+  /**
+   * "contida": rola só a caixa da prévia (o ancestral com `data-previa`) até a
+   * marca, nos dois eixos, sem mexer no painel em volta. O padrão,
+   * `scrollIntoView`, rola TODO ancestral — dentro do detalhe do achado isso
+   * arrastaria o painel inteiro.
+   */
+  rolagem?: "janela" | "contida";
 };
 
 function escaparHtml(value: string) {
@@ -83,6 +90,7 @@ export default function AuditPdfViewerInternal({
   zoom = 1,
   onNumPages,
   onGrifo,
+  rolagem = "janela",
 }: AuditPdfViewerInternalProps) {
   const [numPages, setNumPages] = useState(0);
   const [itens, setItens] = useState<ItemDeTexto[] | null>(null);
@@ -119,8 +127,19 @@ export default function AuditPdfViewerInternal({
    */
   const rolarAteOGrifo = useCallback(() => {
     if (!faixas || faixas.size === 0) return;
-    caixa.current?.querySelector("mark")?.scrollIntoView({ block: "center", inline: "nearest", behavior: "smooth" });
-  }, [faixas]);
+    const marca = caixa.current?.querySelector("mark");
+    if (!marca) return;
+    if (rolagem === "contida") {
+      const janela = caixa.current?.closest<HTMLElement>("[data-previa]");
+      if (!janela) return;
+      const m = marca.getBoundingClientRect();
+      const j = janela.getBoundingClientRect();
+      janela.scrollTop += m.top - j.top - (j.height - m.height) / 2;
+      janela.scrollLeft += m.left - j.left - Math.max(16, (j.width - m.width) / 2);
+      return;
+    }
+    marca.scrollIntoView({ block: "center", inline: "nearest", behavior: "smooth" });
+  }, [faixas, rolagem]);
 
   // O resultado do casamento sobe uma vez por página lida (e por trecho).
   useEffect(() => {
