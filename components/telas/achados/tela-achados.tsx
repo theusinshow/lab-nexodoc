@@ -8,6 +8,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Botao, Tecla } from "@/components/ds/basicos";
 import type { ParecerEmAberto } from "@/lib/achados-em-aberto";
 import { useTempo } from "@/lib/ds/tempo";
+import { linkDoAchado } from "@/lib/link-do-achado";
 import { NIVEIS, type Nivel } from "@/lib/nivel-do-achado";
 import { MarcaDaPrefeitura } from "@/modules/nexo/components/MarcaDaPrefeitura";
 
@@ -29,7 +30,8 @@ const impedem = (ps: ParecerEmAberto[]) => {
   if (!achados.some((a) => a.nivel)) return "";
   return `, ${achados.filter((a) => a.nivel === "block").length} impedem a entrega`;
 };
-const abrirParecer = (auditId: string) => `/nexo?auditoria=${encodeURIComponent(auditId)}`;
+/** Abre a fila no primeiro achado do grupo: só com o parecer, o Nexo caía no Resumo. */
+const abrirParecer = (p: ParecerEmAberto) => linkDoAchado({ base: "", auditId: p.auditId, findingId: p.achados[0]?.id });
 
 /** Os pontos do nível, contados: o que o parecer guarda, de relance. */
 function Niveis({ p }: { p: ParecerEmAberto }) {
@@ -184,7 +186,7 @@ export function TelaAchados({ comVoce, passou, semBanco }: { comVoce: ParecerEmA
       if (e.key === "ArrowDown" || e.key === "j") (e.preventDefault(), andar(1));
       else if (e.key === "ArrowUp" || e.key === "k") (e.preventDefault(), andar(-1));
       else if (e.key === "/") (e.preventDefault(), campo.current?.focus());
-      else if (e.key === "Enter" && parecer && !alvo.closest("button, a")) (e.preventDefault(), router.push(abrirParecer(parecer.auditId)));
+      else if (e.key === "Enter" && parecer && !alvo.closest("button, a")) (e.preventDefault(), router.push(abrirParecer(parecer)));
       else if (e.key === "Tab" && !e.shiftKey && alvo === document.body) (e.preventDefault(), trocarLado(lado === "com-voce" ? "passou" : "com-voce"));
       else if (e.key === "Escape" && sel) (e.preventDefault(), setSel(null));
     };
@@ -302,7 +304,7 @@ export function TelaAchados({ comVoce, passou, semBanco }: { comVoce: ParecerEmA
                           aria-selected={escolhido}
                           className="mp-g-linha pj-linha"
                           onClick={() => setSel(escolhido ? null : p.chave)}
-                          onDoubleClick={() => router.push(abrirParecer(p.auditId))}
+                          onDoubleClick={() => router.push(abrirParecer(p))}
                         >
                           {escolhido && <motion.i layoutId="ac-sel" className="mp-g-sel" transition={{ duration: RITMO.troca * k, ease: SUAVE }} />}
                           <span className="mp-g-n ds-num">{i + 1}</span>
@@ -338,7 +340,7 @@ export function TelaAchados({ comVoce, passou, semBanco }: { comVoce: ParecerEmA
                       transition={{ duration: RITMO.troca * k, ease: SUAVE }}
                     >
                       {parecer ? (
-                        <DoParecer p={parecer} lado={lado} onAbrir={() => router.push(abrirParecer(parecer.auditId))} />
+                        <DoParecer p={parecer} lado={lado} onAbrir={() => router.push(abrirParecer(parecer))} />
                       ) : lista.length ? (
                         <Resumo lado={lado} lista={lista} />
                       ) : (

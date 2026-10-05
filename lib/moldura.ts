@@ -39,6 +39,8 @@ export interface ComVoceNaMoldura {
   enviadoPor: string | null;
   enviadoEm: string;
   total: number;
+  /** O achado que o sino abre na fila (o mais recente); nulo cai no parecer. */
+  findingId: string | null;
 }
 
 export interface ObraNaMoldura {
@@ -142,7 +144,7 @@ const lerMoldura = cache(async (): Promise<ResultadoDaMoldura> => {
       dados: {
         usuario,
         semBanco: false,
-        comVoce: pendencias.map((p) => ({ auditId: p.auditId, codigo: p.code, titulo: p.auditTitle, enviadoPor: p.enviadoPor, enviadoEm: p.enviadoEm, total: p.total })),
+        comVoce: pendencias.map((p) => ({ auditId: p.auditId, codigo: p.code, titulo: p.auditTitle, enviadoPor: p.enviadoPor, enviadoEm: p.enviadoEm, total: p.total, findingId: p.findingId })),
         obras: projetos.map((p) => ({ id: p.id, codigo: p.code, nome: p.name, cliente: p.client, atualizadoEm: p.updatedAt.toISOString() })),
         recentes: auditorias.map((a) => ({ auditId: a.id, titulo: a.title, codigo: a.project?.code ?? null, status: a.status, criadoEm: a.createdAt.toISOString() })),
       },

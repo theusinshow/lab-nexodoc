@@ -10,6 +10,7 @@ import { BarraDeComando } from "@/components/moldura/barra-de-comando";
 import { linkDoNexo, type IntencaoDeLink } from "@/lib/contexto-da-url";
 import { useTempo } from "@/lib/ds/tempo";
 import { entregarAoNexo } from "@/lib/entrega-ao-nexo";
+import { linkDoAchado } from "@/lib/link-do-achado";
 import type { ObraNaMoldura, RecenteNaMoldura } from "@/lib/moldura";
 import type { Nivel } from "@/lib/nivel-do-achado";
 import type { DiaDoEscritorio } from "@/lib/resumo-do-escritorio";
@@ -45,7 +46,7 @@ export type TrabalhoParaContinuar = {
   quando: string;
 };
 
-export type AchadoComVoce = { auditId: string; chave: string; titulo: string; codigo: string; nivel: Nivel | null; pagina: string | null; de: string | null };
+export type AchadoComVoce = { auditId: string; findingId: string; chave: string; titulo: string; codigo: string; nivel: Nivel | null; pagina: string | null; de: string | null };
 
 
 /**
@@ -231,7 +232,8 @@ export function TelaPainel({
               <>
                 <ul className="d2-achados">
                   {comVoce.map((a) => {
-                    const ir = () => router.push(`/nexo?auditoria=${encodeURIComponent(a.auditId)}`);
+                    // Com o achado no link a fila abre NELE; sem, o parecer caía no Resumo.
+                    const ir = () => router.push(linkDoAchado({ base: "", auditId: a.auditId, findingId: a.findingId }));
                     return (
                       <li key={a.chave} tabIndex={0} onClick={ir} onKeyDown={(e) => e.key === "Enter" && ir()}>
                         <i className={`d2-grav${a.nivel ? ` d2-grav--${a.nivel}` : ""}`} aria-hidden />

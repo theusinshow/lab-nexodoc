@@ -10,6 +10,7 @@ import { useCallback, useEffect, useId, useRef, useState, type KeyboardEvent as 
 import { Avatar, Botao, Orbe, Tecla } from "@/components/ds/basicos";
 import { CURVA } from "@/lib/ds/movimento";
 import { useTempo } from "@/lib/ds/tempo";
+import { linkDoAchado } from "@/lib/link-do-achado";
 import type { DadosDaMoldura, DestinoDoTopo } from "@/lib/moldura";
 import { plural } from "@/lib/plural";
 
@@ -302,7 +303,7 @@ function Sino({ dados }: { dados: DadosDaMoldura }) {
               dados.comVoce.map((c) => {
                 const d = desde(c.enviadoEm);
                 return (
-                  <button key={c.auditId} type="button" role="menuitem" className="pn-sino-item" onClick={() => (fechar(false), router.push(`/nexo?auditoria=${encodeURIComponent(c.auditId)}`))}>
+                  <button key={c.auditId} type="button" role="menuitem" className="pn-sino-item" onClick={() => (fechar(false), router.push(linkDoAchado({ base: "", auditId: c.auditId, findingId: c.findingId })))}>
                     <span className="pn-sino-linha">
                       <span className="ds-code">{c.codigo}</span>
                       <b>{c.titulo}</b>

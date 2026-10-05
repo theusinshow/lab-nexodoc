@@ -91,7 +91,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
   const primeiro = await prisma.projectEvent.findFirst({ where: { projectId: projeto.id }, orderBy: { createdAt: "asc" }, select: { createdAt: true } });
   const abertos = await prisma.auditFeedback.findMany({
     where: { resolvedAt: null, assigneeEmail: { not: null }, audit: { projectId: projeto.id } },
-    select: { assigneeEmail: true, audit: { select: { id: true, title: true } } },
+    select: { assigneeEmail: true, findingId: true, audit: { select: { id: true, title: true } } },
   });
   const comVoce = abertos.filter((a) => a.assigneeEmail?.toLowerCase() === actor.email.toLowerCase());
 
@@ -199,6 +199,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
     primeiroEvento: primeiro?.createdAt.toISOString() ?? null,
     comVoce: comVoce.length,
     parecerComVoce: comVoce[0]?.audit.id ?? null,
+    achadoComVoce: comVoce[0]?.findingId ?? null,
     tituloDoParecerComVoce: comVoce[0]?.audit.title ?? null,
   };
 

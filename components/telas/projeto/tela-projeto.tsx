@@ -9,6 +9,7 @@ import { Botao, Girando, Tecla } from "@/components/ds/basicos";
 import { useMoldura } from "@/components/moldura/contexto";
 import { linkDoNexo } from "@/lib/contexto-da-url";
 import { useTempo } from "@/lib/ds/tempo";
+import { linkDoAchado } from "@/lib/link-do-achado";
 import { MarcaDaPrefeitura } from "@/modules/nexo/components/MarcaDaPrefeitura";
 
 import { quandoNaLinha } from "../comum/quando";
@@ -62,6 +63,8 @@ export type ObraAberta = {
   primeiroEvento: string | null;
   comVoce: number;
   parecerComVoce: string | null;
+  /** Um achado desse parecer que está com você: o link abre a fila nele. */
+  achadoComVoce: string | null;
   tituloDoParecerComVoce: string | null;
 };
 
@@ -107,7 +110,7 @@ function Agora({ obra, tarefas }: { obra: ObraAberta; tarefas: TarefaDaObra[] })
       titulo: `${plural(obra.comVoce, "achado espera", "achados esperam")} por você`,
       sub: obra.tituloDoParecerComVoce ?? "",
       acao: "Abrir",
-      href: `/nexo?auditoria=${encodeURIComponent(obra.parecerComVoce)}`,
+      href: linkDoAchado({ base: "", auditId: obra.parecerComVoce, findingId: obra.achadoComVoce }),
     });
   if (!auditoria.feito) passos.push({ titulo: "Nenhum memorial foi auditado", sub: "O Nexo lê o memorial e aponta o que não bate com a obra.", acao: "Auditar", href: auditoria.href });
   if (!ld.feito) passos.push({ titulo: "A lista de documentos não foi gerada", sub: "Sai dos carimbos das pranchas.", acao: "Montar", href: ld.href });

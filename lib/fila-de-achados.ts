@@ -231,6 +231,8 @@ export type ProjetoComPendencia = {
   total: number;
   enviadoPor: string | null;
   enviadoEm: string;
+  /** O achado mais recente do grupo: o link abre a fila NELE, e não no Resumo. */
+  findingId: string | null;
 };
 
 /**
@@ -262,6 +264,8 @@ export async function pendenciasDe(
       audit: { project: { organizationId } },
     },
     select: {
+      findingId: true,
+      targetKey: true,
       assignedAt: true,
       assignedById: true,
       audit: {
@@ -322,6 +326,7 @@ export async function pendenciasDe(
       // e quando descrevem o envio mais novo daquela auditoria.
       enviadoPor: linha.assignedById ? (autores.get(linha.assignedById) ?? null) : null,
       enviadoEm: (linha.assignedAt ?? new Date()).toISOString(),
+      findingId: linha.findingId ?? (linha.targetKey.replace(/^finding:/, "") || null),
     });
   }
 

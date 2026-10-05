@@ -84,6 +84,7 @@ export default async function PainelPage({ searchParams }: { searchParams: Promi
       .flatMap((p) =>
         p.achados.map((a) => ({
           auditId: p.auditId,
+          findingId: a.id,
           chave: `${p.chave}:${a.id}`,
           titulo: a.titulo,
           codigo: p.codigo,
