@@ -944,8 +944,13 @@ export function PlanoDeGeracao({
             faltaVolume={Boolean(motivoDoVolume)}
             temBairro={marcadoresDoModelo.has("BAIRRO")}
             bairro={valoresDoFramePlano.BAIRRO ?? ""}
+            semBairro={mesclado.valores.semBairro === "sim"}
             onVolume={(v) => decidir("volume", v, paramsDoAgente.volume ?? "")}
-            onBairro={(v) => aoEditarNoFrame("BAIRRO", v)}
+            onBairro={(v) => {
+              // "Não tem bairro" é DECISÃO (vale depois do F5); escrever um bairro a apaga.
+              aoEditarNoFrame("BAIRRO", v ?? "");
+              decidir("semBairro", v === null ? "sim" : "", "");
+            }}
           />
         )}
 

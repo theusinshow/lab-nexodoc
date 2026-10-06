@@ -104,6 +104,7 @@ export function PerguntasAntesDeGerar({
   faltaVolume,
   temBairro,
   bairro,
+  semBairro,
   onVolume,
   onBairro,
 }: {
@@ -114,13 +115,14 @@ export function PerguntasAntesDeGerar({
   /** O modelo da prefeitura imprime `{{BAIRRO}}` (Criciúma). */
   temBairro: boolean;
   bairro: string;
+  /** "Não tem bairro" já respondido — guardado nas decisões da conversa, vale depois do F5. */
+  semBairro: boolean;
   onVolume: (v: string) => void;
-  onBairro: (v: string) => void;
+  /** `null` = "não tem bairro". */
+  onBairro: (v: string | null) => void;
 }) {
   const reduzido = useReducedMotion();
   const [mudandoVolume, setMudandoVolume] = useState(false);
-  // "Não tem bairro" é uma RESPOSTA: sem isto, a pergunta voltaria a cada render.
-  const [semBairro, setSemBairro] = useState(false);
   const [mudandoBairro, setMudandoBairro] = useState(false);
 
   const volumeRespondido = !faltaVolume && volume.trim() !== "" && !mudandoVolume;
@@ -188,15 +190,13 @@ export function PerguntasAntesDeGerar({
                 inicial={bairro}
                 onConfirmar={(v) => {
                   onBairro(v);
-                  setSemBairro(false);
                   setMudandoBairro(false);
                 }}
                 extra={
                   <button
                     type="button"
                     onClick={() => {
-                      onBairro("");
-                      setSemBairro(true);
+                      onBairro(null);
                       setMudandoBairro(false);
                     }}
                     className="ml-auto shrink-0 whitespace-nowrap rounded-md px-2 py-1 text-xs text-muted-foreground underline-offset-2 hover:bg-accent hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/25"
