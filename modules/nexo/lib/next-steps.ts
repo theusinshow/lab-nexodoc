@@ -1,7 +1,7 @@
 /**
  * Próximos passos DETERMINÍSTICOS a partir do que a mensagem propôs (núcleo puro,
  * só `import type` → testável com node cru). Ordem do fluxo do escritório:
- * ld → capa → conferência → volume. Cada passo vira um chip que ENVIA a frase ao
+ * ld → capa → volume (conferir as folhas é opcional e vem por último). Cada passo vira um chip que ENVIA a frase ao
  * agente (a IA re-propõe). Vazio quando não há LD/capa proposta (nada a encadear).
  */
 import type { NexoAgentProposal } from "../types";
@@ -22,7 +22,10 @@ export function nextStepsFor(proposals: NexoAgentProposal[] | undefined): NextSt
   if (kinds.has("capa") && !kinds.has("ld")) {
     steps.push({ label: "Gerar a LD", send: "Gera a LD também" });
   }
-  steps.push({ label: "Conferir as folhas", send: "Confere as folhas" });
+  // MONTAR antes de CONFERIR (06/10/2026): o primeiro chip é o aceso, e o
+  // passo seguinte do fluxo é montar; conferir as folhas é opcional — a
+  // montagem já confere o volume no fim.
   steps.push({ label: "Montar o volume", send: "Monta o volume" });
+  steps.push({ label: "Conferir as folhas", send: "Confere as folhas" });
   return steps;
 }

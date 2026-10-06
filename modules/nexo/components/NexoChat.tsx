@@ -691,7 +691,15 @@ export function NexoChat({
                         mensagemId={m.id}
                       />
                     ))}
-                  {m.slotRequest && <QuickReplyChips suggestions={m.slotRequest.suggestions} />}
+                  {/*
+                    PERGUNTA JÁ RESPONDIDA SAI (06/10/2026): "Volume 1…4" ficava
+                    embaixo da capa já gerada com 6 tomos — botão que preenche um
+                    campo de um documento que já existe. Gerado o documento a que
+                    a pergunta se refere, o lugar de mudar é o plano, não o chip.
+                  */}
+                  {m.slotRequest && !results.some((r) => r.kind === m.slotRequest?.taskKind) && (
+                    <QuickReplyChips suggestions={m.slotRequest.suggestions} />
+                  )}
                   {/* Próximos passos só na última resposta (não polui o histórico). */}
                   {idx === messages.length - 1 && !busy && <NextStepChips proposals={m.proposals} />}
                 </div>

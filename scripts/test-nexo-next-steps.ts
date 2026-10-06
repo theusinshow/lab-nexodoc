@@ -35,26 +35,26 @@ test("sem ld/capa (conferencia/volume) -> nada a encadear", () => {
   assert.deepEqual(labels(props("conferencia", "volume")), []);
 });
 
-test("só LD -> Gerar a capa + Conferir + Montar", () => {
+test("só LD -> Gerar a capa + Montar + Conferir", () => {
   assert.deepEqual(labels(props("ld")), [
     "Gerar a capa",
-    "Conferir as folhas",
     "Montar o volume",
+    "Conferir as folhas",
   ]);
 });
 
-test("só capa -> Gerar a LD + Conferir + Montar", () => {
+test("só capa -> Gerar a LD + Montar + Conferir", () => {
   assert.deepEqual(labels(props("capa")), [
     "Gerar a LD",
-    "Conferir as folhas",
     "Montar o volume",
+    "Conferir as folhas",
   ]);
 });
 
 test("LD + capa -> não sugere gerar LD/capa de novo", () => {
   assert.deepEqual(labels(props("ld", "capa")), [
-    "Conferir as folhas",
     "Montar o volume",
+    "Conferir as folhas",
   ]);
 });
 
