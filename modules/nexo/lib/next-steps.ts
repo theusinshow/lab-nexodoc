@@ -12,9 +12,19 @@ export interface NextStep {
   send: string;
 }
 
-export function nextStepsFor(proposals: NexoAgentProposal[] | undefined): NextStep[] {
+export function nextStepsFor(
+  proposals: NexoAgentProposal[] | undefined,
+  /** Os tipos JÁ GERADOS na conversa. Sem isto, vale só o que foi proposto. */
+  gerados?: ReadonlySet<string>,
+): NextStep[] {
   const kinds = new Set((proposals ?? []).map((p) => p.kind));
   if (!kinds.has("ld") && !kinds.has("capa")) return [];
+  /*
+   * PROPOSTO NÃO É GERADO (06/10/2026): com o plano ainda por gerar, o próximo
+   * passo é o "Gerar" do próprio plano. "Montar o volume" aceso ali levou a
+   * três pedidos seguidos de montagem que não podiam montar nada.
+   */
+  if (gerados && [...kinds].some((k) => (k === "ld" || k === "capa") && !gerados.has(k))) return [];
   const steps: NextStep[] = [];
   if (kinds.has("ld") && !kinds.has("capa")) {
     steps.push({ label: "Gerar a capa", send: "Gera a capa também" });

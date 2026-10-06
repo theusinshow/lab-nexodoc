@@ -16,7 +16,7 @@ import { formatarMb, tomosMontados } from "../lib/entrega-do-volume";
 import { progressoDoLote, rotuloDaFase } from "../lib/progresso-da-montagem";
 import { useAuditoria } from "../state/auditoria-store";
 import { useConversation } from "../state/conversation-store";
-import { useFasesDaMontagem } from "../state/montadores-de-volume";
+import { useFasesDaMontagem, useGeradorDoPlano } from "../state/montadores-de-volume";
 import { useMontarTodos } from "../state/use-montar-todos";
 import { BarraDaMontagem } from "./ProgressoDaMontagem";
 
@@ -24,6 +24,7 @@ export function CartaoDaMontagem({ selos }: { selos: SeloForLd[] }) {
   const { results, podeGastar, motivoParaNaoGastar } = useConversation();
   const { fases, situacoes } = useFasesDaMontagem();
   const { escolherVista } = useAuditoria();
+  const { gerador, gerar } = useGeradorDoPlano();
   const m = useMontarTodos(selos);
 
   const lista = m.tomos.map((t) => fases[t.id]);
@@ -56,6 +57,15 @@ export function CartaoDaMontagem({ selos }: { selos: SeloForLd[] }) {
           <CircleCheck className="h-4 w-4 text-[var(--status-ok)]" aria-hidden />
           {n > 1 ? `${n} tomos montados` : "Volume montado"} · {formatarMb(peso)}
         </span>
+      ) : semMontador ? (
+        /*
+         * SEM CAPA E LD NÃO HÁ O QUE MONTAR (06/10/2026): antes o botão ficava
+         * cinza sem dizer por quê, e o teste real terminou em "MONTE OS
+         * VOLUMES" três vezes. Diz o que falta e oferece o passo.
+         */
+        <span className="text-xs">
+          {gerador?.gerando ? "Gerando a capa, a LD e a separatriz…" : "Antes de montar, gere a capa e a LD."}
+        </span>
       ) : (
         <span className="text-xs">
           {n > 1 ? `${n} tomos prontos para montar.` : "O volume está pronto para montar."}
@@ -63,7 +73,12 @@ export function CartaoDaMontagem({ selos }: { selos: SeloForLd[] }) {
       )}
 
       <div className="flex flex-wrap items-center gap-2">
-        {!p.emCurso && (
+        {!p.emCurso && semMontador && gerador && (
+          <Button size="sm" loading={gerador.gerando} disabled={gerador.gerando || Boolean(gerador.bloqueio)} onClick={() => void gerar()}>
+            Gerar capa e LD
+          </Button>
+        )}
+        {!p.emCurso && !semMontador && (
           <Button
             size="sm"
             variant={pronto ? "secondary" : "default"}
@@ -80,6 +95,10 @@ export function CartaoDaMontagem({ selos }: { selos: SeloForLd[] }) {
         </Button>
       </div>
 
+      {!p.emCurso && semMontador && gerador?.bloqueio && <p className="text-xs text-muted-foreground">{gerador.bloqueio}</p>}
+      {!p.emCurso && semMontador && !gerador && (
+        <p className="text-xs text-muted-foreground">Peça a capa e a LD no chat (&ldquo;cria a LD e a capa&rdquo;).</p>
+      )}
       {!p.emCurso && bloqueio && <p className="text-xs text-muted-foreground">{bloqueio.charAt(0).toUpperCase() + bloqueio.slice(1)}.</p>}
       {m.falhas.length > 0 && (
         <p className="text-xs text-[var(--destructive)]">

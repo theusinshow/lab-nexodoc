@@ -15,6 +15,7 @@ import { ArrowRight, CornerDownLeft, Pencil } from "lucide-react";
 import type { NexoAgentProposal, NexoSlotSuggestion } from "../types";
 import { nextStepsFor } from "../lib/next-steps";
 import { useComposer } from "../state/composer-controller";
+import { useConversation } from "../state/conversation-store";
 
 export function QuickReplyChips({ suggestions, className }: { suggestions: NexoSlotSuggestion[]; className?: string }) {
   const composer = useComposer();
@@ -43,7 +44,8 @@ export function QuickReplyChips({ suggestions, className }: { suggestions: NexoS
 
 export function NextStepChips({ proposals, className }: { proposals: NexoAgentProposal[] | undefined; className?: string }) {
   const composer = useComposer();
-  const steps = nextStepsFor(proposals);
+  const { results } = useConversation();
+  const steps = nextStepsFor(proposals, new Set(results.map((r) => r.kind)));
   if (steps.length === 0) return null;
 
   return (

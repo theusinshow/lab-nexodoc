@@ -112,9 +112,37 @@ export function MontadoresDeVolumeProvider({ children }: { children: ReactNode }
     [fases, marcarFase, situacoes, publicarSituacao],
   );
 
+  /*
+   * O GERAR DO PLANO (06/10/2026): o canvas e o cartão curto oferecem "Gerar
+   * capa e LD" quando elas ainda não existem, chamando o MESMO gerar do plano
+   * de geração mais recente da conversa — uma via de geração, com as mesmas
+   * travas (título, prefeitura, número do volume, aba travada).
+   */
+  const gerarRef = useRef<(() => Promise<void>) | null>(null);
+  const donoRef = useRef<string | null>(null);
+  const [gerador, setGerador] = useState<SituacaoDoGerador | null>(null);
+  const publicarGerador = useCallback((dono: string, s: SituacaoDoGerador | null, gerar?: () => Promise<void>) => {
+    if (!s) {
+      if (donoRef.current !== dono) return;
+      donoRef.current = null;
+      gerarRef.current = null;
+      setGerador(null);
+      return;
+    }
+    donoRef.current = dono;
+    if (gerar) gerarRef.current = gerar;
+    setGerador((atual) => (atual && atual.bloqueio === s.bloqueio && atual.gerando === s.gerando ? atual : s));
+  }, []);
+  const gerar = useCallback(async () => {
+    await gerarRef.current?.();
+  }, []);
+  const valorDoGerador = useMemo(() => ({ gerador, publicarGerador, gerar }), [gerador, publicarGerador, gerar]);
+
   return (
     <Ctx.Provider value={valor}>
-      <CtxDasFases.Provider value={valorDasFases}>{children}</CtxDasFases.Provider>
+      <CtxDasFases.Provider value={valorDasFases}>
+        <CtxDoGerador.Provider value={valorDoGerador}>{children}</CtxDoGerador.Provider>
+      </CtxDasFases.Provider>
     </Ctx.Provider>
   );
 }
@@ -151,4 +179,24 @@ export function useFasesDaMontagem(): FasesDaMontagem {
  */
 export function useMontadoresDeVolume(): MontadoresDeVolume {
   return useContext(Ctx) ?? VAZIO;
+}
+
+export interface SituacaoDoGerador {
+  /** Por que o plano não gera agora (título, prefeitura, volume, aba), ou `null`. */
+  bloqueio: string | null;
+  gerando: boolean;
+}
+
+interface GeradorDoPlano {
+  /** `null` = nenhum plano de geração na conversa. */
+  gerador: SituacaoDoGerador | null;
+  publicarGerador: (dono: string, s: SituacaoDoGerador | null, gerar?: () => Promise<void>) => void;
+  gerar: () => Promise<void>;
+}
+
+const CtxDoGerador = createContext<GeradorDoPlano | null>(null);
+const SEM_GERADOR: GeradorDoPlano = { gerador: null, publicarGerador: () => {}, gerar: async () => {} };
+
+export function useGeradorDoPlano(): GeradorDoPlano {
+  return useContext(CtxDoGerador) ?? SEM_GERADOR;
 }

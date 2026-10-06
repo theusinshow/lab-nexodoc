@@ -33,6 +33,23 @@ test("sem montador (sem capa/LD): incompleto e o porquê", () => {
   assert.equal(t.acao.motivo, "Gere a capa e a LD primeiro.");
 });
 
+test("sem capa/LD e com plano no chat: a ação é GERAR, ligada", () => {
+  const t = trilhoDoTomo({ ...base, temMontador: false, gerador: { bloqueio: null, gerando: false } });
+  assert.equal(t.estado, "incompleto");
+  assert.deepEqual(t.acao, { tipo: "gerar", habilitada: true, motivo: null });
+});
+
+test("gerar travado pelo plano diz o porquê", () => {
+  const t = trilhoDoTomo({ ...base, temMontador: false, gerador: { bloqueio: "Escolha a prefeitura no plano do chat.", gerando: false } });
+  assert.deepEqual(t.acao, { tipo: "gerar", habilitada: false, motivo: "Escolha a prefeitura no plano do chat." });
+});
+
+test("gerando a capa e a LD: frase e ação desligada", () => {
+  const t = trilhoDoTomo({ ...base, temMontador: false, gerador: { bloqueio: null, gerando: true } });
+  assert.equal(t.frase, "gerando capa, LD e separatriz…");
+  assert.equal(t.acao.habilitada, false);
+});
+
 test("bloqueio do cartão vira o motivo do botão", () => {
   const t = trilhoDoTomo({ ...base, bloqueio: "faltam as pranchas deste tomo" });
   assert.equal(t.estado, "incompleto");

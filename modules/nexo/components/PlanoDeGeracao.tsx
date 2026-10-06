@@ -17,7 +17,8 @@
  * segue para a prefeitura, então tem confirmação própria depois da conferência.
  */
 
-import { useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useGeradorDoPlano } from "../state/montadores-de-volume";
 import {
   FileText,
   Loader2,
@@ -767,6 +768,24 @@ export function PlanoDeGeracao({
 
   const ocupado = gerando !== null;
 
+  /*
+   * O GERAR À VISTA FORA DO CHAT (06/10/2026): o plano publica o próprio gerar
+   * e o porquê de não gerar, para o canvas e o cartão curto oferecerem "Gerar
+   * capa e LD" sem uma segunda via. O plano mais recente vence: os efeitos
+   * rodam na ordem da conversa.
+   */
+  const bloqueioDoGerar = !podeGastar
+    ? (motivoParaNaoGastar ?? "Esta conversa mudou em outra aba.")
+    : motivoDeBloqueio
+      ? motivoDeBloqueio
+      : problemaDePrefeitura
+        ? problemaDePrefeitura.tipo === "divergente"
+          ? problemaDePrefeitura.mensagem
+          : "Escolha a prefeitura no plano do chat."
+        : semTitulo
+          ? "Falta o título — preencha no plano do chat."
+          : null;
+
   const bordaPlano =
     pendentes > 0
       ? "border-[var(--status-warning)]/45"
@@ -778,6 +797,7 @@ export function PlanoDeGeracao({
     <div
       className={`nexodoc-enter rounded-md border ${bordaPlano} bg-card transition-colors duration-[var(--duration-base)] ease-[var(--ease-feedback)]`}
     >
+      <PublicarGeradorDoPlano bloqueio={bloqueioDoGerar} gerando={ocupado} gerar={gerarTudo} />
       <div className="flex items-center gap-2 border-b border-border px-3 py-2">
         <FileText className="h-3.5 w-3.5 text-muted-foreground" aria-hidden />
         <span
@@ -1257,4 +1277,33 @@ export function PlanoDeGeracao({
       </div>
     </div>
   );
+}
+
+/**
+ * O PLANO PUBLICA O PRÓPRIO GERAR (06/10/2026) para o canvas e o cartão curto
+ * oferecerem "Gerar capa e LD" — a mesma geração, com as mesmas travas. É um
+ * componente à parte porque o plano tem um `return null` antecipado, e gancho
+ * depois dele não pode existir. O plano mais recente vence: os efeitos rodam
+ * na ordem da conversa.
+ */
+function PublicarGeradorDoPlano({
+  bloqueio,
+  gerando,
+  gerar,
+}: {
+  bloqueio: string | null;
+  gerando: boolean;
+  gerar: () => Promise<void>;
+}) {
+  const dono = useId();
+  const { publicarGerador } = useGeradorDoPlano();
+  const gerarRef = useRef(gerar);
+  useEffect(() => {
+    gerarRef.current = gerar;
+  });
+  useEffect(() => {
+    publicarGerador(dono, { bloqueio, gerando }, () => gerarRef.current());
+  }, [publicarGerador, dono, bloqueio, gerando]);
+  useEffect(() => () => publicarGerador(dono, null), [publicarGerador, dono]);
+  return null;
 }

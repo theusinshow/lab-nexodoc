@@ -278,7 +278,8 @@ function ArtifactNode({ data, selected }: NodeProps<Node<ArtifactNodeData>>) {
           </div>
         )}
       </div>
-      <Handle type="target" position={Position.Left} className="!opacity-0" />
+      {/* O volume recebe a seta da grade de folhas: entra na altura da primeira linha delas. */}
+      <Handle type="target" position={Position.Left} className="!opacity-0" style={data.kind === "volume" ? { top: 48 } : undefined} />
       <Handle type="source" position={Position.Right} className="!opacity-0" />
     </div>
   );
@@ -825,7 +826,9 @@ function CanvasInterno({
             markerEnd: { type: MarkerType.ArrowClosed, color: "var(--ring)" },
           });
         }
-        if (i === daFileira.length - 1) anterior = id;
+        // A seta para o volume sai do FIM DA PRIMEIRA LINHA da grade, na altura
+        // do volume — da última folha ela cruzava a grade na diagonal (06/10/2026).
+        if (i === Math.min(colunas, daFileira.length) - 1) anterior = id;
       });
 
       if (daFileira.length > 0) cursorX += larguraDaGrade(daFileira.length, colunas) + 60;

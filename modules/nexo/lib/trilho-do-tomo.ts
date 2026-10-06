@@ -31,6 +31,8 @@ export interface EntradaDoTrilho {
   trava: string | null;
   /** A trava dos editáveis (`useLiberacaoDoVolume`). */
   liberacao: { liberado: boolean; motivo: string | null };
+  /** O gerar do plano do chat (`useGeradorDoPlano`); ausente = nenhum plano. */
+  gerador?: { bloqueio: string | null; gerando: boolean } | null;
 }
 
 export interface Trilho {
@@ -38,7 +40,7 @@ export interface Trilho {
   frase: string;
   /** 0..1 — quanto o nó do volume está "cheio". */
   preenchimento: number;
-  acao: { tipo: "montar" | "remontar" | "tentar-de-novo"; habilitada: boolean; motivo: string | null };
+  acao: { tipo: "gerar" | "montar" | "remontar" | "tentar-de-novo"; habilitada: boolean; motivo: string | null };
   /** `null` enquanto não há volume montado. */
   baixar: { habilitado: boolean; motivo: string | null; url: string | null; nome: string } | null;
 }
@@ -140,6 +142,26 @@ export function trilhoDoTomo(e: EntradaDoTrilho): Trilho {
     };
   }
 
+  if (!e.temMontador && e.gerador) {
+    // SEM CAPA E LD, MAS COM PLANO: a ação do tomo é gerar (06/10/2026) — um
+    // "Montar" cinza aqui deixava a pessoa sem saída.
+    if (e.gerador.gerando) {
+      return {
+        estado: "incompleto",
+        frase: "gerando capa, LD e separatriz…",
+        preenchimento: 0,
+        acao: { tipo: "gerar", habilitada: false, motivo: null },
+        baixar: null,
+      };
+    }
+    return {
+      estado: "incompleto",
+      frase: `${e.folhas} folhas · falta gerar a capa e a LD`,
+      preenchimento: 0,
+      acao: { tipo: "gerar", ...travado(e.gerador.bloqueio) },
+      baixar: null,
+    };
+  }
   if (!e.temMontador) {
     return {
       estado: "incompleto",

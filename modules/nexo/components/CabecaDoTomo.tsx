@@ -18,7 +18,7 @@ import { formatarMb, tomosMontados } from "../lib/entrega-do-volume";
 import type { FaseDaMontagem } from "../lib/progresso-da-montagem";
 import { trilhoDoTomo, type Trilho } from "../lib/trilho-do-tomo";
 import { useConversation } from "../state/conversation-store";
-import { useFasesDaMontagem, useMontadoresDeVolume } from "../state/montadores-de-volume";
+import { useFasesDaMontagem, useGeradorDoPlano, useMontadoresDeVolume } from "../state/montadores-de-volume";
 import { useLiberacaoDoVolume } from "../state/use-liberacao-do-volume";
 
 export type CabecaDoTomoData = {
@@ -34,6 +34,7 @@ export function useTrilho(idDoVolume: string, folhas: number): Trilho {
   const { results, podeGastar, motivoParaNaoGastar } = useConversation();
   const { fases, situacoes } = useFasesDaMontagem();
   const liberacao = useLiberacaoDoVolume();
+  const { gerador } = useGeradorDoPlano();
   const montado = useMemo(() => tomosMontados(results).find((t) => t.id === idDoVolume), [results, idDoVolume]);
   const s = situacoes[idDoVolume];
   return trilhoDoTomo({
@@ -45,6 +46,7 @@ export function useTrilho(idDoVolume: string, folhas: number): Trilho {
     erro: s?.erro ?? null,
     trava: podeGastar ? null : (motivoParaNaoGastar ?? "Esta conversa mudou em outra aba."),
     liberacao,
+    gerador,
   });
 }
 
@@ -89,6 +91,7 @@ function Peca({ nome, pronta }: { nome: string; pronta: boolean }) {
 export function CabecaDoTomo({ data }: NodeProps<Node<CabecaDoTomoData & Record<string, unknown>>>) {
   const t = useTrilho(data.idDoVolume, data.folhas);
   const { montador } = useMontadoresDeVolume();
+  const { gerar } = useGeradorDoPlano();
   const { results } = useConversation();
   const reduzido = useReducedMotion();
   const bytes = useMemo(() => tomosMontados(results).find((x) => x.id === data.idDoVolume)?.bytes ?? null, [results, data.idDoVolume]);
@@ -138,13 +141,19 @@ export function CabecaDoTomo({ data }: NodeProps<Node<CabecaDoTomoData & Record<
           ) : (
             <Button
               size="sm"
-              variant={t.acao.tipo === "montar" ? "default" : "secondary"}
+              variant={t.acao.tipo === "montar" || t.acao.tipo === "gerar" ? "default" : "secondary"}
               disabled={!t.acao.habilitada}
               title={t.acao.motivo ?? undefined}
-              onClick={() => void montador(data.idDoVolume)?.()}
+              onClick={() => void (t.acao.tipo === "gerar" ? gerar() : montador(data.idDoVolume)?.())}
             >
-              {t.acao.tipo !== "montar" && <RotateCcw className="mr-1.5 h-3.5 w-3.5" aria-hidden />}
-              {t.acao.tipo === "montar" ? "Montar" : t.acao.tipo === "remontar" ? "Remontar" : "Tentar de novo"}
+              {(t.acao.tipo === "remontar" || t.acao.tipo === "tentar-de-novo") && <RotateCcw className="mr-1.5 h-3.5 w-3.5" aria-hidden />}
+              {t.acao.tipo === "gerar"
+                ? "Gerar capa e LD"
+                : t.acao.tipo === "montar"
+                  ? "Montar"
+                  : t.acao.tipo === "remontar"
+                    ? "Remontar"
+                    : "Tentar de novo"}
             </Button>
           )}
         </motion.span>
@@ -186,11 +195,12 @@ export function VolumeVazioNode({ data }: NodeProps<Node<{ idDoVolume: string; f
   const t = useTrilho(data.idDoVolume, data.folhas);
   const { fases } = useFasesDaMontagem();
   return (
-    <div className="relative flex aspect-[3/4] w-[200px] flex-col justify-end overflow-hidden rounded-md border border-dashed border-border bg-card/40 p-2" data-prova="volume-vazio">
+    <div className="relative flex aspect-[3/4] w-[200px] flex-col justify-end overflow-hidden rounded-md border border-dashed border-[var(--ring)]/60 bg-card/40 p-2" data-prova="volume-vazio">
       <EnchimentoDoVolume fase={fases[data.idDoVolume]} preenchimento={t.preenchimento} />
       <p className="relative font-mono text-[11px] font-medium uppercase tracking-[0.05em]">Volume</p>
       <p className="relative mt-0.5 text-[11px] text-muted-foreground">{t.estado === "montando" ? t.frase : "ainda não montado"}</p>
-      <Handle type="target" position={Position.Left} className="!opacity-0" />
+      {/* A seta chega na altura da primeira linha de folhas (ALTURA_FOLHA / 2), não no meio do nó. */}
+      <Handle type="target" position={Position.Left} className="!opacity-0" style={{ top: 48 }} />
     </div>
   );
 }

@@ -63,4 +63,17 @@ test("cada passo carrega uma frase p/ o agente", () => {
   assert.ok(steps.every((s) => s.send.trim().length > 0));
 });
 
+test("plano proposto e ainda não gerado: nenhum chip — o próximo passo é o Gerar do plano", () => {
+  // Teste real de 06/10/2026: "Montar o volume" aceso sem capa nem LD levou a
+  // três pedidos de montagem que não podiam montar nada.
+  assert.deepEqual(nextStepsFor(props("ld", "capa"), new Set()), []);
+});
+
+test("com a capa e a LD geradas, os chips voltam", () => {
+  assert.deepEqual(
+    nextStepsFor(props("ld", "capa"), new Set(["ld", "capa"])).map((s) => s.label),
+    ["Montar o volume", "Conferir as folhas"],
+  );
+});
+
 console.log(`\n${passed} testes ok`);
