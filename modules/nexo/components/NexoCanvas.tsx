@@ -68,6 +68,7 @@ import {
   type GradeDoDrop,
 } from "../lib/drop-folhas";
 import {
+  ALTURA_DA_CABECA,
   ALTURA_FOLHA,
   colunasDaGrade,
   LARGURA_FOLHA,
@@ -79,6 +80,9 @@ import {
   topoDasFileiras,
 } from "../lib/layout-canvas";
 import { FolhaNode, type FolhaNodeData } from "./FolhaNode";
+import { idDoVolume as idDoVolumeDe, sufixoDoTomoNoCanvas } from "../lib/tomos-do-volume";
+import { CabecaDoTomo, EnchimentoDoVolume, VolumeVazioNode, useTrilho } from "./CabecaDoTomo";
+import { useFasesDaMontagem } from "../state/montadores-de-volume";
 import { siglaDaDisciplina } from "../lib/disciplina-cor";
 import type { OrigemDoNumero } from "@/server/nexo/parse-filename";
 import { ehDigitacao, passoDoTeclado } from "../lib/navegacao-por-teclado";
@@ -141,6 +145,9 @@ function ArtifactNode({ data, selected }: NodeProps<Node<ArtifactNodeData>>) {
   // proposta e regerar é um clique), então um diálogo modal custaria mais
   // atenção do que a decisão merece.
   const [confirmando, setConfirmando] = useState(false);
+  const { fases } = useFasesDaMontagem();
+  const trilho = useTrilho(data.id, 0);
+  const faseDoVolume = data.kind === "volume" ? fases[data.id] : undefined;
 
   const openPreview = () => {
     if (data.pdfUrl) window.open(data.pdfUrl, "_blank", "noopener,noreferrer");
@@ -174,6 +181,7 @@ function ArtifactNode({ data, selected }: NodeProps<Node<ArtifactNodeData>>) {
           kind={data.kind}
           width={200}
         />
+        {data.kind === "volume" && <EnchimentoDoVolume fase={faseDoVolume} preenchimento={trilho.preenchimento} />}
         {data.pdfUrl && (
           <span className="absolute inset-0 flex items-center justify-center bg-background/55 opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100">
             <button
@@ -446,7 +454,7 @@ function RotuloNode({
   );
 }
 
-const nodeTypes = { artifact: ArtifactNode, rotulo: RotuloNode, folha: FolhaNode };
+const nodeTypes = { artifact: ArtifactNode, rotulo: RotuloNode, folha: FolhaNode, cabeca: CabecaDoTomo, volumeVazio: VolumeVazioNode };
 
 const EDITAVEIS: NexoArtifactKind[] = ["capa", "ld", "separatriz"];
 
@@ -662,7 +670,9 @@ function CanvasInterno({
       return folhas;
     });
 
-    const topos = topoDasFileiras(folhasPorFileira.map((fs) => alturaDaFileira(fs.length)));
+    // Cada fileira ganha uma faixa em cima para o cabeçalho do tomo (06/10/2026).
+    const topos = topoDasFileiras(folhasPorFileira.map((fs) => alturaDaFileira(fs.length) + ALTURA_DA_CABECA));
+    const codigoDoVolume = summarizeSelos(folhas).codigo;
 
     /*
      * Um documento envelheceu quando as folhas do tomo dele não são mais as que
@@ -710,7 +720,9 @@ function CanvasInterno({
         }))
         .sort((a, b) => a.rank - b.rank);
 
-      const y = topos[linha];
+      const y = topos[linha] + ALTURA_DA_CABECA;
+      const ehResto = grupo.tomo === 0 && grupos.length > 1;
+      const idDoVolume = idDoVolumeDe(codigoDoVolume, sufixoDoTomoNoCanvas(grupo.tomo));
       const daFileira = folhasPorFileira[linha];
 
       // A grade das folhas entra na posição canônica (depois da LD, antes do
@@ -735,6 +747,7 @@ function CanvasInterno({
             id: `${anterior}->${it.id}`,
             source: anterior,
             target: it.id,
+            data: { volume: idDoVolume },
             style: { stroke: "var(--ring)", strokeWidth: 1.5, opacity: 0.5 },
             markerEnd: { type: MarkerType.ArrowClosed, color: "var(--ring)" },
           });
@@ -803,6 +816,7 @@ function CanvasInterno({
             id: `${anterior}->${id}`,
             source: anterior,
             target: id,
+            data: { volume: idDoVolume },
             style: { stroke: "var(--ring)", strokeWidth: 1.5, opacity: 0.5 },
             markerEnd: { type: MarkerType.ArrowClosed, color: "var(--ring)" },
           });
@@ -813,6 +827,24 @@ function CanvasInterno({
       if (daFileira.length > 0) cursorX += larguraDaGrade(daFileira.length, colunas) + 60;
 
       depois.forEach(empurrar);
+
+      // O LUGAR DO VOLUME antes dele existir: a fileira termina onde ele vai nascer.
+      if (!ehResto && daFileira.length > 0 && !grupo.itens.some((a) => a.kind === "volume")) {
+        const id = `volume-vazio:${grupo.tomo}`;
+        nodes.push({ id, type: "volumeVazio", position: { x: cursorX, y }, data: { idDoVolume, folhas: daFileira.length }, draggable: false, selectable: false });
+        if (anterior) {
+          edges.push({
+            id: `${anterior}->${id}`,
+            source: anterior,
+            target: id,
+            data: { volume: idDoVolume },
+            style: { stroke: "var(--ring)", strokeWidth: 1.5, opacity: 0.35, strokeDasharray: "4 4" },
+            markerEnd: { type: MarkerType.ArrowClosed, color: "var(--ring)" },
+          });
+        }
+        idsDaFileira.push(id);
+        cursorX += 260;
+      }
 
       /*
        * A geometria que o drop vai consultar. `gradeX` é o cursor de ANTES dos
@@ -835,12 +867,28 @@ function CanvasInterno({
 
       // Rótulo da fileira. Só aparece quando há divisão — com um volume só ele
       // seria ruído.
-      if (grupos.length > 1) {
+      if (ehResto) {
         nodes.push({
           id: `rotulo:${grupo.tomo}`,
           type: "rotulo",
           position: { x: -150, y: y + 130 },
           data: { tomo: grupo.tomo, folhas: daFileira.length, documentos: grupo.itens.map((a) => a.id) },
+          draggable: false,
+          selectable: false,
+        });
+      } else if (daFileira.length > 0 || grupo.itens.length > 0) {
+        const kinds = new Set(grupo.itens.map((a) => a.kind));
+        nodes.push({
+          id: `cabeca:${grupo.tomo}`,
+          type: "cabeca",
+          position: { x: 0, y: topos[linha] },
+          data: {
+            tomo: grupo.tomo,
+            unico: tomosReais <= 1,
+            folhas: daFileira.length,
+            idDoVolume,
+            pecas: { capa: kinds.has("capa"), separatriz: kinds.has("separatriz"), ld: kinds.has("ld") },
+          },
           draggable: false,
           selectable: false,
         });
