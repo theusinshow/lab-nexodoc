@@ -502,14 +502,22 @@ export function planoPorDisciplina(codigos: readonly string[]): number[] {
     const vizinha = blocos.slice(pos + 1).find(grande) ?? blocos.slice(0, pos).reverse().find(grande)!;
     for (const g of grandes) repartir(g === vizinha ? [...sozinha, ...g].sort((a, b) => a - b) : g);
   } else {
-    juntarPequenas();
+    /*
+     * SEM PEQUENAS, nada a juntar (06/10/2026). Um projeto só de estrutural (61
+     * folhas) caía aqui, e `juntarPequenas` com soma zero criava um tomo VAZIO;
+     * na ordenação ele vinha primeiro, levava o número 1, e o volume saía com o
+     * Tomo 01 só de capa e LD e as pranchas começando no Tomo 02.
+     */
+    if (pequenos.length > 0) juntarPequenas();
     for (const g of grandes) repartir(g);
   }
 
-  tomos.forEach((t) => t.sort((a, b) => a - b));
-  tomos.sort((a, b) => a[0] - b[0]);
+  // Tomo vazio nunca recebe número: ele empurraria todos os outros para a frente.
+  const cheios = tomos.filter((t) => t.length > 0);
+  cheios.forEach((t) => t.sort((a, b) => a - b));
+  cheios.sort((a, b) => a[0] - b[0]);
   const plano: number[] = new Array(total).fill(1);
-  tomos.forEach((t, i) => t.forEach((j) => (plano[j] = i + 1)));
+  cheios.forEach((t, i) => t.forEach((j) => (plano[j] = i + 1)));
   return plano;
 }
 

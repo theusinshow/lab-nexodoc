@@ -372,4 +372,19 @@ check("planoPorDisciplina: pequenas demais para um tomo se repartem sem partir d
   });
 });
 
+check("planoPorDisciplina: só uma disciplina grande — o tomo 1 não fica vazio (05/10/2026)", () => {
+  // 61 folhas de estrutural, nenhuma pequena: o ramo das pequenas criava um tomo
+  // VAZIO que levava o número 1, e as pranchas começavam no tomo 2.
+  const plano = planoPorDisciplina(vezes("est", 61));
+  assert.equal(Math.min(...plano), 1, "a primeira folha cai no tomo 1");
+  const tomos = Math.max(...plano);
+  for (let t = 1; t <= tomos; t++) assert.ok(plano.includes(t), `o tomo ${t} tem folha`);
+});
+
+check("planoPorDisciplina: duas grandes e nenhuma pequena — nenhum tomo vazio", () => {
+  const plano = planoPorDisciplina([...vezes("arq", 20), ...vezes("est", 20)]);
+  const tomos = Math.max(...plano);
+  for (let t = 1; t <= tomos; t++) assert.ok(plano.includes(t), `o tomo ${t} tem folha`);
+});
+
 console.log(`\n${passed} teste(s) passaram.`);
