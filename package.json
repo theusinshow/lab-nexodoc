@@ -125,6 +125,7 @@
     "test:nexo:selo-cache": "node scripts/test-nexo-selo-cache.ts",
     "test:nexo:tipo": "node scripts/test-nexo-tipo.ts",
     "test:nexo:volumes-prontos": "node scripts/test-nexo-volumes-prontos.ts",
+    "test:nexo:entrega-painel": "node scripts/test-nexo-entrega-painel.ts",
     "test:nexo:desatualizados": "node scripts/test-nexo-volumes-desatualizados.ts",
     "prova:desatualizado": "node scripts/prova-volume-desatualizado.mjs",
     "test:nexo:nome-do-zip": "node --import ./scripts/lib/resolver-de-imports.mjs scripts/test-nexo-nome-do-zip.ts",
