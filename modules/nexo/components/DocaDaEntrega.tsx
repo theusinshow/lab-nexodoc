@@ -5,7 +5,7 @@
  * à vista — passo 1 (editáveis), passo 2 (volumes), o total, e os dois botões.
  * A regra é a de `entrega-do-volume.ts`; aqui é só a forma.
  */
-import { CircleCheck, Circle, FileDown, FolderDown } from "lucide-react";
+import { CircleCheck, FileDown, FolderDown } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,13 @@ export function DocaDaEntrega({ selos }: { selos: SeloForLd[] }) {
   const visivel = e.temEditaveis || e.tomos.length > 0;
   const peso = e.tomos.reduce((s, t) => s + (t.bytes ?? 0), 0);
   const trava = passos.volumes.motivo;
+  /*
+   * PRÓXIMO PASSO NÃO É ALERTA (06/10/2026): "Faltam 2 de 2 tomos" antes de
+   * montar é o caminho normal, e em âmbar parecia defeito. Âmbar fica para o
+   * que trava de verdade (teto, editáveis envelhecidos, erro).
+   */
+  const faltaMontar = passos.prontos < Math.max(passos.planejados, 1);
+  const alerta = Boolean(e.erro || passos.editaveis.motivo || passos.acimaDoTeto.length > 0);
 
   return (
     <AnimatePresence>
@@ -38,18 +45,20 @@ export function DocaDaEntrega({ selos }: { selos: SeloForLd[] }) {
           role="region"
           aria-label="Entrega do volume"
         >
+          {/* Passos NUMERADOS: círculos vazios se liam como botões de opção. */}
           <span className="flex items-center gap-1.5 text-xs">
-            {passos.editaveis.feito ? <CircleCheck className="h-3.5 w-3.5 text-[var(--status-ok)]" aria-hidden /> : <Circle className="h-3.5 w-3.5 text-muted-foreground" aria-hidden />}
-            {passos.editaveis.feito && passos.editaveis.quando ? `Editáveis baixados ${formatarDataHora(passos.editaveis.quando)}` : "1 · Editáveis na pasta do projeto"}
+            {passos.editaveis.feito ? <CircleCheck className="h-4 w-4 text-[var(--status-ok)]" aria-hidden /> : <Passo n={1} />}
+            {passos.editaveis.feito && passos.editaveis.quando ? `Editáveis baixados ${formatarDataHora(passos.editaveis.quando)}` : "Editáveis na pasta do projeto"}
           </span>
           <span className="flex items-center gap-1.5 text-xs">
-            <Circle className="h-3.5 w-3.5 text-muted-foreground" aria-hidden />2 · Volumes
+            <Passo n={2} />
+            Volumes
           </span>
           <span className="text-xs text-muted-foreground tabular-nums">
             {passos.prontos} de {Math.max(passos.planejados, 1)} montados{peso > 0 ? ` · ${formatarMb(peso)}` : ""}
           </span>
           <span className="ml-auto flex items-center gap-2">
-            <Button size="sm" variant={passos.editaveis.feito ? "secondary" : "default"} loading={e.ocupado === "editaveis"} disabled={e.ocupado !== null} onClick={() => void e.baixarEditaveisZip()}>
+            <Button size="sm" variant={passos.editaveis.feito || faltaMontar ? "secondary" : "default"} loading={e.ocupado === "editaveis"} disabled={e.ocupado !== null} onClick={() => void e.baixarEditaveisZip()}>
               <FolderDown className="mr-1.5 h-3.5 w-3.5" aria-hidden />
               Editáveis (ODT)
             </Button>
@@ -58,19 +67,33 @@ export function DocaDaEntrega({ selos }: { selos: SeloForLd[] }) {
               {passos.planejados > 1 ? `Baixar os ${passos.planejados} volumes` : "Baixar o volume"}
             </Button>
           </span>
-          {(trava || passos.editaveis.motivo || e.erro) && (
-            <motion.p
-              key={trava ?? e.erro ?? passos.editaveis.motivo ?? ""}
-              initial={reduzido ? false : { x: -4 }}
-              animate={{ x: [-4, 4, -2, 0] }}
-              transition={{ duration: DURACAO.layout, ease: CURVA.feedback }}
-              className={`basis-full text-xs ${e.erro ? "text-[var(--destructive)]" : "text-[var(--status-warning)]"}`}
-            >
-              {e.erro ?? passos.editaveis.motivo ?? trava}
-            </motion.p>
-          )}
+          {(trava || passos.editaveis.motivo || e.erro) &&
+            (alerta ? (
+              <motion.p
+                key={trava ?? e.erro ?? passos.editaveis.motivo ?? ""}
+                initial={reduzido ? false : { x: -4 }}
+                animate={{ x: [-4, 4, -2, 0] }}
+                transition={{ duration: DURACAO.layout, ease: CURVA.feedback }}
+                className={`basis-full text-xs ${e.erro ? "text-[var(--destructive)]" : "text-[var(--status-warning)]"}`}
+              >
+                {e.erro ?? passos.editaveis.motivo ?? trava}
+              </motion.p>
+            ) : (
+              <p className="basis-full text-xs text-muted-foreground">
+                {faltaMontar ? "Monte os tomos pelo botão de cada um no canvas — depois baixe aqui." : trava}
+              </p>
+            ))}
         </motion.div>
       )}
     </AnimatePresence>
+  );
+}
+
+/** O número do passo num círculo cheio — lê como etapa, não como opção. */
+function Passo({ n }: { n: number }) {
+  return (
+    <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-muted text-[10px] font-semibold tabular-nums text-foreground" aria-hidden>
+      {n}
+    </span>
   );
 }

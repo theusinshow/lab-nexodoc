@@ -136,4 +136,8 @@ test("remontando um tomo já montado mostra a fase, não o peso velho", () => {
   assert.equal(t.estado, "montando");
 });
 
+test("uma folha só fala no singular", () => {
+  assert.equal(trilhoDoTomo({ ...base, folhas: 1 }).frase, "1 folha · pronto para montar");
+});
+
 console.log(`\n${passed} teste(s) do trilho do tomo OK`);

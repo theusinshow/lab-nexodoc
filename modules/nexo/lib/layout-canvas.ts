@@ -57,7 +57,7 @@ export const PASSO_Y = 106;
 export const ALTURA_MINIMA_FILEIRA = 430;
 
 /** Faixa acima de cada fileira para o cabeçalho do tomo (estado + Montar/Baixar). */
-export const ALTURA_DA_CABECA = 64;
+export const ALTURA_DA_CABECA = 96;
 /** Respiro entre a grade e a fileira seguinte. */
 const FOLGA_DA_FILEIRA = 40;
 

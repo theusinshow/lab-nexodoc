@@ -105,9 +105,8 @@ export function FrameDoDocumento({
 
   /*
    * Quantas vezes cada marcador aparece no modelo. O nome da obra ocupa DOIS
-   * parágrafos, um por linha impressa — o campo tem de aparecer UMA vez, com
-   * duas linhas. Desenhá-lo duas vezes faria o engenheiro digitar a obra duas
-   * vezes para ver uma.
+   * parágrafos, um por linha impressa: cada ocorrência desenha a SUA linha do
+   * valor, como o gerador reparte (ver o campo abaixo).
    */
   const ocorrencias = new Map<string, number>();
   for (const p of layout) {
@@ -118,32 +117,14 @@ export function FrameDoDocumento({
     }
   }
 
-  const jaDesenhados = new Set<string>();
+  /** Quantas ocorrências de cada marcador já foram desenhadas nesta passada. */
+  const vistos = new Map<string, number>();
 
   const cabecalho = (prefeitura ?? "").trim();
 
-  /*
-   * A FOLHA (06/10/2026): o frame deixou de ser formulário com caixas empilhadas
-   * e passou a PARECER A CAPA — folha A4 branca, texto escuro, o corpo de cada
-   * linha em pt proporcional à largura da folha (`cqw`), negrito e fonte do
-   * modelo, e as linhas em branco do modelo como o espaço real entre os blocos.
-   * Os campos aparecem como o TEXTO que vai sair e se editam no lugar, sem
-   * caixa. Continua não sendo o PDF (brasão e métrica exata são do ODT).
-   */
-  const papel = (
-    <div className="flex flex-col gap-2">
-      <div className="@container w-full">
-        <div
-          className="relative mx-auto flex aspect-[1/1.414] w-full flex-col overflow-hidden rounded-[2px] bg-white text-[#17191c] shadow-[0_10px_28px_rgb(0_0_0/0.38)]"
-          style={{ padding: "9cqw 8cqw" }}
-          data-prova="papel-da-capa"
-        >
-          {layout.map((paragrafo) => {
+  /** Uma linha impressa da capa. */
+  const desenharParagrafo = (paragrafo: ParagrafoDoModelo) => {
             const tamanho = `${((paragrafo.corpo ?? 12) / LARGURA_A4_PT) * 100}cqw`;
-            if (paragrafo.partes.length === 0) {
-              // A linha em branco do modelo É o espaço entre os blocos da capa.
-              return <div key={paragrafo.indice} aria-hidden style={{ height: `calc(${tamanho} * 1.25)` }} />;
-            }
             return (
               <div
                 key={paragrafo.indice}
@@ -159,8 +140,10 @@ export function FrameDoDocumento({
                   const chave = `${paragrafo.indice}-${i}`;
                   if (parte.tipo === "texto") {
                     return (
+                      // Os espaços das PONTAS viram espaço fixo: cada trecho é um item de
+                      // flex, e ali o espaço de "VOLUME " colapsava — o "?" colava no texto.
                       <span key={chave} className="whitespace-pre-wrap">
-                        {parte.valor}
+                        {parte.valor.replace(/^ +| +$/g, (m) => "\u00a0".repeat(m.length))}
                       </span>
                     );
                   }
@@ -191,10 +174,34 @@ export function FrameDoDocumento({
                     );
                   }
 
-                  if (jaDesenhados.has(parte.nome)) return null;
-                  jaDesenhados.add(parte.nome);
-
-                  const linhas = campo?.linhas ?? ocorrencias.get(parte.nome) ?? 1;
+                  /*
+                   * CADA OCORRÊNCIA NO SEU LUGAR (06/10/2026). O gerador reparte o
+                   * valor pelas ocorrências do marcador (`distribuirNosMarcadores`):
+                   * a i-ésima recebe a linha i e a última recebe o resto. Em
+                   * Criciúma a 1ª linha do título sai em "VOLUME 1 – <aqui>" e as
+                   * outras na linha de baixo; a obra ocupa duas linhas. Desenhar
+                   * um campo só, de várias linhas, punha tudo no lugar errado.
+                   */
+                  const total = ocorrencias.get(parte.nome) ?? 1;
+                  const k = vistos.get(parte.nome) ?? 0;
+                  vistos.set(parte.nome, k + 1);
+                  const ultima = k === total - 1;
+                  const decidido = valores[parte.nome] ?? "";
+                  const linhasDe = (v: string) => (total === 1 ? [v] : v.split("\n").map((l) => l.trim()).filter(Boolean));
+                  const trecho = (v: string) => {
+                    const l = linhasDe(v);
+                    return total === 1 ? v : ultima ? l.slice(k).join("\n") : (l[k] ?? "");
+                  };
+                  const aoEditar = (novo: string) => {
+                    if (total === 1) return onChange(parte.nome, novo);
+                    // A primeira edição parte do que vale hoje (o fantasma), senão
+                    // as outras linhas sumiriam e esta subiria para a 1ª.
+                    const base = linhasDe(decidido || derivados[parte.nome] || "");
+                    while (base.length < k) base.push("");
+                    const antes = base.slice(0, k);
+                    const depois = ultima ? [] : base.slice(k + 1);
+                    onChange(parte.nome, [...antes, ...(ultima ? novo.split("\n") : [novo]), ...depois].join("\n"));
+                  };
                   const destaque = destaques[parte.nome];
                   /*
                    * SEM CAIXA: o campo é o texto da capa. O destaque é discreto —
@@ -204,43 +211,87 @@ export function FrameDoDocumento({
                    */
                   const realce =
                     destaque === "falta"
-                      ? " bg-[#f6c453]/45 outline outline-1 outline-[#d99a1e]"
+                      ? " mx-[0.3em] !px-[0.3em] bg-[#fde3a7] shadow-[0_0_0_1.5px_#d99a1e]"
                       : destaque === "sugerido"
                         ? " underline decoration-dotted decoration-[#7c6cf0] decoration-2 underline-offset-[0.2em]"
                         : "";
-                  const comum =
-                    `rounded-[2px] bg-transparent px-[0.15em] text-inherit outline-none transition-colors hover:bg-black/[0.05] focus:bg-[#7c6cf0]/10 focus:outline focus:outline-1 focus:outline-[#7c6cf0] ${
-                      // Quase preto SÓ quando o fantasma é o que vai sair impresso;
-                      // a dica de um campo opcional vazio ("bairro (opcional)") fica clara.
-                      derivados[parte.nome] ? "placeholder:text-[#2e3236]" : "placeholder:text-[#b3b8bd] placeholder:italic"
-                    }`;
-                  const fantasma = destaque === "falta" ? `${rotulo.toUpperCase()} ?` : derivados[parte.nome] || campo?.placeholder;
-                  return linhas > 1 ? (
+                  // `!min-h-0`: a regra global de input (40 px, para o dedo) inchava cada linha
+                  // com campo — a obra saía com um vão de três linhas no meio.
+                  const comum = `!min-h-0 !h-auto !py-0 leading-[1.25] rounded-[2px] bg-transparent px-[0.1em] text-inherit outline-none transition-colors hover:bg-black/[0.05] focus:bg-[#7c6cf0]/10 focus:shadow-[0_0_0_1px_#7c6cf0] ${
+                    // Quase preto SÓ quando o fantasma é o que vai sair impresso;
+                    // a dica de um campo opcional vazio ("bairro (opcional)") fica clara.
+                    derivados[parte.nome] ? "placeholder:text-[#2e3236]" : "placeholder:text-[#b3b8bd] placeholder:italic"
+                  }`;
+                  // O rótulo ("VOLUME") já está escrito no modelo: o que falta é só o valor.
+                  const fantasma = destaque === "falta" ? "?" : trecho(derivados[parte.nome] ?? "") || (k === 0 ? campo?.placeholder : "");
+                  const valor = trecho(decidido);
+                  const multilinha = ultima && total > 1 ? Math.max(1, (decidido ? linhasDe(decidido).length : linhasDe(derivados[parte.nome] ?? "").length) - k) : total === 1 ? (campo?.linhas ?? 1) : 1;
+                  const rotuloDaLinha = total > 1 ? `${rotulo} (linha ${k + 1})` : rotulo;
+                  return multilinha > 1 ? (
                     <textarea
                       key={chave}
-                      aria-label={rotulo}
-                      rows={linhas}
-                      value={valores[parte.nome] ?? ""}
+                      aria-label={rotuloDaLinha}
+                      rows={multilinha}
+                      value={valor}
                       placeholder={fantasma}
-                      onChange={(e) => onChange(parte.nome, e.target.value)}
+                      onChange={(e) => aoEditar(e.target.value)}
                       className={`${comum} w-full resize-none ${ALINHAMENTO[paragrafo.alinhamento]}${realce}`}
                       style={{ font: "inherit", lineHeight: 1.25 }}
                     />
                   ) : (
                     <input
                       key={chave}
-                      aria-label={rotulo}
-                      value={valores[parte.nome] ?? ""}
+                      aria-label={rotuloDaLinha}
+                      value={valor}
                       placeholder={fantasma}
-                      onChange={(e) => onChange(parte.nome, e.target.value)}
-                      className={`${comum} min-w-[3ch] max-w-full [field-sizing:content] ${ALINHAMENTO[paragrafo.alinhamento]}${realce}`}
+                      onChange={(e) => aoEditar(e.target.value)}
+                      className={`${comum} min-w-[1.2ch] max-w-full [field-sizing:content] ${ALINHAMENTO[paragrafo.alinhamento]}${realce}`}
                       style={{ font: "inherit" }}
                     />
                   );
                 })}
               </div>
             );
-          })}
+  };
+
+  /*
+   * OS BLOCOS DA CAPA (06/10/2026): as linhas em branco do modelo separam
+   * cabeçalho, obra, volume/tomo e rodapé. Na folha impressa eles se espalham
+   * pela página (o rodapé com código e data fica no pé); empilhá-los no topo
+   * deixava 40% da folha vazia embaixo. Os blocos são distribuídos pela altura.
+   */
+  const blocos: ParagrafoDoModelo[][] = [];
+  for (const p of layout) {
+    if (p.partes.length === 0) {
+      if (blocos.length > 0 && blocos[blocos.length - 1].length > 0) blocos.push([]);
+      continue;
+    }
+    if (blocos.length === 0) blocos.push([]);
+    blocos[blocos.length - 1].push(p);
+  }
+  const blocosCheios = blocos.filter((b) => b.length > 0);
+
+  /*
+   * A FOLHA (06/10/2026): o frame deixou de ser formulário com caixas empilhadas
+   * e passou a PARECER A CAPA — folha A4 branca, texto escuro, o corpo de cada
+   * linha em pt proporcional à largura da folha (`cqw`), negrito e fonte do
+   * modelo, e as linhas em branco do modelo como o espaço real entre os blocos.
+   * Os campos aparecem como o TEXTO que vai sair e se editam no lugar, sem
+   * caixa. Continua não sendo o PDF (brasão e métrica exata são do ODT).
+   */
+  const papel = (
+    <div className="flex flex-col gap-2">
+      <div className="@container w-full">
+        <div
+          className="relative mx-auto flex aspect-[1/1.414] w-full flex-col justify-between overflow-hidden rounded-[2px] bg-white text-[#17191c] shadow-[0_10px_28px_rgb(0_0_0/0.38)]"
+          style={{ padding: "9cqw 8cqw" }}
+          data-prova="papel-da-capa"
+        >
+          {blocosCheios.map((bloco, b) => (
+            <div key={b} className="flex flex-col">
+              {bloco.map(desenharParagrafo)}
+            </div>
+          ))}
         </div>
       </div>
       {/* As respostas prontas ficam FORA da folha: dentro, quebrariam o desenho da capa. */}

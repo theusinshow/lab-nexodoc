@@ -20,6 +20,8 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useGeradorDoPlano, type FrameDoPlano } from "../state/montadores-de-volume";
 import { destaquesDoFrame } from "../lib/destaques-do-frame";
+import { formatTomo, type TomoFormat } from "@/lib/cover-utils";
+import { partesEmBrasilia } from "@/lib/fuso-de-brasilia";
 import {
   FileText,
   Loader2,
@@ -794,6 +796,7 @@ export function PlanoDeGeracao({
         ? "border-[var(--status-ok)]/30"
         : "border-border";
 
+  const formatoDoTomo = (templates.find((t) => t.id === mesclado.valores.templateId) as { tomoFormat?: TomoFormat } | undefined)?.tomoFormat;
   /** O que o carimbo, o arquivo e a divisão já dizem — o mesmo para o chat e o canvas. */
   const derivadosDoFrame: Record<string, string> = {
     // Já quebrada nas linhas em que vai sair impressa — o carimbo
@@ -803,12 +806,12 @@ export function PlanoDeGeracao({
     // digitar nada, então é o que o campo deve mostrar apagado.
     TITULO_CAPA: tituloSugerido,
     CODIGO_EXIBIDO: codigo,
-    MES_ANO: dataDaCapa || "mês corrente",
+    // O mês que vai sair impresso, e não a frase "mês corrente" (06/10/2026).
+    MES_ANO: dataDaCapa || mesCorrenteDaCapa(),
     VOLUME: capa?.volume?.trim() || "do arquivo",
-    TOMO:
-      numTomos > 1
-        ? `TOMO ${String(tomoInicial).padStart(2, "0")}…`
-        : "",
+    // No FORMATO do modelo ("(TOMO 01)" em Criciúma), como sai impresso. Os
+    // demais tomos ficam ditos embaixo da folha.
+    TOMO: formatTomo(String(tomoInicial), numTomos, formatoDoTomo),
     DISCIPLINA: misto ? resumoDosBlocos(blocos) : "",
   };
   const valoresDoFramePlano = valoresDoFrame({ identidade, params: mesclado.valores });
@@ -978,6 +981,12 @@ export function PlanoDeGeracao({
               derivados={derivadosDoFrame}
               onChange={aoEditarNoFrame}
             />
+            {numTomos > 1 && (
+              <p className="text-xs text-muted-foreground">
+                Sai uma capa por tomo, igual a esta:{" "}
+                {Array.from({ length: numTomos }, (_, i) => formatTomo(String(tomoInicial + i), numTomos, formatoDoTomo)).join(", ")}.
+              </p>
+            )}
           </div>
         ) : null}
 
@@ -1107,8 +1116,17 @@ export function PlanoDeGeracao({
         )}
 
         {/* A lista do que sai. Com tomos, é o que torna visível que "2 tomos"
-            significa seis documentos, e não dois. */}
-        <ul className="space-y-2">
+            significa seis documentos, e não dois.
+
+            GERADO, ELA RECOLHE (06/10/2026): eram oito linhas de ZIP/ODT/PDF
+            empilhadas no chat depois de gerar, e o que se usa dali em diante é
+            o canvas (montar) e a doca (baixar). Continua a um clique. */}
+        <details className="group" open={!tudoGerado || ocupado}>
+        <summary className={tudoGerado && !ocupado ? "cursor-pointer list-none text-xs text-muted-foreground hover:text-foreground" : "hidden"}>
+          <span className="group-open:hidden">Ver os arquivos gerados ({itens.length})</span>
+          <span className="hidden group-open:inline">Esconder os arquivos</span>
+        </summary>
+        <ul className="space-y-2 group-open:mt-2">
           {itens.map((it, i) => {
             /*
              * O check era POSICIONAL (`i < contagem`): com o item 0 velho e o 1
@@ -1178,6 +1196,7 @@ export function PlanoDeGeracao({
             );
           })}
         </ul>
+        </details>
 
         <div className="flex items-center gap-2">
           <Button
@@ -1355,4 +1374,10 @@ function PublicarGeradorDoPlano({
   }, [publicarGerador, dono, bloqueio, gerando, versao]);
   useEffect(() => () => publicarGerador(dono, null), [publicarGerador, dono]);
   return null;
+}
+
+/** "Outubro/2026" — o mês que a capa imprime quando ninguém escolheu outro (Brasília). */
+function mesCorrenteDaCapa(): string {
+  const p = partesEmBrasilia(new Date());
+  return `${MESES_PT[p.mes - 1]}/${p.ano}`;
 }

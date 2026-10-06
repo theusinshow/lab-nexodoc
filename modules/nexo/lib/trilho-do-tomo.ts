@@ -74,6 +74,10 @@ function fraseDaFase(f: FaseDaMontagem, folhas: number): string {
   }
 }
 
+function folhas(n: number): string {
+  return n === 1 ? "1 folha" : `${n} folhas`;
+}
+
 function mb(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1).replace(".", ",")} MB`;
 }
@@ -160,7 +164,7 @@ export function trilhoDoTomo(e: EntradaDoTrilho): Trilho {
       : null;
     return {
       estado: "incompleto",
-      frase: `${e.folhas} folhas · ${pendencia ?? "falta gerar a capa e a LD"}`,
+      frase: `${folhas(e.folhas)} · ${pendencia ?? "falta gerar a capa e a LD"}`,
       preenchimento: 0,
       acao: { tipo: "gerar", ...travado(e.gerador.bloqueio) },
       baixar: null,
@@ -169,7 +173,7 @@ export function trilhoDoTomo(e: EntradaDoTrilho): Trilho {
   if (!e.temMontador) {
     return {
       estado: "incompleto",
-      frase: `${e.folhas} folhas · falta a capa e a LD`,
+      frase: `${folhas(e.folhas)} · falta a capa e a LD`,
       preenchimento: 0,
       acao: { tipo: "montar", habilitada: false, motivo: "Gere a capa e a LD primeiro." },
       baixar: null,
@@ -178,7 +182,7 @@ export function trilhoDoTomo(e: EntradaDoTrilho): Trilho {
   if (e.bloqueio) {
     return {
       estado: "incompleto",
-      frase: `${e.folhas} folhas · ${e.bloqueio}`,
+      frase: `${folhas(e.folhas)} · ${e.bloqueio}`,
       preenchimento: 0,
       acao: { tipo: "montar", habilitada: false, motivo: frasePronta(e.bloqueio) },
       baixar: null,
@@ -186,7 +190,7 @@ export function trilhoDoTomo(e: EntradaDoTrilho): Trilho {
   }
   return {
     estado: "pronto-para-montar",
-    frase: `${e.folhas} folhas · pronto para montar`,
+    frase: `${folhas(e.folhas)} · pronto para montar`,
     preenchimento: 0,
     acao: { tipo: "montar", ...travado(null) },
     baixar: null,
