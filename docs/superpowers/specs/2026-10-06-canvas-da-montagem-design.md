@@ -84,3 +84,14 @@ Tudo com `motion/react` e o sistema de `lib/ds/movimento.ts` (`DURACAO`, `CURVA`
 4. **Transição Obra ↔ Volume.**
 
 Base: os 6 commits locais de 06/10 (entrega com teto, progresso da montagem, painel → "Lista", chips do chat). Antes do push deles, o padrão do palco volta a ser o canvas.
+
+## 7 · Antes de gerar: a capa no canvas (aprovado em 06/10/2026)
+
+Teste real: o frame da capa ("Ver como sai") só existia no chat, os campos a conferir não se destacavam e os chips "Volume 1…4" com lápis confundiam.
+
+- **Divisão já visível:** antes de gerar, o canvas usa o `numTomos` do plano para desenhar uma fileira por tomo (antes mostrava "Volume · 16 folhas" com o plano propondo 2 tomos).
+- **A capa no lugar dos documentos:** enquanto não há capa nem LD, cada fileira mostra no lugar da capa o `FrameDoDocumento` do plano, editável ali, com `TOMO 0N` da fileira.
+- **Destaques:** âmbar = falta decidir (número do volume, título, prefeitura — as travas do Gerar); tracejado violeta = sugerido pelo Nexo (campo com derivado e sem decisão); sem moldura = do carimbo. O volume em falta traz botões 1–4 dentro do campo.
+- **Uma fonte:** editar no canvas chama o mesmo `aoEditarNoFrame` do plano (decisões da conversa). O plano mais recente publica o frame junto com o gerar (`useGeradorDoPlano().gerador.frame`).
+- **Botão do tomo:** "Confirmar e gerar" (o gerar do plano), aceso só sem pendência; a frase do cabeçalho diz a pendência ("diga o número do volume").
+- **Chat:** some o chip de sugestão do slot `volume` (o número se decide no frame).
