@@ -74,6 +74,7 @@ import { summarizeSelos } from "../lib/agent-context";
 import { MESES_PT } from "@/server/nexo/agent/requirements";
 import type { Folha } from "../lib/folhas";
 import { FrameDoDocumento } from "./FrameDoDocumento";
+import { PerguntasAntesDeGerar } from "./PerguntasAntesDeGerar";
 import {
   CAMPOS_DO_FRAME,
   separarParaGerar,
@@ -826,7 +827,9 @@ export function PlanoDeGeracao({
     derivados: derivadosDoFrame,
     faltas: faltasDoFrame,
   });
-  const opcoesDoFrame: Record<string, string[]> = motivoDoVolume ? { VOLUME: ["1", "2", "3", "4"] } : {};
+  // As respostas prontas do volume saíram de baixo da folha: agora é PERGUNTA,
+  // em destaque, antes dela (`PerguntasAntesDeGerar`).
+  const opcoesDoFrame: Record<string, string[]> = {};
   const dadosDoFrame = {
     layout: layoutDoModelo,
     prefeitura: semPrefeitura ? null : prefeitura,
@@ -935,6 +938,17 @@ export function PlanoDeGeracao({
          * Modelo ilegível (ou prefeitura ainda não escolhida) cai na lista de
          * sempre — degradar é melhor que sumir.
          */}
+        {capa && (
+          <PerguntasAntesDeGerar
+            volume={(mesclado.valores.volume ?? "").trim()}
+            faltaVolume={Boolean(motivoDoVolume)}
+            temBairro={marcadoresDoModelo.has("BAIRRO")}
+            bairro={valoresDoFramePlano.BAIRRO ?? ""}
+            onVolume={(v) => decidir("volume", v, paramsDoAgente.volume ?? "")}
+            onBairro={(v) => aoEditarNoFrame("BAIRRO", v)}
+          />
+        )}
+
         {layoutDoModelo.length > 0 ? (
           <div className="space-y-2">
             {/*
