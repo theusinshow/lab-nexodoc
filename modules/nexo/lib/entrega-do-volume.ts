@@ -29,6 +29,8 @@ export function rotuloDoTomo(tomo: number, unico = false): string {
 export type VereditoDoTomo = "ok" | "aviso" | "critico" | "sem-conferencia";
 
 export interface TomoMontado {
+  /** O artifactId do volume. */
+  id: string;
   /** `0` = volume sem divisão em tomos. */
   tomo: number;
   nome: string;
@@ -68,6 +70,7 @@ export function tomosMontados(results: readonly SavedResult[]): TomoMontado[] {
     const tomo = typeof payload.tomo === "number" ? payload.tomo : 0;
     const bytes = typeof arquivo?.sizeBytes === "number" ? arquivo.sizeBytes : null;
     tomos.push({
+      id: r.artifactId,
       tomo,
       nome: arquivo?.name ?? "",
       url: arquivo?.url || null,

@@ -154,6 +154,7 @@ import { reportFindingToStructured } from "@/components/audit-result";
 import { useConversation, type SavedResult } from "../state/conversation-store";
 import { baixarArquivosEmZip, editaveisDosResultados } from "../lib/editaveis";
 import { EntregaDoVolume } from "./EntregaDoVolume";
+import { idDoVolume, tomosDaProposta, tomosDoVolume as tomosDoVolumeDaConversa } from "../lib/tomos-do-volume";
 import { FaseDoTomo, PainelDaMontagem } from "./ProgressoDaMontagem";
 import { useLiberacaoDoVolume } from "../state/use-liberacao-do-volume";
 import {
@@ -203,7 +204,7 @@ function capaIdLegado(selos: SeloForLd[]): string {
   return `capa:${summarizeSelos(selos).codigo ?? "x"}:`;
 }
 function volumeId(selos: SeloForLd[]): string {
-  return `volume:${summarizeSelos(selos).codigo ?? "x"}`;
+  return idDoVolume(summarizeSelos(selos).codigo, "");
 }
 function conferenciaId(selos: SeloForLd[]): string {
   return `conferencia:${summarizeSelos(selos).codigo ?? "x"}`;
@@ -236,55 +237,13 @@ function rotuloTomos(numTomos: number, tomoInicial: number): string {
   return `${numTomos} (TOMO ${faixa})`;
 }
 
-/**
- * Os tomos de uma proposta, 1-based, com o número REAL no volume.
- *
- * Cada tomo é um volume físico: com 2 tomos saem 2 capas, 2 LDs, 2 separatrizes
- * e 2 volumes — não um documento com duas partes dentro. Com um tomo devolve uma
- * entrada com `atual: 0`, que é o modo "documento único" de sempre: as chaves
- * dos artefatos ficam idênticas às de hoje e nada migra.
- */
-function tomosDaProposta(
-  numTomos: number,
-  tomoInicial: number,
-): { atual: number; numero: number; sufixo: string }[] {
-  if (numTomos <= 1) return [{ atual: 0, numero: tomoInicial, sufixo: "" }];
-  return Array.from({ length: numTomos }, (_, i) => {
-    const numero = tomoInicial + i;
-    return {
-      atual: i + 1,
-      numero,
-      sufixo: `:t${String(numero).padStart(2, "0")}`,
-    };
-  });
+/** As chamadas antigas passam os selos; a conta só precisa dos resultados (`tomos-do-volume.ts`). */
+function tomosDoVolume(_selos: SeloForLd[], results: SavedResult[]) {
+  return tomosDoVolumeDaConversa(results);
 }
-
-/**
- * Quantos tomos o volume tem, deduzido do que JÁ foi gerado.
- *
- * As propostas de `separatriz` e `volume` não têm params próprios — a divisão em
- * tomos é decisão da LD e da capa. Em vez de duplicar o campo (e deixar os três
- * discordarem), lemos o `numTomos`/`tomoInicial` do primeiro artefato gerado que
- * os carrega. Sem nada gerado ainda, é um tomo só.
- */
 /** Só o NÚMERO de tomos (a fatia precisa dele, não da lista). */
 function tomosDoVolumeTotal(selos: SeloForLd[], results: SavedResult[]): number {
   return tomosDoVolume(selos, results).length;
-}
-
-function tomosDoVolume(
-  selos: SeloForLd[],
-  results: SavedResult[],
-): { atual: number; numero: number; sufixo: string }[] {
-  const comTomos = results.find(
-    (r) =>
-      (r.kind === "ld" || r.kind === "capa") &&
-      typeof (r.payload as { numTomos?: unknown })?.numTomos === "number",
-  );
-  const p = comTomos?.payload as
-    | { numTomos?: number; tomoInicial?: number }
-    | undefined;
-  return tomosDaProposta(p?.numTomos ?? 1, p?.tomoInicial ?? 1);
 }
 
 /*
