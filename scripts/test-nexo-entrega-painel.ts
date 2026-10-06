@@ -82,6 +82,15 @@ test("tomosMontados: veredito e pontos vêm da conferência gravada", () => {
   assert.equal(tomosMontados([volume(2, MB)])[0].veredito, "sem-conferencia");
 });
 
+test("tomosMontados: PDF fora deste navegador continua montado, sem url", () => {
+  const [t] = tomosMontados([{ ...volume(1), files: [], bytesAusentes: true }]);
+  assert.equal(t.tomo, 1);
+  assert.equal(t.url, null);
+  const p = passosDaEntrega({ tomos: [t], planejados: 1, liberacao: livre, editaveisSalvosEm: 1 });
+  assert.equal(p.volumes.liberado, false);
+  assert.equal(p.volumes.motivo, "O PDF montado não está neste navegador. Monte de novo para baixar.");
+});
+
 test("tomosPlanejados: o maior entre o declarado na capa e o montado", () => {
   assert.equal(tomosPlanejados([capa(6), volume(1)]), 6);
   assert.equal(tomosPlanejados([volume(1), volume(2)]), 2);

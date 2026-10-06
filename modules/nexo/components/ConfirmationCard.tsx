@@ -1565,7 +1565,7 @@ function VolumesDoConjunto({
         com seis tomos era preciso rolar de volta por cima de todos os cartões.
         Agora vêm depois do que se acabou de montar — na ordem em que se usa.
       */}
-      {editaveis.length > 0 && <EntregaDoVolume selos={props.selos} />}
+      <EntregaDoVolume selos={props.selos} />
     </>
   );
 }

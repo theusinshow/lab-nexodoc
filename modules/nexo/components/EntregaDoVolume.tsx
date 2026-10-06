@@ -45,7 +45,7 @@ export function EntregaDoVolume({ selos }: { selos: SeloForLd[] }) {
           size="sm"
           variant={passos.editaveis.feito ? "secondary" : "default"}
           loading={e.ocupado === "editaveis"}
-          disabled={e.ocupado !== null || !e.temEditaveis}
+          disabled={e.ocupado !== null}
           onClick={() => void e.baixarEditaveisZip()}
         >
           <FolderDown className="mr-1.5 h-3.5 w-3.5" aria-hidden />

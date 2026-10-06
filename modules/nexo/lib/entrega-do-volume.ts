@@ -32,7 +32,11 @@ export interface TomoMontado {
   /** `0` = volume sem divisão em tomos. */
   tomo: number;
   nome: string;
-  url: string;
+  /**
+   * `null` quando o PDF não está NESTE navegador (`bytesAusentes`: o servidor
+   * guarda só a referência). O tomo continua montado — só não dá para baixar.
+   */
+  url: string | null;
   /** Peso do PDF; `null` quando o registro não guardou (conversa antiga). */
   bytes: number | null;
   acimaDoTeto: boolean;
@@ -59,14 +63,14 @@ export function tomosMontados(results: readonly SavedResult[]): TomoMontado[] {
   for (const r of results) {
     if (r.kind !== "volume") continue;
     const arquivo = r.files.find((f) => f.mime === PDF && f.primary) ?? r.files.find((f) => f.mime === PDF);
-    if (!arquivo?.url) continue;
+    if (!arquivo?.url && !r.bytesAusentes) continue;
     const payload = (r.payload ?? {}) as { tomo?: unknown; conferencia?: ConferenciaGravada };
     const tomo = typeof payload.tomo === "number" ? payload.tomo : 0;
-    const bytes = typeof arquivo.sizeBytes === "number" ? arquivo.sizeBytes : null;
+    const bytes = typeof arquivo?.sizeBytes === "number" ? arquivo.sizeBytes : null;
     tomos.push({
       tomo,
-      nome: arquivo.name,
-      url: arquivo.url,
+      nome: arquivo?.name ?? "",
+      url: arquivo?.url || null,
       bytes,
       acimaDoTeto: bytes !== null && bytes > TETO_DO_TOMO_BYTES,
       ...vereditoDe(payload.conferencia),
@@ -146,6 +150,8 @@ export function passosDaEntrega(args: {
   let motivo: string | null = null;
   if (faltam > 0) {
     motivo = `Faltam ${faltam} de ${planejados} tomos para montar.`;
+  } else if (tomos.some((t) => t.url === null)) {
+    motivo = "O PDF montado não está neste navegador. Monte de novo para baixar.";
   } else if (acimaDoTeto.length === 1) {
     const t = acimaDoTeto[0];
     const quem = planejados <= 1 ? "O volume" : `O ${rotuloDoTomo(t.tomo)}`;

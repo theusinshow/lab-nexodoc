@@ -92,6 +92,7 @@ import { NexoSidebar } from "./NexoSidebar";
 import { NexoCopilot } from "./NexoCopilot";
 import type { Attachment } from "./NexoChat";
 import { NexoCanvas } from "./NexoCanvas";
+import { VistaDoVolume } from "./VistaDoVolume";
 import { PalcoDoNexo } from "./PalcoDoNexo";
 import { useAbrirAuditoriaPorLink } from "./use-abrir-auditoria-por-link";
 import { TourDoNexo } from "./TourDoNexo";
@@ -3008,25 +3009,30 @@ function NexoWorkspaceInner({
             aberturaPorLink={aberturaPorLink}
             obra={<BarraDoNexo projetoPedido={projetoPedido} />}
             mapa={
-          <NexoCanvas
-            memorial={memorialFile?.name ?? null}
-            folhas={selos}
-            numeros={numerosDasFolhas}
-            origens={origensDasFolhas}
-            arquivosDisponiveis={arquivosDisponiveis}
-            onAbrirFolha={abrirFolha}
-            totais={totaisDasFolhas}
-            onCorrigirFolha={corrigirFolha}
-            onRemoverFolha={removerFolha}
-            onMoverFolhas={moverFolhas}
-            onVoltarAoAutomatico={voltarAoAutomatico}
-            onCriarTomo={criarTomo}
-            onCriarFolha={criarFolha}
-            removidas={removidas}
-            onRestaurarFolhas={restaurarFolhas}
-            tomosDeclarados={conv.tomosDeclarados}
-            conferencia={conferenciaDoVolume}
-          />
+              <VistaDoVolume
+                selos={selos}
+                mapa={
+                  <NexoCanvas
+                    memorial={memorialFile?.name ?? null}
+                    folhas={selos}
+                    numeros={numerosDasFolhas}
+                    origens={origensDasFolhas}
+                    arquivosDisponiveis={arquivosDisponiveis}
+                    onAbrirFolha={abrirFolha}
+                    totais={totaisDasFolhas}
+                    onCorrigirFolha={corrigirFolha}
+                    onRemoverFolha={removerFolha}
+                    onMoverFolhas={moverFolhas}
+                    onVoltarAoAutomatico={voltarAoAutomatico}
+                    onCriarTomo={criarTomo}
+                    onCriarFolha={criarFolha}
+                    removidas={removidas}
+                    onRestaurarFolhas={restaurarFolhas}
+                    tomosDeclarados={conv.tomosDeclarados}
+                    conferencia={conferenciaDoVolume}
+                  />
+                }
+              />
             }
           />
         }
