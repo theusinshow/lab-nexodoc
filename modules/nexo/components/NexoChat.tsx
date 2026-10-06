@@ -20,6 +20,7 @@ import { useRevealText } from "../lib/use-reveal-text";
 import {
   ConfirmationCard,
   idsBaseDosArtefatos,
+  MontadoresDoVolume,
   type NexoTemplateOption,
 } from "./ConfirmationCard";
 import { PlanoDeGeracao } from "./PlanoDeGeracao";
@@ -581,6 +582,8 @@ export function NexoChat({
 
   return (
     <div className="cx nx-chat flex h-full min-h-0 flex-col">
+      {/* Quem sabe montar cada tomo — sem tela; o canvas e o cartão curto chamam. */}
+      <MontadoresDoVolume selos={selos} pranchaFiles={pranchaFiles} templates={templates} />
       {/* Log aberto — sem "card" embrulhando (respiro). Coluna de leitura central. */}
       <div
         ref={scrollRef}

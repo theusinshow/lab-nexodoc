@@ -90,7 +90,27 @@ export function MontadoresDeVolumeProvider({ children }: { children: ReactNode }
       return proximo;
     });
   }, []);
-  const valorDasFases = useMemo(() => ({ fases, marcarFase }), [fases, marcarFase]);
+  /*
+   * A SITUAÇÃO de cada montador (bloqueio e erro), publicada pelo cartão sem
+   * tela. O canvas não tem como perguntar a um componente invisível "por que
+   * você não monta?" — ele lê daqui.
+   */
+  const [situacoes, setSituacoes] = useState<Readonly<Record<string, SituacaoDoMontador>>>({});
+  const publicarSituacao = useCallback((artifactId: string, s: SituacaoDoMontador | null) => {
+    setSituacoes((atual) => {
+      const antes = atual[artifactId];
+      if (s && antes && antes.bloqueio === s.bloqueio && antes.erro === s.erro) return atual;
+      if (!s && !antes) return atual;
+      const proximo = { ...atual };
+      if (s) proximo[artifactId] = s;
+      else delete proximo[artifactId];
+      return proximo;
+    });
+  }, []);
+  const valorDasFases = useMemo(
+    () => ({ fases, marcarFase, situacoes, publicarSituacao }),
+    [fases, marcarFase, situacoes, publicarSituacao],
+  );
 
   return (
     <Ctx.Provider value={valor}>
@@ -99,14 +119,22 @@ export function MontadoresDeVolumeProvider({ children }: { children: ReactNode }
   );
 }
 
+export interface SituacaoDoMontador {
+  bloqueio: string | null;
+  erro: string | null;
+}
+
 interface FasesDaMontagem {
   /** Fase de cada volume (por `artifactId`) nesta sessão; ausente = nunca montou aqui. */
   fases: Readonly<Record<string, FaseDaMontagem>>;
   marcarFase: (artifactId: string, fase: FaseDaMontagem | null) => void;
+  /** Bloqueio e erro de cada montador sem tela (por `artifactId`). */
+  situacoes: Readonly<Record<string, SituacaoDoMontador>>;
+  publicarSituacao: (artifactId: string, s: SituacaoDoMontador | null) => void;
 }
 
 const CtxDasFases = createContext<FasesDaMontagem | null>(null);
-const SEM_FASES: FasesDaMontagem = { fases: {}, marcarFase: () => {} };
+const SEM_FASES: FasesDaMontagem = { fases: {}, marcarFase: () => {}, situacoes: {}, publicarSituacao: () => {} };
 
 /** Fora do provedor: sem fases e marcar não faz nada (mesma razão do `VAZIO`). */
 export function useFasesDaMontagem(): FasesDaMontagem {

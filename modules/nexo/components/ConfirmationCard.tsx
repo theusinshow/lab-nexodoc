@@ -152,19 +152,12 @@ import { Orbe } from "@/components/ds/basicos";
 import { resumoDaAuditoria } from "../lib/resumo-da-auditoria";
 import { reportFindingToStructured } from "@/components/audit-result";
 import { useConversation, type SavedResult } from "../state/conversation-store";
-import { baixarArquivosEmZip, editaveisDosResultados } from "../lib/editaveis";
-import { EntregaDoVolume } from "./EntregaDoVolume";
+import { CartaoDaMontagem } from "./CartaoDaMontagem";
 import { idDoVolume, tomosDaProposta, tomosDoVolume as tomosDoVolumeDaConversa } from "../lib/tomos-do-volume";
-import { FaseDoTomo, PainelDaMontagem } from "./ProgressoDaMontagem";
-import { useLiberacaoDoVolume } from "../state/use-liberacao-do-volume";
-import {
-  gerarEditaveisConsolidados,
-  parametrosDaEntrega,
-} from "../lib/editaveis-consolidados";
+import { FaseDoTomo } from "./ProgressoDaMontagem";
 import {
   metadadosDoVolume,
   nomeDoVolume,
-  nomeDoZipDosVolumes,
 } from "../lib/nome-do-volume";
 import { ResultLinks } from "./ResultLinks";
 import { useConversationUsage } from "../state/use-conversation-usage";
@@ -365,15 +358,8 @@ export function ConfirmationCard({
         />
       );
     case "volume":
-      return (
-        <VolumesDoConjunto
-          tomos={tomosDoVolume(selos, results)}
-          resumo={proposal.resumo}
-          selos={selos}
-          pranchaFiles={pranchaFiles}
-          templates={templates}
-        />
-      );
+      // O cartão curto (06/10/2026): o detalhe de cada tomo mora no canvas.
+      return <CartaoDaMontagem selos={selos} />;
     case "auditoria":
       return (
         <AuditoriaConfirmation
@@ -1426,141 +1412,21 @@ async function conferirVolume(args: {
  * sem pranchas, botão desabilitado. Capa/LD ausentes (não geradas ou sem PDF)
  * simplesmente não entram — o card mostra o que será incluído.
  */
-/**
- * Os volumes do conjunto — um card por tomo, e um botão que monta todos.
- *
- * Montar de um em um é o gesto certo para um volume; para seis é trabalho
- * braçal que a máquina devia fazer. O laço é SEQUENCIAL e cada tomo é tentado
- * dentro do seu próprio `try`: a montagem carrega dezenas de megabytes por
- * volume, e um tomo que falha não pode levar os outros junto nem deixar o
- * engenheiro sem saber quantos PDFs tem na mão. É a mesma regra do
- * `gerarTudo` do plano, pelo mesmo motivo.
- */
-function VolumesDoConjunto({
-  tomos,
-  ...props
-}: {
-  tomos: { atual: number; numero: number; sufixo: string }[];
-  resumo: string;
-  selos: SeloForLd[];
-  pranchaFiles: File[];
-  templates: NexoTemplateOption[];
-}) {
-  /*
-   * O mapa de montadores subiu para a conversa (`montadores-de-volume.tsx`):
-   * quem remonta um volume desatualizado mora FORA desta mensagem e precisa
-   * alcancar o mesmo montador. Aqui ele continua sendo consultado do mesmo
-   * jeito -- so mudou onde mora, nao quem o alimenta.
-   */
-  const { montador } = useMontadoresDeVolume();
-  const { fases, marcarFase } = useFasesDaMontagem();
-  /** Os tomos como o painel de progresso os lista. */
-  const tomosDoPainel = tomos.map((t) => ({
-    id: volumeId(props.selos) + t.sufixo,
-    rotulo: `TOMO ${String(t.numero).padStart(2, "0")}`,
-  }));
-  const { conferirAntesDeGastar } = useConversation();
-  const [montando, setMontando] = useState<number | null>(null);
-  const [falhas, setFalhas] = useState<{ rotulo: string; motivo: string }[]>([]);
-  const { results, identidade } = useConversation();
-
-  /*
-   * Os EDITÁVEIS do conjunto — capa, LD e separatriz de todos os tomos. O PDF é
-   * o que se envia; o ODT é o que se conserta, e juntá-los um a um num volume de
-   * seis tomos são dezenas de cliques.
-   */
-  const editaveis = useMemo(() => editaveisDosResultados(results), [results]);
-  /*
-   * UMA CONFERÊNCIA PARA O LOTE (última onda da frente A, 15/09/2026): cada
-   * `confirm` perguntava a versão ao servidor; `montarEmLote` pergunta uma vez
-   * e passa `jaConferido` a cada tomo. Recusado, os N tomos saem com o motivo.
-   */
-  async function montarTodos() {
-    setFalhas([]);
-    // A FILA À VISTA: todos os tomos entram como "na fila" antes do primeiro
-    // começar, para o painel mostrar o conjunto inteiro desde o clique.
-    for (const t of tomosDoPainel) if (montador(t.id)) marcarFase(t.id, "aguardando");
-    let coletadas: { rotulo: string; motivo: string }[] = [];
-    const comecados = new Set<number>();
-    try {
-      const lote = await montarEmLote({
-        itens: tomos.map((tomo) => {
-          const id = volumeId(props.selos) + tomo.sufixo;
-          return {
-            id,
-            rotulo: `TOMO ${String(tomo.numero).padStart(2, "0")}`,
-            montar: montador(id),
-          };
-        }),
-        conferir: conferirAntesDeGastar,
-        aoComecar: (i) => {
-          comecados.add(i);
-          setMontando(i);
-        },
-      });
-      coletadas = lote.recusado
-        ? [{ rotulo: "Volumes", motivo: lote.recusado }]
-        : lote.falhas;
-    } finally {
-      setMontando(null);
-      setFalhas(coletadas);
-      // Quem não chegou a começar (lote recusado, ou cartão fora da tela) sai
-      // da fila — senão o painel diria "montando" para sempre.
-      tomosDoPainel.forEach((t, i) => {
-        if (!comecados.has(i)) marcarFase(t.id, null);
-      });
-    }
-  }
-
-  return (
-    <>
-      {tomos.length > 1 && (
-        <div className="flex flex-col gap-2">
-          <ConfirmButton
-            busy={montando !== null}
-            label={`Montar os ${tomos.length} volumes`}
-            busyLabel={
-              montando !== null
-                ? `Montando ${montando + 1} de ${tomos.length}…`
-                : "Montando…"
-            }
-            onConfirm={montarTodos}
-          />
-          <PainelDaMontagem tomos={tomosDoPainel} fases={fases} />
-          {falhas.length > 0 && (
-            <p className="text-xs text-[var(--destructive)]">
-              {plural(falhas.length, "volume não montou", "volumes não montaram")}:{" "}
-              {falhas.map((f) => `${f.rotulo} (${f.motivo})`).join("; ")}. Os outros
-              estão prontos.
-            </p>
-          )}
-        </div>
-      )}
-      {tomos.map((t) => (
-        <VolumeConfirmation key={t.sufixo || "unico"} {...props} tomo={t} />
-      ))}
-      {/*
-        A ENTREGA NO FIM (06/10/2026): os botões de baixar ficavam no topo, e
-        com seis tomos era preciso rolar de volta por cima de todos os cartões.
-        Agora vêm depois do que se acabou de montar — na ordem em que se usa.
-      */}
-      <EntregaDoVolume selos={props.selos} />
-    </>
-  );
-}
-
 function VolumeConfirmation({
   resumo,
   selos,
   pranchaFiles,
   templates,
   tomo,
+  semTela = false,
 }: {
   resumo: string;
   selos: SeloForLd[];
   pranchaFiles: File[];
   templates: NexoTemplateOption[];
   tomo: { atual: number; numero: number; sufixo: string };
+  /** Só a lógica (registro, montagem, situação); a interface mora no canvas. */
+  semTela?: boolean;
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -1577,7 +1443,7 @@ function VolumeConfirmation({
     conferirAntesDeGastar,
   } = useConversation();
   const { registrar } = useMontadoresDeVolume();
-  const { fases, marcarFase } = useFasesDaMontagem();
+  const { fases, marcarFase, publicarSituacao } = useFasesDaMontagem();
   const id = volumeId(selos) + tomo.sufixo;
   const fase = fases[id];
   const saved = getResult(id);
@@ -2086,7 +1952,7 @@ function VolumeConfirmation({
   }
 
   /*
-   * O pai (`VolumesDoConjunto`) dispara ESTA montagem quando o engenheiro pede
+   * O cartão curto e o canvas (`useMontarTodos`) disparam ESTA montagem quando o engenheiro pede
    * todos os volumes de uma vez. O ref carrega sempre a versão atual de
    * `confirm`: registrar a função direto congelaria os selos e os artefatos do
    * primeiro render, e o botão montaria o conjunto de antes.
@@ -2099,6 +1965,18 @@ function VolumeConfirmation({
     registrar(id, (opcoes) => confirmRef.current(opcoes));
     return () => registrar(id, null);
   }, [registrar, id]);
+
+  /*
+   * A SITUAÇÃO SAI DAQUI (06/10/2026): o canvas e o cartão curto mostram o
+   * bloqueio e o erro deste tomo sem renderizar este cartão.
+   */
+  useEffect(() => {
+    publicarSituacao(id, { bloqueio: motivoDeBloqueio ?? null, erro: error });
+  }, [publicarSituacao, id, motivoDeBloqueio, error]);
+  useEffect(() => () => publicarSituacao(id, null), [publicarSituacao, id]);
+
+  // Sem tela: a lógica (registro, montagem, situação) roda; a interface mora no canvas.
+  if (semTela) return null;
 
   return (
     <CardShell kind="volume" resumo={resumo} estado={estado} tomo={tomo.atual > 0 ? tomo.numero : 0}>
@@ -3460,3 +3338,29 @@ function SeparatrizConfirmation({
 
 /* Downloads: `ResultLinks` mora em ./ResultLinks.tsx — o card do PLANO também
    precisa dele, e duplicar teria deixado o aviso de bytes ausentes para trás. */
+
+/**
+ * OS MONTADORES DO VOLUME, sem tela (06/10/2026). Um `VolumeConfirmation` por
+ * tomo, montado SEMPRE que há capa ou LD — e não só quando o agente propõe um
+ * volume —, para o canvas poder montar e baixar por tomo. É a mesma via de
+ * montagem de sempre; só deixou de ter cartão.
+ */
+export function MontadoresDoVolume({
+  selos,
+  pranchaFiles,
+  templates,
+}: {
+  selos: SeloForLd[];
+  pranchaFiles: File[];
+  templates: NexoTemplateOption[];
+}) {
+  const { results } = useConversation();
+  if (selos.length === 0 || !results.some((r) => r.kind === "capa" || r.kind === "ld")) return null;
+  return (
+    <>
+      {tomosDoVolume(selos, results).map((t) => (
+        <VolumeConfirmation key={t.sufixo || "unico"} semTela resumo="" selos={selos} pranchaFiles={pranchaFiles} templates={templates} tomo={t} />
+      ))}
+    </>
+  );
+}
