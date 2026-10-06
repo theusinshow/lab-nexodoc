@@ -26,6 +26,10 @@ export interface ParagrafoDoModelo {
   alinhamento: "start" | "center" | "end";
   /** Corpo da fonte em pt, quando o estilo o declara. */
   corpo?: number;
+  /** Negrito no estilo do parágrafo — o frame imita a capa impressa (06/10/2026). */
+  negrito?: boolean;
+  /** `style:font-name` do estilo ("Arial"), quando declarado. */
+  fonte?: string;
   partes: ParteDoParagrafo[];
 }
 
@@ -33,17 +37,28 @@ export interface ParagrafoDoModelo {
 const NOME_VALIDO = /^[A-Z_][A-Z0-9_]*$/;
 
 /** Alinhamento e corpo por nome de estilo, de `<office:automatic-styles>`. */
-function lerEstilos(xml: string): Map<string, { alinhamento: string; corpo?: number }> {
-  const mapa = new Map<string, { alinhamento: string; corpo?: number }>();
+interface EstiloDoParagrafo {
+  alinhamento: string;
+  corpo?: number;
+  negrito?: boolean;
+  fonte?: string;
+}
+
+function lerEstilos(xml: string): Map<string, EstiloDoParagrafo> {
+  const mapa = new Map<string, EstiloDoParagrafo>();
   const blocos = xml.match(/<style:style\b[\s\S]*?<\/style:style>/g) ?? [];
   for (const bloco of blocos) {
     const nome = /style:name="([^"]+)"/.exec(bloco)?.[1];
     if (!nome) continue;
     const alinhamento = /fo:text-align="([^"]+)"/.exec(bloco)?.[1] ?? "start";
     const pt = /fo:font-size="([\d.]+)pt"/.exec(bloco)?.[1];
+    const negrito = /fo:font-weight="(bold|[6-9]00)"/.test(bloco);
+    const fonte = /style:font-name="([^"]+)"/.exec(bloco)?.[1];
     mapa.set(nome, {
       alinhamento,
       ...(pt ? { corpo: Number(pt) } : {}),
+      ...(negrito ? { negrito: true } : {}),
+      ...(fonte ? { fonte } : {}),
     });
   }
   return mapa;
@@ -123,6 +138,8 @@ export function lerLayoutDoModelo(contentXml: string): ParagrafoDoModelo[] {
       indice,
       alinhamento: normalizarAlinhamento(estilo?.alinhamento ?? "start"),
       ...(estilo?.corpo !== undefined ? { corpo: estilo.corpo } : {}),
+      ...(estilo?.negrito ? { negrito: true } : {}),
+      ...(estilo?.fonte ? { fonte: estilo.fonte } : {}),
       partes: partesDoTexto(texto),
     };
   });

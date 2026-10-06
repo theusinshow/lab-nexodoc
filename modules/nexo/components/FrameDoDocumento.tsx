@@ -19,7 +19,7 @@
  */
 
 import type { ParagrafoDoModelo } from "@/server/odt/layout";
-import { classeDeCorpo, type ModoDoFrame } from "../lib/corpo-do-frame";
+import type { ModoDoFrame } from "../lib/corpo-do-frame";
 import { MarcaDaPrefeitura } from "./MarcaDaPrefeitura";
 
 export interface CampoDoFrame {
@@ -31,6 +31,13 @@ export interface CampoDoFrame {
   /** Força o número de linhas; senão vale o nº de ocorrências no modelo. */
   linhas?: number;
   placeholder?: string;
+}
+
+/** Largura da folha A4 em pt: é contra ela que o corpo de cada linha se mede. */
+const LARGURA_A4_PT = 595;
+
+function familiaDaFonte(fonte: string | undefined): string {
+  return fonte ? `"${fonte}", Arial, Helvetica, sans-serif` : "Arial, Helvetica, sans-serif";
 }
 
 const ALINHAMENTO: Record<ParagrafoDoModelo["alinhamento"], string> = {
@@ -45,7 +52,6 @@ export function FrameDoDocumento({
   valores,
   derivados = {},
   onChange,
-  modo = "campo",
   prefeitura,
   destaques = {},
   opcoes = {},
@@ -116,141 +122,151 @@ export function FrameDoDocumento({
 
   const cabecalho = (prefeitura ?? "").trim();
 
+  /*
+   * A FOLHA (06/10/2026): o frame deixou de ser formulário com caixas empilhadas
+   * e passou a PARECER A CAPA — folha A4 branca, texto escuro, o corpo de cada
+   * linha em pt proporcional à largura da folha (`cqw`), negrito e fonte do
+   * modelo, e as linhas em branco do modelo como o espaço real entre os blocos.
+   * Os campos aparecem como o TEXTO que vai sair e se editam no lugar, sem
+   * caixa. Continua não sendo o PDF (brasão e métrica exata são do ODT).
+   */
   const papel = (
-    <div className="nx-edge-8 p-4 [--nx-fill:var(--nexodoc-recessed)]">
-      {layout.map((paragrafo) => {
-        if (paragrafo.partes.length === 0) return null;
+    <div className="flex flex-col gap-2">
+      <div className="@container w-full">
+        <div
+          className="relative mx-auto flex aspect-[1/1.414] w-full flex-col overflow-hidden rounded-[2px] bg-white text-[#17191c] shadow-[0_10px_28px_rgb(0_0_0/0.38)]"
+          style={{ padding: "9cqw 8cqw" }}
+          data-prova="papel-da-capa"
+        >
+          {layout.map((paragrafo) => {
+            const tamanho = `${((paragrafo.corpo ?? 12) / LARGURA_A4_PT) * 100}cqw`;
+            if (paragrafo.partes.length === 0) {
+              // A linha em branco do modelo É o espaço entre os blocos da capa.
+              return <div key={paragrafo.indice} aria-hidden style={{ height: `calc(${tamanho} * 1.25)` }} />;
+            }
+            return (
+              <div
+                key={paragrafo.indice}
+                className={`flex flex-wrap items-baseline ${ALINHAMENTO[paragrafo.alinhamento]}`}
+                style={{
+                  fontSize: tamanho,
+                  lineHeight: 1.25,
+                  fontWeight: paragrafo.negrito ? 700 : 400,
+                  fontFamily: familiaDaFonte(paragrafo.fonte),
+                }}
+              >
+                {paragrafo.partes.map((parte, i) => {
+                  const chave = `${paragrafo.indice}-${i}`;
+                  if (parte.tipo === "texto") {
+                    return (
+                      <span key={chave} className="whitespace-pre-wrap">
+                        {parte.valor}
+                      </span>
+                    );
+                  }
+                  if (parte.tipo === "quebrado") {
+                    /*
+                     * O marcador que o LibreOffice partiu em spans. O gerador nunca
+                     * o substituirá e ele sai LITERAL na capa — foi assim que
+                     * `{{(TOMO)}}` chegou à produção sem nada acusar. Aqui é visível.
+                     */
+                    return (
+                      <span key={chave} role="alert" className="bg-red-100 px-1 font-mono text-[11px] text-red-700">
+                        {parte.bruto} — marcador quebrado, conserte no modelo
+                      </span>
+                    );
+                  }
 
-        return (
+                  const campo = campoDe(parte.nome);
+                  // Marcador que o modelo tem e ninguém mapeou vira texto livre: é o
+                  // que torna verdadeira a promessa de que editar o ODT basta.
+                  const rotulo = campo?.rotulo ?? parte.nome;
+
+                  if (campo?.derivadoDe) {
+                    const texto = valores[parte.nome] || derivados[parte.nome];
+                    return (
+                      <span key={chave} className="whitespace-pre-wrap" title={`${rotulo} · ${campo.derivadoDe}`}>
+                        {texto || <span className="text-[#9aa0a6]">{rotulo.toUpperCase()}</span>}
+                      </span>
+                    );
+                  }
+
+                  if (jaDesenhados.has(parte.nome)) return null;
+                  jaDesenhados.add(parte.nome);
+
+                  const linhas = campo?.linhas ?? ocorrencias.get(parte.nome) ?? 1;
+                  const destaque = destaques[parte.nome];
+                  /*
+                   * SEM CAIXA: o campo é o texto da capa. O destaque é discreto —
+                   * pontilhado violeta no sugerido, faixa âmbar no que falta — e
+                   * o texto fantasma (o que vale se ninguém digitar) sai quase
+                   * preto, porque É o que vai ser impresso.
+                   */
+                  const realce =
+                    destaque === "falta"
+                      ? " bg-[#f6c453]/45 outline outline-1 outline-[#d99a1e]"
+                      : destaque === "sugerido"
+                        ? " underline decoration-dotted decoration-[#7c6cf0] decoration-2 underline-offset-[0.2em]"
+                        : "";
+                  const comum =
+                    `rounded-[2px] bg-transparent px-[0.15em] text-inherit outline-none transition-colors hover:bg-black/[0.05] focus:bg-[#7c6cf0]/10 focus:outline focus:outline-1 focus:outline-[#7c6cf0] ${
+                      // Quase preto SÓ quando o fantasma é o que vai sair impresso;
+                      // a dica de um campo opcional vazio ("bairro (opcional)") fica clara.
+                      derivados[parte.nome] ? "placeholder:text-[#2e3236]" : "placeholder:text-[#b3b8bd] placeholder:italic"
+                    }`;
+                  const fantasma = destaque === "falta" ? `${rotulo.toUpperCase()} ?` : derivados[parte.nome] || campo?.placeholder;
+                  return linhas > 1 ? (
+                    <textarea
+                      key={chave}
+                      aria-label={rotulo}
+                      rows={linhas}
+                      value={valores[parte.nome] ?? ""}
+                      placeholder={fantasma}
+                      onChange={(e) => onChange(parte.nome, e.target.value)}
+                      className={`${comum} w-full resize-none ${ALINHAMENTO[paragrafo.alinhamento]}${realce}`}
+                      style={{ font: "inherit", lineHeight: 1.25 }}
+                    />
+                  ) : (
+                    <input
+                      key={chave}
+                      aria-label={rotulo}
+                      value={valores[parte.nome] ?? ""}
+                      placeholder={fantasma}
+                      onChange={(e) => onChange(parte.nome, e.target.value)}
+                      className={`${comum} min-w-[3ch] max-w-full [field-sizing:content] ${ALINHAMENTO[paragrafo.alinhamento]}${realce}`}
+                      style={{ font: "inherit" }}
+                    />
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      {/* As respostas prontas ficam FORA da folha: dentro, quebrariam o desenho da capa. */}
+      {Object.entries(opcoes).map(([marcador, prontas]) =>
+        prontas.length === 0 ? null : (
           <div
-            key={paragrafo.indice}
-            className={`flex flex-wrap items-baseline gap-2 py-1 ${
-              ALINHAMENTO[paragrafo.alinhamento]
-            }`}
+            key={marcador}
+            className="flex flex-wrap items-center gap-1.5 text-xs"
+            role="group"
+            aria-label={`${campoDe(marcador)?.rotulo ?? marcador}: escolha`}
           >
-            {paragrafo.partes.map((parte, i) => {
-              const chave = `${paragrafo.indice}-${i}`;
-
-              if (parte.tipo === "texto") {
-                return (
-                  <span
-                    key={chave}
-                    className={`${classeDeCorpo(paragrafo.corpo, modo)} whitespace-pre text-foreground`}
-                  >
-                    {parte.valor}
-                  </span>
-                );
-              }
-
-              if (parte.tipo === "quebrado") {
-                /*
-                 * O marcador que o LibreOffice partiu em spans. O gerador nunca
-                 * o substituirá e ele sai LITERAL na capa — foi assim que
-                 * `{{(TOMO)}}` chegou à produção sem nada acusar. Aqui é visível.
-                 */
-                return (
-                  <span
-                    key={chave}
-                    role="alert"
-                    /* Sem camada de contorno, pela mesma razao do badge: borda
-                       E fundo sao translucidos, e numa camada o miolo comporia
-                       sobre a cor da borda em vez de sobre a pagina. */
-                    className="nx-cut-5 border-0 bg-destructive/10 px-2 py-1 font-mono text-xs text-destructive"
-                  >
-                    {parte.bruto} — marcador quebrado, conserte no modelo
-                  </span>
-                );
-              }
-
-              const campo = campoDe(parte.nome);
-              // Marcador que o modelo tem e ninguém mapeou vira texto livre: é o
-              // que torna verdadeira a promessa de que editar o ODT basta.
-              const rotulo = campo?.rotulo ?? parte.nome;
-
-              if (campo?.derivadoDe) {
-                return (
-                  <span
-                    key={chave}
-                    className="font-mono text-xs text-muted-foreground"
-                    title={`${rotulo} · ${campo.derivadoDe}`}
-                  >
-                    {valores[parte.nome] || derivados[parte.nome] || "—"}
-                    <span className="opacity-60"> · {campo.derivadoDe}</span>
-                  </span>
-                );
-              }
-
-              if (jaDesenhados.has(parte.nome)) return null;
-              jaDesenhados.add(parte.nome);
-
-              const linhas = campo?.linhas ?? ocorrencias.get(parte.nome) ?? 1;
-              const comum =
-                /*
-                 * EXCECAO da spec do chanfro: campo tracejado do carimbo fica com raio de
-                 * 4px e borda tracejada. Tracejado nao sobrevive ao recorte, e aqui o
-                 * tracejado e PAPEL, nao interface. O painel que os contem tem chanfro.
-                 *
-                 * ALTURA MINIMA DE 32px nos DOIS modos -- o "compacto" que a DESIGN.md
-                 * documenta. Antes era `py-1` com texto de 11px, o que dava ~25px: abaixo
-                 * do piso, e pequeno demais para acertar com o cursor. No modo documento o
-                 * TEXTO encolhe conforme o modelo, mas a CAIXA nao -- fidelidade que
-                 * impede editar nao serve ao modo que existe para conferir.
-                 */
-                "min-h-8 min-w-0 flex-1 rounded-[4px] border border-dashed border-border bg-transparent px-2 py-1 outline-none transition-colors placeholder:text-muted-foreground/50 focus:border-solid focus:border-[var(--ring)] focus:bg-[var(--nexodoc-panel)]";
-              const forma = `${classeDeCorpo(paragrafo.corpo, modo)} ${
-                ALINHAMENTO[paragrafo.alinhamento]
-              }`;
-              const destaque = destaques[parte.nome];
-              const realce =
-                destaque === "falta"
-                  ? " !border-solid !border-[var(--status-warning)] bg-[var(--status-warning)]/10"
-                  : destaque === "sugerido"
-                    ? " !border-[var(--ds-nexo)]/70 bg-[var(--ds-nexo)]/5"
-                    : "";
-              const prontas = opcoes[parte.nome] ?? [];
-
-              const controle = linhas > 1 ? (
-                <textarea
-                  key={chave}
-                  aria-label={rotulo}
-                  rows={linhas}
-                  value={valores[parte.nome] ?? ""}
-                  placeholder={derivados[parte.nome] || campo?.placeholder}
-                  onChange={(e) => onChange(parte.nome, e.target.value)}
-                  className={`${comum} resize-none leading-snug ${forma}${realce}`}
-                />
-              ) : (
-                <input
-                  key={chave}
-                  aria-label={rotulo}
-                  value={valores[parte.nome] ?? ""}
-                  placeholder={derivados[parte.nome] || campo?.placeholder}
-                  onChange={(e) => onChange(parte.nome, e.target.value)}
-                  className={`${comum} ${forma}${realce}`}
-                />
-              );
-              if (prontas.length === 0) return controle;
-              return (
-                <span key={chave} className="flex min-w-0 flex-1 flex-col items-stretch gap-1">
-                  {controle}
-                  <span className="flex flex-wrap justify-center gap-1" role="group" aria-label={`${rotulo}: escolha rápida`}>
-                    {prontas.map((v) => (
-                      <button
-                        key={v}
-                        type="button"
-                        onClick={() => onChange(parte.nome, v)}
-                        className="rounded-[4px] border border-[var(--status-warning)]/60 px-2 py-0.5 font-mono text-[11px] text-foreground hover:bg-[var(--status-warning)]/15 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/25"
-                      >
-                        {v}
-                      </button>
-                    ))}
-                  </span>
-                </span>
-              );
-            })}
+            <span className="text-[var(--status-warning)]">{campoDe(marcador)?.rotulo ?? marcador}:</span>
+            {prontas.map((v) => (
+              <button
+                key={v}
+                type="button"
+                onClick={() => onChange(marcador, v)}
+                className="min-h-8 min-w-8 rounded-[4px] border border-[var(--status-warning)]/60 px-2 font-mono text-[12px] text-foreground hover:bg-[var(--status-warning)]/15 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/25"
+              >
+                {v}
+              </button>
+            ))}
+            <span className="text-muted-foreground">ou digite na capa</span>
           </div>
-        );
-      })}
+        ),
+      )}
     </div>
   );
 

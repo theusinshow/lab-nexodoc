@@ -39,6 +39,7 @@ function test(name: string, fn: () => void) {
 const ESTILOS = `<office:automatic-styles>
 <style:style style:name="P6" style:family="paragraph"><style:paragraph-properties fo:text-align="center"/><style:text-properties fo:font-size="16pt"/></style:style>
 <style:style style:name="P11" style:family="paragraph"><style:paragraph-properties fo:text-align="end"/><style:text-properties fo:font-size="14pt"/></style:style>
+<style:style style:name="P12" style:family="paragraph"><style:paragraph-properties fo:text-align="center"/><style:text-properties style:font-name="Arial" fo:font-size="20pt" fo:font-weight="bold"/></style:style>
 </office:automatic-styles>`;
 
 const corpo = (dentro: string) =>
@@ -54,6 +55,14 @@ test("o alinhamento e o corpo saem do estilo do parágrafo", () => {
   const l = lerLayoutDoModelo(corpo('<text:p text:style-name="P11">{{TOMO}}</text:p>'));
   assert.equal(l[0].alinhamento, "end");
   assert.equal(l[0].corpo, 14);
+});
+
+test("negrito e nome da fonte saem do estilo (para o frame parecer a capa)", () => {
+  const l = lerLayoutDoModelo(corpo('<text:p text:style-name="P12">{{TITULO_CAPA}}</text:p>'));
+  assert.equal(l[0].negrito, true);
+  assert.equal(l[0].fonte, "Arial");
+  const sem = lerLayoutDoModelo(corpo('<text:p text:style-name="P6">x</text:p>'));
+  assert.equal(sem[0].negrito, undefined);
 });
 
 test("texto fixo e marcador convivem na mesma linha, em ordem", () => {
