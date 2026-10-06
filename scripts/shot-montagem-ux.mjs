@@ -125,8 +125,11 @@ try {
   // Decide o volume pelo botão abaixo da folha.
   const perguntas = page.locator('[data-prova="perguntas-antes-de-gerar"]').last();
   await perguntas.screenshot({ path: `${OUT}/5b-perguntas.png` }).catch(() => {});
-  const botao1 = perguntas.getByRole("button", { name: "1", exact: true }).first();
-  if (await botao1.count()) await botao1.click();
+  const campoVolume = perguntas.getByLabel(/qual volume/i);
+  if (await campoVolume.count()) {
+    await campoVolume.fill("3");
+    await campoVolume.press("Enter");
+  }
   await page.waitForTimeout(800);
   const semBairro = perguntas.getByRole("button", { name: /Não tem bairro/i });
   if (await semBairro.count()) await semBairro.click();
