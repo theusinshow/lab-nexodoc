@@ -1,40 +1,50 @@
 "use client";
 
 /**
- * PAINEL OU FOLHAS, no mapa do volume (06/10/2026). Com um volume montado o
- * mapa abre no painel — é a pergunta da hora ("ficou certo? onde baixo?"); a
- * vista "Folhas" é o canvas de sempre, onde se arruma as folhas. Sem volume
- * montado não há o que escolher: o canvas aparece sozinho, sem controle.
- *
- * A escolha da pessoa vale até ela trocar.
+ * VOLUME OU LISTA, no mapa do volume (06/10/2026). O CANVAS É O PADRÃO, sempre
+ * — é onde se organiza e, agora, onde se monta e baixa (cabeçalho de cada
+ * tomo + doca). A Lista (capas A4 + tomos) é a alternativa sem canvas. A vista
+ * "Obra" entra na etapa 3 do desenho; até lá não aparece — um botão que não
+ * leva a lugar nenhum se lê como defeito.
  */
 import { useState, type ReactNode } from "react";
 
 import type { SeloForLd } from "@/server/nexo/build-ld-proposal";
 
 import { useConversation } from "../state/conversation-store";
+import { DocaDaEntrega } from "./DocaDaEntrega";
 import { PainelDoVolume } from "./PainelDoVolume";
 
 export function VistaDoVolume({ selos, mapa }: { selos: SeloForLd[]; mapa: ReactNode }) {
   const { results } = useConversation();
-  const temVolume = results.some((r) => r.kind === "volume");
-  const [escolha, setEscolha] = useState<"painel" | "folhas" | null>(null);
-  if (!temVolume) return <>{mapa}</>;
-  const vista = escolha ?? "painel";
+  const temDocumentos = results.some((r) => r.kind === "capa" || r.kind === "ld" || r.kind === "volume");
+  const [vista, setVista] = useState<"volume" | "lista">("volume");
+  const lista = temDocumentos && vista === "lista";
 
   return (
-    <div className="flex h-full min-h-0 flex-col" data-prova="vista-do-volume">
-      <div className="flex px-4 pt-3">
-        <span className="nw-vistas" role="group" aria-label="Vista do volume">
-          <button type="button" aria-pressed={vista === "painel"} onClick={() => setEscolha("painel")}>
-            Painel
-          </button>
-          <button type="button" aria-pressed={vista === "folhas"} onClick={() => setEscolha("folhas")}>
-            Folhas
-          </button>
-        </span>
+    <div className="relative flex h-full min-h-0 flex-col" data-prova="vista-do-volume">
+      {temDocumentos && (
+        <div className="absolute right-3 top-3 z-20">
+          <span className="nw-vistas" role="group" aria-label="Vista do volume">
+            <button type="button" aria-pressed={!lista} onClick={() => setVista("volume")}>
+              Volume
+            </button>
+            <button type="button" aria-pressed={lista} onClick={() => setVista("lista")}>
+              Lista
+            </button>
+          </span>
+        </div>
+      )}
+      <div className="relative min-h-0 flex-1">
+        {lista ? (
+          <PainelDoVolume selos={selos} />
+        ) : (
+          <>
+            {mapa}
+            <DocaDaEntrega selos={selos} />
+          </>
+        )}
       </div>
-      <div className="min-h-0 flex-1">{vista === "painel" ? <PainelDoVolume selos={selos} /> : mapa}</div>
     </div>
   );
 }
