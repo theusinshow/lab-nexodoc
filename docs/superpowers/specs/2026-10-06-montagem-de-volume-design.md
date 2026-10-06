@@ -188,6 +188,36 @@ Só visual: escuta `aoArrastar`/`aoSoltar` do `NexoCanvas` e não toca em
 - **Movimento reduzido:** sem ondulação e sem pulso — aparece, encaixa, some.
 - **Estilo:** sem brilho, neon ou rastro; ponta com ponto de 4 px.
 
+## Parte 9 — Teto de 20 MB por tomo (06/10/2026)
+
+Regra do escritório: **nenhum tomo pode passar de 20 MB.** Hoje isso é resolvido
+à mão em programa de terceiros (os volumes de exemplo ficam colados no teto:
+19,8 / 19,7 / 19,4 MB; no 084-25, o vol. 10 inc_spd tem 27,6 MB).
+
+- **Medir sempre:** cada tomo montado mostra o peso no painel (o `sizeBytes` já
+  atravessa `nexo-db` → `conversation-store` → `ResultLinks`).
+- **Acima de 20 MB, perguntar a cada vez** (decisão do Matheus). O tomo fica
+  em âmbar no painel com duas saídas e a estimativa de cada uma:
+  - **Dividir em N tomos (sem perda)** — reparte as folhas do tomo pesado; o
+    número de tomos aumenta e a LD/capa dos tomos afetados são refeitas (uma
+    alteração estruturada `dividirTomo`, Parte 3).
+  - **Comprimir as imagens** — recomprime só as imagens JPEG (`/DCTDecode`)
+    com `pdf-lib` + `sharp`, sem tocar em texto, vetor ou carimbo. Depois
+    **relê os carimbos** das folhas do tomo para confirmar que continuam
+    legíveis; se algum piorar, desfaz e avisa.
+  - **A estimativa vem da composição do PDF**, medida antes de agir (bytes em
+    imagem × vetor, como medido em 31/08: 88% JPEG rende muito; 83% vetor
+    rende quase nada). Quando comprimir não alcança 20 MB, a opção aparece
+    desligada com o motivo ("83% do peso é desenho vetorial").
+- **A entrega respeita a regra:** "Baixar os volumes" fica travado enquanto
+  algum tomo passar de 20 MB, com o motivo no passo a passo (Parte 5). O tomo
+  avulso continua abrindo para conferência.
+- **Não usar Ghostscript:** regrava o PDF inteiro (risco para texto e vetor),
+  não está no container e pesa nos 512 MB do plano da Render.
+- **Testes:** a decisão (quais saídas oferecer, a estimativa) é pura e testável;
+  a compressão é provada num PDF real acima do teto (vol. 10 do 084-25),
+  medindo o antes/depois e a releitura dos carimbos.
+
 ## Ordem de entrega
 
 Grande demais para um plano só. Cinco partes, cada uma com plano, testes e
@@ -196,12 +226,15 @@ entrega próprios, nesta ordem (cada uma já melhora a experiência sozinha):
 1. **Pranchas guardadas** (Parte 5, F5) — base de tudo: sem ela o piloto não
    sobrevive a um recarregar.
 2. **Piloto + cartão "Antes de gerar"** (Partes 1, 2, 6) — o fluxo de um passo.
-3. **Painel do volume + entrega** (Partes 4, 5) — capa A4 fiel, tomos numa lista,
-   dois botões com o passo a passo.
+3. **Painel do volume + entrega** (Partes 4, 5, e a medida/aviso da Parte 9) —
+   capa A4 fiel, tomos numa lista, dois botões com o passo a passo, peso de cada
+   tomo com o teto de 20 MB.
 4. **Alterações estruturadas pelo chat e pelo painel** (Parte 3) — com Desfazer e
    histórico.
 5. **A linha do canvas** (Parte 8) — independente das outras; pode entrar a
    qualquer momento.
+6. **Compressão das imagens com releitura dos carimbos** (Parte 9) — depois da
+   divisão sem perda, que já sai com a parte 4.
 
 ## Fora do escopo
 
