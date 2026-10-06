@@ -149,3 +149,19 @@
 .ds .nx-cancelar { display: inline-flex; align-items: center; gap: 8px; margin-left: 4px; font-size: var(--ds-text-xs); color: var(--ds-text-secondary); white-space: nowrap; }
 .ds .nx-cancelar b { font-weight: 500; color: var(--ds-text-primary); }
 .ds .nx-cancelar-sim { color: var(--ds-state-error); }
+
+/* A FILEIRA VIVA (06/10/2026): onda ao juntar, varredura ao conferir. Decorativas:
+   o texto do cabeçalho é que diz a fase real. */
+.ds .react-flow__node.nx-onda > * { animation: nx-onda 1.8s var(--ease-entrance) infinite; animation-delay: calc(var(--onda-i, 0) * 70ms); }
+.ds .react-flow__node.nx-varredura > * { animation: nx-varredura 2.4s var(--ease-entrance) infinite; animation-delay: calc(var(--onda-i, 0) * 110ms); }
+@keyframes nx-onda {
+  0%, 100% { box-shadow: 0 0 0 0 transparent; }
+  35% { box-shadow: 0 0 0 1px var(--ds-nexo), 0 0 16px rgb(139 124 246 / 0.22); }
+}
+@keyframes nx-varredura {
+  0%, 100% { box-shadow: 0 0 0 0 transparent; }
+  20% { box-shadow: 0 0 0 1px var(--status-ok), 0 0 12px rgb(63 185 132 / 0.2); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ds .react-flow__node.nx-onda > *, .ds .react-flow__node.nx-varredura > * { animation: none; }
+}

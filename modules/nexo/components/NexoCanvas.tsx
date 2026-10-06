@@ -30,6 +30,7 @@ import {
   type OnNodeDrag,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
+import { useReducedMotion } from "motion/react";
 import { FileSearch, Waypoints, Maximize2, MessageSquare, Trash2, SlidersHorizontal } from "lucide-react";
 
 import type { NexoArtifactKind } from "../types";
@@ -592,7 +593,7 @@ function CanvasInterno({
     [onRemoverFolha],
   );
 
-  const { nodes: derivados, edges, fileiras, fileirasDoDrop, folhasPorTomo } = useMemo(() => {
+  const { nodes: derivados, edges, fileiras, fileirasDoDrop, folhasPorTomo, volumeDaFolha } = useMemo(() => {
     type Item = { id: string; rank: number; type: "artifact"; data: unknown };
 
     /*
@@ -696,6 +697,8 @@ function CanvasInterno({
     };
 
     const nodes: Node[] = [];
+    /** De que volume é cada folha, e a posição dela na fileira (para a onda). */
+    const volumeDaFolha = new Map<string, { volume: string; indice: number }>();
     const edges: Edge[] = [];
     const fileirasDoDrop: FileiraDoDrop[] = [];
     const folhasPorTomo = new Map<number, Folha[]>();
@@ -808,6 +811,7 @@ function CanvasInterno({
           } satisfies FolhaNodeData,
           draggable: true,
         });
+        volumeDaFolha.set(id, { volume: idDoVolume, indice: i });
         idsDaFileira.push(id);
         // Só a PRIMEIRA folha recebe a seta: uma seta por folha viraria 200
         // linhas cruzando a grade, e a sequência já é dada pela leitura dela.
@@ -895,7 +899,7 @@ function CanvasInterno({
       }
     });
 
-    return { nodes, edges, fileiras, fileirasDoDrop, folhasPorTomo };
+    return { nodes, edges, fileiras, fileirasDoDrop, folhasPorTomo, volumeDaFolha };
   }, [
     artifacts,
     folhas,
@@ -922,6 +926,53 @@ function CanvasInterno({
     tomosDeclarados,
   ]);
 
+  /*
+   * A FILEIRA VIVA (06/10/2026): durante "juntando" as setas correm e as folhas
+   * acendem em onda; durante "conferindo" uma varredura passa folha a folha.
+   * Fica FORA do memo do layout: mudar de fase não pode recalcular o mapa.
+   */
+  const { fases } = useFasesDaMontagem();
+  const edgesVivas = useMemo(
+    () =>
+      edges.map((e) => {
+        const f = fases[(e.data as { volume?: string } | undefined)?.volume ?? ""];
+        return f === "juntando" || f === "conferindo"
+          ? { ...e, animated: true, style: { ...e.style, stroke: "var(--ds-nexo)", opacity: 0.9 } }
+          : e;
+      }),
+    [edges, fases],
+  );
+  const derivadosVivos = useMemo(
+    () =>
+      derivados.map((n) => {
+        const v = volumeDaFolha.get(n.id);
+        const f = v ? fases[v.volume] : undefined;
+        if (!v || (f !== "juntando" && f !== "conferindo")) return n;
+        return {
+          ...n,
+          className: f === "juntando" ? "nx-onda" : "nx-varredura",
+          style: { ...n.style, ["--onda-i" as string]: v.indice },
+        };
+      }),
+    [derivados, volumeDaFolha, fases],
+  );
+
+  /*
+   * O CANVAS SEGUE O TOMO EM CURSO: no "montar todos", desliza de um tomo para
+   * o seguinte. Sem animação para quem reduz movimento.
+   */
+  const { setCenter, getZoom } = useReactFlow();
+  const reduzido = useReducedMotion();
+  const volumeEmCurso = Object.entries(fases).find(
+    ([, f]) => f === "conferindo-versao" || f === "preparando" || f === "juntando" || f === "conferindo",
+  )?.[0];
+  useEffect(() => {
+    if (!volumeEmCurso) return;
+    const cabeca = derivados.find((n) => n.type === "cabeca" && (n.data as { idDoVolume?: string }).idDoVolume === volumeEmCurso);
+    if (!cabeca) return;
+    void setCenter(cabeca.position.x + 440, cabeca.position.y + 220, { zoom: getZoom(), duration: reduzido ? 0 : 600 });
+  }, [volumeEmCurso, derivados, setCenter, getZoom, reduzido]);
+
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
 
   /*
@@ -945,10 +996,10 @@ function CanvasInterno({
    */
   useEffect(() => {
     const raf = requestAnimationFrame(() =>
-      setNodes((atuais) => reconciliar(derivados, atuais)),
+      setNodes((atuais) => reconciliar(derivadosVivos, atuais)),
     );
     return () => cancelAnimationFrame(raf);
-  }, [derivados, reconciliar, setNodes]);
+  }, [derivadosVivos, reconciliar, setNodes]);
 
   /*
    * Fim do arrasto: traduz a coordenada em ajuste. O ponto de referência é o
@@ -1220,7 +1271,7 @@ function CanvasInterno({
       <ReenquadrarAoCrescer quantidade={nodes.length} />
       <ReactFlow
         nodes={nodes}
-        edges={edges}
+        edges={edgesVivas}
         onNodesChange={onNodesChange}
         onNodeDrag={aoArrastar}
         onNodeDragStop={aoSoltar}
