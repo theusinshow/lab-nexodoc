@@ -93,7 +93,7 @@ import {
   type BlocoDoVolume,
 } from "../lib/assemble-volume";
 import { entregarVolume } from "@/server/nexo/entrega-do-volume";
-import { useMontadoresDeVolume } from "../state/montadores-de-volume";
+import { useFasesDaMontagem, useMontadoresDeVolume } from "../state/montadores-de-volume";
 import { montarEmLote, type MontarVolume } from "../lib/lote-de-volumes";
 import {
   identidadeDoVolume,
@@ -154,6 +154,7 @@ import { reportFindingToStructured } from "@/components/audit-result";
 import { useConversation, type SavedResult } from "../state/conversation-store";
 import { baixarArquivosEmZip, editaveisDosResultados } from "../lib/editaveis";
 import { EntregaDoVolume } from "./EntregaDoVolume";
+import { FaseDoTomo, PainelDaMontagem } from "./ProgressoDaMontagem";
 import { useLiberacaoDoVolume } from "../state/use-liberacao-do-volume";
 import {
   gerarEditaveisConsolidados,
@@ -1493,6 +1494,12 @@ function VolumesDoConjunto({
    * jeito -- so mudou onde mora, nao quem o alimenta.
    */
   const { montador } = useMontadoresDeVolume();
+  const { fases, marcarFase } = useFasesDaMontagem();
+  /** Os tomos como o painel de progresso os lista. */
+  const tomosDoPainel = tomos.map((t) => ({
+    id: volumeId(props.selos) + t.sufixo,
+    rotulo: `TOMO ${String(t.numero).padStart(2, "0")}`,
+  }));
   const { conferirAntesDeGastar } = useConversation();
   const [montando, setMontando] = useState<number | null>(null);
   const [falhas, setFalhas] = useState<{ rotulo: string; motivo: string }[]>([]);
@@ -1511,7 +1518,11 @@ function VolumesDoConjunto({
    */
   async function montarTodos() {
     setFalhas([]);
+    // A FILA À VISTA: todos os tomos entram como "na fila" antes do primeiro
+    // começar, para o painel mostrar o conjunto inteiro desde o clique.
+    for (const t of tomosDoPainel) if (montador(t.id)) marcarFase(t.id, "aguardando");
     let coletadas: { rotulo: string; motivo: string }[] = [];
+    const comecados = new Set<number>();
     try {
       const lote = await montarEmLote({
         itens: tomos.map((tomo) => {
@@ -1523,7 +1534,10 @@ function VolumesDoConjunto({
           };
         }),
         conferir: conferirAntesDeGastar,
-        aoComecar: setMontando,
+        aoComecar: (i) => {
+          comecados.add(i);
+          setMontando(i);
+        },
       });
       coletadas = lote.recusado
         ? [{ rotulo: "Volumes", motivo: lote.recusado }]
@@ -1531,6 +1545,11 @@ function VolumesDoConjunto({
     } finally {
       setMontando(null);
       setFalhas(coletadas);
+      // Quem não chegou a começar (lote recusado, ou cartão fora da tela) sai
+      // da fila — senão o painel diria "montando" para sempre.
+      tomosDoPainel.forEach((t, i) => {
+        if (!comecados.has(i)) marcarFase(t.id, null);
+      });
     }
   }
 
@@ -1548,6 +1567,7 @@ function VolumesDoConjunto({
             }
             onConfirm={montarTodos}
           />
+          <PainelDaMontagem tomos={tomosDoPainel} fases={fases} />
           {falhas.length > 0 && (
             <p className="text-xs text-[var(--destructive)]">
               {plural(falhas.length, "volume não montou", "volumes não montaram")}:{" "}
@@ -1598,7 +1618,9 @@ function VolumeConfirmation({
     conferirAntesDeGastar,
   } = useConversation();
   const { registrar } = useMontadoresDeVolume();
+  const { fases, marcarFase } = useFasesDaMontagem();
   const id = volumeId(selos) + tomo.sufixo;
+  const fase = fases[id];
   const saved = getResult(id);
   /** A conferência do volume gravada junto com o PDF, quando já rodou. */
   const conferenciaDoVolume = (
@@ -1780,7 +1802,19 @@ function VolumeConfirmation({
    * servidor uma vez para o gesto inteiro. O clique do botão passa o evento,
    * que não tem a chave: só `true` pula.
    */
-  async function confirm(opcoes?: { jaConferido?: boolean }) {
+  /*
+   * A FASE À VISTA (06/10/2026): toda porta de montagem passa por aqui — o
+   * botão, o "montar todos", o "remontar" —, então é aqui que a fase começa e
+   * termina. As do meio são marcadas dentro de `montar`.
+   */
+  async function confirm(opcoes?: { jaConferido?: boolean }): Promise<string | null> {
+    marcarFase(id, "conferindo-versao");
+    const motivo = await montar(opcoes);
+    marcarFase(id, motivo ? "falhou" : "pronto");
+    return motivo;
+  }
+
+  async function montar(opcoes?: { jaConferido?: boolean }): Promise<string | null> {
     /*
      * A PRÉ-CONDIÇÃO É VERIFICADA AQUI, e não só no botão.
      *
@@ -1824,6 +1858,7 @@ function VolumeConfirmation({
       }
     }
     try {
+      marcarFase(id, "preparando");
       const capaPdf64 = capaPdfUrl ? await urlToBase64(capaPdfUrl) : null;
       const ldPdf64 = ldPdfUrl ? await urlToBase64(ldPdfUrl) : null;
 
@@ -2012,6 +2047,7 @@ function VolumeConfirmation({
        * ainda moía, e o volume, pronto desde o primeiro segundo, nunca era
        * gravado. Medido em 20/08/2026 no volume 10 de 040-26.
        */
+      marcarFase(id, "juntando");
       await entregarVolume({
         montar: () =>
           assembleVolume({
@@ -2063,7 +2099,10 @@ function VolumeConfirmation({
         // O botão sai de "MONTANDO…" quando o volume EXISTE, não quando a
         // conferência termina. Antes, um volume já gravado seguia parecendo um
         // volume que não saiu.
-        aoEntregar: () => setBusy(false),
+        aoEntregar: () => {
+          setBusy(false);
+          marcarFase(id, "conferindo");
+        },
         aoFalharConferencia: (err) =>
           setError(
             `O volume foi montado e está salvo, mas a conferência não pôde rodar: ${
@@ -2196,6 +2235,8 @@ function VolumeConfirmation({
           </div>
         </>
       )}
+
+      <FaseDoTomo fase={fase} pranchas={pranchaFilesDoTomo.length} />
 
       {saved && (
         <ResultLinks

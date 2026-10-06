@@ -31,8 +31,11 @@ import {
   useContext,
   useMemo,
   useRef,
+  useState,
   type ReactNode,
 } from "react";
+
+import type { FaseDaMontagem } from "../lib/progresso-da-montagem";
 
 /**
  * Monta UM volume. Devolve o MOTIVO da falha, ou `null` quando deu certo — o
@@ -70,7 +73,44 @@ export function MontadoresDeVolumeProvider({ children }: { children: ReactNode }
   );
 
   const valor = useMemo(() => ({ registrar, montador }), [registrar, montador]);
-  return <Ctx.Provider value={valor}>{children}</Ctx.Provider>;
+
+  /*
+   * AS FASES, em estado (e não no ref do mapa): quem as lê é a tela — o cartão
+   * do tomo e o painel do "montar todos" —, e ela precisa redesenhar quando a
+   * fase muda. Ficam num contexto à parte para que mudar de fase não redesenhe
+   * quem só registra montador.
+   */
+  const [fases, setFases] = useState<Readonly<Record<string, FaseDaMontagem>>>({});
+  const marcarFase = useCallback((artifactId: string, fase: FaseDaMontagem | null) => {
+    setFases((atual) => {
+      if ((atual[artifactId] ?? null) === fase) return atual;
+      const proximo = { ...atual };
+      if (fase) proximo[artifactId] = fase;
+      else delete proximo[artifactId];
+      return proximo;
+    });
+  }, []);
+  const valorDasFases = useMemo(() => ({ fases, marcarFase }), [fases, marcarFase]);
+
+  return (
+    <Ctx.Provider value={valor}>
+      <CtxDasFases.Provider value={valorDasFases}>{children}</CtxDasFases.Provider>
+    </Ctx.Provider>
+  );
+}
+
+interface FasesDaMontagem {
+  /** Fase de cada volume (por `artifactId`) nesta sessão; ausente = nunca montou aqui. */
+  fases: Readonly<Record<string, FaseDaMontagem>>;
+  marcarFase: (artifactId: string, fase: FaseDaMontagem | null) => void;
+}
+
+const CtxDasFases = createContext<FasesDaMontagem | null>(null);
+const SEM_FASES: FasesDaMontagem = { fases: {}, marcarFase: () => {} };
+
+/** Fora do provedor: sem fases e marcar não faz nada (mesma razão do `VAZIO`). */
+export function useFasesDaMontagem(): FasesDaMontagem {
+  return useContext(CtxDasFases) ?? SEM_FASES;
 }
 
 /**
