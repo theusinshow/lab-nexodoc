@@ -23,8 +23,10 @@ export function VistaDoVolume({ selos, mapa }: { selos: SeloForLd[]; mapa: React
 
   return (
     <div className="relative flex h-full min-h-0 flex-col" data-prova="vista-do-volume">
+      {/* Abaixo da barra de navegação, à esquerda: em cima à direita ele cobria
+          o título da coluna de conferência. */}
       {temDocumentos && (
-        <div className="absolute right-3 top-3 z-20">
+        <div className="absolute left-3 top-14 z-20">
           <span className="nw-vistas" role="group" aria-label="Vista do volume">
             <button type="button" aria-pressed={!lista} onClick={() => setVista("volume")}>
               Volume

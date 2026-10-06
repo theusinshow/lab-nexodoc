@@ -107,7 +107,11 @@ export function trilhoDoTomo(e: EntradaDoTrilho): Trilho {
 
   if (e.montado) {
     const m = e.montado;
-    const remontar = { tipo: "remontar" as const, ...travado(e.temMontador ? null : "Gere a capa e a LD primeiro.") };
+    // Remontar passa pelas MESMAS travas de montar (sem pranchas nesta sessão, sem capa/LD).
+    const remontar = {
+      tipo: "remontar" as const,
+      ...travado(!e.temMontador ? "Gere a capa e a LD primeiro." : e.bloqueio ? frasePronta(e.bloqueio) : null),
+    };
     if (m.url === null) {
       return {
         estado: "fora-da-maquina",

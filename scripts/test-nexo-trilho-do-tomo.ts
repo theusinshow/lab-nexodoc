@@ -98,6 +98,13 @@ test("falhou: motivo e tentar de novo", () => {
   assert.deepEqual(t.acao, { tipo: "tentar-de-novo", habilitada: true, motivo: null });
 });
 
+test("montado sem as pranchas nesta sessão: Remontar desligado com o motivo", () => {
+  const t = trilhoDoTomo({ ...base, montado: montado(MB), bloqueio: "sem as pranchas — reanexe-os para montar" });
+  assert.equal(t.acao.tipo, "remontar");
+  assert.equal(t.acao.habilitada, false);
+  assert.equal(t.acao.motivo, "Sem as pranchas — reanexe-os para montar.");
+});
+
 test("remontando um tomo já montado mostra a fase, não o peso velho", () => {
   const t = trilhoDoTomo({ ...base, fase: "preparando", montado: montado(MB) });
   assert.equal(t.estado, "montando");
