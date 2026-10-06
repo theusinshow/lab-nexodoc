@@ -122,8 +122,18 @@ numa aba "Mapa").
 - **Pranchas guardadas:** sobem ao soltar, endereçadas por conteúdo (sem
   duplicar entre revisões); F5/outra máquina não pede nada; saem com o projeto
   pelo expurgo do admin.
-- **Medir antes de implementar:** tamanho real de um conjunto de pranchas A1
-  (pode passar de 100 MB por volume) contra o limite de envio e armazenamento.
+- **Onde (decidido em 06/10/2026, medido no 084-25):** num **armazenamento de
+  arquivos compatível com S3** (ex.: Cloudflare R2), não no Postgres.
+  - Medida: 084-25 tem 12 volumes; pranchas de ~9 MB a ~32 MB por volume,
+    mediana de 1 MB por prancha, ~180 MB por projeto.
+  - Hoje o banco de produção inteiro tem 51 MB, dos quais 33 MB são os 7
+    memoriais no `StoredFile` (bytes no Postgres). Dez projetos de pranchas
+    seriam ~2 GB dentro do banco.
+  - O banco guarda só a referência; o encaixe já existe
+    (`NEXODOC_STORAGE_PROVIDER`, hoje `none`, em `lib/file-storage.ts`). O
+    teto por arquivo continua o de `limite-do-anexo.ts` (25 MB).
+  - Pré-requisito de infra (do Matheus): criar o bucket e as credenciais e
+    configurar as variáveis na Render.
 
 ## Parte 6 — Falhas
 
