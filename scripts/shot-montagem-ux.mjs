@@ -148,6 +148,14 @@ try {
   const doca = page.locator('[data-prova="doca-da-entrega"]').first();
   if (await doca.count()) await doca.screenshot({ path: `${OUT}/10-doca.png` });
 
+  const abaObra = page.getByRole("button", { name: "Obra", exact: true });
+  if (await abaObra.count()) {
+    await abaObra.click();
+    await page.locator('[data-prova="vista-da-obra"]').waitFor({ timeout: 15000 }).catch(() => {});
+    await page.waitForTimeout(1200);
+    await canvas.screenshot({ path: `${OUT}/11-obra.png` }).catch(() => page.screenshot({ path: `${OUT}/11-obra.png` }));
+    await page.screenshot({ path: `${OUT}/12-tela-obra.png` });
+  }
   console.log("prints em", OUT);
 } catch (err) {
   console.error("FALHOU:", err);

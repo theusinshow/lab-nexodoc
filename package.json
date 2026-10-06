@@ -130,6 +130,7 @@
     "test:nexo:tomos-do-volume": "node scripts/test-nexo-tomos-do-volume.ts",
     "test:nexo:trilho-do-tomo": "node scripts/test-nexo-trilho-do-tomo.ts",
     "test:nexo:destaques-do-frame": "node scripts/test-nexo-destaques-do-frame.ts",
+    "test:nexo:resumo-da-obra": "node scripts/test-nexo-resumo-da-obra.ts",
     "test:nexo:desatualizados": "node scripts/test-nexo-volumes-desatualizados.ts",
     "prova:desatualizado": "node scripts/prova-volume-desatualizado.mjs",
     "test:nexo:nome-do-zip": "node --import ./scripts/lib/resolver-de-imports.mjs scripts/test-nexo-nome-do-zip.ts",

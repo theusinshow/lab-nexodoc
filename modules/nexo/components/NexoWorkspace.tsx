@@ -3011,6 +3011,7 @@ function NexoWorkspaceInner({
             mapa={
               <VistaDoVolume
                 selos={selos}
+                onAbrirConversa={(id) => void abrirPelaBarra(id)}
                 mapa={
                   <NexoCanvas
                     memorial={memorialFile?.name ?? null}

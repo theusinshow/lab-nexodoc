@@ -173,3 +173,82 @@ export function passosDaEntrega(args: {
     planejados,
   };
 }
+
+/*
+ * A VISTA OBRA (06/10/2026, etapa 3 do desenho do canvas da montagem): um
+ * trilho por volume do projeto, cada tomo uma pílula. Mora aqui para usar as
+ * MESMAS contas de tomo, peso e teto da entrega — um "acima do teto" na Obra e
+ * outro na doca não podem discordar.
+ */
+
+const ROMANOS: Record<string, number> = { I: 1, V: 5, X: 10, L: 50, C: 100 };
+
+/** "3" → 3, "IV" → 4, "Vol. 12" → 12, "" → null. */
+export function numeroDoVolume(valor: string): number | null {
+  const digitos = /\d+/.exec(valor)?.[0];
+  if (digitos) return Number(digitos);
+  const romano = /\b[IVXLC]+\b/i.exec(valor.trim())?.[0]?.toUpperCase();
+  if (!romano) return null;
+  let total = 0;
+  for (let i = 0; i < romano.length; i++) {
+    const atual = ROMANOS[romano[i]];
+    const proximo = ROMANOS[romano[i + 1]] ?? 0;
+    total += atual < proximo ? -atual : atual;
+  }
+  return total > 0 ? total : null;
+}
+
+export interface TomoDaObra {
+  numero: number;
+  estado: "pronto" | "acima-do-teto" | "nao-montado";
+  bytes: number | null;
+}
+
+export interface VolumeDaObra {
+  conversaId: string;
+  titulo: string;
+  /** Como a capa imprime ("6", "III"); "" sem capa. */
+  volume: string;
+  tomos: TomoDaObra[];
+  montados: number;
+  planejados: number;
+  pesoTotal: number;
+  /** Já tem capa, LD ou volume gerado. */
+  temDocumentos: boolean;
+}
+
+export function resumoDoVolume(conversaId: string, titulo: string, results: readonly SavedResult[]): VolumeDaObra {
+  const montados = tomosMontados(results);
+  const numeros = numerosDosTomos(results);
+  const unico = numeros.length <= 1;
+  const tomos: TomoDaObra[] = numeros.map((n) => {
+    const m = montados.find((t) => t.tomo === n);
+    return {
+      numero: unico ? 0 : n,
+      estado: !m ? "nao-montado" : m.acimaDoTeto ? "acima-do-teto" : "pronto",
+      bytes: m?.bytes ?? null,
+    };
+  });
+  return {
+    conversaId,
+    titulo,
+    volume: volumeDaCapa(results),
+    tomos,
+    montados: montados.length,
+    planejados: numeros.length,
+    pesoTotal: montados.reduce((s, t) => s + (t.bytes ?? 0), 0),
+    temDocumentos: results.some((r) => r.kind === "capa" || r.kind === "ld" || r.kind === "volume"),
+  };
+}
+
+/** Na ordem dos volumes do escritório (3, 5, 6…); sem número por último, pelo título. */
+export function ordenarVolumes(volumes: readonly VolumeDaObra[]): VolumeDaObra[] {
+  return [...volumes].sort((a, b) => {
+    const na = numeroDoVolume(a.volume);
+    const nb = numeroDoVolume(b.volume);
+    if (na !== null && nb !== null && na !== nb) return na - nb;
+    if (na === null && nb !== null) return 1;
+    if (na !== null && nb === null) return -1;
+    return a.titulo.localeCompare(b.titulo, "pt-BR");
+  });
+}

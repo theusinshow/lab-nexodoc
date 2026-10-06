@@ -273,6 +273,12 @@ interface ConversationStoreValue {
    * É a identidade, e `folderKey` virou cache de exibição. Ver [[nexo-db.ts]].
    */
   projectId: string | null;
+  /**
+   * A PASTA DA OBRA ("999-26-CRICIUMA"), a mesma chave com que a barra lateral
+   * agrupa. Conversa de volume quase nunca tem `projectId`; é por aqui que a
+   * vista Obra acha os volumes irmãos (06/10/2026). "" sem selo nem identidade.
+   */
+  pastaDaObra: string;
   /** Endereça a conversa. `null` desvincula. */
   vincularProjeto: (id: string | null) => void;
   /**
@@ -1214,6 +1220,11 @@ export function ConversationStoreProvider({ children }: { children: ReactNode })
    * Aceita `null` de propósito: desvincular é ação legítima de quem percebe que
    * anexou o memorial na conversa errada.
    */
+  const pastaDaObra = useMemo(
+    () => derivarDoProjeto(seloResults).folderKey || pastaDoProjeto(identidade?.codigo, identidade?.orgao),
+    [seloResults, identidade],
+  );
+
   const vincularProjeto = useCallback(
     (id: string | null) => {
       setProjectId(id);
@@ -2167,6 +2178,7 @@ export function ConversationStoreProvider({ children }: { children: ReactNode })
       identidade,
       corrigirIdentidade,
       projectId,
+      pastaDaObra,
       vincularProjeto,
       decisoes,
       decidir,
@@ -2224,6 +2236,7 @@ export function ConversationStoreProvider({ children }: { children: ReactNode })
       identidade,
       corrigirIdentidade,
       projectId,
+      pastaDaObra,
       vincularProjeto,
       decisoes,
       decidir,
