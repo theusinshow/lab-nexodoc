@@ -21,8 +21,9 @@ export function formatarMb(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1).replace(".", ",")} MB`;
 }
 
-export function rotuloDoTomo(tomo: number): string {
-  return tomo > 0 ? `Tomo ${String(tomo).padStart(2, "0")}` : "Volume";
+/** "Tomo 04"; num volume sem divisão em tomos (`unico`) é só "Volume". */
+export function rotuloDoTomo(tomo: number, unico = false): string {
+  return tomo > 0 && !unico ? `Tomo ${String(tomo).padStart(2, "0")}` : "Volume";
 }
 
 export type VereditoDoTomo = "ok" | "aviso" | "critico" | "sem-conferencia";
@@ -80,14 +81,31 @@ export function tomosMontados(results: readonly SavedResult[]): TomoMontado[] {
  * diria "completo" com 4 de 6.
  */
 export function tomosPlanejados(results: readonly SavedResult[]): number {
-  let declarado = 0;
-  let montados = 0;
-  for (const r of results) {
-    const n = (r.payload as { numTomos?: unknown } | undefined)?.numTomos;
-    if (typeof n === "number" && Number.isFinite(n)) declarado = Math.max(declarado, Math.floor(n));
-    if (r.kind === "volume") montados++;
+  return numerosDosTomos(results).length;
+}
+
+/**
+ * Os NÚMEROS dos tomos, como saem na capa: o volume pode começar no Tomo 05
+ * (`tomoInicial`), e listar 1..N mostraria tomos que não existem. Vem da
+ * primeira LD/capa que declara a divisão (a mesma fonte de `tomosDoVolume` no
+ * cartão), somada a qualquer tomo montado fora dela.
+ */
+export function numerosDosTomos(results: readonly SavedResult[]): number[] {
+  const numeros = new Set<number>();
+  const declarou = results.find(
+    (r) => (r.kind === "ld" || r.kind === "capa") && typeof (r.payload as { numTomos?: unknown } | undefined)?.numTomos === "number",
+  );
+  if (declarou) {
+    const p = declarou.payload as { numTomos: number; tomoInicial?: unknown };
+    const inicio = typeof p.tomoInicial === "number" ? p.tomoInicial : 1;
+    for (let i = 0; i < Math.max(1, Math.floor(p.numTomos)); i++) numeros.add(inicio + i);
   }
-  return Math.max(declarado, montados);
+  for (const r of results) {
+    if (r.kind !== "volume") continue;
+    const t = (r.payload as { tomo?: unknown } | undefined)?.tomo;
+    numeros.add(typeof t === "number" ? t : 0);
+  }
+  return [...numeros].sort((a, b) => a - b);
 }
 
 /** O número do volume impresso na capa ("3", "I"), ou "" sem capa. */
@@ -130,7 +148,8 @@ export function passosDaEntrega(args: {
     motivo = `Faltam ${faltam} de ${planejados} tomos para montar.`;
   } else if (acimaDoTeto.length === 1) {
     const t = acimaDoTeto[0];
-    motivo = `O ${rotuloDoTomo(t.tomo)} tem ${formatarMb(t.bytes ?? 0)} — passa do teto de 20 MB.`;
+    const quem = planejados <= 1 ? "O volume" : `O ${rotuloDoTomo(t.tomo)}`;
+    motivo = `${quem} tem ${formatarMb(t.bytes ?? 0)} — passa do teto de 20 MB.`;
   } else if (acimaDoTeto.length > 1) {
     motivo = `${acimaDoTeto.length} tomos passam do teto de 20 MB (${acimaDoTeto.map((t) => rotuloDoTomo(t.tomo)).join(", ")}).`;
   } else if (!liberacao.liberado) {

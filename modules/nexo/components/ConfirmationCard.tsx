@@ -153,9 +153,8 @@ import { resumoDaAuditoria } from "../lib/resumo-da-auditoria";
 import { reportFindingToStructured } from "@/components/audit-result";
 import { useConversation, type SavedResult } from "../state/conversation-store";
 import { baixarArquivosEmZip, editaveisDosResultados } from "../lib/editaveis";
-import { SalvarEditaveisNoProjeto } from "./SalvarEditaveisNoProjeto";
+import { EntregaDoVolume } from "./EntregaDoVolume";
 import { useLiberacaoDoVolume } from "../state/use-liberacao-do-volume";
-import { todosOsVolumesProntos, volumesProntosDosResultados } from "../lib/volumes-prontos";
 import {
   gerarEditaveisConsolidados,
   parametrosDaEntrega,
@@ -1477,22 +1476,6 @@ async function conferirVolume(args: {
  * engenheiro sem saber quantos PDFs tem na mão. É a mesma regra do
  * `gerarTudo` do plano, pelo mesmo motivo.
  */
-/**
- * O NÚMERO DO VOLUME, lido dos params da capa.
- *
- * É onde o engenheiro o decide (o campo "Volume" do card da capa), e é o único
- * lugar da conversa que o guarda. Qualquer capa serve: todas as do conjunto
- * falam do mesmo volume — o que muda entre elas é o tomo.
- */
-function volumeDeclaradoNaCapa(results: readonly SavedResult[]): string {
-  for (const r of results) {
-    if (r.kind !== "capa") continue;
-    const v = (r.payload as { volume?: unknown } | undefined)?.volume;
-    if (typeof v === "string" && v.trim()) return v;
-  }
-  return "";
-}
-
 function VolumesDoConjunto({
   tomos,
   ...props
@@ -1521,38 +1504,6 @@ function VolumesDoConjunto({
    * seis tomos são dezenas de cliques.
    */
   const editaveis = useMemo(() => editaveisDosResultados(results), [results]);
-  /** O PDF do volume só sai depois dos editáveis salvos — ver `editaveis-no-projeto.ts`. */
-  const liberacao = useLiberacaoDoVolume();
-
-  /*
-   * Os VOLUMES montados. O "baixar todos" é o espelho do "montar todos": seis
-   * tomos são seis downloads, e quem entrega para a prefeitura quer o conjunto.
-   *
-   * A trava vive AQUI, na montagem, e não no botão — mesma decisão do commit que
-   * tirou a trava do botão de montar. Quem sabe se o conjunto está completo é
-   * quem conhece os tomos planejados; o botão só obedece.
-   */
-  const volumesProntos = useMemo(() => volumesProntosDosResultados(results), [results]);
-  const conjuntoCompleto = todosOsVolumesProntos(volumesProntos, tomos.length);
-  const [baixandoVolumes, setBaixandoVolumes] = useState(false);
-  const [erroDosVolumes, setErroDosVolumes] = useState<string | null>(null);
-
-  async function baixarTodosOsVolumes() {
-    setBaixandoVolumes(true);
-    setErroDosVolumes(null);
-    try {
-      await baixarArquivosEmZip(volumesProntos, nomeDoZipDosVolumes(
-        props.selos,
-        identidade,
-        volumeDeclaradoNaCapa(results),
-      ));
-    } catch (err) {
-      setErroDosVolumes(err instanceof Error ? err.message : "Falha ao juntar os volumes.");
-    } finally {
-      setBaixandoVolumes(false);
-    }
-  }
-
   /*
    * UMA CONFERÊNCIA PARA O LOTE (última onda da frente A, 15/09/2026): cada
    * `confirm` perguntava a versão ao servidor; `montarEmLote` pergunta uma vez
@@ -1604,42 +1555,17 @@ function VolumesDoConjunto({
               estão prontos.
             </p>
           )}
-          {/*
-            BAIXAR TODOS, logo abaixo do montar todos — é o passo seguinte na
-            mesma tarefa. Só destrava com o conjunto COMPLETO: meia entrega é o
-            erro que ninguém confere antes de mandar para a prefeitura.
-            Desabilitado dá o número em vez de ficar mudo: "faltam 2" diz o que
-            fazer, um botão cinza não diz nada.
-          */}
-          <Button
-            size="sm"
-            variant="secondary"
-            disabled={
-              !conjuntoCompleto || !liberacao.liberado || baixandoVolumes || montando !== null
-            }
-            title={conjuntoCompleto && !liberacao.liberado ? liberacao.motivo ?? undefined : undefined}
-            onClick={baixarTodosOsVolumes}
-          >
-            {baixandoVolumes
-              ? "Juntando os volumes…"
-              : conjuntoCompleto
-                ? `Baixar os ${volumesProntos.length} volumes`
-                : `Baixar todos — faltam ${tomos.length - volumesProntos.length} de ${tomos.length}`}
-          </Button>
-          {erroDosVolumes && (
-            <p className="text-xs text-[var(--destructive)]">{erroDosVolumes}</p>
-          )}
         </div>
       )}
-      {/*
-        PASSO 2: o ZIP dos editáveis, ANTES do PDF do volume. O botão já existia,
-        mas ninguém era obrigado a clicar — e o ODT morria no navegador. Agora
-        é ele que destrava o PDF (ver o componente).
-      */}
-      {editaveis.length > 0 && <SalvarEditaveisNoProjeto selos={props.selos} />}
       {tomos.map((t) => (
         <VolumeConfirmation key={t.sufixo || "unico"} {...props} tomo={t} />
       ))}
+      {/*
+        A ENTREGA NO FIM (06/10/2026): os botões de baixar ficavam no topo, e
+        com seis tomos era preciso rolar de volta por cima de todos os cartões.
+        Agora vêm depois do que se acabou de montar — na ordem em que se usa.
+      */}
+      {editaveis.length > 0 && <EntregaDoVolume selos={props.selos} />}
     </>
   );
 }

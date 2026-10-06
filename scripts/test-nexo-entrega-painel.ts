@@ -8,6 +8,7 @@ import assert from "node:assert/strict";
 import {
   TETO_DO_TOMO_BYTES,
   formatarMb,
+  numerosDosTomos,
   passosDaEntrega,
   rotuloDoTomo,
   tomosMontados,
@@ -40,11 +41,11 @@ const volume = (tomo: number, bytes?: number, conferencia?: unknown): any => ({
   files: [{ label: "PDF do volume", name: `vol_tomo${tomo}.pdf`, mime: PDF, url: `blob:${tomo}`, primary: true, ...(bytes !== undefined ? { sizeBytes: bytes } : {}) }],
 });
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const capa = (numTomos: number, volume = "3"): any => ({
+const capa = (numTomos: number, volume = "3", tomoInicial?: number): any => ({
   artifactId: "capa:x",
   kind: "capa",
   summary: "",
-  payload: { numTomos, volume },
+  payload: { numTomos, volume, ...(tomoInicial ? { tomoInicial } : {}) },
   files: [],
 });
 
@@ -87,6 +88,18 @@ test("tomosPlanejados: o maior entre o declarado na capa e o montado", () => {
   assert.equal(tomosPlanejados([]), 0);
 });
 
+test("numerosDosTomos: respeita o tomo inicial da capa", () => {
+  assert.deepEqual(numerosDosTomos([capa(3, "3", 5)]), [5, 6, 7]);
+  assert.deepEqual(numerosDosTomos([capa(1), volume(1)]), [1], "volume único é o tomo 1, uma vez só");
+  assert.equal(tomosPlanejados([capa(3, "3", 5), volume(5)]), 3);
+});
+
+test("passos: volume único acima do teto fala do volume, não de tomo", () => {
+  const tomos = tomosMontados([volume(1, 27.6 * MB)]);
+  const p = passosDaEntrega({ tomos, planejados: 1, liberacao: livre, editaveisSalvosEm: 1 });
+  assert.equal(p.volumes.motivo, "O volume tem 27,6 MB — passa do teto de 20 MB.");
+});
+
 test("volumeDaCapa: lê o volume declarado na capa", () => {
   assert.equal(volumeDaCapa([capa(1, "I")]), "I");
   assert.equal(volumeDaCapa([volume(1)]), "");
@@ -95,6 +108,7 @@ test("volumeDaCapa: lê o volume declarado na capa", () => {
 test("rotuloDoTomo: dois dígitos; 0 é o volume sem divisão", () => {
   assert.equal(rotuloDoTomo(4), "Tomo 04");
   assert.equal(rotuloDoTomo(0), "Volume");
+  assert.equal(rotuloDoTomo(1, true), "Volume");
 });
 
 test("passos: faltando tomo, os volumes não liberam e dizem quantos faltam", () => {
