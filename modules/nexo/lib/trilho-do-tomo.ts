@@ -154,9 +154,13 @@ export function trilhoDoTomo(e: EntradaDoTrilho): Trilho {
         baixar: null,
       };
     }
+    // A pendência do plano, curta: só até o travessão, que é onde a explicação começa.
+    const pendencia = e.gerador.bloqueio
+      ? e.gerador.bloqueio.split(" — ")[0].replace(/\.$/, "").replace(/^./, (c) => c.toLowerCase())
+      : null;
     return {
       estado: "incompleto",
-      frase: `${e.folhas} folhas · falta gerar a capa e a LD`,
+      frase: `${e.folhas} folhas · ${pendencia ?? "falta gerar a capa e a LD"}`,
       preenchimento: 0,
       acao: { tipo: "gerar", ...travado(e.gerador.bloqueio) },
       baixar: null,

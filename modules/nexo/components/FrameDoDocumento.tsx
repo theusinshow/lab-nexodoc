@@ -47,6 +47,8 @@ export function FrameDoDocumento({
   onChange,
   modo = "campo",
   prefeitura,
+  destaques = {},
+  opcoes = {},
 }: {
   layout: ParagrafoDoModelo[];
   campos: CampoDoFrame[];
@@ -84,6 +86,14 @@ export function FrameDoDocumento({
    * inteiro, e que originou este produto.
    */
   prefeitura?: string | null;
+  /**
+   * O QUE OLHAR (06/10/2026): `falta` = o Gerar não passa sem ele (âmbar);
+   * `sugerido` = o Nexo preencheu e ninguém conferiu (tracejado violeta).
+   * Ver `destaques-do-frame.ts`.
+   */
+  destaques?: Readonly<Record<string, "falta" | "sugerido">>;
+  /** Respostas prontas DENTRO do campo (o número do volume: 1, 2, 3, 4). */
+  opcoes?: Readonly<Record<string, readonly string[]>>;
 }) {
   const campoDe = (marcador: string) => campos.find((c) => c.marcador === marcador);
 
@@ -190,8 +200,16 @@ export function FrameDoDocumento({
               const forma = `${classeDeCorpo(paragrafo.corpo, modo)} ${
                 ALINHAMENTO[paragrafo.alinhamento]
               }`;
+              const destaque = destaques[parte.nome];
+              const realce =
+                destaque === "falta"
+                  ? " !border-solid !border-[var(--status-warning)] bg-[var(--status-warning)]/10"
+                  : destaque === "sugerido"
+                    ? " !border-[var(--ds-nexo)]/70 bg-[var(--ds-nexo)]/5"
+                    : "";
+              const prontas = opcoes[parte.nome] ?? [];
 
-              return linhas > 1 ? (
+              const controle = linhas > 1 ? (
                 <textarea
                   key={chave}
                   aria-label={rotulo}
@@ -199,7 +217,7 @@ export function FrameDoDocumento({
                   value={valores[parte.nome] ?? ""}
                   placeholder={derivados[parte.nome] || campo?.placeholder}
                   onChange={(e) => onChange(parte.nome, e.target.value)}
-                  className={`${comum} resize-none leading-snug ${forma}`}
+                  className={`${comum} resize-none leading-snug ${forma}${realce}`}
                 />
               ) : (
                 <input
@@ -208,8 +226,26 @@ export function FrameDoDocumento({
                   value={valores[parte.nome] ?? ""}
                   placeholder={derivados[parte.nome] || campo?.placeholder}
                   onChange={(e) => onChange(parte.nome, e.target.value)}
-                  className={`${comum} ${forma}`}
+                  className={`${comum} ${forma}${realce}`}
                 />
+              );
+              if (prontas.length === 0) return controle;
+              return (
+                <span key={chave} className="flex min-w-0 flex-1 flex-col items-stretch gap-1">
+                  {controle}
+                  <span className="flex flex-wrap justify-center gap-1" role="group" aria-label={`${rotulo}: escolha rápida`}>
+                    {prontas.map((v) => (
+                      <button
+                        key={v}
+                        type="button"
+                        onClick={() => onChange(parte.nome, v)}
+                        className="rounded-[4px] border border-[var(--status-warning)]/60 px-2 py-0.5 font-mono text-[11px] text-foreground hover:bg-[var(--status-warning)]/15 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/25"
+                      >
+                        {v}
+                      </button>
+                    ))}
+                  </span>
+                </span>
               );
             })}
           </div>

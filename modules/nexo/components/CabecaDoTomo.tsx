@@ -148,7 +148,7 @@ export function CabecaDoTomo({ data }: NodeProps<Node<CabecaDoTomoData & Record<
             >
               {(t.acao.tipo === "remontar" || t.acao.tipo === "tentar-de-novo") && <RotateCcw className="mr-1.5 h-3.5 w-3.5" aria-hidden />}
               {t.acao.tipo === "gerar"
-                ? "Gerar capa e LD"
+                ? "Confirmar e gerar"
                 : t.acao.tipo === "montar"
                   ? "Montar"
                   : t.acao.tipo === "remontar"

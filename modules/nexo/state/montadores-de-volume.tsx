@@ -36,6 +36,8 @@ import {
 } from "react";
 
 import type { FaseDaMontagem } from "../lib/progresso-da-montagem";
+import type { CampoDoFrame } from "../components/FrameDoDocumento";
+import type { ParagrafoDoModelo } from "@/server/odt/layout";
 
 /**
  * Monta UM volume. Devolve o MOTIVO da falha, ou `null` quando deu certo — o
@@ -121,22 +123,37 @@ export function MontadoresDeVolumeProvider({ children }: { children: ReactNode }
   const gerarRef = useRef<(() => Promise<void>) | null>(null);
   const donoRef = useRef<string | null>(null);
   const [gerador, setGerador] = useState<SituacaoDoGerador | null>(null);
-  const publicarGerador = useCallback((dono: string, s: SituacaoDoGerador | null, gerar?: () => Promise<void>) => {
-    if (!s) {
-      if (donoRef.current !== dono) return;
-      donoRef.current = null;
-      gerarRef.current = null;
-      setGerador(null);
-      return;
-    }
-    donoRef.current = dono;
-    if (gerar) gerarRef.current = gerar;
-    setGerador((atual) => (atual && atual.bloqueio === s.bloqueio && atual.gerando === s.gerando ? atual : s));
-  }, []);
+  const editarRef = useRef<((marcador: string, valor: string) => void) | null>(null);
+  const publicarGerador = useCallback(
+    (dono: string, s: SituacaoDoGerador | null, gerar?: () => Promise<void>, editar?: (marcador: string, valor: string) => void) => {
+      if (!s) {
+        if (donoRef.current !== dono) return;
+        donoRef.current = null;
+        gerarRef.current = null;
+        editarRef.current = null;
+        setGerador(null);
+        return;
+      }
+      donoRef.current = dono;
+      if (gerar) gerarRef.current = gerar;
+      if (editar) editarRef.current = editar;
+      setGerador((atual) =>
+        atual && atual.bloqueio === s.bloqueio && atual.gerando === s.gerando && atual.frame?.versao === s.frame?.versao ? atual : s,
+      );
+    },
+    [],
+  );
   const gerar = useCallback(async () => {
     await gerarRef.current?.();
   }, []);
-  const valorDoGerador = useMemo(() => ({ gerador, publicarGerador, gerar }), [gerador, publicarGerador, gerar]);
+  /** Editar a capa no canvas = editar no plano (`aoEditarNoFrame`): uma fonte para as decisões. */
+  const editarNoFrame = useCallback((marcador: string, valor: string) => {
+    editarRef.current?.(marcador, valor);
+  }, []);
+  const valorDoGerador = useMemo(
+    () => ({ gerador, publicarGerador, gerar, editarNoFrame }),
+    [gerador, publicarGerador, gerar, editarNoFrame],
+  );
 
   return (
     <Ctx.Provider value={valor}>
@@ -185,17 +202,40 @@ export interface SituacaoDoGerador {
   /** Por que o plano não gera agora (título, prefeitura, volume, aba), ou `null`. */
   bloqueio: string | null;
   gerando: boolean;
+  /** A capa como vai sair, para o canvas desenhar antes de gerar. */
+  frame?: FrameDoPlano | null;
+}
+
+/** O frame da capa do plano, para o canvas (§7 do desenho do canvas da montagem). */
+export interface FrameDoPlano {
+  /** Muda quando qualquer dado abaixo muda — é o que decide redesenhar. */
+  versao: string;
+  layout: ParagrafoDoModelo[];
+  prefeitura: string | null;
+  campos: CampoDoFrame[];
+  valores: Record<string, string>;
+  derivados: Record<string, string>;
+  destaques: Record<string, "falta" | "sugerido">;
+  opcoes: Record<string, string[]>;
+  numTomos: number;
+  tomoInicial: number;
 }
 
 interface GeradorDoPlano {
   /** `null` = nenhum plano de geração na conversa. */
   gerador: SituacaoDoGerador | null;
-  publicarGerador: (dono: string, s: SituacaoDoGerador | null, gerar?: () => Promise<void>) => void;
+  publicarGerador: (
+    dono: string,
+    s: SituacaoDoGerador | null,
+    gerar?: () => Promise<void>,
+    editar?: (marcador: string, valor: string) => void,
+  ) => void;
   gerar: () => Promise<void>;
+  editarNoFrame: (marcador: string, valor: string) => void;
 }
 
 const CtxDoGerador = createContext<GeradorDoPlano | null>(null);
-const SEM_GERADOR: GeradorDoPlano = { gerador: null, publicarGerador: () => {}, gerar: async () => {} };
+const SEM_GERADOR: GeradorDoPlano = { gerador: null, publicarGerador: () => {}, gerar: async () => {}, editarNoFrame: () => {} };
 
 export function useGeradorDoPlano(): GeradorDoPlano {
   return useContext(CtxDoGerador) ?? SEM_GERADOR;

@@ -83,7 +83,8 @@ import {
 import { FolhaNode, type FolhaNodeData } from "./FolhaNode";
 import { idDoVolume as idDoVolumeDe, sufixoDoTomoNoCanvas } from "../lib/tomos-do-volume";
 import { CabecaDoTomo, EnchimentoDoVolume, VolumeVazioNode, useTrilho } from "./CabecaDoTomo";
-import { useFasesDaMontagem } from "../state/montadores-de-volume";
+import { CapaPreviaNode } from "./CapaPreviaNode";
+import { useFasesDaMontagem, useGeradorDoPlano } from "../state/montadores-de-volume";
 import { siglaDaDisciplina } from "../lib/disciplina-cor";
 import type { OrigemDoNumero } from "@/server/nexo/parse-filename";
 import { ehDigitacao, passoDoTeclado } from "../lib/navegacao-por-teclado";
@@ -456,7 +457,14 @@ function RotuloNode({
   );
 }
 
-const nodeTypes = { artifact: ArtifactNode, rotulo: RotuloNode, folha: FolhaNode, cabeca: CabecaDoTomo, volumeVazio: VolumeVazioNode };
+const nodeTypes = {
+  artifact: ArtifactNode,
+  rotulo: RotuloNode,
+  folha: FolhaNode,
+  cabeca: CabecaDoTomo,
+  volumeVazio: VolumeVazioNode,
+  capaPrevia: CapaPreviaNode,
+};
 
 const EDITAVEIS: NexoArtifactKind[] = ["capa", "ld", "separatriz"];
 
@@ -594,6 +602,20 @@ function CanvasInterno({
     [onRemoverFolha],
   );
 
+  /*
+   * A PRÉVIA DA CAPA (§7): sem capa nem LD gerados e com um plano no chat, o
+   * canvas desenha a divisão do plano e a capa como vai sair. Só os NÚMEROS
+   * entram no layout — digitar no frame não pode recalcular o mapa.
+   */
+  const { gerador } = useGeradorDoPlano();
+  const semDocumentos = !artifacts.some((a) => a.kind === "capa" || a.kind === "ld");
+  const previaNumTomos = semDocumentos && gerador?.frame ? gerador.frame.numTomos : null;
+  const previaTomoInicial = gerador?.frame?.tomoInicial ?? 1;
+  const previa = useMemo(
+    () => (previaNumTomos === null ? null : { numTomos: previaNumTomos, tomoInicial: previaTomoInicial }),
+    [previaNumTomos, previaTomoInicial],
+  );
+
   const { nodes: derivados, edges, fileiras, fileirasDoDrop, folhasPorTomo, volumeDaFolha } = useMemo(() => {
     type Item = { id: string; rank: number; type: "artifact"; data: unknown };
 
@@ -629,6 +651,9 @@ function CanvasInterno({
     // Os tomos criados pelo botão "+ Tomo": nascem vazios, e é justamente
     // por existirem vazios que há para onde arrastar.
     for (let t = 1; t <= Math.min(99, tomosDeclarados); t++) declarados.add(t);
+    // ANTES DE GERAR, a divisão é a do plano (06/10/2026, §7): o canvas mostrava
+    // "Volume · 16 folhas" com o plano propondo 2 tomos.
+    if (previa && previa.numTomos > 1) for (let t = 1; t <= Math.min(99, previa.numTomos); t++) declarados.add(t);
 
     // Um tomo só não é divisão (ver `tomosDeFileira`): sem isto a LD de um
     // volume único aparecia "fora da divisão" e desatualizada.
@@ -762,6 +787,16 @@ function CanvasInterno({
       };
 
       antes.forEach(empurrar);
+
+      // A CAPA COMO VAI SAIR, no lugar dos documentos ainda não gerados (§7).
+      if (previa && !ehResto) {
+        const id = `capa-previa:${grupo.tomo}`;
+        const numeroDoTomo = previa.numTomos > 1 ? previa.tomoInicial + Math.max(0, grupo.tomo - 1) : 0;
+        nodes.push({ id, type: "capaPrevia", position: { x: cursorX, y }, data: { numeroDoTomo }, draggable: false, selectable: false });
+        anterior = id;
+        idsDaFileira.push(id);
+        cursorX += 400;
+      }
 
       const gradeX = cursorX;
 
@@ -927,6 +962,7 @@ function CanvasInterno({
     results,
     templates,
     tomosDeclarados,
+    previa,
   ]);
 
   /*

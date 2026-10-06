@@ -64,7 +64,7 @@ export function CartaoDaMontagem({ selos }: { selos: SeloForLd[] }) {
          * VOLUMES" três vezes. Diz o que falta e oferece o passo.
          */
         <span className="text-xs">
-          {gerador?.gerando ? "Gerando a capa, a LD e a separatriz…" : "Antes de montar, gere a capa e a LD."}
+          {gerador?.gerando ? "Gerando a capa, a LD e a separatriz…" : "Antes de montar, confira a capa no canvas e gere a capa e a LD."}
         </span>
       ) : (
         <span className="text-xs">
@@ -75,7 +75,7 @@ export function CartaoDaMontagem({ selos }: { selos: SeloForLd[] }) {
       <div className="flex flex-wrap items-center gap-2">
         {!p.emCurso && semMontador && gerador && (
           <Button size="sm" loading={gerador.gerando} disabled={gerador.gerando || Boolean(gerador.bloqueio)} onClick={() => void gerar()}>
-            Gerar capa e LD
+            Confirmar e gerar
           </Button>
         )}
         {!p.emCurso && !semMontador && (

@@ -699,8 +699,10 @@ export function NexoChat({
                     embaixo da capa já gerada com 6 tomos — botão que preenche um
                     campo de um documento que já existe. Gerado o documento a que
                     a pergunta se refere, o lugar de mudar é o plano, não o chip.
+                    O número do VOLUME nunca vira chip: ele se decide no campo
+                    âmbar da capa (canvas e plano) — o lápis não dizia nada.
                   */}
-                  {m.slotRequest && !results.some((r) => r.kind === m.slotRequest?.taskKind) && (
+                  {m.slotRequest && m.slotRequest.slotId !== "volume" && !results.some((r) => r.kind === m.slotRequest?.taskKind) && (
                     <QuickReplyChips suggestions={m.slotRequest.suggestions} />
                   )}
                   {/* Próximos passos só na última resposta (não polui o histórico). */}

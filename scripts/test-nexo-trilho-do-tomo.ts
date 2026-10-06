@@ -44,6 +44,15 @@ test("gerar travado pelo plano diz o porquê", () => {
   assert.deepEqual(t.acao, { tipo: "gerar", habilitada: false, motivo: "Escolha a prefeitura no plano do chat." });
 });
 
+test("gerar travado: a frase do cabeçalho diz a pendência, curta", () => {
+  const t = trilhoDoTomo({
+    ...base,
+    temMontador: false,
+    gerador: { bloqueio: "Diga o número do volume — sem ele a capa sai como Vol. I, sem ninguém ter decidido.", gerando: false },
+  });
+  assert.equal(t.frase, "12 folhas · diga o número do volume");
+});
+
 test("gerando a capa e a LD: frase e ação desligada", () => {
   const t = trilhoDoTomo({ ...base, temMontador: false, gerador: { bloqueio: null, gerando: true } });
   assert.equal(t.frase, "gerando capa, LD e separatriz…");

@@ -18,7 +18,8 @@
  */
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
-import { useGeradorDoPlano } from "../state/montadores-de-volume";
+import { useGeradorDoPlano, type FrameDoPlano } from "../state/montadores-de-volume";
+import { destaquesDoFrame } from "../lib/destaques-do-frame";
 import {
   FileText,
   Loader2,
@@ -793,11 +794,57 @@ export function PlanoDeGeracao({
         ? "border-[var(--status-ok)]/30"
         : "border-border";
 
+  /** O que o carimbo, o arquivo e a divisão já dizem — o mesmo para o chat e o canvas. */
+  const derivadosDoFrame: Record<string, string> = {
+    // Já quebrada nas linhas em que vai sair impressa — o carimbo
+    // escreve "A - B" numa tira só, e a capa tem duas linhas.
+    NOME_OBRA: textoEmLinhasDaCapa(obra),
+    // O nome padrão da disciplina lida — é o que sai se ninguém
+    // digitar nada, então é o que o campo deve mostrar apagado.
+    TITULO_CAPA: tituloSugerido,
+    CODIGO_EXIBIDO: codigo,
+    MES_ANO: dataDaCapa || "mês corrente",
+    VOLUME: capa?.volume?.trim() || "do arquivo",
+    TOMO:
+      numTomos > 1
+        ? `TOMO ${String(tomoInicial).padStart(2, "0")}…`
+        : "",
+    DISCIPLINA: misto ? resumoDosBlocos(blocos) : "",
+  };
+  const valoresDoFramePlano = valoresDoFrame({ identidade, params: mesclado.valores });
+  /*
+   * O FRAME PARA O CANVAS (06/10/2026, §7): a capa como vai sair, com o que
+   * falta decidir aceso. O volume em falta ganha respostas prontas no campo.
+   */
+  const faltasDoFrame = [...(motivoDoVolume ? ["VOLUME"] : []), ...(semTitulo ? ["TITULO_CAPA"] : [])];
+  const destaquesDoPlano = destaquesDoFrame({
+    campos: CAMPOS_DO_FRAME,
+    valores: valoresDoFramePlano,
+    derivados: derivadosDoFrame,
+    faltas: faltasDoFrame,
+  });
+  const opcoesDoFrame: Record<string, string[]> = motivoDoVolume ? { VOLUME: ["1", "2", "3", "4"] } : {};
+  const dadosDoFrame = {
+    layout: layoutDoModelo,
+    prefeitura: semPrefeitura ? null : prefeitura,
+    campos: CAMPOS_DO_FRAME,
+    valores: valoresDoFramePlano,
+    derivados: derivadosDoFrame,
+    destaques: destaquesDoPlano,
+    opcoes: opcoesDoFrame,
+    numTomos,
+    tomoInicial,
+  };
+  const frameDoPlano = {
+    ...dadosDoFrame,
+    versao: JSON.stringify({ ...dadosDoFrame, layout: layoutDoModelo.length, campos: undefined, t: mesclado.valores.templateId ?? "" }),
+  };
+
   return (
     <div
       className={`nexodoc-enter rounded-md border ${bordaPlano} bg-card transition-colors duration-[var(--duration-base)] ease-[var(--ease-feedback)]`}
     >
-      <PublicarGeradorDoPlano bloqueio={bloqueioDoGerar} gerando={ocupado} gerar={gerarTudo} />
+      <PublicarGeradorDoPlano bloqueio={bloqueioDoGerar} gerando={ocupado} gerar={gerarTudo} frame={frameDoPlano} editar={aoEditarNoFrame} />
       <div className="flex items-center gap-2 border-b border-border px-3 py-2">
         <FileText className="h-3.5 w-3.5 text-muted-foreground" aria-hidden />
         <span
@@ -920,28 +967,15 @@ export function PlanoDeGeracao({
               prefeitura={semPrefeitura ? null : prefeitura}
               layout={layoutDoModelo}
               campos={CAMPOS_DO_FRAME}
-              valores={valoresDoFrame({ identidade, params: mesclado.valores })}
+              valores={valoresDoFramePlano}
+              destaques={destaquesDoPlano}
+              opcoes={opcoesDoFrame}
               /*
                * O que o carimbo, o arquivo e a divisão já dizem — texto fantasma
                * nos campos editáveis, valor nos derivados. Nunca valor de campo:
                * ali ele impediria apagar.
                */
-              derivados={{
-                // Já quebrada nas linhas em que vai sair impressa — o carimbo
-                // escreve "A - B" numa tira só, e a capa tem duas linhas.
-                NOME_OBRA: textoEmLinhasDaCapa(obra),
-                // O nome padrão da disciplina lida — é o que sai se ninguém
-                // digitar nada, então é o que o campo deve mostrar apagado.
-                TITULO_CAPA: tituloSugerido,
-                CODIGO_EXIBIDO: codigo,
-                MES_ANO: dataDaCapa || "mês corrente",
-                VOLUME: capa?.volume?.trim() || "do arquivo",
-                TOMO:
-                  numTomos > 1
-                    ? `TOMO ${String(tomoInicial).padStart(2, "0")}…`
-                    : "",
-                DISCIPLINA: misto ? resumoDosBlocos(blocos) : "",
-              }}
+              derivados={derivadosDoFrame}
               onChange={aoEditarNoFrame}
             />
           </div>
@@ -1290,20 +1324,35 @@ function PublicarGeradorDoPlano({
   bloqueio,
   gerando,
   gerar,
+  frame,
+  editar,
 }: {
   bloqueio: string | null;
   gerando: boolean;
   gerar: () => Promise<void>;
+  frame: FrameDoPlano;
+  editar: (marcador: string, valor: string) => void;
 }) {
   const dono = useId();
   const { publicarGerador } = useGeradorDoPlano();
   const gerarRef = useRef(gerar);
+  const editarRef = useRef(editar);
+  const frameRef = useRef(frame);
   useEffect(() => {
     gerarRef.current = gerar;
+    editarRef.current = editar;
+    frameRef.current = frame;
   });
+  // O frame entra pela VERSÃO: o objeto é novo a cada render do plano.
+  const versao = frame.versao;
   useEffect(() => {
-    publicarGerador(dono, { bloqueio, gerando }, () => gerarRef.current());
-  }, [publicarGerador, dono, bloqueio, gerando]);
+    publicarGerador(
+      dono,
+      { bloqueio, gerando, frame: frameRef.current },
+      () => gerarRef.current(),
+      (m, v) => editarRef.current(m, v),
+    );
+  }, [publicarGerador, dono, bloqueio, gerando, versao]);
   useEffect(() => () => publicarGerador(dono, null), [publicarGerador, dono]);
   return null;
 }
