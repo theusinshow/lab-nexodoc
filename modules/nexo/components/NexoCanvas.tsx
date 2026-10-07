@@ -20,6 +20,9 @@ import {
   Controls,
   useReactFlow,
   useNodesState,
+  useOnViewportChange,
+  useUpdateNodeInternals,
+  useStoreApi,
   Handle,
   Position,
   MarkerType,
@@ -91,6 +94,8 @@ import { divergenciasPorFolha } from "../lib/conferencia-por-folha";
 import { ColunaDaConferencia, type LinhaDaConferencia } from "./ColunaDaConferencia";
 import { ArtifactThumb } from "./ArtifactThumb";
 import { NavegacaoDoCanvas, type FileiraNavegavel } from "./NavegacaoDoCanvas";
+import { LinhaDoArrasto, type ControleDaLinha } from "./LinhaDoArrasto";
+import { ArestaDaFileira } from "./ArestaDaFileira";
 
 /** Ordem canônica do volume: define o x dos nós e a direção das setas. */
 /*
@@ -278,9 +283,14 @@ function ArtifactNode({ data, selected }: NodeProps<Node<ArtifactNodeData>>) {
           </div>
         )}
       </div>
-      {/* O volume recebe a seta da grade de folhas: entra na altura da primeira linha delas. */}
-      <Handle type="target" position={Position.Left} className="!opacity-0" style={data.kind === "volume" ? { top: 48 } : undefined} />
-      <Handle type="source" position={Position.Right} className="!opacity-0" />
+      {/*
+        AS SETAS CORREM NA LINHA DAS FOLHAS (07/10/2026). Capa, LD e volume são
+        altos e a fileira de folhas é baixa: com a alça no meio do documento, a
+        seta da LD subia ~150 px num vão de 60 e chegava torta na primeira folha.
+        Todas as alças da fileira ficam no meio da primeira linha de folhas.
+      */}
+      <Handle type="target" position={Position.Left} className="!opacity-0" style={{ top: ALTURA_FOLHA / 2 }} />
+      <Handle type="source" position={Position.Right} className="!opacity-0" style={{ top: ALTURA_FOLHA / 2 }} />
     </div>
   );
 
@@ -463,6 +473,12 @@ const nodeTypes = {
   cabeca: CabecaDoTomo,
   volumeVazio: VolumeVazioNode,
 };
+
+/** Até onde a porta da fresta "pega" a ponta do cabo, da porta da folha na mão (unidades do canvas). */
+const RAIO_DO_IMA = LARGURA_FOLHA * 1.6;
+
+/** Toda seta do canvas é da fileira: as pontas saem da caixa do nó, não da alça medida. */
+const edgeTypes = { default: ArestaDaFileira };
 
 const EDITAVEIS: NexoArtifactKind[] = ["capa", "ld", "separatriz"];
 
@@ -775,7 +791,7 @@ function CanvasInterno({
             source: anterior,
             target: it.id,
             data: { volume: idDoVolume },
-            style: { stroke: "var(--ring)", strokeWidth: 1.5, opacity: 0.5 },
+            style: { stroke: "var(--ds-nexo)", strokeWidth: 2, opacity: 0.8 },
             markerEnd: { type: MarkerType.ArrowClosed, color: "var(--ring)" },
           });
         }
@@ -846,7 +862,7 @@ function CanvasInterno({
             source: anterior,
             target: id,
             data: { volume: idDoVolume },
-            style: { stroke: "var(--ring)", strokeWidth: 1.5, opacity: 0.5 },
+            style: { stroke: "var(--ds-nexo)", strokeWidth: 2, opacity: 0.8 },
             markerEnd: { type: MarkerType.ArrowClosed, color: "var(--ring)" },
           });
         }
@@ -869,7 +885,7 @@ function CanvasInterno({
             source: anterior,
             target: id,
             data: { volume: idDoVolume },
-            style: { stroke: "var(--ring)", strokeWidth: 1.5, opacity: 0.35, strokeDasharray: "4 4" },
+            style: { stroke: "var(--ds-nexo)", strokeWidth: 2, opacity: 0.45, strokeDasharray: "4 4" },
             markerEnd: { type: MarkerType.ArrowClosed, color: "var(--ring)" },
           });
         }
@@ -960,15 +976,23 @@ function CanvasInterno({
    * Fica FORA do memo do layout: mudar de fase não pode recalcular o mapa.
    */
   const { fases } = useFasesDaMontagem();
+  /*
+   * Enquanto uma folha está na mão, a seta FIXA presa a ela some: esticada atrás
+   * do arrasto, ela virava uma segunda linha competindo com a do gesto.
+   */
+  const [naMao, setNaMao] = useState<ReadonlySet<string>>(() => new Set());
   const edgesVivas = useMemo(
     () =>
       edges.map((e) => {
+        if (naMao.has(e.source) || naMao.has(e.target)) {
+          return { ...e, style: { ...e.style, opacity: 0 } };
+        }
         const f = fases[(e.data as { volume?: string } | undefined)?.volume ?? ""];
         return f === "juntando" || f === "conferindo"
           ? { ...e, animated: true, style: { ...e.style, stroke: "var(--ds-nexo)", opacity: 0.9 } }
           : e;
       }),
-    [edges, fases],
+    [edges, fases, naMao],
   );
   const derivadosVivos = useMemo(
     () =>
@@ -1054,13 +1078,48 @@ function CanvasInterno({
     [],
   );
 
+  /*
+   * A LINHA DO ARRASTO (Parte 8): só escuta. A origem é o centro das folhas
+   * arrastadas no instante em que saem da grade; a ponta é a folha na mão, e a
+   * fresta — quando há — a atrai.
+   */
+  const linha = useRef<ControleDaLinha>(null);
+  const aoComecarArrasto = useCallback<OnNodeDrag>(
+    (_, no, arrastados) => {
+      if (no.type !== "folha") return;
+      const folhasNaMao = arrastados.filter((n) => n.type === "folha");
+      setNaMao(new Set((folhasNaMao.length > 0 ? folhasNaMao : [no]).map((n) => n.id)));
+      const centros = (folhasNaMao.length > 0 ? folhasNaMao : [no]).map(centroDoNo);
+      // A linha nasce na VAGA que a folha deixou: o centro dela, agora vazio.
+      linha.current?.comecar(
+        {
+          x: centros.reduce((s, c) => s + c.x, 0) / centros.length,
+          y: centros.reduce((s, c) => s + c.y, 0) / centros.length,
+        },
+        centros.length,
+      );
+    },
+    [centroDoNo],
+  );
+
   const aoArrastar = useCallback<OnNodeDrag>(
     (_, no) => {
       if (no.type !== "folha") return;
-      const alvo = alvoDoDrop(centroDoNo(no), fileirasDoDrop, GRADE);
-      setFresta(
-        alvo ? posicaoDaFresta(alvo, fileirasDoDrop, GRADE, ALTURA_FOLHA) : null,
-      );
+      const centro = centroDoNo(no);
+      const alvo = alvoDoDrop(centro, fileirasDoDrop, GRADE);
+      const posicao = alvo ? posicaoDaFresta(alvo, fileirasDoDrop, GRADE, ALTURA_FOLHA) : null;
+      setFresta(posicao);
+      /*
+       * A PONTA SOLTA fica na borda esquerda da folha na mão — no centro ela
+       * ficava escondida sob o cartão. O ÍMÃ só pega perto: `alvoDoDrop` devolve
+       * destino de qualquer distância (a fileira mais próxima), e usá-lo como
+       * raio fazia a linha apontar para uma fresta fora da tela em vez de seguir
+       * o documento. A ponta presa encaixa no TOPO da fresta, que fica visível.
+       */
+      const mao = { x: no.position.x, y: no.position.y + (no.measured?.height ?? ALTURA_FOLHA) / 2 };
+      const porta = posicao ? { x: posicao.x, y: posicao.y + posicao.altura / 2 } : null;
+      const perto = porta && Math.hypot(mao.x - porta.x, mao.y - porta.y) <= RAIO_DO_IMA;
+      linha.current?.mover(mao, perto ? porta : null);
     },
     [centroDoNo, fileirasDoDrop],
   );
@@ -1072,6 +1131,12 @@ function CanvasInterno({
       setFresta(null);
       const centro = centroDoNo(no);
       const alvo = alvoDoDrop(centro, fileirasDoDrop, GRADE);
+      if (no.type === "folha") {
+        // O cabo segue o que o drop FEZ: com destino, conecta na porta da fresta.
+        const posicao = alvo ? posicaoDaFresta(alvo, fileirasDoDrop, GRADE, ALTURA_FOLHA) : null;
+        linha.current?.soltar(posicao ? { x: posicao.x, y: posicao.y + posicao.altura / 2 } : null);
+      }
+      setNaMao(new Set());
       // Sem alvo, nada muda: soltar no vazio não inventa tomo (isso é o 4B). A
       // reconciliação devolve as folhas para a grade.
       if (alvo) {
@@ -1297,13 +1362,16 @@ function CanvasInterno({
         onRestaurarFolhas={onRestaurarFolhas}
       />
       <ReenquadrarAoCrescer quantidade={nodes.length} />
+      <RemedirAlcas ids={idsEmOrdem} />
       <ReactFlow
         nodes={nodes}
         edges={edgesVivas}
         onNodesChange={onNodesChange}
+        onNodeDragStart={aoComecarArrasto}
         onNodeDrag={aoArrastar}
         onNodeDragStop={aoSoltar}
         nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
         colorMode="dark"
         fitView
         fitViewOptions={{ padding: 0.3 }}
@@ -1344,6 +1412,9 @@ function CanvasInterno({
          * Não captura ponteiro: está no meio de um arrasto, e roubar o evento
          * mataria o gesto que ela existe para ajudar.
          */}
+        <ViewportPortal>
+          <LinhaDoArrasto ref={linha} reduzido={Boolean(reduzido)} />
+        </ViewportPortal>
         {fresta && (
           <ViewportPortal>
             <div
@@ -1369,10 +1440,8 @@ function CanvasInterno({
               }}
             >
               <div className="relative h-full w-full">
-                <div className="absolute inset-x-[3px] inset-y-0 rounded-full bg-[var(--primary)] shadow-[0_0_12px_3px_var(--primary)]" />
-                {/* As duas pontas: leem como "entra aqui", não como borda. */}
-                <div className="absolute -top-px left-0 h-[10px] w-full rounded-full bg-[var(--primary)]" />
-                <div className="absolute -bottom-px left-0 h-[10px] w-full rounded-full bg-[var(--primary)]" />
+                {/* A fresta é só a ranhura: o anel e o raio do cabo são o sinal forte. */}
+                <div className="absolute inset-y-[8px] left-1/2 w-[2px] -translate-x-1/2 rounded-full bg-[var(--ds-nexo)] opacity-60" />
               </div>
             </div>
           </ViewportPortal>
@@ -1427,6 +1496,43 @@ function ReenquadrarAoCrescer({ quantidade }: { quantidade: number }) {
     }
     anterior.current = quantidade;
   }, [quantidade, fluxo]);
+  return null;
+}
+
+/**
+ * REMEDE AS ALÇAS quando a vista assenta ou o palco muda de tamanho.
+ *
+ * O React Flow mede a posição de cada alça uma vez e só volta a medir quando o
+ * NÓ muda de tamanho. Medida num momento em que a tela e o zoom guardado não
+ * batem, a alça fica deslocada para sempre: a seta nascia ~30 px fora da capa e
+ * da LD (07/10/2026, visto no navegador do Matheus; não reproduzido no headless).
+ * Remedir no fim de cada movimento e de cada redimensionamento custa uma leitura
+ * de DOM por nó, fora do gesto.
+ */
+function RemedirAlcas({ ids }: { ids: string[] }) {
+  const remedir = useUpdateNodeInternals();
+  const idsRef = useRef(ids);
+  useEffect(() => {
+    idsRef.current = ids;
+  }, [ids]);
+  const tudo = useCallback(() => {
+    if (idsRef.current.length > 0) remedir(idsRef.current);
+  }, [remedir]);
+  useOnViewportChange({ onEnd: tudo });
+  const { domNode } = useStoreApi().getState();
+  useEffect(() => {
+    if (!domNode) return;
+    let raf = 0;
+    const ro = new ResizeObserver(() => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(tudo);
+    });
+    ro.observe(domNode);
+    return () => {
+      ro.disconnect();
+      cancelAnimationFrame(raf);
+    };
+  }, [domNode, tudo]);
   return null;
 }
 
