@@ -10,7 +10,7 @@ import { flushSync } from "react-dom";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { plural } from "@/lib/plural";
-import { haEntregaPendente, retirarEntrega } from "@/lib/entrega-ao-nexo";
+import { retirarEntrega } from "@/lib/entrega-ao-nexo";
 import type { NexoDossieDraft, NexoSlotSuggestion } from "../types";
 import { vincularProjetoDaConversa } from "../lib/projeto-da-auditoria";
 import {
@@ -863,13 +863,17 @@ function NexoWorkspaceInner({
     );
     const nenhumaFolhaLida = okSelos.length === 0;
 
+    const genericas: NexoSlotSuggestion[] = [
+      { label: "Criar a LD e a capa", value: "cria a LD e a capa dessas pranchas", commit: "send" },
+      { label: "Só a LD", value: "cria a LD dessas pranchas", commit: "send" },
+      { label: "Conferir as folhas", value: "confere as folhas", commit: "send" },
+    ];
+    // A tarefa escolhida no Painel vem primeiro: era ela que o campo trazia escrito.
+    const daTarefa: NexoSlotSuggestion[] =
+      tarefa?.precisa === "pranchas" ? [{ label: tarefa.rotulo, value: tarefa.frase, commit: "send" }] : [];
     const suggestions: NexoSlotSuggestion[] = nenhumaFolhaLida
       ? []
-      : [
-          { label: "Criar a LD e a capa", value: "cria a LD e a capa dessas pranchas", commit: "send" },
-          { label: "Só a LD", value: "cria a LD dessas pranchas", commit: "send" },
-          { label: "Conferir as folhas", value: "confere as folhas", commit: "send" },
-        ];
+      : [...daTarefa, ...genericas.filter((s) => !daTarefa.some((d) => d.value === s.value))].slice(0, 3);
     if (hasMemorial) {
       suggestions.push({ label: "Auditar o memorial", value: "audita o memorial", commit: "send" });
     }
@@ -1747,11 +1751,11 @@ function NexoWorkspaceInner({
   const intencaoAplicada = useRef(false);
   useEffect(() => {
     if (intencaoAplicada.current || typeof window === "undefined") return;
-    // A mensagem escrita na busca do topo ganha da intenção: é o mais específico.
-    // Com o arquivo vindo junto (Painel), a leitura já oferece a saída certa: sem frase.
-    // Na tarefa de memorial, a leitura já oferece "Auditar o memorial": a frase no campo sobraria.
-    const partida = partidaPorId(contexto.intencao);
-    const frase = contexto.mensagem ?? (haEntregaPendente() || partida?.precisa === "memorial" ? null : partida?.frase);
+    // Só a mensagem escrita na busca do topo vai para o campo. A intenção NÃO
+    // escreve frase nenhuma (07/10/2026, pedido do Matheus): quem pede o PDF é
+    // o próprio Nexo, no convite da saudação, e depois da leitura os chips já
+    // oferecem a tarefa escolhida em primeiro lugar.
+    const frase = contexto.mensagem;
     if (!frase) return;
     /*
      * `requestAnimationFrame` porque o composer só se registra depois de o

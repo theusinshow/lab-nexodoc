@@ -46,7 +46,7 @@ export const PARTIDAS: readonly Partida[] = [
     frase: "cria a LD e a capa dessas pranchas",
     precisa: "pranchas",
     tela: {
-      convite: "Vamos montar um volume.",
+      convite: "Vamos montar um volume. Me manda as pranchas em PDF.",
       pede: "Solte as pranchas em PDF",
       faz: "O Nexo lê os carimbos e gera a LD, a capa e as separatrizes; com elas prontas, monta o volume.",
       botao: "Escolher as pranchas",
@@ -58,7 +58,7 @@ export const PARTIDAS: readonly Partida[] = [
     frase: "audita o memorial",
     precisa: "memorial",
     tela: {
-      convite: "Vamos auditar um memorial.",
+      convite: "Vamos auditar um memorial. Me manda o memorial em PDF.",
       pede: "Solte o memorial descritivo em PDF",
       faz: "O Nexo lê a capa, mostra a ficha da obra para você conferir e audita o documento contra ela.",
       botao: "Escolher o memorial",
@@ -70,7 +70,7 @@ export const PARTIDAS: readonly Partida[] = [
     frase: "confere as folhas",
     precisa: "pranchas",
     tela: {
-      convite: "Vamos conferir as folhas.",
+      convite: "Vamos conferir as folhas. Me manda as pranchas em PDF.",
       pede: "Solte as pranchas em PDF",
       faz: "O Nexo lê o carimbo de cada folha e confere código, revisão e numeração entre elas.",
       botao: "Escolher as pranchas",
@@ -95,7 +95,7 @@ export const INTENCOES_SO_DE_LINK: readonly Partida[] = [
     frase: "cria a LD dessas pranchas",
     precisa: "pranchas",
     tela: {
-      convite: "Vamos gerar a lista de documentos.",
+      convite: "Vamos gerar a LD. Me manda as pranchas em PDF.",
       pede: "Solte as pranchas em PDF",
       faz: "O Nexo lê os carimbos e monta a LD com o título, o código e a revisão de cada folha.",
       botao: "Escolher as pranchas",
@@ -107,7 +107,7 @@ export const INTENCOES_SO_DE_LINK: readonly Partida[] = [
     frase: "cria a capa dessas pranchas",
     precisa: "pranchas",
     tela: {
-      convite: "Vamos gerar a capa.",
+      convite: "Vamos gerar a capa. Me manda as pranchas em PDF.",
       pede: "Solte as pranchas em PDF",
       faz: "O Nexo lê os carimbos e preenche a capa da prefeitura com a obra, o código e a data.",
       botao: "Escolher as pranchas",
