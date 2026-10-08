@@ -5,7 +5,7 @@
  */
 import assert from "node:assert/strict";
 
-import { alturasDosPinos, faixasPorLinha, segmentosPorItem } from "../lib/faixas-do-grifo.ts";
+import { alturasDosPinos, caixasPelaGeometria, faixasPorLinha, segmentosPorItem } from "../lib/faixas-do-grifo.ts";
 
 let passed = 0;
 function test(name: string, fn: () => void) {
@@ -99,6 +99,34 @@ test("pinos na mesma linha não se cobrem", () => {
   assert.equal(r.get(0), 100);
   assert.equal(r.get(1), 124);
   assert.equal(r.get(2), 300);
+});
+
+// A vista do pdf.js para uma folha A4 (595×842) em escala 1: inverte o eixo y.
+const VISTA = { transform: [1, 0, 0, -1, 0, 842], scale: 1 };
+
+test("a geometria põe o item onde o pdf.js põe o span", () => {
+  // Fonte de 10 pt na linha de base y=90 (de baixo), x=60; ascendente 0,8.
+  const itens = [{ str: "trecho de conferencia 3", transform: [10, 0, 0, 10, 60, 90], width: 110, fontName: "f1" }];
+  const r = caixasPelaGeometria(itens, new Map([[0, [{ inicio: 0, fim: 23, grifo: 0 }]]]), VISTA, () => 0.8);
+  assert.deepEqual(r.get(0), [{ x: 60, y: 842 - 90 - 8, w: 110, h: 10 }]);
+});
+
+test("o recorte dentro do item é proporcional aos caracteres", () => {
+  const itens = [{ str: "abcdefghij", transform: [10, 0, 0, 10, 0, 100], width: 100 }];
+  const [c] = caixasPelaGeometria(itens, new Map([[0, [{ inicio: 2, fim: 5, grifo: 1 }]]]), VISTA, () => 0.8).get(1)!;
+  assert.equal(c.x, 20);
+  assert.equal(c.w, 30);
+});
+
+test("a escala da vista multiplica posição e largura", () => {
+  const itens = [{ str: "ab", transform: [10, 0, 0, 10, 60, 90], width: 20 }];
+  const [c] = caixasPelaGeometria(itens, new Map([[0, [{ inicio: 0, fim: 2, grifo: 0 }]]]), { transform: [2, 0, 0, -2, 0, 1684], scale: 2 }, () => 0.8).get(0)!;
+  assert.deepEqual(c, { x: 120, y: 1684 - 180 - 16, w: 40, h: 20 });
+});
+
+test("texto girado fica de fora (espera a camada)", () => {
+  const itens = [{ str: "CARIMBO", transform: [0, 10, -10, 0, 500, 100], width: 70 }];
+  assert.equal(caixasPelaGeometria(itens, new Map([[0, [{ inicio: 0, fim: 7, grifo: 0 }]]]), VISTA, () => 0.8).size, 0);
 });
 
 console.log(`\n${passed} ok`);

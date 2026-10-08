@@ -102,3 +102,55 @@ export function alturasDosPinos(primeiras: readonly { grifo: number; y: number }
   }
   return saida;
 }
+
+/** O que a geometria precisa de cada item do `getTextContent` do pdf.js. */
+export type ItemComGeometria = { str: string; transform: readonly number[]; width: number; fontName?: string };
+
+/** `Util.transform` do pdf.js: compõe duas matrizes [a, b, c, d, e, f]. */
+function compor(m1: readonly number[], m2: readonly number[]): number[] {
+  return [
+    m1[0] * m2[0] + m1[2] * m2[1],
+    m1[1] * m2[0] + m1[3] * m2[1],
+    m1[0] * m2[2] + m1[2] * m2[3],
+    m1[1] * m2[2] + m1[3] * m2[3],
+    m1[0] * m2[4] + m1[2] * m2[5] + m1[4],
+    m1[1] * m2[4] + m1[3] * m2[5] + m1[5],
+  ];
+}
+
+/**
+ * O GRIFO ANTES DA CAMADA DE TEXTO (08/10/2026). A camada do react-pdf mede
+ * palavra por palavra e leva de 250 a 450 ms por página; as marcas só existem
+ * depois dela. Mas o lugar de cada item já vem no `getTextContent`, junto com a
+ * folha: com a mesma conta que o pdf.js faz para posicionar o span (matriz da
+ * vista × matriz do item, topo = linha de base − ascendente × altura da
+ * fonte), a faixa aparece logo. O recorte DENTRO de um item é proporcional ao
+ * número de caracteres — aproximado; quando a camada chega, as caixas reais
+ * das marcas substituem estas.
+ *
+ * Texto girado (vertical, carimbo) fica de fora: a faixa espera a camada.
+ */
+export function caixasPelaGeometria(
+  itens: readonly ItemComGeometria[],
+  segmentos: ReadonlyMap<number, readonly Segmento[]>,
+  vista: { transform: readonly number[]; scale: number },
+  ascendente: (fonte: string | undefined) => number,
+): Map<number, Caixa[]> {
+  const porGrifo = new Map<number, Caixa[]>();
+  for (const [indice, trechos] of segmentos) {
+    const item = itens[indice];
+    if (!item || !item.str.length) continue;
+    const m = compor(vista.transform, item.transform);
+    // Girado: a conta horizontal não vale.
+    if (Math.abs(m[1]) > 1e-3 || Math.abs(m[2]) > 1e-3) continue;
+    const altura = Math.hypot(m[2], m[3]);
+    const topo = m[5] - altura * ascendente(item.fontName);
+    const largura = item.width * vista.scale;
+    for (const { inicio, fim, grifo } of trechos) {
+      const lista = porGrifo.get(grifo) ?? [];
+      lista.push({ x: m[4] + (largura * inicio) / item.str.length, y: topo, w: (largura * (fim - inicio)) / item.str.length, h: altura });
+      porGrifo.set(grifo, lista);
+    }
+  }
+  return porGrifo;
+}

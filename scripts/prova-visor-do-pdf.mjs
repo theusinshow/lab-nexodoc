@@ -246,6 +246,13 @@ try {
   // O achado entre páginas troca o "Ver no memorial" pelos chips "p. 3", "p. 7";
   // M abre o visor nos dois casos.
   await page.getByText("Achado semeado.").first().waitFor({ timeout: 15000 });
+  // A prévia do trecho, no detalhe do achado, divide o PDF com o visor (pdf-compartilhado).
+  const previa = page.locator(".rs-previa").first();
+  if (await previa.count()) {
+    await previa.scrollIntoViewIfNeeded();
+    await page.waitForFunction(() => document.querySelector(".rs-previa .grifo-faixa--ativo"), null, { timeout: 15000 }).catch(() => {});
+    check("a prévia do trecho no detalhe também grifa", (await page.locator(".rs-previa .grifo-faixa--ativo").count()) > 0);
+  } else check("a prévia do trecho existe no detalhe do achado", false);
   await page.evaluate(() => document.activeElement instanceof HTMLElement && document.activeElement.blur());
   await page.keyboard.press("m");
   await visor.waitFor({ timeout: 15000 });

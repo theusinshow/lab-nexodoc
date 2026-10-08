@@ -1,9 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { Document, Page, pdfjs } from "react-pdf";
+import { Page, pdfjs } from "react-pdf";
 import { Skeleton } from "@/components/ui/skeleton";
-import { alturasDosPinos, faixasPorLinha, segmentosPorItem, type Caixa } from "@/lib/faixas-do-grifo";
+import { alturasDosPinos, caixasPelaGeometria, faixasPorLinha, segmentosPorItem, type Caixa, type ItemComGeometria } from "@/lib/faixas-do-grifo";
+import { usePdfCompartilhado } from "./pdf-compartilhado";
 import { marcacaoDoTrecho, type FaixasDaMarcacao } from "@/lib/marcacao-do-trecho";
 import type { ItemDeTexto } from "@/lib/texto-do-pdf";
 
@@ -151,8 +152,17 @@ export default function AuditPdfViewerInternal({
   balao,
   largura = LARGURA_BASE_DA_PAGINA,
 }: AuditPdfViewerInternalProps) {
-  const [numPages, setNumPages] = useState(0);
+  // O documento é emprestado de `pdf-compartilhado`: a prévia, o visor e o
+  // lado a lado abrem o mesmo memorial uma vez só.
+  const pdf = usePdfCompartilhado(url);
+  const numPages = pdf ? pdf.numPages : 0;
+  useEffect(() => {
+    if (pdf) onNumPages?.(pdf.numPages);
+  }, [pdf, onNumPages]);
   const [itens, setItens] = useState<ItemDeTexto[] | null>(null);
+  // A folha carregada (para a geometria) e o ascendente de cada fonte dela.
+  const [folhaPdf, setFolhaPdf] = useState<{ numero: number; pagina: { getViewport: (p: { scale: number }) => { transform: number[]; scale: number; width: number; height: number } } } | null>(null);
+  const [ascendentes, setAscendentes] = useState<Record<string, number>>({});
   const caixa = useRef<HTMLDivElement>(null);
   const candidatos = useMemo(
     () => (typeof highlight === "string" ? [highlight] : (highlight ?? [])).map((t) => t.trim()).filter((t) => t.length >= 3),
@@ -197,7 +207,8 @@ export default function AuditPdfViewerInternal({
    */
   const rolarAteOGrifo = useCallback(() => {
     if (!faixas || faixas.size === 0) return;
-    const marca = caixa.current?.querySelector('mark[data-g="0"]');
+    // A faixa chega antes da marca (ver "o grifo antes da camada"); a marca é o reserva.
+    const marca = caixa.current?.querySelector(".grifo-faixa--ativo") ?? caixa.current?.querySelector('mark[data-g="0"]');
     if (!marca) return;
     if (rolagem === "contida") {
       const janela = caixa.current?.closest<HTMLElement>("[data-previa]");
@@ -220,11 +231,31 @@ export default function AuditPdfViewerInternal({
    * A faixa se pinta da esquerda para a direita UMA vez quando o grifo chega
    * (página ou trecho novos). Zoom só remede: a mesma marca não chega de novo.
    */
-  const [desenho, setDesenho] = useState<{ chave: string; grupos: { grifo: number; faixas: Caixa[] }[]; pintar: boolean; largura: number; altura: number } | null>(null);
+  const [desenho, setDesenho] = useState<{
+    chave: string;
+    grupos: { grifo: number; faixas: Caixa[] }[];
+    pintar: boolean;
+    largura: number;
+    altura: number;
+    /** Pela geometria do texto, antes da camada: as marcas ainda vão acertar o contorno. */
+    estimado: boolean;
+  } | null>(null);
   const ultimaPintada = useRef("");
   const chaveDoDesenho = `${page}|${needle}|${chaveDosOutros}`;
+  const publicar = useCallback(
+    (porGrifo: Map<number, Caixa[]>, largura: number, altura: number, estimado: boolean) => {
+      const doAtivo = `${page}|${needle}`;
+      const chave = `${page}|${needle}|${chaveDosOutros}`;
+      const grupos = [...porGrifo].sort(([a], [b]) => a - b).map(([grifo, caixas]) => ({ grifo, faixas: faixasPorLinha(caixas) }));
+      // Só o ATIVO chegando pinta: trocar os outros ou o zoom não é chegada.
+      const chega = porGrifo.has(0) && ultimaPintada.current !== doAtivo;
+      if (porGrifo.has(0)) ultimaPintada.current = doAtivo;
+      // O contorno exato que substitui o estimado continua a MESMA chegada: a pintura não recomeça.
+      setDesenho((antes) => ({ chave, grupos, pintar: chega || Boolean(antes?.estimado && antes.chave === chave && antes.pintar), largura, altura, estimado }));
+    },
+    [page, needle, chaveDosOutros],
+  );
   const medirOGrifo = useCallback(() => {
-    const doAtivo = `${page}|${needle}`;
     const marcas = [...(caixa.current?.querySelectorAll<HTMLElement>(".textLayer mark[data-g]") ?? [])];
     const folha = marcas[0]?.closest<HTMLElement>(".react-pdf__Page");
     if (!folha) {
@@ -242,12 +273,8 @@ export default function AuditPdfViewerInternal({
       for (const r of m.getClientRects()) lista.push({ x: (r.left - f.left) / escala, y: (r.top - f.top) / escala, w: r.width / escala, h: r.height / escala });
       porGrifo.set(g, lista);
     }
-    const grupos = [...porGrifo].sort(([a], [b]) => a - b).map(([grifo, caixas]) => ({ grifo, faixas: faixasPorLinha(caixas) }));
-    // Só o ATIVO chegando pinta: trocar os outros ou o zoom não é chegada.
-    const pintar = porGrifo.has(0) && ultimaPintada.current !== doAtivo;
-    if (porGrifo.has(0)) ultimaPintada.current = doAtivo;
-    setDesenho({ chave: `${page}|${needle}|${chaveDosOutros}`, grupos, pintar, largura: folha.offsetWidth, altura: folha.offsetHeight });
-  }, [page, needle, chaveDosOutros]);
+    publicar(porGrifo, folha.offsetWidth, folha.offsetHeight, false);
+  }, [publicar]);
 
   /*
    * AS MARCAS SEM REDESENHAR A CAMADA (08/10/2026). As marcas entravam pelo
@@ -300,16 +327,34 @@ export default function AuditPdfViewerInternal({
     camadaPronta.current = false;
   }, [page, zoom, largura]);
 
+  /*
+   * O GRIFO ANTES DA CAMADA (08/10/2026): os itens chegam junto com a folha, e a
+   * camada de texto leva de 250 a 450 ms depois disso. Enquanto ela não vem, a
+   * faixa sai da geometria dos itens (`caixasPelaGeometria`); quando ela chega,
+   * as caixas reais das marcas acertam o contorno.
+   */
+  useEffect(() => {
+    if (camadaPronta.current || !itens || paginaDosItens !== page || !folhaPdf || folhaPdf.numero !== page || segmentos.size === 0) return;
+    const base = folhaPdf.pagina.getViewport({ scale: 1 });
+    const vista = folhaPdf.pagina.getViewport({ scale: (largura * zoom) / base.width });
+    const porGrifo = caixasPelaGeometria(itens as unknown as ItemComGeometria[], segmentos, vista, (fonte) => ascendentes[fonte ?? ""] ?? 0.8);
+    if (porGrifo.size > 0) publicar(porGrifo, vista.width, vista.height, true);
+  }, [itens, paginaDosItens, page, folhaPdf, segmentos, largura, zoom, ascendentes, publicar]);
+
   // Trechos novos sobre a camada já desenhada: só as marcas mudam.
   useEffect(() => {
     if (!camadaPronta.current || !aplicarMarcas()) return;
     medirOGrifo();
-    const doAtivo = `${page}|${needle}`;
-    if (ultimoRolado.current !== doAtivo) {
-      ultimoRolado.current = doAtivo;
-      rolarAteOGrifo();
-    }
-  }, [aplicarMarcas, medirOGrifo, rolarAteOGrifo, page, needle]);
+  }, [aplicarMarcas, medirOGrifo]);
+
+  // Rola até o grifo quando ele chega (página, trecho, zoom) — pela primeira faixa, estimada ou exata.
+  const chaveDaRolagem = `${page}|${needle}|${zoom}|${largura}`;
+  useEffect(() => {
+    if (!desenho || desenho.chave !== chaveDoDesenho || !desenho.grupos.some((g) => g.grifo === 0)) return;
+    if (ultimoRolado.current === chaveDaRolagem) return;
+    ultimoRolado.current = chaveDaRolagem;
+    rolarAteOGrifo();
+  }, [desenho, chaveDoDesenho, chaveDaRolagem, rolarAteOGrifo]);
 
   // O aviso da camada desenhada é ESTÁVEL: ele também está nas dependências do
   // efeito que desenha a camada, e um aviso novo a cada render a redesenharia.
@@ -317,10 +362,7 @@ export default function AuditPdfViewerInternal({
   useEffect(() => {
     aoPintar.current = () => {
       camadaPronta.current = true;
-      if (!aplicarMarcas()) return;
-      medirOGrifo();
-      ultimoRolado.current = `${page}|${needle}`;
-      rolarAteOGrifo();
+      if (aplicarMarcas()) medirOGrifo();
     };
   });
   const aoPintarOTexto = useCallback(() => aoPintar.current(), []);
@@ -369,26 +411,20 @@ export default function AuditPdfViewerInternal({
 
   return (
     <div ref={caixa} className="contents" data-grifo-tom={tom}>
-    <Document
-      file={url}
-      onLoadSuccess={(pdf) => {
-        setNumPages(pdf.numPages);
-        onNumPages?.(pdf.numPages);
-      }}
-      loading={
-        <div className="p-3">
-          <Skeleton className="mx-auto h-[70vh] w-full max-w-[560px]" />
-        </div>
-      }
-      error={
-        <div className="p-6 text-sm text-muted-foreground">
-          Não foi possível abrir o PDF nesta sessão.
-        </div>
-      }
-      className="flex flex-col items-center"
-    >
+    {pdf === null ? (
+      <div className="p-3">
+        <Skeleton className="mx-auto h-[70vh] w-full max-w-[560px]" />
+      </div>
+    ) : pdf === false ? (
+      <div className="p-6 text-sm text-muted-foreground">
+        Não foi possível abrir o PDF nesta sessão.
+      </div>
+    ) : (
+    <div className="flex flex-col items-center">
       <Page
+        pdf={pdf}
         pageNumber={safePage}
+        onLoadSuccess={(folha) => setFolhaPdf({ numero: folha.pageNumber, pagina: folha })}
         width={Math.round(largura * zoom)}
         onGetTextSuccess={(conteudo) => {
           /*
@@ -403,6 +439,8 @@ export default function AuditPdfViewerInternal({
           ) as unknown as ItemDeTexto[];
           setItens(lidos);
           setPaginaDosItens(safePage);
+          const estilos = (conteudo as { styles?: Record<string, { ascent?: number; descent?: number }> }).styles ?? {};
+          setAscendentes(Object.fromEntries(Object.entries(estilos).map(([nome, e]) => [nome, e.ascent ? e.ascent : e.descent ? 1 + e.descent : 0.8])));
         }}
         onRenderTextLayerSuccess={aoPintarOTexto}
         renderAnnotationLayer={false}
@@ -458,7 +496,8 @@ export default function AuditPdfViewerInternal({
           </div>
         )}
       </Page>
-    </Document>
+    </div>
+    )}
     </div>
   );
 }
