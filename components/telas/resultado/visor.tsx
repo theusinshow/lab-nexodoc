@@ -8,11 +8,12 @@
  * entre as páginas DO achado aberto; + − ampliam; Esc fecha.
  */
 import { AnimatePresence, motion } from "motion/react";
-import { ArrowRight, ArrowUp, ChevronLeft, ChevronRight, Minus, Plus, SearchX, X } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ChevronLeft, ChevronRight, Minus, Plus, SearchX, X } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
+import type { GrifoDeOutro } from "@/components/audit-pdf-viewer-internal";
 import { Botao, Orbe, Tecla } from "@/components/ds/basicos";
 import { CURVA } from "@/lib/ds/movimento";
 import { candidatosDoGrifo, porQueSemGrifo, type FolhasSemCamada } from "@/lib/grifo-do-achado";
@@ -107,6 +108,65 @@ function ChatNoVisor({ chat, achado, pagina }: { chat: ChatDoVisor; achado: Acha
     </section>
   );
 }
+/*
+ * O GRIFO FORA DA VISTA (08/10/2026). Com zoom, a pessoa rola para ler o
+ * entorno e o trecho do achado sai da mesa. Uma seta na borda diz para que
+ * lado ele ficou; clicar (ou G) traz de volta.
+ */
+type LadoDoGrifo = "acima" | "abaixo" | "esquerda" | "direita";
+function ondeEstaOGrifo(mesa: HTMLElement): LadoDoGrifo | null {
+  const faixa = mesa.querySelector(".grifo-faixa--ativo");
+  if (!faixa) return null;
+  const f = faixa.getBoundingClientRect();
+  const m = mesa.getBoundingClientRect();
+  if (f.bottom < m.top + 8) return "acima";
+  if (f.top > m.bottom - 8) return "abaixo";
+  if (f.right < m.left + 8) return "esquerda";
+  if (f.left > m.right - 8) return "direita";
+  return null;
+}
+function voltarAoGrifo(mesa: HTMLElement | null) {
+  mesa?.querySelector(".grifo-faixa--ativo")?.scrollIntoView({ block: "center", inline: "center", behavior: "smooth" });
+}
+const SETA_DO_LADO = { acima: ArrowUp, abaixo: ArrowDown, esquerda: ArrowLeft, direita: ArrowRight } as const;
+
+function GrifoForaDaVista({ mesa, rotulo }: { mesa: React.RefObject<HTMLDivElement | null>; rotulo: string }) {
+  const [lado, setLado] = useState<LadoDoGrifo | null>(null);
+  useEffect(() => {
+    const m = mesa.current;
+    if (!m) return;
+    let quadro = 0;
+    const medir = () => {
+      cancelAnimationFrame(quadro);
+      quadro = requestAnimationFrame(() => setLado(ondeEstaOGrifo(m)));
+    };
+    medir();
+    m.addEventListener("scroll", medir, { passive: true });
+    window.addEventListener("resize", medir);
+    // A faixa nasce e muda depois que a camada de texto pinta (página, zoom, achado).
+    const obs = new MutationObserver(medir);
+    obs.observe(m, { childList: true, subtree: true });
+    return () => {
+      cancelAnimationFrame(quadro);
+      m.removeEventListener("scroll", medir);
+      window.removeEventListener("resize", medir);
+      obs.disconnect();
+    };
+  }, [mesa]);
+  if (!lado) return null;
+  const Seta = SETA_DO_LADO[lado];
+  return (
+    <button type="button" className={`vm-grifo-fora vm-grifo-fora--${lado}`} onClick={() => voltarAoGrifo(mesa.current)} title="Voltar ao grifo (G)">
+      <Seta size={14} strokeWidth={2} aria-hidden />
+      Grifo do {rotulo} {lado === "acima" || lado === "abaixo" ? lado : `à ${lado}`}
+      <Tecla>G</Tecla>
+    </button>
+  );
+}
+
+/** O número curto do achado no pino da folha: "ACH-007" vira "7". */
+const rotuloDoPino = (id: string) => id.replace(/^\D*0*/, "") || id;
+
 /** "Página [12] de 40": digitar o número e Enter leva até ela. */
 function IrParaPagina({ pagina, total, onIr }: { pagina: number; total: number; onIr: (p: number) => void }) {
   const [texto, setTexto] = useState<string | null>(null);
@@ -173,6 +233,9 @@ export function VisorDoMemorial({
   const [ativo, setAtivo] = useState(primeiro?.chave ?? "");
   const [zoom, setZoom] = useState(1);
   const [total, setTotal] = useState(0);
+  // O achado sob o mouse, na lista ou no pino: o grifo dele acende na folha.
+  const [sobre, setSobre] = useState<string | null>(null);
+  const mesaRef = useRef<HTMLDivElement>(null);
 
   /*
    * O GRIFO PODE ESTAR EM OUTRA PÁGINA DO ACHADO: ele cita "1, 2" e o trecho
@@ -200,6 +263,10 @@ export function VisorDoMemorial({
   // trecho da p. 22, e não o da p. 10 (ver lib/grifo-do-achado.ts).
   // Sem memo: o visor do PDF já reduz a lista a uma chave estável (`needle`).
   const grifo = doAtivo ? candidatosDoGrifo(doAtivo.bruto, pagina) : undefined;
+  // Os OUTROS achados desta página, grifados mais fracos, cada um no seu tom.
+  const outros: GrifoDeOutro[] = daPagina
+    .filter((a) => a.chave !== doAtivo?.chave)
+    .map((a) => ({ chave: a.chave, tom: a.nivel, rotulo: rotuloDoPino(a.id), titulo: `${a.id} · ${a.titulo}`, candidatos: candidatosDoGrifo(a.bruto, pagina) }));
 
   /*
    * FOLHEAR NÃO TROCA DE ACHADO (07/10/2026). `ir` escolhia o primeiro achado
@@ -252,6 +319,7 @@ export function VisorDoMemorial({
       else if (e.key === "-" && !e.ctrlKey && !e.metaKey) zoomPasso(-1);
       else if (e.key.toLowerCase() === "j" && !e.ctrlKey && !e.metaKey) vizinha(1);
       else if (e.key.toLowerCase() === "k" && !e.ctrlKey && !e.metaKey) vizinha(-1);
+      else if (e.key.toLowerCase() === "g" && !e.ctrlKey && !e.metaKey) voltarAoGrifo(mesaRef.current);
     };
     document.addEventListener("keydown", tecla, true);
     return () => document.removeEventListener("keydown", tecla, true);
@@ -331,7 +399,8 @@ export function VisorDoMemorial({
                   </Botao>
                 </nav>
               )}
-              <div className="vm-mesa vm-mesa--pdf">
+              <div className="vm-mesa-moldura">
+              <div ref={mesaRef} className="vm-mesa vm-mesa--pdf">
                 {url ? (
                   <div className="vm-pdf">
                     {!procurando && casou?.pagina === pagina && !casou.achou && grifo?.length ? (
@@ -340,7 +409,20 @@ export function VisorDoMemorial({
                         <span>{porQueSemGrifo(pagina, folhas)}</span>
                       </p>
                     ) : null}
-                    <AuditPdfViewer url={url} page={pagina} highlight={grifo} tom={doAtivo?.nivel} zoom={zoom} onNumPages={setTotal} onGrifo={aoGrifo} />
+                    <AuditPdfViewer
+                      url={url}
+                      page={pagina}
+                      highlight={grifo}
+                      tom={doAtivo?.nivel}
+                      outros={outros}
+                      pinoDoAtivo={doAtivo ? { chave: doAtivo.chave, rotulo: rotuloDoPino(doAtivo.id), titulo: `${doAtivo.id} · ${doAtivo.titulo}` } : undefined}
+                      onEscolher={setAtivo}
+                      realce={sobre}
+                      onRealce={setSobre}
+                      zoom={zoom}
+                      onNumPages={setTotal}
+                      onGrifo={aoGrifo}
+                    />
                     {/* No pé da folha, onde a leitura acaba: o achado continua adiante. */}
                     {proximaDoAtivo && doAtivo && (
                       <Botao variante="ghost" tamanho="sm" className={`vm-continua vm--${doAtivo.nivel}`} onClick={() => ir(proximaDoAtivo)}>
@@ -352,13 +434,22 @@ export function VisorDoMemorial({
                   <p className="vm-sem">O arquivo deste memorial não está nesta máquina. Anexe-o de novo na conversa para ver o trecho na página.</p>
                 )}
               </div>
+              {url && doAtivo && <GrifoForaDaVista mesa={mesaRef} rotulo={doAtivo.id} />}
+              </div>
               {chat && <ChatNoVisor chat={chat} achado={doAtivo} pagina={pagina} />}
               </div>
 
               <aside className="vm-lado">
                 <h3>{daPagina.length ? `Nesta página, ${daPagina.length === 1 ? "1 achado" : `${daPagina.length} achados`}` : "Nesta página"}</h3>
                 {daPagina.map((a) => (
-                  <button key={a.chave} type="button" className={`vm-achado vm--${nivelDe(a)}${a.chave === doAtivo?.chave ? " vm-achado--ativo" : ""}`} onClick={() => setAtivo(a.chave)}>
+                  <button
+                    key={a.chave}
+                    type="button"
+                    className={`vm-achado vm--${nivelDe(a)}${a.chave === doAtivo?.chave ? " vm-achado--ativo" : ""}${a.chave === sobre ? " vm-achado--sobre" : ""}`}
+                    onClick={() => setAtivo(a.chave)}
+                    onMouseEnter={() => setSobre(a.chave)}
+                    onMouseLeave={() => setSobre(null)}
+                  >
                     <span className="vm-achado-id">
                       <i /> {a.id} <small>{NIVEIS.find((x) => x.id === a.nivel)?.nome}</small>
                     </span>
@@ -399,7 +490,7 @@ export function VisorDoMemorial({
                     })}
                   </div>
                   <p className="rs-nota">
-                    <Tecla>J</Tecla> <Tecla>K</Tecla> entre elas, <Tecla>←</Tecla> <Tecla>→</Tecla> folheia, <Tecla>Shift</Tecla> <Tecla>→</Tecla> segue o achado, <Tecla>+</Tecla> <Tecla>−</Tecla> zoom
+                    <Tecla>J</Tecla> <Tecla>K</Tecla> entre elas, <Tecla>←</Tecla> <Tecla>→</Tecla> folheia, <Tecla>Shift</Tecla> <Tecla>→</Tecla> segue o achado, <Tecla>+</Tecla> <Tecla>−</Tecla> zoom, <Tecla>G</Tecla> volta ao grifo
                   </p>
                 </div>
               </aside>

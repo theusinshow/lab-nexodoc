@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import { Skeleton } from "@/components/ui/skeleton";
-import { faixasPorLinha, type Caixa } from "@/lib/faixas-do-grifo";
+import { alturasDosPinos, faixasPorLinha, segmentosPorItem, type Caixa } from "@/lib/faixas-do-grifo";
 import { marcacaoDoTrecho, type FaixasDaMarcacao } from "@/lib/marcacao-do-trecho";
 import type { ItemDeTexto } from "@/lib/texto-do-pdf";
 
@@ -24,6 +24,25 @@ pdfjs.GlobalWorkerOptions.workerSrc = "/assets/pdfjs/pdf.worker.react-pdf.mjs";
  * vez de substituí-lo.
  */
 export const LARGURA_BASE_DA_PAGINA = 520;
+
+/** Outro achado da mesma página: grifo tênue no tom dele, com pino na margem. */
+export type GrifoDeOutro = { chave: string; tom?: string; rotulo: string; titulo: string; candidatos: readonly string[] };
+
+// Separadores da chave estável dos outros achados (não aparecem em texto de PDF).
+const SEP_TERMO = "\u0000";
+const SEP_CHAVE = "\u0002";
+const SEP_ACHADO = "\u0003";
+const TAMANHO_DO_PINO = 20;
+
+/** O primeiro candidato que casa NESTA página (a régua de `marcacaoDoTrecho`). */
+function primeiroQueCasa(itens: ItemDeTexto[], termos: readonly string[]): FaixasDaMarcacao | null {
+  for (const termo of termos) {
+    if (termo.trim().length < 3) continue;
+    const achadas = marcacaoDoTrecho(itens, termo);
+    if (achadas.size > 0) return achadas;
+  }
+  return null;
+}
 
 type AuditPdfViewerInternalProps = {
   url: string;
@@ -59,6 +78,19 @@ type AuditPdfViewerInternalProps = {
    * no tom dela. Sem ela, o amarelo de marca-texto.
    */
   tom?: string;
+  /**
+   * TODOS OS ACHADOS DA PÁGINA (08/10/2026): os outros achados desta folha,
+   * grifados mais fracos, cada um no tom dele. O ativo continua sendo o
+   * `highlight` — e, se dois trechos disputam o mesmo texto, ele ganha.
+   */
+  outros?: readonly GrifoDeOutro[];
+  /** O pino do ativo. Com ele (e `onEscolher`), cada grifo ganha um pino na margem da folha. */
+  pinoDoAtivo?: { chave: string; rotulo: string; titulo: string };
+  /** Clicar no pino de outro achado torna-o o ativo. */
+  onEscolher?: (chave: string) => void;
+  /** O achado sob o mouse (na lista ao lado ou no pino): o grifo dele acende. */
+  realce?: string | null;
+  onRealce?: (chave: string | null) => void;
 };
 
 function escaparHtml(value: string) {
@@ -99,6 +131,11 @@ export default function AuditPdfViewerInternal({
   onGrifo,
   rolagem = "janela",
   tom,
+  outros,
+  pinoDoAtivo,
+  onEscolher,
+  realce,
+  onRealce,
 }: AuditPdfViewerInternalProps) {
   const [numPages, setNumPages] = useState(0);
   const [itens, setItens] = useState<ItemDeTexto[] | null>(null);
@@ -109,6 +146,9 @@ export default function AuditPdfViewerInternal({
   );
   // Chave estável para os efeitos: a lista chega nova a cada render do dono.
   const needle = candidatos.join("\u0000");
+  // A mesma ideia para os outros achados: a lista chega nova a cada render, a
+  // chave só muda quando muda o que grifar.
+  const chaveDosOutros = (outros ?? []).map((o) => `${o.chave}${SEP_CHAVE}${o.candidatos.join(SEP_TERMO)}`).join(SEP_ACHADO);
 
   /*
    * A página muda: os itens da anterior não valem mais. Sem isto o visor
@@ -128,6 +168,14 @@ export default function AuditPdfViewerInternal({
     return new Map() as FaixasDaMarcacao;
   }, [itens, paginaDosItens, page, needle]);
 
+  const faixasDosOutros = useMemo(() => {
+    if (!itens || paginaDosItens !== page || !chaveDosOutros) return [];
+    return chaveDosOutros.split(SEP_ACHADO).map((um) => primeiroQueCasa(itens, um.split(SEP_CHAVE)[1]?.split(SEP_TERMO) ?? []));
+  }, [itens, paginaDosItens, page, chaveDosOutros]);
+
+  // Um pedaço por item, sem sobreposição; o grifo 0 é o ativo.
+  const segmentos = useMemo(() => segmentosPorItem([faixas, ...faixasDosOutros]), [faixas, faixasDosOutros]);
+
   /*
    * ROLAR ATÉ O GRIFO. Com zoom acima de 100% a folha passa da gaveta, e a
    * marca podia estar fora da vista — o visor dizia "achei" e mostrava o topo.
@@ -135,7 +183,7 @@ export default function AuditPdfViewerInternal({
    */
   const rolarAteOGrifo = useCallback(() => {
     if (!faixas || faixas.size === 0) return;
-    const marca = caixa.current?.querySelector("mark");
+    const marca = caixa.current?.querySelector('mark[data-g="0"]');
     if (!marca) return;
     if (rolagem === "contida") {
       const janela = caixa.current?.closest<HTMLElement>("[data-previa]");
@@ -158,13 +206,14 @@ export default function AuditPdfViewerInternal({
    * A faixa se pinta da esquerda para a direita UMA vez quando o grifo chega
    * (página ou trecho novos). Zoom só remede: a mesma marca não chega de novo.
    */
-  const [desenho, setDesenho] = useState<{ chave: string; faixas: Caixa[]; pintar: boolean } | null>(null);
+  const [desenho, setDesenho] = useState<{ chave: string; grupos: { grifo: number; faixas: Caixa[] }[]; pintar: boolean } | null>(null);
   const ultimaPintada = useRef("");
+  const chaveDoDesenho = `${page}|${needle}|${chaveDosOutros}`;
   const medirOGrifo = useCallback(() => {
-    const chave = `${page}|${needle}`;
-    const marcas = [...(caixa.current?.querySelectorAll(".textLayer mark") ?? [])];
+    const doAtivo = `${page}|${needle}`;
+    const marcas = [...(caixa.current?.querySelectorAll<HTMLElement>(".textLayer mark[data-g]") ?? [])];
     const folha = marcas[0]?.closest<HTMLElement>(".react-pdf__Page");
-    if (!folha || !faixas || faixas.size === 0) {
+    if (!folha) {
       setDesenho(null);
       return;
     }
@@ -172,13 +221,19 @@ export default function AuditPdfViewerInternal({
     // Com `zoom` de CSS no caminho (a `.ds` em tela larga), a caixa medida e o
     // px do `position: absolute` diferem; a razão desfaz a diferença.
     const escala = f.width / (folha.offsetWidth || f.width);
-    const caixas: Caixa[] = marcas.flatMap((m) =>
-      [...m.getClientRects()].map((r) => ({ x: (r.left - f.left) / escala, y: (r.top - f.top) / escala, w: r.width / escala, h: r.height / escala })),
-    );
-    const pintar = ultimaPintada.current !== chave;
-    ultimaPintada.current = chave;
-    setDesenho({ chave, faixas: faixasPorLinha(caixas), pintar });
-  }, [page, needle, faixas]);
+    const porGrifo = new Map<number, Caixa[]>();
+    for (const m of marcas) {
+      const g = Number(m.dataset.g);
+      const lista = porGrifo.get(g) ?? [];
+      for (const r of m.getClientRects()) lista.push({ x: (r.left - f.left) / escala, y: (r.top - f.top) / escala, w: r.width / escala, h: r.height / escala });
+      porGrifo.set(g, lista);
+    }
+    const grupos = [...porGrifo].sort(([a], [b]) => a - b).map(([grifo, caixas]) => ({ grifo, faixas: faixasPorLinha(caixas) }));
+    // Só o ATIVO chegando pinta: trocar os outros ou o zoom não é chegada.
+    const pintar = porGrifo.has(0) && ultimaPintada.current !== doAtivo;
+    if (porGrifo.has(0)) ultimaPintada.current = doAtivo;
+    setDesenho({ chave: `${page}|${needle}|${chaveDosOutros}`, grupos, pintar });
+  }, [page, needle, chaveDosOutros]);
 
   const aoPintarOTexto = useCallback(() => {
     medirOGrifo();
@@ -193,7 +248,7 @@ export default function AuditPdfViewerInternal({
 
   const textRenderer = useCallback(
     ({ str, itemIndex }: { str: string; itemIndex: number }) => {
-      const trechos = faixas?.get(itemIndex);
+      const trechos = segmentos.get(itemIndex);
       if (!trechos || trechos.length === 0) return escaparHtml(str);
 
       /*
@@ -204,15 +259,30 @@ export default function AuditPdfViewerInternal({
        */
       let saida = "";
       let cursor = 0;
-      for (const [inicio, fim] of trechos) {
+      for (const { inicio, fim, grifo } of trechos) {
         saida += escaparHtml(str.slice(cursor, inicio));
-        saida += `<mark>${escaparHtml(str.slice(inicio, fim))}</mark>`;
+        saida += `<mark data-g="${grifo}">${escaparHtml(str.slice(inicio, fim))}</mark>`;
         cursor = fim;
       }
       return saida + escaparHtml(str.slice(cursor));
     },
-    [faixas],
+    [segmentos],
   );
+
+  /*
+   * OS PINOS NA MARGEM: um por achado grifado nesta folha, na altura da
+   * primeira linha dele. O do ativo é cheio; os outros, contorno. Clicar num
+   * deles torna aquele achado o ativo — a lista ao lado acende junto.
+   */
+  const pinos =
+    desenho && desenho.chave === chaveDoDesenho && pinoDoAtivo && onEscolher
+      ? (() => {
+          const quem = (g: number) => (g === 0 ? { ...pinoDoAtivo, tom } : outros?.[g - 1]);
+          const primeiras = desenho.grupos.filter((gr) => gr.faixas.length && quem(gr.grifo)).map((gr) => ({ grifo: gr.grifo, y: gr.faixas[0].y + gr.faixas[0].h / 2 - TAMANHO_DO_PINO / 2 }));
+          const alturas = alturasDosPinos(primeiras, TAMANHO_DO_PINO);
+          return primeiras.map(({ grifo }) => ({ grifo, y: alturas.get(grifo) ?? 0, ...quem(grifo)! }));
+        })()
+      : [];
 
   const safePage = numPages > 0 ? Math.min(Math.max(1, page), numPages) : Math.max(1, page);
 
@@ -258,14 +328,47 @@ export default function AuditPdfViewerInternal({
         renderAnnotationLayer={false}
         className="shadow-sm"
       >
-        {desenho && desenho.chave === `${page}|${needle}` && (
+        {desenho && desenho.chave === chaveDoDesenho && (
           <div className="grifo-faixas" aria-hidden>
-            {desenho.faixas.map((r, i) => (
-              <span
-                key={`${desenho.chave}:${i}`}
-                className={desenho.pintar ? "grifo-faixa grifo-faixa--pinta" : "grifo-faixa"}
-                style={{ left: r.x, top: r.y, width: r.w, height: r.h, animationDelay: `${180 + i * 110}ms` }}
-              />
+            {desenho.grupos.flatMap(({ grifo, faixas: doGrifo }) => {
+              const dono = grifo === 0 ? { chave: pinoDoAtivo?.chave, tom } : outros?.[grifo - 1];
+              const classe = [
+                "grifo-faixa",
+                grifo === 0 ? "grifo-faixa--ativo" : "grifo-faixa--outro",
+                grifo === 0 && desenho.pintar ? "grifo-faixa--pinta" : "",
+                dono?.chave && realce === dono.chave ? "grifo-faixa--realce" : "",
+              ]
+                .filter(Boolean)
+                .join(" ");
+              return doGrifo.map((r, i) => (
+                <span
+                  key={`${grifo}:${i}`}
+                  className={classe}
+                  data-tom={dono?.tom}
+                  style={{ left: r.x, top: r.y, width: r.w, height: r.h, animationDelay: `${180 + i * 110}ms` }}
+                />
+              ));
+            })}
+          </div>
+        )}
+        {pinos.length > 0 && (
+          <div className="grifo-pinos">
+            {pinos.map((p) => (
+              <button
+                key={p.chave}
+                type="button"
+                className={`grifo-pino${p.grifo === 0 ? " grifo-pino--ativo" : ""}${realce === p.chave ? " grifo-pino--realce" : ""}`}
+                data-tom={p.tom}
+                style={{ top: p.y }}
+                title={p.titulo}
+                aria-label={p.grifo === 0 ? `${p.titulo} (aberto)` : `Abrir ${p.titulo}`}
+                aria-pressed={p.grifo === 0}
+                onClick={() => p.grifo !== 0 && onEscolher?.(p.chave)}
+                onMouseEnter={() => onRealce?.(p.chave)}
+                onMouseLeave={() => onRealce?.(null)}
+              >
+                {p.rotulo}
+              </button>
             ))}
           </div>
         )}

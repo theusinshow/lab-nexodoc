@@ -5,7 +5,7 @@
  */
 import assert from "node:assert/strict";
 
-import { faixasPorLinha } from "../lib/faixas-do-grifo.ts";
+import { alturasDosPinos, faixasPorLinha, segmentosPorItem } from "../lib/faixas-do-grifo.ts";
 
 let passed = 0;
 function test(name: string, fn: () => void) {
@@ -67,6 +67,38 @@ test("a folga é proporcional à altura da linha", () => {
 
 test("caixa vazia (span sem largura) é ignorada", () => {
   assert.deepEqual(faixasPorLinha([{ x: 10, y: 10, w: 0, h: 10 }]), []);
+});
+
+test("dois achados em itens diferentes ficam cada um com o seu", () => {
+  const r = segmentosPorItem([new Map([[1, [[0, 5]]]]), new Map([[2, [[3, 9]]]])]);
+  assert.deepEqual(r.get(1), [{ inicio: 0, fim: 5, grifo: 0 }]);
+  assert.deepEqual(r.get(2), [{ inicio: 3, fim: 9, grifo: 1 }]);
+});
+
+test("na disputa pelo mesmo caractere, o ativo (0) ganha e o outro fica com o resto", () => {
+  const r = segmentosPorItem([new Map([[1, [[4, 8]]]]), new Map([[1, [[0, 12]]]])]);
+  assert.deepEqual(r.get(1), [
+    { inicio: 0, fim: 4, grifo: 1 },
+    { inicio: 4, fim: 8, grifo: 0 },
+    { inicio: 8, fim: 12, grifo: 1 },
+  ]);
+});
+
+test("o trecho todo coberto pelo ativo some do outro", () => {
+  const r = segmentosPorItem([new Map([[1, [[0, 20]]]]), new Map([[1, [[5, 9]]]])]);
+  assert.deepEqual(r.get(1), [{ inicio: 0, fim: 20, grifo: 0 }]);
+});
+
+test("grifo que não casou (null) não atrapalha os outros", () => {
+  const r = segmentosPorItem([null, new Map([[3, [[0, 2]]]])]);
+  assert.deepEqual(r.get(3), [{ inicio: 0, fim: 2, grifo: 1 }]);
+});
+
+test("pinos na mesma linha não se cobrem", () => {
+  const r = alturasDosPinos([{ grifo: 0, y: 100 }, { grifo: 1, y: 102 }, { grifo: 2, y: 300 }], 20, 4);
+  assert.equal(r.get(0), 100);
+  assert.equal(r.get(1), 124);
+  assert.equal(r.get(2), 300);
 });
 
 console.log(`\n${passed} ok`);

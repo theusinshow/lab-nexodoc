@@ -51,3 +51,54 @@ export function faixasPorLinha(caixas: readonly Caixa[], folga = { x: 0.18, y: 0
       return { x: l.x - fx, y: l.y - fy, w: l.w + 2 * fx, h: l.h + 2 * fy };
     });
 }
+
+/** Um pedaço de item marcado, e de qual grifo ele é (0 = o achado ativo). */
+export type Segmento = { inicio: number; fim: number; grifo: number };
+
+/**
+ * TODOS OS ACHADOS DA PÁGINA (08/10/2026): cada grifo traz as suas faixas de
+ * caractere por item (`marcacaoDoTrecho`); aqui elas viram uma lista só por
+ * item, sem sobreposição. Onde dois trechos disputam o mesmo caractere, ganha
+ * o grifo de índice menor — o ativo é o 0, e é ele que a pessoa está lendo.
+ */
+export function segmentosPorItem(grifos: readonly (ReadonlyMap<number, readonly (readonly [number, number])[]> | null)[]): Map<number, Segmento[]> {
+  const porItem = new Map<number, Segmento[]>();
+  grifos.forEach((faixas, grifo) => {
+    if (!faixas) return;
+    for (const [item, trechos] of faixas) {
+      const ja = porItem.get(item) ?? [];
+      for (const [ini, fim] of trechos) {
+        // O que sobra deste trecho depois de tirar o que um grifo anterior já tomou.
+        let livres: [number, number][] = [[ini, fim]];
+        for (const s of ja) {
+          livres = livres.flatMap(([a, b]): [number, number][] => {
+            if (s.fim <= a || s.inicio >= b) return [[a, b]];
+            const resto: [number, number][] = [];
+            if (s.inicio > a) resto.push([a, s.inicio]);
+            if (s.fim < b) resto.push([s.fim, b]);
+            return resto;
+          });
+        }
+        for (const [a, b] of livres) if (b > a) ja.push({ inicio: a, fim: b, grifo });
+      }
+      porItem.set(item, ja);
+    }
+  });
+  for (const lista of porItem.values()) lista.sort((x, y) => x.inicio - y.inicio);
+  return porItem;
+}
+
+/**
+ * Os pinos na margem: um por grifo, na altura da primeira faixa dele, sem um
+ * cobrir o outro (dois achados na mesma linha descem o segundo).
+ */
+export function alturasDosPinos(primeiras: readonly { grifo: number; y: number }[], tamanho: number, vao = 4): Map<number, number> {
+  const saida = new Map<number, number>();
+  let livreDesde = -Infinity;
+  for (const p of [...primeiras].sort((a, b) => a.y - b.y || a.grifo - b.grifo)) {
+    const y = Math.max(p.y, livreDesde);
+    saida.set(p.grifo, y);
+    livreDesde = y + tamanho + vao;
+  }
+  return saida;
+}

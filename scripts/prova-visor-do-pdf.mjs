@@ -27,9 +27,12 @@ fs.mkdirSync(OUT, { recursive: true });
 
 const PAGINAS = 12;
 // INC-001 está em DUAS páginas (3 e 7): é ele que exercita Shift+→.
+// INC-003 divide a p. 3 com o INC-001: é ele que exercita os grifos dos OUTROS
+// achados da página e o pino na margem.
 const ACHADOS = [
   { id: "INC-001", paginas: [3, 7] },
   { id: "INC-002", paginas: [11] },
+  { id: "INC-003", paginas: [3], trecho: "linha 5 da pagina 3 com texto" },
 ];
 // Uma folha SEM achado nenhum.
 const PAGINA_ORFA = 5;
@@ -89,15 +92,18 @@ const grifo = () =>
   page.evaluate(() => {
     const folha = document.querySelector(".vm-pdf .react-pdf__Page");
     if (!folha) return null;
-    const faixas = [...folha.querySelectorAll(".grifo-faixa")].map((f) => {
+    const faixas = [...folha.querySelectorAll(".grifo-faixa--ativo")].map((f) => {
       const r = f.getBoundingClientRect();
       return { x: r.left, y: r.top, d: r.right, b: r.bottom, pinta: f.classList.contains("grifo-faixa--pinta"), cor: getComputedStyle(f).backgroundColor };
     });
-    const marcas = [...folha.querySelectorAll(".textLayer mark")].flatMap((m) => [...m.getClientRects()]);
+    const marcas = [...folha.querySelectorAll('.textLayer mark[data-g="0"]')].flatMap((m) => [...m.getClientRects()]);
     const fundoDaMarca = marcas.length ? getComputedStyle(folha.querySelector(".textLayer mark")).backgroundColor : null;
+    const outros = folha.querySelectorAll(".grifo-faixa--outro").length;
+    const realce = folha.querySelectorAll(".grifo-faixa--realce").length;
+    const pinos = [...folha.querySelectorAll(".grifo-pino")].map((b) => ({ texto: b.textContent, ativo: b.getAttribute("aria-pressed") === "true", titulo: b.title }));
     const tom = folha.closest("[data-grifo-tom]")?.getAttribute("data-grifo-tom") ?? null;
     const cobre = marcas.every((m) => faixas.some((f) => m.left >= f.x - 1 && m.right <= f.d + 1 && m.top >= f.y - 1 && m.bottom <= f.b + 1));
-    return { faixas, marcas: marcas.length, fundoDaMarca, tom, cobre };
+    return { faixas, marcas: marcas.length, fundoDaMarca, tom, cobre, outros, realce, pinos };
   });
 /** Espera a folha pedida estar desenhada (o canvas do react-pdf troca). */
 const esperarFolha = async () => {
@@ -152,8 +158,8 @@ try {
         local: "",
         tipo: "Redação / editorial",
         descricao: "Achado semeado.",
-        evidencia: a.paginas.map((p) => `Pág. ${p}: "trecho de conferencia ${p}"`).join(" | "),
-        termo_busca: `trecho de conferencia ${a.paginas[0]}`,
+        evidencia: a.trecho ? a.trecho : a.paginas.map((p) => `Pág. ${p}: "trecho de conferencia ${p}"`).join(" | "),
+        termo_busca: a.trecho ?? `trecho de conferencia ${a.paginas[0]}`,
         conflito: "Diverge.",
         sugestao_correcao: "Corrigir.",
         confianca: "alta",
@@ -255,6 +261,27 @@ try {
     await page.screenshot({ path: `${OUT}/visor-1b-grifo-de-perto.png`, clip: { x: f.x - 60, y: f.y - 60, width: f.d - f.x + 240, height: f.b - f.y + 120 } });
   }
 
+  // --- 1c. os outros achados da página e os pinos ------------------------
+  check("o outro achado da p. 3 também está grifado, mais fraco", g1?.outros >= 1, `${g1?.outros} faixa(s) de outro`);
+  check("dois pinos na margem, o do ativo marcado", g1?.pinos.length === 2 && g1.pinos.filter((p) => p.ativo).length === 1, JSON.stringify(g1?.pinos.map((p) => `${p.texto}${p.ativo ? "*" : ""}`)));
+  await visor.locator(".vm-achado").filter({ hasNotText: /Abrir na fila/ }).first().hover();
+  await page.waitForTimeout(250);
+  check("mouse no outro achado da lista acende o grifo dele", (await grifo())?.realce >= 1);
+  await page.mouse.move(5, 5);
+  const yAntes = g1?.faixas[0]?.y ?? 0;
+  await page.locator(".grifo-pino:not(.grifo-pino--ativo)").first().click();
+  await page.waitForTimeout(900);
+  const g2 = await grifo();
+  const ativoNaLista = await visor.locator(".vm-achado--ativo .vm-achado-id").innerText();
+  check("clicar no pino do outro o torna o ativo (a lista acende junto)", /003/.test(ativoNaLista), ativoNaLista.replace(/\s+/g, " "));
+  check("o grifo forte passa para o trecho dele", g2?.faixas.length === 1 && g2.faixas[0].y < yAntes, `y ${Math.round(yAntes)} → ${Math.round(g2?.faixas[0]?.y ?? 0)}`);
+  check("e o de antes fica fraco", g2?.outros >= 1);
+  check("trocar de achado pelo pino pinta a chegada", g2?.faixas.every((f) => f.pinta) === true);
+  await page.screenshot({ path: `${OUT}/visor-1c-dois-achados.png` });
+  // Volta ao INC-001 para o resto da prova.
+  await page.locator(".grifo-pino:not(.grifo-pino--ativo)").first().click();
+  await page.waitForTimeout(900);
+
   // --- 2. a folha órfã, pelo campo ----------------------------------------
   await ir(PAGINA_ORFA);
   check(`chega à p. ${PAGINA_ORFA}, que não tem achado`, (await paginaAtual()) === PAGINA_ORFA);
@@ -351,6 +378,36 @@ try {
     borda ? `folha começa em x=${borda.folha}, mesa em x=${borda.mesa} (folha ${borda.largura}px, mesa ${borda.visivel}px)` : "",
   );
   await page.screenshot({ path: `${OUT}/visor-3-borda-esquerda.png` });
+
+  // --- 8b. o grifo fora da vista ------------------------------------------
+  await ir(3);
+  await page.waitForTimeout(800);
+  await page.evaluate(() => {
+    const m = document.querySelector(".vm-mesa");
+    if (m) m.scrollTop = 0;
+  });
+  await page.waitForTimeout(500);
+  const seta = visor.locator(".vm-grifo-fora");
+  check("com zoom, rolar para longe do grifo mostra a seta", (await seta.count()) === 1, (await seta.count()) ? await seta.innerText() : "sem seta");
+  if (await seta.count()) {
+    const caixaSeta = await seta.boundingBox();
+    const m = await mesa();
+    check("a seta aponta para baixo (o grifo ficou abaixo)", /abaixo/.test(await seta.innerText()));
+    check("a seta cabe na janela", caixaSeta && caixaSeta.y + caixaSeta.height <= ALTURA && caixaSeta.x >= 0, JSON.stringify(caixaSeta));
+    await page.screenshot({ path: `${OUT}/visor-4-grifo-fora.png` });
+    await seta.click();
+    await page.waitForTimeout(1200);
+    check("clicar na seta traz o grifo de volta (e ela some)", (await seta.count()) === 0, `mesa ${m?.top}`);
+  }
+  await page.evaluate(() => {
+    const m = document.querySelector(".vm-mesa");
+    if (m) m.scrollTop = 0;
+  });
+  await page.waitForTimeout(500);
+  await page.evaluate(() => document.activeElement instanceof HTMLElement && document.activeElement.blur());
+  await page.keyboard.press("g");
+  await page.waitForTimeout(1200);
+  check("G também volta ao grifo", (await seta.count()) === 0);
 
   // --- 9. sair ------------------------------------------------------------
   await page.evaluate(() => document.activeElement instanceof HTMLElement && document.activeElement.blur());

@@ -145,3 +145,21 @@
 .ds .vm-irpara input:focus { box-shadow: inset 0 0 0 1px var(--ds-text-secondary); }
 .ds .vm-chat-msg { display: grid; gap: 6px; }
 .ds .vm-chat-msg > p { margin: 0; }
+
+/* O GRIFO FORA DA VISTA (08/10/2026): com zoom, a seta na borda da mesa diz
+   para que lado o trecho do achado ficou; clicar (ou G) traz de volta. */
+.ds .vm-esquerda > .vm-mesa-moldura { position: relative; display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.ds .vm-mesa-moldura > .vm-mesa { flex: 1; min-height: 0; }
+.ds .vm-grifo-fora { position: absolute; z-index: 2; display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px; border: 0; border-radius: 999px; background: var(--ds-surface-overlay); box-shadow: var(--ds-edge), 0 6px 18px rgb(0 0 0 / 0.35); font: inherit; font-size: var(--ds-text-2xs); color: var(--ds-text-primary); cursor: pointer; animation: vm-grifo-fora-entra 180ms ease-out both; }
+.ds .vm-grifo-fora:hover { background: var(--ds-surface-raised); }
+.ds .vm-grifo-fora svg { color: var(--ds-nexo); }
+.ds .vm-grifo-fora--acima { top: 12px; left: 50%; translate: -50% 0; }
+.ds .vm-grifo-fora--abaixo { bottom: 12px; left: 50%; translate: -50% 0; }
+.ds .vm-grifo-fora--esquerda { left: 12px; top: 50%; translate: 0 -50%; }
+.ds .vm-grifo-fora--direita { right: 12px; top: 50%; translate: 0 -50%; }
+@keyframes vm-grifo-fora-entra { from { opacity: 0; } to { opacity: 1; } }
+/* A lista "Nesta página" e o pino na folha acendem juntos. */
+.ds .vm-achado--sobre:not(.vm-achado--ativo) { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--vm-tom) 55%, transparent); }
+@media (prefers-reduced-motion: reduce) {
+  .ds .vm-grifo-fora { animation: none; }
+}
