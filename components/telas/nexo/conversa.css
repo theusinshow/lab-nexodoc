@@ -290,8 +290,19 @@
 .ds .nx-chat--soltando-achado .cx-campo { box-shadow: 0 0 0 2px color-mix(in srgb, var(--ds-nexo) 60%, transparent), 0 16px 40px rgb(0 0 0 / 0.35); }
 .ds .nx-solta-achado { margin: 0 0 8px; padding: 10px 12px; border-radius: 10px; border: 1px dashed color-mix(in srgb, var(--ds-nexo) 55%, transparent); font-size: 12px; text-align: center; color: var(--ds-text-secondary); }
 .ds .nx-achado-anexado { position: relative; margin: 0 0 8px; }
+.ds .nx-achado-anexado--chegando { clip-path: inset(100% 0 0 0); }
 .ds .nx-achado-anexado .pa-rotulo { padding-right: 34px; }
 .ds .nx-achado-anexado-tirar { position: absolute; top: 6px; right: 6px; display: grid; place-items: center; width: 24px; height: 24px; padding: 0; border: 0; border-radius: 6px; background: none; color: var(--ds-text-tertiary); cursor: pointer; }
+/* O arrasto por ponteiro (components/achado/arrasto-do-achado.ts): o cartão solto, a fenda e a linha de onde ele saiu. */
+.nx-arrastando-achado, .nx-arrastando-achado * { cursor: grabbing !important; user-select: none; }
+/* O invólucro é `.ds` para herdar o desenho (e o zoom), mas não o fundo da página. */
+.ds.nx-casca-do-arrasto { position: fixed; inset: 0; z-index: 1000; pointer-events: none; padding: 0; overflow: visible; background: none; }
+/* Os níveis de dentro só existem para as regras da linha casarem; o `.rs` traria fundo e altura de página. */
+.ds.nx-casca-do-arrasto > *, .ds.nx-casca-do-arrasto > * > * { min-height: 0 !important; padding: 0 !important; background: none !important; }
+.ds .nx-cartao-arrastado { background: var(--ds-surface-raised); border-radius: 10px; box-shadow: inset 0 0 0 1px var(--ds-line-default), 0 18px 40px rgb(0 0 0 / 0.45); will-change: transform, clip-path; }
+.ds .nx-cartao-arrastado .rs-linha-fundo, .ds .nx-cartao-arrastado .rs-marcar, .ds .nx-cartao-arrastado .am-rapidas { display: none; }
+.ds .rs-linha--arrastando { opacity: 0.35; }
+.ds .nx-fenda { position: fixed; z-index: 1001; height: 2px; border-radius: 2px; pointer-events: none; background: var(--ds-nexo); box-shadow: 0 0 12px 1px color-mix(in srgb, var(--ds-nexo) 70%, transparent); transform-origin: 50% 50%; }
 .ds .nx-achado-anexado-tirar:hover { background: rgb(255 255 255 / 0.06); color: var(--ds-text-primary); }
 .ds .nx-chat-erro { width: min(760px, calc(100% - 28px)); margin: 0 auto 8px; }
 .ds .nx-descer { position: sticky; left: auto; bottom: 12px; display: flex; width: max-content; margin: 0 auto; }

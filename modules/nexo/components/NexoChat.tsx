@@ -3,13 +3,8 @@
 import { Orbe } from "@/components/ds/basicos";
 import { Cronometro, Trelica } from "@/components/ds/micro";
 import { textoComRotulos } from "@/lib/rotulo-do-achado";
-import {
-  lerAchadoArrastado,
-  lerPerguntaSobreAchado,
-  temAchadoArrastado,
-  textoDaPergunta,
-  type AchadoArrastado,
-} from "@/lib/pergunta-sobre-achado";
+import { lerPerguntaSobreAchado, textoDaPergunta, type AchadoArrastado } from "@/lib/pergunta-sobre-achado";
+import { registrarAlvoDoAchado } from "@/components/achado/arrasto-do-achado";
 import { RotuloDaPergunta } from "@/components/achado/rotulo-da-pergunta";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Loader2, FileText, X, Copy, Check, ArrowDown } from "lucide-react";
@@ -188,6 +183,27 @@ export function NexoChat({
    */
   const [achadoAnexado, setAchadoAnexado] = useState<AchadoArrastado | null>(null);
   const [soltandoAchado, setSoltandoAchado] = useState(false);
+  // Chegando pela fenda: o chip nasce escondido até a animação o revelar.
+  const [chipChegando, setChipChegando] = useState(false);
+  const colunaRef = useRef<HTMLDivElement>(null);
+  const chipRef = useRef<HTMLDivElement>(null);
+  // A coluna é o alvo do arrasto; a fenda e o chip são coreografados lá (arrasto-do-achado.ts).
+  useEffect(() => {
+    const el = colunaRef.current;
+    if (!el) return;
+    return registrarAlvoDoAchado({
+      el,
+      sobrevoar: setSoltandoAchado,
+      receber: (achado) => {
+        setChipChegando(true);
+        setAchadoAnexado(achado);
+        inputRef.current?.focus();
+        // Dois quadros: o React desenha o chip e o layout assenta antes de medir.
+        return new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(() => ok(chipRef.current))));
+      },
+      chegou: () => setChipChegando(false),
+    });
+  }, []);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [templates, setTemplates] = useState<NexoTemplateOption[]>([]);
@@ -618,26 +634,8 @@ export function NexoChat({
 
   return (
     <div
+      ref={colunaRef}
       className={`cx nx-chat flex h-full min-h-0 flex-col${soltandoAchado ? " nx-chat--soltando-achado" : ""}`}
-      onDragOver={(e) => {
-        if (!temAchadoArrastado(e.dataTransfer)) return;
-        e.preventDefault();
-        e.dataTransfer.dropEffect = "copy";
-        if (!soltandoAchado) setSoltandoAchado(true);
-      }}
-      onDragLeave={(e) => {
-        // Sair para um filho não é sair da coluna.
-        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setSoltandoAchado(false);
-      }}
-      onDrop={(e) => {
-        if (!temAchadoArrastado(e.dataTransfer)) return;
-        e.preventDefault();
-        setSoltandoAchado(false);
-        const achado = lerAchadoArrastado(e.dataTransfer);
-        if (!achado) return;
-        setAchadoAnexado(achado);
-        requestAnimationFrame(() => inputRef.current?.focus());
-      }}
     >
       {/* Quem sabe montar cada tomo — sem tela; o canvas e o cartão curto chamam. */}
       <MontadoresDoVolume selos={selos} pranchaFiles={pranchaFiles} templates={templates} />
@@ -871,7 +869,7 @@ export function NexoChat({
             </p>
           )}
           {achadoAnexado && (
-            <div className="nx-achado-anexado">
+            <div className={`nx-achado-anexado${chipChegando ? " nx-achado-anexado--chegando" : ""}`} ref={chipRef}>
               <RotuloDaPergunta achado={{ ...achadoAnexado, pergunta: "" }} />
               <button
                 type="button"

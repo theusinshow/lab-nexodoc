@@ -25,7 +25,8 @@ import type { AchadoDaTela } from "@/components/telas/resultado/use-parecer-vivo
 import { findingCard } from "@/lib/audit-engine/finding-card";
 import { resolverFonte } from "@/lib/fonte-da-evidencia";
 import { NIVEIS } from "@/lib/nivel-do-achado";
-import { arrastarAchado } from "@/lib/pergunta-sobre-achado";
+import { achadoParaArrastar } from "@/lib/pergunta-sobre-achado";
+import { comecarArrasto } from "@/components/achado/arrasto-do-achado";
 import { paginasEmConflito, trechosDaEvidencia } from "@/lib/trechos-da-evidencia";
 
 import { Flutuante, MenuSolto } from "./flutuante";
@@ -272,7 +273,7 @@ export function Notificar({ f, compacto }: { f: Fila; compacto?: boolean }) {
 export function Marcar({ f, a, desligado }: { f: Fila; a: AchadoDaTela; desligado?: boolean }) {
   const marcado = f.marcados.includes(a.chave);
   return (
-    <button type="button" role="checkbox" aria-checked={marcado} aria-label={`Selecionar ${a.id} para atribuir`} className="rs-marcar" disabled={Boolean(a.desfecho) || desligado} onClick={() => f.alternar(a.chave)}>
+    <button type="button" data-sem-arrasto role="checkbox" aria-checked={marcado} aria-label={`Selecionar ${a.id} para atribuir`} className="rs-marcar" disabled={Boolean(a.desfecho) || desligado} onClick={() => f.alternar(a.chave)}>
       {marcado && (
         <svg viewBox="0 0 16 16">
           <path d="M4 8.5 L7 11 L12 5" />
@@ -304,7 +305,7 @@ export function MetaDaLinha({ f, a }: { f: Fila; a: AchadoDaTela }) {
 export function AcoesRapidas({ f, a }: { f: Fila; a: AchadoDaTela }) {
   if (a.desfecho || !a.confirmado) return null;
   return (
-    <span className="am-rapidas" onClick={(e) => e.stopPropagation()}>
+    <span className="am-rapidas" data-sem-arrasto onClick={(e) => e.stopPropagation()}>
       <button type="button" className="am-rapida" title="Marcar corrigido" aria-label={`Marcar ${a.id} como corrigido`} disabled={!f.auditId || f.parecer.salvando === a.chave} onClick={() => (encerrouComMouse(), void f.encerrar("FIXED_IN_DOC", undefined, a))}>
         <Check size={14} />
       </button>
@@ -330,9 +331,8 @@ export function LinhaDoAchado({ f, a, sugestao, rapidas, onAbrir }: { f: Fila; a
   return (
     <div
       className={`rs-linha${ativo ? " rs-linha--ativa" : ""}${a.desfecho ? " rs-linha--encerrada" : ""}${a.desfecho?.tipo === "FIXED_IN_DOC" ? " rs-linha--corrigida" : ""}${f.marcados.length ? " rs-linha--selecionando" : ""}${rapidas ? " am-linha-com-rapidas" : ""} rs-linha--sev-${a.nivel}`}
-      /* Arrastada até o chat, vira uma pergunta sobre este achado (lib/pergunta-sobre-achado.ts). */
-      draggable
-      onDragStart={(e) => arrastarAchado(e.dataTransfer, a)}
+      /* Arrastada até o chat, entra pela fenda e vira uma pergunta sobre este achado. */
+      onPointerDown={(e) => comecarArrasto(e, achadoParaArrastar(a))}
       title="Arraste para o chat para perguntar ao Nexo sobre este achado"
     >
       {ativo && <span className="rs-linha-fundo" />}

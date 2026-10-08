@@ -47,41 +47,15 @@ export function lerPerguntaSobreAchado(texto: string): PerguntaSobreAchado | nul
 }
 
 /*
- * O ACHADO ARRASTADO PARA O CHAT (08/10/2026). A linha da fila leva o achado
- * num tipo próprio do `dataTransfer`; o chat o prende acima do campo e, no
- * envio, a pergunta sai por `textoDaPergunta` — o mesmo texto do visor, então
- * a bolha e o histórico não precisam saber de onde ela veio.
- *
- * Tipo próprio, e não "Files": o overlay de "solte os PDFs" do workspace só
- * acende com "Files", e um achado arrastado não pode acendê-lo.
+ * O ACHADO ARRASTADO PARA O CHAT (08/10/2026). A linha da fila é arrastada
+ * por ponteiro (components/achado/arrasto-do-achado.ts) e o chat a prende
+ * acima do campo; no envio, a pergunta sai por `textoDaPergunta` — o mesmo
+ * texto do visor, então a bolha e o histórico não sabem de onde ela veio.
  */
-export const TIPO_DO_ACHADO_ARRASTADO = "application/x-nexodoc-achado";
-
 export type AchadoArrastado = Omit<PerguntaSobreAchado, "pergunta">;
 
-export function arrastarAchado(dt: DataTransfer, achado: { id: string; titulo: string; nivel: Nivel; pagina: string | number | null }): void {
+/** O achado da fila na forma que o chat prende: a página vira número ou nada. */
+export function achadoParaArrastar(achado: { id: string; titulo: string; nivel: Nivel | null; pagina: string | number | null }): AchadoArrastado {
   const pagina = Number.parseInt(String(achado.pagina ?? ""), 10);
-  const carga: AchadoArrastado = { id: achado.id, titulo: achado.titulo, nivel: achado.nivel, pagina: Number.isFinite(pagina) && pagina > 0 ? pagina : null };
-  dt.effectAllowed = "copy";
-  dt.setData(TIPO_DO_ACHADO_ARRASTADO, JSON.stringify(carga));
-  // Solto fora do chat (num editor, num e-mail), vira o número e o título.
-  dt.setData("text/plain", `${achado.id} — ${achado.titulo}`);
-}
-
-/** Só olha o tipo: durante o arrasto o navegador esconde o conteúdo. */
-export function temAchadoArrastado(dt: DataTransfer | null): boolean {
-  return Boolean(dt && Array.from(dt.types).includes(TIPO_DO_ACHADO_ARRASTADO));
-}
-
-export function lerAchadoArrastado(dt: DataTransfer | null): AchadoArrastado | null {
-  const bruto = dt?.getData(TIPO_DO_ACHADO_ARRASTADO);
-  if (!bruto) return null;
-  try {
-    const c = JSON.parse(bruto) as Partial<AchadoArrastado>;
-    if (typeof c.id !== "string" || typeof c.titulo !== "string") return null;
-    const nivel = NIVEIS.some((n) => n.id === c.nivel) ? (c.nivel as Nivel) : null;
-    return { id: c.id, titulo: c.titulo, nivel, pagina: typeof c.pagina === "number" ? c.pagina : null };
-  } catch {
-    return null;
-  }
+  return { id: achado.id, titulo: achado.titulo, nivel: achado.nivel, pagina: Number.isFinite(pagina) && pagina > 0 ? pagina : null };
 }
