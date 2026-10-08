@@ -79,6 +79,9 @@ test("ninguém mais escreve o teto por conta própria", () => {
       if (!/\.(ts|tsx)$/.test(nome)) continue;
       const rel = caminho.replace(/\\/g, "/");
       if (rel === "lib/limite-do-anexo.ts") continue;
+      // OUTRA REGRA, não o teto do anexo: o tomo impresso do escritório para em
+      // 20 MB (`TETO_DO_TOMO_BYTES`). Mudar o anexo não pode mudar o tomo.
+      if (rel === "modules/nexo/lib/entrega-do-volume.ts") continue;
       readFileSync(caminho, "utf8")
         .split("\n")
         .forEach((linha, i) => {

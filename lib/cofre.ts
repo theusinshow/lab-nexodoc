@@ -25,13 +25,14 @@ import { DeleteObjectsCommand, GetObjectCommand, PutObjectCommand, S3Client } fr
 
 import { chaveDoCofre, cifrar, decifrar, estaCifrado } from "@/lib/cofre-cifra";
 import { getPrisma } from "@/lib/db";
+import { LIMITE_DO_ARQUIVO_BYTES } from "@/lib/limite-do-anexo";
 import { getChecksumSha256 } from "@/lib/project-store";
 
 export type OndeNoCofre = "postgres" | "s3";
 
-/** Teto por arquivo em cada lugar. O do Postgres é o mesmo do anexo (40 MiB). */
+/** Teto por arquivo em cada lugar. O do Postgres é o mesmo do anexo ([[limite-do-anexo.ts]]). */
 export const TETO_DO_COFRE: Record<OndeNoCofre, number> = {
-  postgres: 40 * 1024 * 1024,
+  postgres: LIMITE_DO_ARQUIVO_BYTES,
   s3: 300 * 1024 * 1024,
 };
 

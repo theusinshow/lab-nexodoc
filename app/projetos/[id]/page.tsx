@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 
+import { formatarDiaMes } from "@/lib/fuso-de-brasilia";
 import { Moldura } from "@/components/moldura/moldura";
 import { TelaProjeto, type ItemDaObra, type ObraAberta, type TarefaDaObra } from "@/components/telas/projeto/tela-projeto";
 import { cidadeDoCliente } from "@/lib/cliente-do-projeto";
@@ -113,7 +114,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
     orderBy: { updatedAt: "desc" },
     select: { id: true, updatedAt: true },
   });
-  const dia = (d: Date) => d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", timeZone: "America/Sao_Paulo" });
+  const dia = (d: Date) => formatarDiaMes(d);
   const autorDoParecer = ultimaAuditoria?.user
     ? ultimaAuditoria.user.email?.toLowerCase() === actor.email
       ? "você"
