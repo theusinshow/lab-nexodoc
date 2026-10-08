@@ -1,4 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { recordNexoArtifacts } from "@/lib/nexo-artifacts";
+import { projetoDoPedido } from "@/lib/projeto-do-pedido";
 import type { Prisma } from "@prisma/client";
 
 import { auth } from "@/auth";
@@ -210,6 +212,21 @@ export async function POST(req: NextRequest) {
             ],
             status: "GENERATED",
           },
+        });
+        /*
+         * OS BYTES DA LD, no projeto da conversa (08/10/2026). O rascunho acima
+         * guarda as LINHAS; os arquivos vão para o cofre, para quem abrir a obra
+         * poder baixá-los sem a conversa de quem os gerou.
+         */
+        await recordNexoArtifacts({
+          projectId: projetoDoPedido(req.headers),
+          user: { email, name: session.user.name ?? null },
+          module: "ld",
+          metadata: { obra: proposal.resumo?.obra ?? null },
+          files: [
+            { kind: "LD_ODT", fileName: result.files.odt.name, mimeType: "application/vnd.oasis.opendocument.text", data: result.files.odt.buffer },
+            ...(result.files.pdf ? [{ kind: "LD_PDF" as const, fileName: result.files.pdf.name, mimeType: "application/pdf", data: result.files.pdf.buffer }] : []),
+          ],
         });
       } catch (err) {
         console.error(

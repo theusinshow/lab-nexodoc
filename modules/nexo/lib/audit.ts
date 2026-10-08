@@ -47,6 +47,8 @@ export interface MemorialAuditResult {
   texto: string;
   /** Id persistido; sem ele o feedback por achado não tem onde gravar. */
   auditId: string | null;
+  /** A obra do parecer, quando vem do servidor — a conversa de quem o abre por link nasce nela. */
+  projectId?: string | null;
   /**
    * Os arquivos auditados, com a chave do que está guardado no servidor.
    *
@@ -433,6 +435,7 @@ export async function consultarAuditoria(auditId: string): Promise<EstadoDaAudit
         result?: string;
         error?: string | null;
         arquivos?: { fileName: string; checksumSha256: string | null }[];
+        projectId?: string | null;
       }
     | null;
   if (!res.ok || !corpo) {
@@ -453,6 +456,7 @@ export async function consultarAuditoria(auditId: string): Promise<EstadoDaAudit
         texto: corpo.result ?? "",
         auditId,
         arquivos: corpo.arquivos ?? [],
+        projectId: corpo.projectId ?? null,
       },
     };
   }

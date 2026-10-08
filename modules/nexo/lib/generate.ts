@@ -4,6 +4,7 @@
  * que só acontece após confirmação. Centralizados aqui para todos os pontos de
  * entrada usarem exatamente o mesmo caminho.
  */
+import { cabecalhosDeGeracao } from "@/lib/projeto-do-pedido";
 import { conferirSessao } from "./sessao";
 import { codigoDaFolha, rotuloDoCodigo } from "./disciplina-da-folha";
 import { limparIdentidade, type IdentidadeDoProjeto } from "./identidade";
@@ -92,7 +93,7 @@ export async function postLd(
 ): Promise<LdGenResult> {
   const res = await fetch("/api/nexo/ld", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: cabecalhosDeGeracao(),
     body: JSON.stringify({
       selos,
       tituloLd: opts.tituloLd,
@@ -174,7 +175,7 @@ export async function postCapa(
 ): Promise<CapaGenResult> {
   const res = await fetch("/api/nexo/capa", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: cabecalhosDeGeracao(),
     body: JSON.stringify({
       selos,
       templateId: opts.templateId,
@@ -314,7 +315,7 @@ export async function postSeparatriz(
     .filter(Boolean);
   const res = await fetch("/api/nexo/separatriz", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: cabecalhosDeGeracao(),
     body: JSON.stringify({
       titulos: lista,
       ...(opts.codigo?.trim() ? { codigo: opts.codigo.trim() } : {}),
@@ -444,7 +445,7 @@ export async function postVolume(
 ): Promise<VolumeGenResult> {
   const res = await fetch("/api/nexo/volume", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: cabecalhosDeGeracao(),
     body: JSON.stringify({
       parts,
       ...(opts.fileName?.trim() ? { fileName: opts.fileName.trim() } : {}),

@@ -81,7 +81,7 @@ export function useAbrirAuditoriaPorLink(params: {
    * achado exige saber de qual parecer ele é.
    */
   const { auditId, findingId } = lerLinkDoAchado(params);
-  const { getResult, saveResult, conversationId } = useConversation();
+  const { getResult, saveResult, conversationId, projectId: projetoDaConversa, vincularProjeto } = useConversation();
   const { abrirConversa } = params;
 
   /*
@@ -187,6 +187,14 @@ export function useAbrirAuditoriaPorLink(params: {
          * Quem chega por link chega numa conversa nova de qualquer forma — o
          * store começa uma ao montar. Grafar aqui é o caminho sem corrida.
          */
+        /*
+         * A CONVERSA NASCE NA OBRA DO PARECER (08/10/2026). Quem abria o parecer
+         * de um colega pela obra ganhava uma conversa em "A endereçar", longe da
+         * obra de onde tinha vindo. Só vincula conversa sem obra: a que já tem
+         * uma não é reendereçada por baixo de quem a usa.
+         */
+        const projetoDoParecer = parecer.projectId;
+        if (projetoDoParecer && !projetoDaConversa) vincularProjeto(projetoDoParecer);
         await saveResult({
           artifactId: `auditoria:${id}`,
           kind: "auditoria",

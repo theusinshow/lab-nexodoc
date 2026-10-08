@@ -26,9 +26,11 @@ export async function createStoredDocumentArtifact(
     mimeType: string;
     metadata?: Prisma.InputJsonValue;
     expiresAt?: Date | null;
+    /** Os bytes já foram para o cofre ([[cofre.ts]]): a linha diz onde estão. */
+    guardado?: { checksumSha256: string; onde: string } | null;
   },
 ) {
-  const { data, ...artifact } = input;
+  const { data, guardado, ...artifact } = input;
   const storage = describeStoredFile({
     data,
     module: artifact.module,
@@ -39,6 +41,7 @@ export async function createStoredDocumentArtifact(
   return createDocumentArtifact(tx, {
     ...artifact,
     ...storage,
+    ...(guardado ? { storageProvider: guardado.onde, storageKey: guardado.checksumSha256 } : {}),
   });
 }
 
@@ -89,7 +92,7 @@ export async function createStoredProjectUpload(
     ...upload,
     ...storage,
     ...(guardado
-      ? { storageProvider: "postgres", storageKey: guardado.checksumSha256 }
+      ? { storageProvider: guardado.onde, storageKey: guardado.checksumSha256 }
       : {}),
   });
 }

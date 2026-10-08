@@ -13,6 +13,7 @@
  * `lib/custo-por-obra.ts` já trata esse caso de propósito ("ausência é fato, não
  * sujeira a esconder"), então não há código novo, mas há mudança visível.
  */
+import { apagarDoBucket } from "@/lib/cofre";
 import {
   auditoriasDasConversas,
   chaveDaObra,
@@ -484,6 +485,14 @@ export async function executarExpurgo(alcance: Alcance, quem: string) {
   }
 
   if (arquivos.checksums.length) {
+    // Os que moram no bucket saem de lá ANTES da linha: sem a linha, ninguém
+    // mais saberia de quem é o objeto, e ele ficaria pago para sempre.
+    await apagarDoBucket(
+      await prisma.storedFile.findMany({
+        where: { checksumSha256: { in: arquivos.checksums }, onde: "s3" },
+        select: { checksumSha256: true, organizationId: true, onde: true },
+      }),
+    );
     await prisma.storedFile.deleteMany({
       where: { checksumSha256: { in: arquivos.checksums } },
     });

@@ -82,7 +82,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
       uploads: { orderBy: { createdAt: "desc" }, take: 60, include: { user: { select: { name: true } } } },
       artifacts: { orderBy: { createdAt: "desc" }, take: 60, include: { user: { select: { name: true } } } },
       events: { orderBy: { createdAt: "desc" }, take: 60 },
-      audits: { orderBy: { createdAt: "desc" }, take: 1, select: { id: true, title: true, createdAt: true } },
+      audits: { orderBy: { createdAt: "desc" }, take: 1, select: { id: true, title: true, createdAt: true, user: { select: { name: true, email: true } } } },
       _count: { select: { documents: true, uploads: true, artifacts: true, events: true, audits: true } },
     },
   });
@@ -100,6 +100,34 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
   const capas = de("capas", "COVER_");
   const volumes = de("volumes", "VOLUME_");
   const ultimaAuditoria = projeto.audits[0] ?? null;
+
+  /*
+   * "A CONVERSA DA OBRA" — para onde ela leva quem clica (08/10/2026). A
+   * conversa com o Nexo é pessoal; o parecer, os achados e os arquivos são da
+   * obra. Então: a SUA conversa daqui, se houver; senão o parecer mais recente
+   * (abre numa conversa sua, com os achados do escritório); só sem nada, uma
+   * conversa nova já endereçada à obra.
+   */
+  const minhaConversa = await prisma.nexoConversation.findFirst({
+    where: { projectId: projeto.id, userEmail: actor.email },
+    orderBy: { updatedAt: "desc" },
+    select: { id: true, updatedAt: true },
+  });
+  const dia = (d: Date) => d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", timeZone: "America/Sao_Paulo" });
+  const autorDoParecer = ultimaAuditoria?.user
+    ? ultimaAuditoria.user.email?.toLowerCase() === actor.email
+      ? "você"
+      : primeiroNome(ultimaAuditoria.user.name, ultimaAuditoria.user.email ?? "")
+    : null;
+  const conversa = minhaConversa
+    ? { href: `/nexo?conversa=${encodeURIComponent(minhaConversa.id)}`, rotulo: "Continuar a sua conversa", dica: `A sua conversa desta obra, de ${dia(minhaConversa.updatedAt)}.` }
+    : ultimaAuditoria
+      ? {
+          href: `/nexo?auditoria=${encodeURIComponent(ultimaAuditoria.id)}`,
+          rotulo: "Abrir o parecer da obra",
+          dica: `Auditado${autorDoParecer ? ` por ${autorDoParecer}` : ""} em ${dia(ultimaAuditoria.createdAt)}. Abre numa conversa sua, com os achados da equipe.`,
+        }
+      : { href: linkDoNexo({ projeto: projeto.id }), rotulo: "Começar a conversa da obra", dica: "Nada foi feito nesta obra ainda." };
 
   const tarefas: TarefaDaObra[] = [
     {
@@ -170,11 +198,18 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
     id: a.id,
     nome: a.fileName,
     tipo: ROTULO_DO_GERADO[a.kind] ?? a.kind,
-    situacao: a.status === "AVAILABLE" ? tamanho(a.sizeBytes) : "indisponível",
+    situacao:
+      a.status !== "AVAILABLE"
+        ? "indisponível"
+        : a.storageKey && a.storageProvider !== "none"
+          ? tamanho(a.sizeBytes)
+          : // Gerado antes de 08/10/2026: só o registro veio; o arquivo ficou no navegador de quem gerou.
+            [tamanho(a.sizeBytes), "sem cópia no servidor"].filter(Boolean).join(" · "),
     tom: a.status === "AVAILABLE" ? undefined : "aviso",
     quando: a.createdAt.toISOString(),
     quem: primeiroNome(a.user?.name, a.userEmail),
-    baixar: a.downloadUrl ?? undefined,
+    // Só o que está no cofre tem o que baixar; o resto é histórico (nome e tamanho).
+    baixar: a.storageKey && a.storageProvider !== "none" ? `/api/artefatos/${a.id}` : (a.downloadUrl ?? undefined),
     parecer: a.auditId ?? undefined,
   }));
   const eventos: ItemDaObra[] = projeto.events.map((e) => ({
@@ -201,6 +236,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
     parecerComVoce: comVoce[0]?.audit.id ?? null,
     achadoComVoce: comVoce[0]?.findingId ?? null,
     tituloDoParecerComVoce: comVoce[0]?.audit.title ?? null,
+    conversa,
   };
 
   return (

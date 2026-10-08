@@ -1,5 +1,5 @@
 import { excedeOLimite, motivoDeArquivoGrande } from "@/lib/limite-do-anexo";
-import { getPrisma } from "@/lib/db";
+import { guardarNoCofre } from "@/lib/cofre";
 import { getChecksumSha256 } from "@/lib/project-store";
 
 type StorableData = Buffer | Uint8Array | string;
@@ -12,10 +12,13 @@ export type StorageDescriptor = {
   checksumSha256: string;
 };
 
-export function getStorageProvider() {
-  return process.env.NEXODOC_STORAGE_PROVIDER?.trim() || "none";
-}
-
+/**
+ * DESCREVE, sem guardar: checksum e tamanho. Quem guarda é o cofre
+ * ([[cofre.ts]]); o chamador sobrescreve `storageProvider`/`storageKey` quando
+ * os bytes foram de fato para lá. "none" aqui é a verdade até prova em contrário
+ * — antes, `NEXODOC_STORAGE_PROVIDER=s3` faria esta função anunciar uma chave de
+ * um arquivo que ninguém gravou.
+ */
 export function describeStoredFile(input: {
   data: StorableData;
   module: string;
@@ -23,21 +26,10 @@ export function describeStoredFile(input: {
   fileName: string;
 }): StorageDescriptor {
   const buffer = toBuffer(input.data);
-  const provider = getStorageProvider();
-  const safeFileName = input.fileName.replace(/[^\w.-]+/g, "_");
-  const storageKey =
-    provider === "none"
-      ? null
-      : [
-          input.module,
-          input.projectId ?? "unassigned",
-          `${Date.now()}-${safeFileName}`,
-        ].join("/");
-
   return {
-    storageProvider: provider,
-    storageKey,
-    downloadUrl: buildDownloadUrl(storageKey),
+    storageProvider: "none",
+    storageKey: null,
+    downloadUrl: null,
     sizeBytes: buffer.byteLength,
     checksumSha256: getChecksumSha256(buffer),
   };
@@ -49,20 +41,6 @@ function toBuffer(data: StorableData) {
   }
 
   return Buffer.from(data);
-}
-
-function buildDownloadUrl(storageKey: string | null) {
-  if (!storageKey) {
-    return null;
-  }
-
-  const baseUrl = process.env.NEXODOC_STORAGE_BASE_URL?.trim();
-
-  if (!baseUrl) {
-    return null;
-  }
-
-  return `${baseUrl.replace(/\/+$/, "")}/${encodeURI(storageKey)}`;
 }
 
 /**
@@ -104,30 +82,19 @@ export async function guardarArquivo(args: {
   data: StorableData;
   organizationId: string;
   mimeType: string;
-}): Promise<{ checksumSha256: string; sizeBytes: number }> {
+}): Promise<{ checksumSha256: string; sizeBytes: number; onde: string }> {
   const buffer = toBuffer(args.data);
 
   if (excedeOLimite(buffer.byteLength)) {
     throw new ArquivoRecusado(motivoDeArquivoGrande("", buffer.byteLength));
   }
 
-  const checksumSha256 = getChecksumSha256(buffer);
-
-  await getPrisma().storedFile.upsert({
-    where: { checksumSha256 },
-    create: {
-      checksumSha256,
-      organizationId: args.organizationId,
-      mimeType: args.mimeType,
-      sizeBytes: buffer.byteLength,
-      bytes: buffer,
-    },
-    /*
-     * Nada. O conteúdo é a chave — se o checksum bate, os bytes são os mesmos, e
-     * reescrever 5 MB para gravar o que já está lá seria trabalho por nada.
-     */
-    update: {},
+  // Onde e como os bytes são guardados (Postgres ou bucket, cifrados) é do cofre.
+  const { checksumSha256, onde } = await guardarNoCofre({
+    bytes: buffer,
+    organizationId: args.organizationId,
+    mimeType: args.mimeType,
   });
 
-  return { checksumSha256, sizeBytes: buffer.byteLength };
+  return { checksumSha256, sizeBytes: buffer.byteLength, onde };
 }

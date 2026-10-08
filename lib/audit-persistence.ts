@@ -11,6 +11,7 @@
  * Ver `docs/superpowers/specs/2026-08-13-substrato-de-escritorio-design.md`,
  * Parte C.3, e a Fase 0 de `docs/arquitetura-revisao-colaborativa.md`.
  */
+import { guardarNoCofre } from "@/lib/cofre";
 import type { Prisma } from "@prisma/client";
 
 import type { AnalysisLevel } from "@/lib/analysis-level";
@@ -261,8 +262,13 @@ export async function persistCompletedAudit(args: {
           });
         }
 
+        // O parecer em texto também vai para o cofre: é o que a obra oferece para baixar.
+        const guardado = args.organizationId
+          ? await guardarNoCofre({ bytes: Buffer.from(args.result, "utf8"), organizationId: args.organizationId, mimeType: "text/markdown" }).catch(() => null)
+          : null;
         await createStoredDocumentArtifact(transaction, {
           data: args.result,
+          guardado,
           projectId,
           auditId,
           actor,

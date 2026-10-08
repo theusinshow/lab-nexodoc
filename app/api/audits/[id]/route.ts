@@ -74,6 +74,8 @@ export async function GET(
          * o que o leva até `/api/arquivos/<checksum>`.
          */
         files: { select: { fileName: true, checksumSha256: true } },
+        // A obra do parecer: quem o abre por link fica com a conversa NELA.
+        projectId: true,
       },
     });
 
@@ -118,6 +120,7 @@ export async function GET(
       result: audit.result ?? "",
       error: audit.error ?? null,
       arquivos: audit.files,
+      projectId: audit.projectId,
     });
   } catch {
     return NextResponse.json({ error: "Banco não respondeu." }, { status: 503 });

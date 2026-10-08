@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 
+import { projetoDoPedido } from "@/lib/projeto-do-pedido";
 import { auth } from "@/auth";
 import { carregarEscritorio } from "@/lib/escritorio-config";
 import { marcadoresDoEscritorio } from "@/lib/escritorio";
@@ -165,6 +166,7 @@ export async function POST(req: NextRequest) {
    * sem eles a linha no banco não diz de que obra ou de que tomo é a capa.
    */
   await recordNexoArtifacts({
+    projectId: projetoDoPedido(req.headers),
     user: { email: session.user.email, name: session.user.name },
     module: "capas",
     metadata: {

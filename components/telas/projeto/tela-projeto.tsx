@@ -7,7 +7,6 @@ import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 
 import { Botao, Girando, Tecla } from "@/components/ds/basicos";
 import { useMoldura } from "@/components/moldura/contexto";
-import { linkDoNexo } from "@/lib/contexto-da-url";
 import { useTempo } from "@/lib/ds/tempo";
 import { linkDoAchado } from "@/lib/link-do-achado";
 import { MarcaDaPrefeitura } from "@/modules/nexo/components/MarcaDaPrefeitura";
@@ -66,6 +65,14 @@ export type ObraAberta = {
   /** Um achado desse parecer que está com você: o link abre a fila nele. */
   achadoComVoce: string | null;
   tituloDoParecerComVoce: string | null;
+  /**
+   * PARA ONDE LEVA "A CONVERSA DA OBRA" (08/10/2026). A conversa com o Nexo é
+   * de quem a escreveu; o colega que abria a obra caía num chat vazio, como se
+   * nada tivesse sido feito. O servidor decide: a SUA conversa desta obra, se
+   * existir; senão o parecer mais recente (que abre numa conversa sua); só sem
+   * nada, uma conversa nova.
+   */
+  conversa: { href: string; rotulo: string; dica: string };
 };
 
 const ABAS: { id: Aba; nome: string; colunas: string[] }[] = [
@@ -138,15 +145,16 @@ function Agora({ obra, tarefas }: { obra: ObraAberta; tarefas: TarefaDaObra[] })
         </ul>
       )}
       <div className="mp-lado-pe">
-        <Botao variante="primary" className="mp-gerar" onClick={() => router.push(linkDoNexo({ projeto: obra.id }))}>
-          <MessageSquare size={14} /> Abrir a conversa da obra
+        <Botao variante="primary" className="mp-gerar" title={obra.conversa.dica} onClick={() => router.push(obra.conversa.href)}>
+          <MessageSquare size={14} /> {obra.conversa.rotulo}
         </Botao>
+        <p className="mp-lado-sub">{obra.conversa.dica}</p>
       </div>
     </div>
   );
 }
 
-function DoItem({ it, aba, obraId }: { it: ItemDaObra; aba: Aba; obraId: string }) {
+function DoItem({ it, aba, conversa }: { it: ItemDaObra; aba: Aba; conversa: ObraAberta["conversa"] }) {
   const router = useRouter();
   const evento = aba === "eventos";
   return (
@@ -195,8 +203,8 @@ function DoItem({ it, aba, obraId }: { it: ItemDaObra; aba: Aba; obraId: string 
             <Download size={14} /> Baixar
           </a>
         )}
-        <button type="button" className="mp-acao" onClick={() => router.push(linkDoNexo({ projeto: obraId }))}>
-          <MessageSquare size={14} /> Ver na conversa da obra
+        <button type="button" className="mp-acao" title={conversa.dica} onClick={() => router.push(conversa.href)}>
+          <MessageSquare size={14} /> {conversa.rotulo}
         </button>
       </div>
     </div>
@@ -403,8 +411,8 @@ export function TelaProjeto({ obra, tarefas, itens }: { obra: ObraAberta; tarefa
             <Settings size={14} /> Configurações
           </Botao>
           {!obra.arquivada && (
-            <Botao variante="ghost" tamanho="sm" onClick={() => router.push(linkDoNexo({ projeto: obra.id }))}>
-              <MessageSquare size={14} /> Conversa da obra
+            <Botao variante="ghost" tamanho="sm" title={obra.conversa.dica} onClick={() => router.push(obra.conversa.href)}>
+              <MessageSquare size={14} /> {obra.conversa.rotulo}
             </Botao>
           )}
         </div>
@@ -437,8 +445,8 @@ export function TelaProjeto({ obra, tarefas, itens }: { obra: ObraAberta; tarefa
                 <p className="mp-g-fraco">Os arquivos entram pela conversa do Nexo, quando você pede uma das quatro tarefas acima.</p>
                 {!obra.arquivada && (
                   <div className="pj-vazio-acoes">
-                    <Botao variante="primary" tamanho="sm" onClick={() => router.push(linkDoNexo({ projeto: obra.id }))}>
-                      <MessageSquare size={14} /> Abrir a conversa da obra
+                    <Botao variante="primary" tamanho="sm" title={obra.conversa.dica} onClick={() => router.push(obra.conversa.href)}>
+                      <MessageSquare size={14} /> {obra.conversa.rotulo}
                     </Botao>
                   </div>
                 )}
@@ -479,7 +487,7 @@ export function TelaProjeto({ obra, tarefas, itens }: { obra: ObraAberta; tarefa
                   {config ? (
                     <Configuracoes obra={obra} onFechar={() => setConfig(false)} />
                   ) : item ? (
-                    <DoItem it={item} aba={aba} obraId={obra.id} />
+                    <DoItem it={item} aba={aba} conversa={obra.conversa} />
                   ) : obra.arquivada ? (
                     <div className="mp-lado-bloco">
                       <p className="mp-lado-titulo">Arquivado</p>

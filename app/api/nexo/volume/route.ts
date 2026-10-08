@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 
+import { projetoDoPedido } from "@/lib/projeto-do-pedido";
 import { auth } from "@/auth";
 import { isNexoEnabled } from "@/lib/feature-flags";
 import { recordNexoArtifacts } from "@/lib/nexo-artifacts";
@@ -137,6 +138,7 @@ export async function POST(req: NextRequest) {
    */
   if (result.pdf) {
     await recordNexoArtifacts({
+    projectId: projetoDoPedido(req.headers),
       user: { email: session.user.email, name: session.user.name },
       module: "volumes",
       metadata: {

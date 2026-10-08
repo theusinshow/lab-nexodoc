@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { projetoDoPedido } from "@/lib/projeto-do-pedido";
 import JSZip from "jszip";
 
 import { auth } from "@/auth";
@@ -98,6 +99,7 @@ export async function POST(req: NextRequest) {
      * aparece no meio de cada página).
      */
     await recordNexoArtifacts({
+    projectId: projetoDoPedido(req.headers),
       user: { email: session.user.email, name: session.user.name },
       module: "separatrizes",
       metadata: {

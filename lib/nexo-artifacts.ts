@@ -1,24 +1,26 @@
 import type { DocumentArtifactKind, Prisma } from "@prisma/client";
 
+import { requireActor } from "@/lib/access-control";
+import { ArquivoGrandeDemais, guardarNoCofre } from "@/lib/cofre";
 import { getPrisma, isDatabaseConfigured } from "@/lib/db";
 import { createStoredDocumentArtifact } from "@/lib/project-files";
 import { getUserActor } from "@/lib/project-store";
 
 /**
- * Registro no servidor do que o Nexo GEROU (capa, volume, separatriz).
+ * Registro no servidor do que o Nexo GEROU (LD, capa, volume, separatriz).
  *
- * Até aqui só a LD entrava no Postgres (`LdDraft`, via `saveLdDraft`); capa,
- * volume e separatriz viviam só no IndexedDB do navegador. As telas standalone
- * gravavam `DocumentArtifact` — mas SÓ quando abertas de dentro de um projeto,
- * que é o único caminho que lhes passa `projectId`. O Nexo ainda não tem
- * projeto, e é por isso que este registrador não exige um: `DocumentArtifact`
- * aceita `projectId` nulo, e um artefato sem projeto continua sendo histórico
- * real — quem produziu, quando, com que identidade, com que tamanho e checksum.
+ * DESDE 08/10/2026 GUARDA OS BYTES E O PROJETO. Antes era só contabilidade:
+ * nome, tamanho e checksum, sem projeto — e o colega que abria a obra via
+ * "Lista de documentos: 2 arquivos" e não tinha como baixar nenhum, porque os
+ * arquivos moravam no navegador de quem os gerou.
  *
- * O que NÃO fazemos aqui: guardar os bytes. Com `NEXODOC_STORAGE_PROVIDER`
- * ausente (o padrão), `describeStoredFile` grava provedor "none" e só o
- * tamanho + sha256 — exatamente como o módulo de capas já fazia. Registrar é
- * contabilidade, não arquivo morto.
+ *  - Os bytes vão para o cofre ([[cofre.ts]]), cifrados e do escritório,
+ *    ANTES da transação: subir um volume de 40 MB dentro dela estouraria o
+ *    prazo da transação.
+ *  - O projeto chega pelo cabeçalho que o Nexo manda com a conversa aberta
+ *    ([[projeto-do-pedido.ts]]) e só vale se for do escritório de quem pede.
+ *    Sem projeto, o artefato continua sendo histórico, só não aparece na obra.
+ *  - Arquivo acima do teto do cofre fica registrado sem bytes, como antes.
  *
  * NUNCA lança: falhar em registrar não pode derrubar a geração. O engenheiro já
  * tem o documento em mãos, e perder o download por causa da contabilidade seria
@@ -34,14 +36,15 @@ export interface NexoArtifactFile {
 
 export interface RecordNexoArtifactsInput {
   user: { email?: string | null; name?: string | null };
-  /** Módulo de origem, no vocabulário já usado pelas telas: "capas" | "volumes" | "separatrizes". */
+  /** Módulo de origem, no vocabulário já usado pelas telas: "capas" | "volumes" | "separatrizes" | "ld". */
   module: string;
   files: NexoArtifactFile[];
   /** Fatos que identificam o documento (obra, código, disciplina, tomo...). */
   metadata?: Record<string, unknown>;
+  /** O projeto da conversa que pediu. Conferido aqui contra o escritório. */
+  projectId?: string | null;
 }
 
-/** Grava os artefatos gerados e devolve quantos entraram. Zero = não registrou. */
 export async function recordNexoArtifacts(
   input: RecordNexoArtifactsInput,
 ): Promise<number> {
@@ -59,6 +62,16 @@ export async function recordNexoArtifacts(
 
   try {
     const actor = await getUserActor(email, input.user.name ?? null);
+    const { organizationId } = await requireActor();
+    // O projeto só vale se for do escritório de quem pede — query não é autorização.
+    const projectId = input.projectId
+      ? ((
+          await getPrisma().project.findFirst({
+            where: { id: input.projectId, organizationId, deletedAt: null },
+            select: { id: true },
+          })
+        )?.id ?? null)
+      : null;
     // `origem` distingue o que saiu do Nexo do que saiu das telas standalone —
     // é o que vai permitir medir a migração antes de remover as telas.
     const metadata = {
@@ -66,16 +79,32 @@ export async function recordNexoArtifacts(
       ...(input.metadata ?? {}),
     } as Prisma.InputJsonValue;
 
+    const guardados = await Promise.all(
+      files.map(async (file) => {
+        try {
+          const bytes = typeof file.data === "string" ? Buffer.from(file.data, "utf8") : file.data;
+          return await guardarNoCofre({ bytes, organizationId, mimeType: file.mimeType });
+        } catch (err) {
+          if (!(err instanceof ArquivoGrandeDemais)) {
+            console.error(`[nexo/${input.module}] ${file.fileName} NAO foi para o cofre:`, err);
+          }
+          return null;
+        }
+      }),
+    );
+
     await getPrisma().$transaction(async (tx) => {
-      for (const file of files) {
+      for (const [i, file] of files.entries()) {
         await createStoredDocumentArtifact(tx, {
           data: file.data,
+          projectId,
           actor,
           module: input.module,
           kind: file.kind,
           fileName: file.fileName,
           mimeType: file.mimeType,
           metadata,
+          guardado: guardados[i],
         });
       }
     });

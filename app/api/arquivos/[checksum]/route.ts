@@ -12,7 +12,8 @@
 import { NextResponse } from "next/server";
 
 import { accessDeniedResponse, requireActor } from "@/lib/access-control";
-import { getPrisma, isDatabaseConfigured } from "@/lib/db";
+import { lerDoCofre } from "@/lib/cofre";
+import { isDatabaseConfigured } from "@/lib/db";
 
 export const runtime = "nodejs";
 
@@ -41,20 +42,14 @@ export async function GET(
      * até o dia em que alguém acrescenta um `early return` no meio. Aqui não há
      * meio: ou a linha é do escritório de quem pede, ou ela não existe.
      */
-    const arquivo = await getPrisma().storedFile.findFirst({
-      where: {
-        checksumSha256: checksum.toLowerCase(),
-        organizationId: actor.organizationId,
-      },
-      select: { bytes: true, mimeType: true, sizeBytes: true },
-    });
+    const arquivo = await lerDoCofre(checksum, actor.organizationId);
 
     if (!arquivo) return naoEncontrado();
 
-    return new NextResponse(Buffer.from(arquivo.bytes), {
+    return new NextResponse(new Uint8Array(arquivo.bytes), {
       headers: {
         "Content-Type": arquivo.mimeType,
-        "Content-Length": String(arquivo.sizeBytes),
+        "Content-Length": String(arquivo.bytes.byteLength),
         /*
          * `inline`: o visor de PDF do parecer o abre dentro da tela, e
          * `attachment` faria o navegador baixá-lo em vez de mostrá-lo.

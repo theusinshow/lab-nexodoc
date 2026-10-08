@@ -943,7 +943,15 @@ model StoredFile {
   organizationId String
   mimeType       String
   sizeBytes      Int
-  bytes          Bytes
+  /// Os bytes, quando moram AQUI (`onde = "postgres"`). Nulo quando moram no
+  /// bucket privado (`onde = "s3"`) — ver [[lib/cofre.ts]].
+  bytes          Bytes?
+  /// "postgres" | "s3". Linha antiga é "postgres".
+  onde           String   @default("postgres")
+  /// Os bytes (aqui ou no bucket) estão cifrados com a chave do Nexo
+  /// (AES-256-GCM, `NEXODOC_COFRE_CHAVE`). Linha antiga é texto claro até o
+  /// `npm run cofre:cifrar` passar por ela.
+  cifrado        Boolean  @default(false)
   createdAt      DateTime @default(now())
 
   /// Sustenta a regra de expurgo no dia em que ela existir. Não há nenhuma hoje.

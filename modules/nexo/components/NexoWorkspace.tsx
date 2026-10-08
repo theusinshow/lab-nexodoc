@@ -1,5 +1,6 @@
 "use client";
 
+import { definirProjetoDaConversa } from "@/lib/projeto-do-pedido";
 import Link from "next/link";
 import { folhasDoArquivo, semAsFolhasDoArquivo } from "../lib/folhas-do-memorial";
 import { excedeOLimite, motivoDeArquivoGrande } from "@/lib/limite-do-anexo";
@@ -1990,6 +1991,10 @@ function NexoWorkspaceInner({
    * navegador ainda em `/login`, e reescrever a partir dela gravaria o endereço
    * errado — ou nada.
    */
+  // O que o Nexo gerar agora (LD, capa, volume) vai para o projeto desta conversa.
+  useEffect(() => {
+    definirProjetoDaConversa(conv.projectId);
+  }, [conv.projectId]);
   const caminhoDoRoteador = usePathname();
   const buscaDoRoteador = useSearchParams().toString();
   useEffect(() => {
