@@ -1,0 +1,53 @@
+# A VERIFICAÇÃO DO BUILD: tipos e o build de produção, do jeito que a Railway
+# faz — Node 22 (o do Dockerfile), `npm run build`, nenhum segredo.
+#
+# Por que existe ao lado da bateria: a bateria sobe um `next dev`, e o dev
+# ignora erro de tipo. Em 08/10/2026 a subida da Next para 16.4 tirou
+# `experimental.viewTransition` do tipo do next.config: a bateria ficaria
+# verde e o deploy na Railway quebraria. Aqui fica vermelho antes.
+#
+# O lint não entra (ainda): o projeto tem 63 erros antigos de eslint, e um
+# portão vermelho desde o primeiro dia é um portão que ninguém olha.
+name: verificacao
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verificacao-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+      # O mesmo ARG do Dockerfile: a flag é embutida na compilação.
+      NEXT_PUBLIC_NEXO_ENABLED: "true"
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Dependências
+        run: npm ci
+
+      - name: Cliente do Prisma
+        run: npx prisma generate
+
+      - name: Tipos
+        run: npx tsc --noEmit -p tsconfig.json
+
+      - name: Build de produção
+        run: npx next build
