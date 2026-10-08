@@ -50,7 +50,9 @@ Medida de referência: o 084-25 inteiro tem ~180 MB de pranchas, mediana de
    objeto fica no cofre até o expurgo do projeto.
 5. **`/api/nexo/volume`** passa a receber, por parte, `{ checksum, fileName }`
    no lugar de `base64`. O servidor confere que **cada** checksum tem ficha
-   naquele projeto e lê os bytes com `lerDoCofre`. O caminho por base64 sai.
+   naquele projeto e lê os bytes com `lerDoCofre`. O base64 continua só para
+   o que nasce no navegador (capa, LD, separatriz, todos pequenos) e para a
+   prancha de conversa ainda sem projeto (regra de borda abaixo).
 
 ### Fluxo
 
