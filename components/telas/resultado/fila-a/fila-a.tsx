@@ -68,14 +68,14 @@ export function FilaA({ f }: { f: Fila }) {
     <div className="am-a">
       <section className="am-a-lista" aria-label="Fila de achados">
         <div className="am-a-lista-topo">
-          <div className="am-a-busca">
+          <div className="am-a-busca" data-tour="fila-busca">
             <Busca f={f} />
             <ExibicaoFlutuante f={f} />
           </div>
           <SituacoesEnxutas f={f} />
           <Notificar f={f} />
         </div>
-        <div className="am-rolagem am-a-linhas">
+        <div className="am-rolagem am-a-linhas" data-tour="fila-linhas">
           <LinhasAgrupadas f={f} rapidas />
           <SugestoesDaIA f={f} />
           <Faltou f={f} />
@@ -85,7 +85,7 @@ export function FilaA({ f }: { f: Fila }) {
 
       <section className="am-a-detalhe" aria-label={`Achado ${a.id}`}>
         <header className="am-a-topo">
-          <div className="am-a-identidade">
+          <div className="am-a-identidade" data-tour="achado-identidade">
             <span className="rs-detalhe-id">{a.id}</span>
             <Selo tom={a.nivel} ponto>
               {nivel?.nome}
@@ -114,7 +114,7 @@ export function FilaA({ f }: { f: Fila }) {
         </header>
 
         <div className="am-a-meio" key={a.chave}>
-          <div className="am-a-lado-a-lado">
+          <div className="am-a-lado-a-lado" data-tour="achado-conteudo">
             <Partes f={f} a={a} juntar />
             <Previa f={f} a={a} />
           </div>
@@ -135,7 +135,7 @@ export function FilaA({ f }: { f: Fila }) {
         {f.verAtalhos && <AtalhosDaFila onFechar={() => f.setVerAtalhos(false)} />}
         <footer className="am-a-rodape">
           <AcoesDoAchado f={f} a={a} />
-          <span className="am-a-atalhos" aria-hidden>
+          <span className="am-a-atalhos" aria-hidden data-tour="atalhos-da-fila">
             <Tecla>J</Tecla>
             <Tecla>K</Tecla> andam · <Tecla>M</Tecla> PDF · <Tecla>?</Tecla> atalhos
           </span>

@@ -156,6 +156,7 @@ function OQueFazerDoAchado({ acao, corretor }: { acao: string; corretor?: Corret
             onClick={alternar}
             aria-expanded={aberto}
             aria-controls={idDaCaixa}
+            data-tour="texto-corrigido"
             className={cn(LINK, "ml-auto")}
           >
             <Sparkles className="size-3.5" aria-hidden />

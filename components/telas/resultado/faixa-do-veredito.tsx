@@ -46,7 +46,7 @@ export function FaixaDoVeredito({
   const tudo = total > 0 && tratados >= total;
 
   return (
-    <section className={`re-faixa re-faixa--${selo.tom}`} aria-label="Veredito da auditoria" data-faixa-do-veredito>
+    <section className={`re-faixa re-faixa--${selo.tom}`} aria-label="Veredito da auditoria" data-faixa-do-veredito data-tour="faixa-do-veredito">
       <p className="re-faixa-linha">
         <span className="rs-selo">
           <i aria-hidden />

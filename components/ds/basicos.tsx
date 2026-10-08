@@ -53,16 +53,19 @@ export function Segmento<T extends string>({
   valor,
   onTroca,
   rotulo,
+  tour,
 }: {
   opcoes: { valor: T; rotulo: ReactNode }[];
   valor: T;
   onTroca: (v: T) => void;
   rotulo: string;
+  /** Âncora do tutorial (`data-tour`). */
+  tour?: string;
 }) {
   const id = useId();
   const { mola } = useTempo();
   return (
-    <div className="ds-seg" role="group" aria-label={rotulo}>
+    <div className="ds-seg" role="group" aria-label={rotulo} data-tour={tour}>
       {opcoes.map((o) => {
         const ligado = o.valor === valor;
         return (

@@ -11,7 +11,7 @@
  */
 
 import { motion } from "motion/react";
-import { FileSearch, FileText, ListChecks, ScrollText, SquareStack } from "lucide-react";
+import { CircleHelp, FileSearch, FileText, ListChecks, ScrollText, SquareStack } from "lucide-react";
 import { useState } from "react";
 
 import { Girando, Orbe } from "@/components/ds/basicos";
@@ -71,7 +71,10 @@ export function TrilhoDoResultado({
   onVista,
   compacto = false,
   onPerguntar,
+  onTutorial,
 }: {
+  /** Abre o passo a passo desta tela (cada parte e cada botão). */
+  onTutorial?: () => void;
   /** Leva à conversa desta auditoria, com o campo pronto para a pergunta. */
   onPerguntar?: () => void;
   /**
@@ -154,12 +157,12 @@ export function TrilhoDoResultado({
         </Dica>
       </section>
 
-      <nav className="re-nav" aria-label="Vistas da auditoria">
+      <nav className="re-nav" aria-label="Vistas da auditoria" data-tour="vistas">
         {NAV.map((n) => {
           const atual = vista === n.id;
           return (
             <Dica key={n.id} texto={n.rotulo} tecla={n.tecla} lado="esquerda">
-              <button type="button" aria-label={compacto ? n.rotulo : undefined} aria-current={atual ? "page" : undefined} aria-pressed={atual} data-tour={n.id === "documento" ? "chip-no-documento" : undefined} onClick={() => onVista(n.id)}>
+              <button type="button" aria-label={compacto ? n.rotulo : undefined} aria-current={atual ? "page" : undefined} aria-pressed={atual} data-tour={n.id === "documento" ? "chip-no-documento" : `vista-${n.id}`} onClick={() => onVista(n.id)}>
                 {atual && <motion.i layoutId="nx-trilho-vista" className="re-nav-fundo" transition={{ duration: RITMO.troca * k, ease: SUAVE }} />}
                 <n.Icone aria-hidden />
                 {!compacto && <span className="re-nav-rotulo">{n.rotulo}</span>}
@@ -175,7 +178,7 @@ export function TrilhoDoResultado({
         {!compacto && <h3>Levar adiante</h3>}
         {onPerguntar && (
           <Dica texto="Perguntar ao Nexo sobre esta auditoria" lado="esquerda">
-            <button type="button" className="re-acao re-acao--nexo" aria-label={compacto ? "Perguntar ao Nexo sobre esta auditoria" : undefined} onClick={onPerguntar}>
+            <button type="button" className="re-acao re-acao--nexo" data-tour="perguntar-ao-nexo" aria-label={compacto ? "Perguntar ao Nexo sobre esta auditoria" : undefined} onClick={onPerguntar}>
               <Orbe tamanho={16} />
               {!compacto && (
                 <span>
@@ -187,7 +190,7 @@ export function TrilhoDoResultado({
           </Dica>
         )}
         <Dica texto="Parecer em PDF, numa aba nova" lado="esquerda">
-          <button type="button" className="re-acao re-acao--principal" aria-label={compacto ? "Parecer em PDF" : undefined} onClick={() => void pdf()} disabled={gerando}>
+          <button type="button" className="re-acao re-acao--principal" data-tour="parecer-pdf" aria-label={compacto ? "Parecer em PDF" : undefined} onClick={() => void pdf()} disabled={gerando}>
             {gerando ? <Girando tamanho={14} /> : <FileText aria-hidden />}
             {!compacto && (
               <span>
@@ -197,6 +200,19 @@ export function TrilhoDoResultado({
             )}
           </button>
         </Dica>
+        {onTutorial && (
+          <Dica texto="Como usar esta tela: o que cada parte e cada botão faz" lado="esquerda">
+            <button type="button" className="re-acao" data-tour="tour-do-resultado" aria-label={compacto ? "Como usar esta tela" : undefined} onClick={onTutorial}>
+              <CircleHelp aria-hidden />
+              {!compacto && (
+                <span>
+                  Como usar esta tela
+                  <small>cada parte e cada botão</small>
+                </span>
+              )}
+            </button>
+          </Dica>
+        )}
       </section>
     </aside>
   );

@@ -28,6 +28,13 @@ export interface PassoDoTour {
    * existir, o passo simplesmente não clica nada.
    */
   clicarAntes?: string;
+  /**
+   * O passo só existe se este seletor achar algo (depois do clique do passo
+   * anterior). Ausente na tela = o tour pula, no sentido em que vinha andando.
+   */
+  soSeExistir?: string;
+  /** Elemento que ganha `data-tour-revelado` durante o passo: o que só aparece no hover fica à vista. */
+  revelar?: string;
 }
 
 export const PASSOS_DO_TOUR: PassoDoTour[] = [

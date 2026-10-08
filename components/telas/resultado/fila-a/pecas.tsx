@@ -69,7 +69,7 @@ export function SituacoesEnxutas({ f }: { f: Fila }) {
   const outras: Filtro[] = ["todos", "sem", "encerrados"];
   const ehOutra = outras.includes(f.filtro);
   return (
-    <div className="am-situacoes">
+    <div className="am-situacoes" data-tour="fila-situacoes">
       <Segmento
         rotulo="Mostrar"
         valor={ehOutra ? ("__outra" as Filtro) : f.filtro}
@@ -414,7 +414,7 @@ export function SugestoesDaIA({ f }: { f: Fila }) {
 
 export function Faltou({ f }: { f: Fila }) {
   return (
-    <div className="rs-faltou">
+    <div className="rs-faltou" data-tour="faltou">
       {f.faltou === null ? (
         <button type="button" className="rs-link" onClick={() => f.setFaltou("")}>
           Faltou apontar algum problema?
@@ -583,7 +583,7 @@ export function AvaliarIA({ f, a }: { f: Fila; a: AchadoDaTela }) {
   const gravidade = a.validade === "WRONG_SEVERITY";
   const rotuloDaGravidade = !gravidade ? "Gravidade errada" : a.severidade === "MAIS_GRAVE" ? "Mais grave" : a.severidade === "MENOS_GRAVE" ? "Menos grave" : "Gravidade errada";
   return (
-    <div className="am-avaliar" role="group" aria-label="Avaliar a leitura da IA">
+    <div className="am-avaliar" role="group" aria-label="Avaliar a leitura da IA" data-tour="avaliar-ia">
       <span className="am-avaliar-rotulo">A IA acertou?</span>
       <Dica texto={procede ? "Clique para desfazer o voto." : "A IA acertou: conta a favor do motor. Não encerra o achado."}>
         <button type="button" className="am-voto" aria-pressed={procede} disabled={ocupado} onClick={() => void f.parecer.julgar(a, procede ? null : "CONFIRMED")}>
@@ -680,7 +680,7 @@ export function Atribuidor({ f, a }: { f: Fila; a: AchadoDaTela }) {
       largura={300}
       gatilho={(aberto, alternar) => (
         <Dica texto={com ? "Trocar o responsável" : "Atribuir a alguém"}>
-          <button type="button" className={`am-atribuidor${com ? " am-atribuidor--com" : ""}`} aria-haspopup="dialog" aria-expanded={aberto} disabled={!f.auditId} onClick={alternar}>
+          <button type="button" data-tour="atribuir" className={`am-atribuidor${com ? " am-atribuidor--com" : ""}`} aria-haspopup="dialog" aria-expanded={aberto} disabled={!f.auditId} onClick={alternar}>
             {com ? <AvatarDaPessoa email={com.email} iniciais={iniciais(com.nome)} pequeno /> : <span className="am-atribuidor-icone"><UserPlus size={14} /></span>}
             <span>{com ? (com.souEu ? "Com você" : `Com ${com.nome}`) : "Atribuir"}</span>
             <ChevronDown size={13} className="am-voto-seta" />
@@ -942,6 +942,7 @@ export function AbasDoAchado({ f, a }: { f: Fila; a: AchadoDaTela }) {
     <>
       <Segmento
         rotulo="Detalhe do achado"
+        tour="achado-abas"
         valor={f.aba}
         onTroca={f.setAba}
         opcoes={[
@@ -1017,7 +1018,7 @@ export function AcoesDoAchado({ f, a, compacta }: { f: Fila; a: AchadoDaTela; co
           </div>
         </form>
       ) : (
-        <div className="rs-botoes">
+        <div className="rs-botoes" data-tour="encerrar">
           <GrupoDeBotoes rotulo="Encerrar o achado">
             <BotaoDoGrupo principal tecla={compacta ? undefined : "C"} curto="Corrigido" disabled={!f.auditId || p.salvando === a.chave} onClick={() => (encerrouComMouse(), void f.encerrar("FIXED_IN_DOC", undefined, a))}>
               <Check /> Marcar corrigido

@@ -160,7 +160,7 @@ export function NoDocumento({
 
   return (
     <div className="nd" ref={raiz}>
-      <div className="nd-barra">
+      <div className="nd-barra" data-tour="no-documento-barra">
         <Segmento
           rotulo="Páginas"
           valor={vista}

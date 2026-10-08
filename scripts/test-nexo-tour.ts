@@ -16,6 +16,7 @@ import {
   type Retangulo,
 } from "../modules/nexo/lib/posicao-do-balao.ts";
 import { PASSOS_DO_TOUR } from "../modules/nexo/lib/passos-do-tour.ts";
+import { PASSOS_DO_TOUR_DO_RESULTADO } from "../modules/nexo/lib/passos-do-tour-do-resultado.ts";
 
 let passed = 0;
 function test(name: string, fn: () => void) {
@@ -100,22 +101,27 @@ test("janela estreita (celular) ainda devolve posição dentro da tela", () => {
 
 // --- O roteiro -------------------------------------------------------------
 
+const ROTEIROS = { nexo: PASSOS_DO_TOUR, resultado: PASSOS_DO_TOUR_DO_RESULTADO };
+const TODOS_OS_PASSOS = [...PASSOS_DO_TOUR, ...PASSOS_DO_TOUR_DO_RESULTADO];
+
 test("todo passo tem título e corpo", () => {
-  for (const passo of PASSOS_DO_TOUR) {
+  for (const passo of TODOS_OS_PASSOS) {
     assert.ok(passo.titulo.length > 0, `${passo.id} sem título`);
     assert.ok(passo.corpo.length > 0, `${passo.id} sem corpo`);
   }
 });
 
-test("os ids não se repetem", () => {
-  const ids = PASSOS_DO_TOUR.map((p) => p.id);
-  assert.equal(new Set(ids).size, ids.length);
+test("os ids não se repetem dentro de um roteiro", () => {
+  for (const [nome, passos] of Object.entries(ROTEIROS)) {
+    const ids = passos.map((p) => p.id);
+    assert.equal(new Set(ids).size, ids.length, nome);
+  }
 });
 
 // O tour é o primeiro contato de quem nunca abriu o produto: o texto não pode
 // falar a língua de quem já conhece a casa.
 test("nenhum passo usa emoji (DESIGN.md §11)", () => {
-  for (const passo of PASSOS_DO_TOUR) {
+  for (const passo of TODOS_OS_PASSOS) {
     const texto = `${passo.titulo} ${passo.corpo}`;
     assert.ok(!/\p{Extended_Pictographic}/u.test(texto), `${passo.id} tem emoji`);
   }
@@ -142,13 +148,32 @@ test("todo alvo existe numa tela viva", () => {
   };
   andar(path.join(raiz, "modules/nexo/components"));
   andar(path.join(raiz, "components/telas"));
+  andar(path.join(raiz, "components/achado"));
   const todo = fontes.join("\n");
-  for (const passo of PASSOS_DO_TOUR) {
-    for (const seletor of [passo.alvo, passo.clicarAntes]) {
+  // As leituras do trilho nascem de um molde (`vista-${n.id}`): vale o molde E o id na lista.
+  const daLeitura = (nome: string) => nome.startsWith("vista-") && todo.includes("`vista-${n.id}`") && todo.includes(`id: "${nome.slice(6)}"`);
+  for (const passo of TODOS_OS_PASSOS) {
+    for (const seletor of [passo.alvo, passo.clicarAntes, passo.soSeExistir, passo.revelar]) {
       const nome = seletor && /data-tour="([^"]+)"/.exec(seletor)?.[1];
-      if (nome) assert.ok(todo.includes(`data-tour="${nome}"`) || todo.includes(`"${nome}"`), `${passo.id}: alvo ${nome} não existe`);
+      if (nome) assert.ok(todo.includes(`data-tour="${nome}"`) || todo.includes(`"${nome}"`) || daLeitura(nome), `${passo.id}: alvo ${nome} não existe`);
     }
   }
+});
+
+// O tutorial do resultado roda sobre um parecer DE VERDADE: ele só troca de
+// leitura. Um clique de passo num botão que grava (encerrar, atribuir, votar)
+// mexeria no trabalho da pessoa sem ela pedir.
+test("o tutorial do resultado só clica para trocar de leitura", () => {
+  for (const passo of PASSOS_DO_TOUR_DO_RESULTADO) {
+    if (!passo.clicarAntes) continue;
+    assert.match(passo.clicarAntes, /data-tour="(vista-[a-z]+|chip-no-documento)"/, `${passo.id} clica em ${passo.clicarAntes}`);
+  }
+});
+
+test("o tutorial do resultado passa por cada botão de encerrar", () => {
+  const encerrar = PASSOS_DO_TOUR_DO_RESULTADO.find((p) => p.id === "encerrar");
+  assert.ok(encerrar, "faltou o passo de encerrar");
+  for (const rotulo of ["Marcar corrigido", "Decisão técnica", "Falso positivo"]) assert.ok(encerrar.corpo.includes(rotulo), rotulo);
 });
 
 console.log(`\n${passed} testes ok`);

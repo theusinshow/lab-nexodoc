@@ -47,6 +47,10 @@ import { catalogoDoParecer, resolverFonte } from "@/lib/fonte-da-evidencia";
 
 import { recolherConversasPelaFila, useAreasRecolhidas } from "../lib/areas-recolhidas";
 import { TrilhoDoResultado } from "@/components/telas/resultado/trilho";
+import { marcarDica, useDica } from "../lib/dicas-da-auditoria";
+import { PASSOS_DO_TOUR_DO_RESULTADO } from "../lib/passos-do-tour-do-resultado";
+import { ID_CONVERSA_EXEMPLO } from "../lib/projeto-exemplo";
+import { TourDoNexo } from "./TourDoNexo";
 import { AuditoriaEmCurso } from "./AuditoriaEmCurso";
 import type { AberturaPorLink } from "./use-abrir-auditoria-por-link";
 import { useReconectarAuditoria } from "./use-reconectar-auditoria";
@@ -534,6 +538,29 @@ export function PalcoDoNexo({
     return () => recolherConversasPelaFila(false);
   }, [naFila]);
 
+  /*
+   * O PASSO A PASSO DO RESULTADO: cada parte e cada botão (08/10/2026). Abre
+   * sozinho na primeira vez que a pessoa vê um parecer, e depois pelo "?" do
+   * trilho. Não abre sobre o aviso "nada mudou" (é um diálogo) nem sobre o
+   * parecer do projeto de exemplo — ali quem fala é o tour do Nexo.
+   */
+  const tourDoResultado = useDica("tour-do-resultado");
+  const [tourPedido, setTourPedido] = useState(false);
+  const tourDoResultadoAberto =
+    Boolean(report) &&
+    mostrandoAuditoria &&
+    !avisoSemMudanca &&
+    (tourPedido || (tourDoResultado.mostrar && conversationId !== ID_CONVERSA_EXEMPLO));
+  const sairDoTourDoResultado = () => {
+    setTourPedido(false);
+    tourDoResultado.fechar();
+  };
+  // O passo "Encerrar o achado" diz o que a dica da primeira revisão diria, e
+  // a dica aberta na fila taparia o que o passo aponta.
+  useEffect(() => {
+    if (tourDoResultadoAberto) marcarDica("primeira-revisao");
+  }, [tourDoResultadoAberto]);
+
   return (
     <div className="nw-palco nx-palco relative flex h-full w-full flex-col">
       {/*
@@ -722,7 +749,7 @@ export function PalcoDoNexo({
                   </div>
                 </div>
               )}
-              <div className="nx-resultado-miolo">
+              <div className="nx-resultado-miolo" data-tour="palco-do-resultado">
                 <div className="h-full overflow-y-auto">
                   <ResultadoDoParecer
                     key={focoDoChat?.vez ?? "parecer"}
@@ -753,6 +780,7 @@ export function PalcoDoNexo({
                 compacto
                 /* Com o chat aberto ao lado, o botão não mudava nada na tela (R10). */
                 onPerguntar={areasDoPalco.chat ? perguntarAoNexo : undefined}
+                onTutorial={() => setTourPedido(true)}
                 report={report}
                 total={totalDeAchados}
                 tratados={salvo?.auditId ? tratadosNoServidor : tratadosDesta}
@@ -766,6 +794,14 @@ export function PalcoDoNexo({
                   }
                 }}
               />
+              {tourDoResultadoAberto && (
+                <TourDoNexo
+                  passos={PASSOS_DO_TOUR_DO_RESULTADO}
+                  rotulo="Passo a passo do resultado da auditoria"
+                  rotuloFinal="Entendi"
+                  aoSair={sairDoTourDoResultado}
+                />
+              )}
             </div>
           ) : null
         ) : (

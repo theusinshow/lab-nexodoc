@@ -49,7 +49,7 @@ export function RelatorioDoParecer({ report, parecer }: { report: AuditReport; p
   return (
     <div className="rl">
       <article className="rl-folha">
-        <header className="rl-barra">
+        <header className="rl-barra" data-tour="relatorio-barra">
           <h2>Relatório da auditoria</h2>
           <Botao variante="quiet" tamanho="sm" onClick={copiar}>
             <AnimatePresence mode="wait" initial={false}>

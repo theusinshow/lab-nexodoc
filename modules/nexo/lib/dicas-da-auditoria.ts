@@ -9,7 +9,9 @@
  *
  * - `processamento`: o que o Nexo procura enquanto lê (painel da auditoria em curso);
  * - `primeira-revisao`: o que cada botão de encerrar significa (a fila, na primeira vez);
- * - `atalhos`: J/K, C/D/F, M e ? para quem já encerrou três achados com o mouse.
+ * - `atalhos`: J/K, C/D/F, M e ? para quem já encerrou três achados com o mouse;
+ * - `tour-do-resultado`: o passo a passo da tela de resultado, que abre sozinho
+ *   na primeira vez que a pessoa vê um parecer (e volta pelo "?" do trilho).
  *
  * Guardadas no navegador (decisão D4): não há preferência por usuário no
  * banco, e um navegador novo mostrar as dicas de novo é um custo pequeno.
@@ -17,14 +19,14 @@
  */
 import { useSyncExternalStore } from "react";
 
-export type IdDaDica = "processamento" | "primeira-revisao" | "atalhos";
+export type IdDaDica = "processamento" | "primeira-revisao" | "atalhos" | "tour-do-resultado";
 
 const CHAVE = "nexo:dicas-vistas";
 const ouvintes = new Set<() => void>();
 let vistas: ReadonlySet<IdDaDica> | null = null;
 const NENHUMA: ReadonlySet<IdDaDica> = new Set();
 /** No servidor e antes de ler o navegador, nenhuma dica aparece: melhor calar do que piscar. */
-const TODAS: ReadonlySet<IdDaDica> = new Set(["processamento", "primeira-revisao", "atalhos"]);
+const TODAS: ReadonlySet<IdDaDica> = new Set(["processamento", "primeira-revisao", "atalhos", "tour-do-resultado"]);
 
 function ler(): ReadonlySet<IdDaDica> {
   if (vistas) return vistas;
@@ -60,9 +62,14 @@ export function marcarDica(id: IdDaDica) {
   gravar(new Set([...atuais, id]));
 }
 
-/** "Como funciona o Nexo": as dicas voltam a aparecer, cada uma na hora dela. */
+/**
+ * "Como funciona o Nexo": as dicas voltam a aparecer, cada uma na hora dela.
+ * Menos o passo a passo do resultado: o tour do Nexo abre um parecer de
+ * exemplo, e o do resultado abriria por cima dele — dois balões brigando. Ele
+ * tem o botão próprio no trilho.
+ */
 export function esquecerDicas() {
-  gravar(NENHUMA);
+  gravar(ler().has("tour-do-resultado") ? new Set<IdDaDica>(["tour-do-resultado"]) : NENHUMA);
 }
 
 export function useDica(id: IdDaDica) {

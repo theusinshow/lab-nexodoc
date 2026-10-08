@@ -126,7 +126,7 @@ export function ResumoDoParecer({
   return (
     <div className="rc">
       {/* ================= o trabalho ================= */}
-      <section className="rc-trabalho" aria-label="O que falta tratar">
+      <section className="rc-trabalho" aria-label="O que falta tratar" data-tour="falta-tratar">
         <header className="rc-trabalho-cabeca">
           <h2>
             {pendentes.length ? (
@@ -141,7 +141,7 @@ export function ResumoDoParecer({
           </h2>
           <span className="rs-nota">{rotuloDaContagem(report)}, na ordem de impacto</span>
           {achados.length > 0 && (
-            <Botao variante="quiet" tamanho="sm" onClick={() => onAbrir()}>
+            <Botao variante="quiet" tamanho="sm" data-tour="abrir-a-fila" onClick={() => onAbrir()}>
               Abrir a fila
             </Botao>
           )}
@@ -164,6 +164,7 @@ export function ResumoDoParecer({
                       key={a.chave}
                       layout
                       className="rc-linha"
+                      data-tour="linha-do-resumo"
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: "auto" }}
                       exit={{ opacity: 0, height: 0, transition: { duration: dur("state") } }}
@@ -263,7 +264,7 @@ export function ResumoDoParecer({
         )}
         <div className="re-distribuicao">
           {porDisciplina.length > 0 && (
-            <section className="rc-cartao rc-disc">
+            <section className="rc-cartao rc-disc" data-tour="por-disciplina">
               <h3>Por disciplina</h3>
               <div className="rc-disc-faixa" aria-hidden>
                 {porDisciplina.map((d) => (
@@ -296,7 +297,7 @@ export function ResumoDoParecer({
             </section>
           )}
           {totalDePaginas > 0 && (
-            <section className="rc-cartao rc-onde">
+            <section className="rc-cartao rc-onde" data-tour="onde-estao">
               <h3>
                 Onde estão
                 {onNoDocumento && (
@@ -308,7 +309,7 @@ export function ResumoDoParecer({
               <MapaDasPaginas colunas={colunasDoMapa} paginas={pontos} lidas={totalDePaginas} atuais={[]} />
             </section>
           )}
-          <section className="rc-cartao rc-leitura">
+          <section className="rc-cartao rc-leitura" data-tour="o-que-foi-lido">
             <h3>O que foi lido</h3>
             <ul>
               {report.arquivos_analisados.map((arq) => (
