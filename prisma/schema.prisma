@@ -993,3 +993,79 @@ model RecusaDeAcesso {
   @@index([createdAt])
   @@index([email, createdAt])
 }
+
+enum OrigemDoChamado {
+  MANUAL
+  ERRO_CLIENTE
+  ERRO_SERVIDOR
+}
+
+enum CategoriaDoChamado {
+  ERRO
+  SUGESTAO
+  DUVIDA
+}
+
+/// A ORDEM IMPORTA: o Postgres ordena enum pela declaração, e a caixa do admin
+/// usa isso para pôr os abertos em cima.
+enum StatusDoChamado {
+  ABERTO
+  EM_ANALISE
+  RESOLVIDO
+}
+
+enum PapelNoChamado {
+  USUARIO
+  DEV
+}
+
+/// UM PROBLEMA RELATADO — por alguém (MANUAL) ou pelo próprio sistema (ERRO_*).
+///
+/// Erros automáticos AGRUPAM pela `impressao` (rota normalizada + nome + 1ª
+/// linha da mensagem — ver [[lib/suporte/regras.ts]]): o mesmo defeito soma
+/// em `ocorrencias` em vez de abrir chamado novo. No máximo um chamado por
+/// impressão; um resolvido que volta é reaberto.
+///
+/// Quem abriu é guardado por e-mail e nome, não por FK: o Actor nem sempre tem
+/// userId, e apagar uma conta não pode apagar o relato dela.
+model ChamadoDeSuporte {
+  id               String              @id @default(cuid())
+  protocolo        Int                 @unique @default(autoincrement())
+  origem           OrigemDoChamado
+  categoria        CategoriaDoChamado  @default(ERRO)
+  status           StatusDoChamado     @default(ABERTO)
+  email            String?
+  nome             String?
+  organizationId   String?
+  /// Normalizada: sem query e com ids trocados por `:id`.
+  rota             String
+  digest           String?
+  impressao        String?
+  ocorrencias      Int                 @default(1)
+  ultimaOcorrencia DateTime            @default(now())
+  /// Navegador, versão, trilha, nome/mensagem/stack do erro. Ver `ContextoDoChamado`.
+  contexto         Json
+  /// O print, no cofre (`StoredFile.checksumSha256`).
+  printChecksum    String?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  mensagens        MensagemDoChamado[]
+
+  @@index([impressao])
+  @@index([status, ultimaOcorrencia])
+  @@index([email, createdAt])
+  @@index([origem, createdAt])
+}
+
+model MensagemDoChamado {
+  id         String           @id @default(cuid())
+  chamadoId  String
+  papel      PapelNoChamado
+  autorEmail String?
+  autorNome  String?
+  texto      String
+  createdAt  DateTime         @default(now())
+  chamado    ChamadoDeSuporte @relation(fields: [chamadoId], references: [id], onDelete: Cascade)
+
+  @@index([chamadoId, createdAt])
+}
