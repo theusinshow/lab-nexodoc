@@ -8,7 +8,7 @@
  * entre as páginas DO achado aberto; + − ampliam; Esc fecha.
  */
 import { AnimatePresence, motion } from "motion/react";
-import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Minus, Plus, SearchX, X } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Columns2, Minus, Plus, SearchX, X } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -20,6 +20,7 @@ import { candidatosDoGrifo, porQueSemGrifo, type FolhasSemCamada } from "@/lib/g
 import { useTempo } from "@/lib/ds/tempo";
 import { NIVEIS } from "@/lib/nivel-do-achado";
 import { lerPerguntaSobreAchado, textoDaPergunta } from "@/lib/pergunta-sobre-achado";
+import { paginasEmConflito } from "@/lib/trechos-da-evidencia";
 import { RotuloDaPergunta } from "@/components/achado/rotulo-da-pergunta";
 
 import type { AchadoDaTela } from "./use-parecer-vivo";
@@ -223,6 +224,52 @@ function BalaoDoAchado({ achado, aberto, onAlternar, onAbrirNaFila }: { achado: 
   );
 }
 
+/*
+ * LADO A LADO (08/10/2026): o conflito entre páginas é uma comparação, e ir e
+ * voltar com Shift+→ obrigava a guardar uma folha de cabeça para ler a outra.
+ * Aqui as duas ficam juntas, cada uma rolando sozinha até o seu trecho.
+ */
+function FolhaDoLado({
+  url,
+  pagina,
+  grifo,
+  tom,
+  zoom,
+  rotulo,
+  onNumPages,
+}: {
+  url: string;
+  pagina: number;
+  grifo: string[] | undefined;
+  tom: string;
+  zoom: number;
+  rotulo: string;
+  onNumPages: (n: number) => void;
+}) {
+  const caixa = useRef<HTMLDivElement>(null);
+  const [largura, setLargura] = useState(0);
+  useEffect(() => {
+    const el = caixa.current;
+    if (!el) return;
+    // A folha em 100% ocupa a coluna inteira, menos o respiro dos lados.
+    const medir = () => setLargura(Math.max(240, Math.floor(el.clientWidth - 32)));
+    medir();
+    const obs = new ResizeObserver(medir);
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+  return (
+    <section className="vm-lado-folha" aria-label={`Página ${pagina}`}>
+      <p className="vm-lado-folha-cabeca">
+        <b className="ds-num">p. {pagina}</b> {rotulo}
+      </p>
+      <div ref={caixa} className="vm-lado-folha-mesa" data-previa>
+        {largura > 0 && <AuditPdfViewer url={url} page={pagina} highlight={grifo} tom={tom} zoom={zoom} largura={largura} rolagem="contida" onNumPages={onNumPages} />}
+      </div>
+    </section>
+  );
+}
+
 /** O número curto do achado no pino da folha: "ACH-007" vira "7". */
 const rotuloDoPino = (id: string) => id.replace(/^\D*0*/, "") || id;
 
@@ -295,6 +342,8 @@ export function VisorDoMemorial({
   // O achado sob o mouse, na lista ou no pino: o grifo dele acende na folha.
   const [sobre, setSobre] = useState<string | null>(null);
   const [balaoAberto, setBalaoAberto] = useState(false);
+  // O conflito entre páginas já abre lado a lado; o resto, na folha única.
+  const [ladoALado, setLadoALado] = useState(() => paginasEmConflito(primeiro?.bruto.evidencia).length >= 2);
   const mesaRef = useRef<HTMLDivElement>(null);
 
   /*
@@ -348,6 +397,12 @@ export function VisorDoMemorial({
   const posicaoNoAtivo = paginasDoAtivo.indexOf(pagina);
   const anteriorDoAtivo = [...paginasDoAtivo].reverse().find((p) => p < pagina);
   const proximaDoAtivo = paginasDoAtivo.find((p) => p > pagina);
+  // O par lado a lado: a página atual e a seguinte do achado (a anterior, se esta é a última).
+  const emLadoALado = Boolean(url) && ladoALado && paginasDoAtivo.length >= 2;
+  const esquerda = paginasDoAtivo.includes(pagina) ? pagina : (paginasDoAtivo[0] ?? pagina);
+  const direita = paginasDoAtivo.find((p) => p > esquerda) ?? [...paginasDoAtivo].reverse().find((p) => p < esquerda) ?? esquerda;
+  const [primeiraDoPar, segundaDoPar] = esquerda < direita ? [esquerda, direita] : [direita, esquerda];
+  const conflito = doAtivo ? paginasEmConflito(doAtivo.bruto.evidencia) : [];
   const zoomPasso = (passo: number) => setZoom((z) => ZOOMS[Math.min(ZOOMS.length - 1, Math.max(0, ZOOMS.indexOf(z) + passo))]);
   const vizinha = (passo: number) => {
     const lista = paginasComAchado;
@@ -381,6 +436,10 @@ export function VisorDoMemorial({
       else if (e.key.toLowerCase() === "k" && !e.ctrlKey && !e.metaKey) vizinha(-1);
       else if (e.key.toLowerCase() === "g" && !e.ctrlKey && !e.metaKey) voltarAoGrifo(mesaRef.current);
       else if (e.key.toLowerCase() === "b" && !e.ctrlKey && !e.metaKey) setBalaoAberto((v) => !v);
+      else if (e.key.toLowerCase() === "l" && !e.ctrlKey && !e.metaKey && paginasDoAtivo.length >= 2) {
+        if (!ladoALado && !paginasDoAtivo.includes(pagina)) ir(paginasDoAtivo[0]);
+        setLadoALado((v) => !v);
+      }
     };
     document.addEventListener("keydown", tecla, true);
     return () => document.removeEventListener("keydown", tecla, true);
@@ -437,7 +496,7 @@ export function VisorDoMemorial({
               </Botao>
             </header>
 
-            <div className="vm-corpo">
+            <div className={`vm-corpo${emLadoALado ? " vm-corpo--lado-a-lado" : ""}`}>
               <div className="vm-esquerda">
               {doAtivo && paginasDoAtivo.length > 1 && (
                 <nav className={`vm-doachado vm--${doAtivo.nivel}`} aria-label={`Páginas do ${doAtivo.id}`}>
@@ -458,9 +517,41 @@ export function VisorDoMemorial({
                   <Botao variante="quiet" tamanho="sm" icone aria-label="Próxima página deste achado (Shift →)" title="Próxima página deste achado (Shift →)" onClick={() => proximaDoAtivo && ir(proximaDoAtivo)} disabled={!proximaDoAtivo}>
                     <ChevronRight />
                   </Botao>
+                  <Botao
+                    variante={emLadoALado ? "ghost" : "quiet"}
+                    tamanho="sm"
+                    className="vm-doachado-lado"
+                    aria-pressed={emLadoALado}
+                    title="Comparar as páginas lado a lado (L)"
+                    onClick={() => {
+                      if (!ladoALado && !paginasDoAtivo.includes(pagina)) ir(paginasDoAtivo[0]);
+                      setLadoALado((v) => !v);
+                    }}
+                  >
+                    <Columns2 /> {emLadoALado ? "Uma página" : "Lado a lado"}
+                  </Botao>
                 </nav>
               )}
               <div className="vm-mesa-moldura">
+              {emLadoALado && url && doAtivo ? (
+                <div className="vm-mesa vm-lado-a-lado">
+                  {[primeiraDoPar, segundaDoPar].map((p) => {
+                    const i = conflito.indexOf(p);
+                    return (
+                      <FolhaDoLado
+                        key={p}
+                        url={url}
+                        pagina={p}
+                        grifo={candidatosDoGrifo(doAtivo.bruto, p)}
+                        tom={doAtivo.nivel}
+                        zoom={zoom}
+                        rotulo={i >= 0 ? `trecho ${i + 1} de ${conflito.length}` : `do ${doAtivo.id}`}
+                        onNumPages={setTotal}
+                      />
+                    );
+                  })}
+                </div>
+              ) : (
               <div ref={mesaRef} className="vm-mesa vm-mesa--pdf">
                 {url ? (
                   <div className="vm-pdf">
@@ -496,7 +587,8 @@ export function VisorDoMemorial({
                   <p className="vm-sem">O arquivo deste memorial não está nesta máquina. Anexe-o de novo na conversa para ver o trecho na página.</p>
                 )}
               </div>
-              {url && doAtivo && <GrifoForaDaVista mesa={mesaRef} rotulo={doAtivo.id} />}
+              )}
+              {url && doAtivo && !emLadoALado && <GrifoForaDaVista mesa={mesaRef} rotulo={doAtivo.id} />}
               </div>
               {chat && <ChatNoVisor chat={chat} achado={doAtivo} pagina={pagina} />}
               </div>
@@ -552,7 +644,7 @@ export function VisorDoMemorial({
                     })}
                   </div>
                   <p className="rs-nota">
-                    <Tecla>J</Tecla> <Tecla>K</Tecla> entre elas, <Tecla>←</Tecla> <Tecla>→</Tecla> folheia, <Tecla>Shift</Tecla> <Tecla>→</Tecla> segue o achado, <Tecla>+</Tecla> <Tecla>−</Tecla> zoom, <Tecla>G</Tecla> volta ao grifo, <Tecla>B</Tecla> abre o balão
+                    <Tecla>J</Tecla> <Tecla>K</Tecla> entre elas, <Tecla>←</Tecla> <Tecla>→</Tecla> folheia, <Tecla>Shift</Tecla> <Tecla>→</Tecla> segue o achado, <Tecla>+</Tecla> <Tecla>−</Tecla> zoom, <Tecla>G</Tecla> volta ao grifo, <Tecla>B</Tecla> abre o balão, <Tecla>L</Tecla> lado a lado
                   </p>
                 </div>
               </aside>
@@ -564,3 +656,4 @@ export function VisorDoMemorial({
     raiz,
   );
 }
+

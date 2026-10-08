@@ -249,8 +249,58 @@ try {
   await page.evaluate(() => document.activeElement instanceof HTMLElement && document.activeElement.blur());
   await page.keyboard.press("m");
   await visor.waitFor({ timeout: 15000 });
-  await esperarFolha();
+  // Abre lado a lado (conflito entre páginas): espera as DUAS folhas.
+  await page.waitForFunction(() => document.querySelectorAll(".vm-lado-folha .react-pdf__Page canvas").length === 2, null, { timeout: 15000 });
   await page.waitForTimeout(1500);
+
+  // --- 0. o conflito entre páginas abre lado a lado ------------------------
+  /*
+   * O INC-001 cita "Pág. 3: … | Pág. 7: …": é um conflito entre páginas, e a
+   * comparação abre com as duas folhas juntas, cada uma no seu trecho.
+   */
+  await page.waitForTimeout(1500);
+  const lado = await page.evaluate(() => {
+    const folhas = [...document.querySelectorAll(".vm-lado-folha")];
+    const janela = { w: innerWidth, h: innerHeight };
+    return {
+      folhas: folhas.map((f) => {
+        const r = f.getBoundingClientRect();
+        const mesa = f.querySelector(".vm-lado-folha-mesa");
+        const faixa = f.querySelector(".grifo-faixa--ativo")?.getBoundingClientRect();
+        const m = mesa?.getBoundingClientRect();
+        const c = f.querySelector(".react-pdf__Page canvas")?.getBoundingClientRect();
+        return {
+          titulo: f.querySelector(".vm-lado-folha-cabeca")?.textContent ?? "",
+          cabe: r.left >= 0 && r.right <= janela.w + 1,
+          grifoVisivel: Boolean(faixa && m && faixa.top >= m.top && faixa.bottom <= m.bottom),
+          folha: c ? Math.round(c.width) : 0,
+          coluna: m ? Math.round(m.width) : 0,
+        };
+      }),
+      ladoEscondido: getComputedStyle(document.querySelector(".vm-lado")).display === "none",
+    };
+  });
+  check("o conflito entre páginas abre lado a lado", lado.folhas.length === 2, `${lado.folhas.length} folha(s)`);
+  check(
+    "as duas folhas são a p. 3 e a p. 7, cada uma com o seu trecho",
+    /p\. 3.*trecho 1 de 2/.test(lado.folhas[0]?.titulo ?? "") && /p\. 7.*trecho 2 de 2/.test(lado.folhas[1]?.titulo ?? ""),
+    lado.folhas.map((f) => f.titulo).join(" | "),
+  );
+  check("os dois grifos estão à vista ao mesmo tempo", lado.folhas.every((f) => f.grifoVisivel), JSON.stringify(lado.folhas.map((f) => f.grifoVisivel)));
+  check("as folhas cabem na janela e ocupam a coluna", lado.folhas.every((f) => f.cabe && f.folha >= f.coluna - 40), lado.folhas.map((f) => `${f.folha}/${f.coluna}px`).join(" "));
+  check("a coluna da direita sai para dar largura à comparação", lado.ladoEscondido);
+  check("o visor sabe o total de páginas também lado a lado", (await visor.getByText(/de 12/).count()) > 0);
+  await page.screenshot({ path: `${OUT}/visor-0-lado-a-lado.png` });
+  await visor.getByRole("button", { name: /Uma página/ }).click();
+  await page.waitForTimeout(400);
+  check("o botão volta para uma página só", (await page.locator(".vm-lado-folha").count()) === 0);
+  await page.evaluate(() => document.activeElement instanceof HTMLElement && document.activeElement.blur());
+  await page.keyboard.press("l");
+  await page.waitForTimeout(800);
+  check("L liga o lado a lado de novo", (await page.locator(".vm-lado-folha").count()) === 2);
+  await page.keyboard.press("l");
+  await esperarFolha();
+  await page.waitForTimeout(1200);
 
   // --- 1. abre no achado --------------------------------------------------
   check("abre na página do achado (p. 3)", (await paginaAtual()) === 3, String(await paginaAtual()));

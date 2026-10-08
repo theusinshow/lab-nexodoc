@@ -97,6 +97,11 @@ type AuditPdfViewerInternalProps = {
    * primeira quando o trecho está no pé da folha — e rola junto com a página.
    */
   balao?: ReactNode;
+  /**
+   * A largura da página em 100%, quando o dono mede o espaço (as duas folhas
+   * lado a lado). Sem ela, `LARGURA_BASE_DA_PAGINA`.
+   */
+  largura?: number;
 };
 const LARGURA_DO_BALAO = 360;
 
@@ -144,6 +149,7 @@ export default function AuditPdfViewerInternal({
   realce,
   onRealce,
   balao,
+  largura = LARGURA_BASE_DA_PAGINA,
 }: AuditPdfViewerInternalProps) {
   const [numPages, setNumPages] = useState(0);
   const [itens, setItens] = useState<ItemDeTexto[] | null>(null);
@@ -243,28 +249,39 @@ export default function AuditPdfViewerInternal({
     setDesenho({ chave: `${page}|${needle}|${chaveDosOutros}`, grupos, pintar, largura: folha.offsetWidth, altura: folha.offsetHeight });
   }, [page, needle, chaveDosOutros]);
 
-  const aoPintarOTexto = useCallback(() => {
-    medirOGrifo();
-    rolarAteOGrifo();
-  }, [medirOGrifo, rolarAteOGrifo]);
-
-  // O resultado do casamento sobe uma vez por página lida (e por trecho).
-  useEffect(() => {
-    if (!onGrifo || !itens || paginaDosItens !== page || needle.length < 3) return;
-    onGrifo(Boolean(faixas && faixas.size > 0), page);
-  }, [onGrifo, itens, paginaDosItens, page, needle, faixas]);
-
-  const textRenderer = useCallback(
-    ({ str, itemIndex }: { str: string; itemIndex: number }) => {
+  /*
+   * AS MARCAS SEM REDESENHAR A CAMADA (08/10/2026). As marcas entravam pelo
+   * `customTextRenderer` do react-pdf, e ele está nas dependências do efeito
+   * que desenha a camada de texto: cada vez que os trechos mudavam — e eles
+   * SEMPRE mudam logo depois do primeiro desenho, quando os itens chegam — o
+   * react-pdf jogava a camada fora e media todas as palavras da página de
+   * novo. Medido no 117-25: ~280 ms a mais para abrir, e de novo a cada troca
+   * de achado. Agora a camada é desenhada uma vez e as marcas entram nos spans
+   * prontos, com o mesmo pareamento item → span que o react-pdf usa.
+   */
+  const camadaPronta = useRef(false);
+  const marcados = useRef<{ el: HTMLElement; str: string }[]>([]);
+  const ultimoRolado = useRef("");
+  const aplicarMarcas = useCallback(() => {
+    const camada = caixa.current?.querySelector<HTMLElement>(".textLayer");
+    if (!camada || !itens || paginaDosItens !== page) return false;
+    for (const { el, str } of marcados.current) if (el.isConnected) el.textContent = str;
+    marcados.current = [];
+    const filhos = camada.querySelectorAll<HTMLElement>('[role="presentation"]');
+    let indice = 0;
+    itens.forEach((item, itemIndex) => {
+      const filho = filhos[indice];
+      // Igual ao react-pdf: o fim de linha do pdf.js é um <br> que ocupa um índice.
+      indice += item.str && (item as { hasEOL?: boolean }).hasEOL ? 2 : 1;
       const trechos = segmentos.get(itemIndex);
-      if (!trechos || trechos.length === 0) return escaparHtml(str);
-
+      if (!filho || !trechos?.length) return;
       /*
        * Montado por FATIA, e não por `replace`: as faixas vêm em índice de
        * caractere, e reconstruir o texto pedaço a pedaço é o que garante que a
        * marca caia exatamente onde o casamento caiu — inclusive no meio de uma
        * palavra que o pdf.js entregou colada a outra.
        */
+      const str = item.str;
       let saida = "";
       let cursor = 0;
       for (const { inicio, fim, grifo } of trechos) {
@@ -272,10 +289,47 @@ export default function AuditPdfViewerInternal({
         saida += `<mark data-g="${grifo}">${escaparHtml(str.slice(inicio, fim))}</mark>`;
         cursor = fim;
       }
-      return saida + escaparHtml(str.slice(cursor));
-    },
-    [segmentos],
-  );
+      filho.innerHTML = saida + escaparHtml(str.slice(cursor));
+      marcados.current.push({ el: filho, str });
+    });
+    return true;
+  }, [itens, paginaDosItens, page, segmentos]);
+
+  // A camada vai ser desenhada de novo (página, zoom, largura): espera o aviso dela.
+  useEffect(() => {
+    camadaPronta.current = false;
+  }, [page, zoom, largura]);
+
+  // Trechos novos sobre a camada já desenhada: só as marcas mudam.
+  useEffect(() => {
+    if (!camadaPronta.current || !aplicarMarcas()) return;
+    medirOGrifo();
+    const doAtivo = `${page}|${needle}`;
+    if (ultimoRolado.current !== doAtivo) {
+      ultimoRolado.current = doAtivo;
+      rolarAteOGrifo();
+    }
+  }, [aplicarMarcas, medirOGrifo, rolarAteOGrifo, page, needle]);
+
+  // O aviso da camada desenhada é ESTÁVEL: ele também está nas dependências do
+  // efeito que desenha a camada, e um aviso novo a cada render a redesenharia.
+  const aoPintar = useRef(() => {});
+  useEffect(() => {
+    aoPintar.current = () => {
+      camadaPronta.current = true;
+      if (!aplicarMarcas()) return;
+      medirOGrifo();
+      ultimoRolado.current = `${page}|${needle}`;
+      rolarAteOGrifo();
+    };
+  });
+  const aoPintarOTexto = useCallback(() => aoPintar.current(), []);
+
+  // O resultado do casamento sobe uma vez por página lida (e por trecho).
+  useEffect(() => {
+    if (!onGrifo || !itens || paginaDosItens !== page || needle.length < 3) return;
+    onGrifo(Boolean(faixas && faixas.size > 0), page);
+  }, [onGrifo, itens, paginaDosItens, page, needle, faixas]);
 
   // Onde o balão encosta: as linhas do grifo ativo, já medidas.
   const linhasDoAtivo = desenho && desenho.chave === chaveDoDesenho ? desenho.grupos.find((g) => g.grifo === 0)?.faixas : undefined;
@@ -335,7 +389,7 @@ export default function AuditPdfViewerInternal({
     >
       <Page
         pageNumber={safePage}
-        width={Math.round(LARGURA_BASE_DA_PAGINA * zoom)}
+        width={Math.round(largura * zoom)}
         onGetTextSuccess={(conteudo) => {
           /*
            * `TextMarkedContent` vem misturado aos itens de texto e não tem
@@ -350,7 +404,6 @@ export default function AuditPdfViewerInternal({
           setItens(lidos);
           setPaginaDosItens(safePage);
         }}
-        customTextRenderer={textRenderer}
         onRenderTextLayerSuccess={aoPintarOTexto}
         renderAnnotationLayer={false}
         className="shadow-sm"
@@ -372,7 +425,7 @@ export default function AuditPdfViewerInternal({
                   key={`${grifo}:${i}`}
                   className={classe}
                   data-tom={dono?.tom}
-                  style={{ left: r.x, top: r.y, width: r.w, height: r.h, animationDelay: `${180 + i * 110}ms` }}
+                  style={{ left: r.x, top: r.y, width: r.w, height: r.h, animationDelay: `${40 + i * 60}ms` }}
                 />
               ));
             })}

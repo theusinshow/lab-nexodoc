@@ -32,11 +32,17 @@
   transition: background-color 160ms ease, box-shadow 160ms ease;
 }
 
-/* Os OUTROS achados da página: mesma cor, metade da tinta, sem a linha de baixo cheia. */
+/*
+ * Os OUTROS achados da página: cinza bem transparente, sem linha de baixo.
+ * Coloridos eles disputavam com o ativo e a folha ficava confusa (retorno do
+ * Matheus, 08/10/2026) — a única cor na folha é a do achado aberto. A cor de
+ * cada um só aparece sob o mouse.
+ */
 .grifo-faixa--outro {
-  background: color-mix(in srgb, var(--grifo-tom) 24%, white);
-  box-shadow: inset 0 -1.5px 0 color-mix(in srgb, var(--grifo-tom) 65%, white);
+  background: rgb(120 126 138 / 0.13);
+  box-shadow: none;
 }
+.grifo-pino:not(.grifo-pino--ativo) { --grifo-tom: #a7acb6; }
 /* Sob o mouse (na lista ou no pino), o grifo daquele achado acende. */
 .grifo-faixa--outro.grifo-faixa--realce {
   background: color-mix(in srgb, var(--grifo-tom) 42%, white);
@@ -44,7 +50,7 @@
 }
 
 /* A chegada: a faixa se pinta da esquerda para a direita, uma vez. */
-.grifo-faixa--pinta { animation: grifo-pinta 420ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+.grifo-faixa--pinta { animation: grifo-pinta 300ms cubic-bezier(0.22, 1, 0.36, 1) both; }
 @keyframes grifo-pinta {
   from { clip-path: inset(0 100% 0 0 round 3px); }
   to { clip-path: inset(0 0 0 0 round 3px); }
