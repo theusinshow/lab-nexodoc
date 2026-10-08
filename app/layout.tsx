@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
 
-import { FONTES_DS } from "@/lib/ds/fontes";
+import { FONTES_DS, plexMono, plexSans } from "@/lib/ds/fontes";
 import "./globals.css";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Suspense } from "react";
@@ -9,24 +8,6 @@ import { Suspense } from "react";
 import { ProgressoDaNavegacao } from "@/components/layout/progresso-da-navegacao";
 import { VERSAO_DA_MARCA } from "@/components/brand/versao-da-marca";
 import { Reportador } from "@/components/suporte/reportador";
-
-// IBM Plex Sans/Mono (DESIGN.md secao 3): familia unica de engenharia,
-// fora do look v0/IA. Pesos conforme a rampa: 400 body, 500 label/title,
-// 600 display. IBM Plex nao e variavel no next/font, entao os pesos sao
-// declarados explicitamente.
-const plexSans = IBM_Plex_Sans({
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-  variable: "--font-plex-sans",
-  display: "swap",
-});
-
-const plexMono = IBM_Plex_Mono({
-  subsets: ["latin"],
-  weight: ["400", "500"],
-  variable: "--font-plex-mono",
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   title: "Nexo",

@@ -1,7 +1,7 @@
-import { Geist, Geist_Mono } from "next/font/google";
 import type { ReactNode } from "react";
 
 import "@/app/ds.css";
+import { geist, geistMono } from "@/lib/ds/fontes";
 
 /**
  * O DECK FALA A LÍNGUA DO SISTEMA NOVO. Desde 02/10/2026 a apresentação usa os
@@ -14,16 +14,6 @@ import "@/app/ds.css";
  * palco, não neste invólucro: é ela que liga as regras de base e precisa
  * anular o `zoom` de tela grande do ds.css (ver palco.css).
  */
-const geist = Geist({
-  subsets: ["latin"],
-  variable: "--font-ds-sans",
-  display: "swap",
-});
-const geistMono = Geist_Mono({
-  subsets: ["latin"],
-  variable: "--font-ds-mono",
-  display: "swap",
-});
 
 export default function LayoutDaApresentacao({
   children,

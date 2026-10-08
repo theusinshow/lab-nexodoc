@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import { notFound } from "next/navigation";
 
 import { auth } from "@/auth";
 import { getUserAccess } from "@/lib/access-control";
+import { geist, geistMono } from "@/lib/ds/fontes";
 
 import "../ds.css";
 
@@ -12,9 +12,6 @@ import "../ds.css";
  * do laboratório. Nada aqui fala com servidor. A mesma guarda do lab: livre em
  * dev, só admin em produção, e 404 para os outros.
  */
-
-const geist = Geist({ subsets: ["latin"], variable: "--font-ds-sans", display: "swap" });
-const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-ds-mono", display: "swap" });
 
 export const metadata: Metadata = { title: "Protótipo — Nexo" };
 

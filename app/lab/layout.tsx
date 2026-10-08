@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import { notFound } from "next/navigation";
 
 import { auth } from "@/auth";
 import { getUserAccess } from "@/lib/access-control";
+import { geist, geistMono } from "@/lib/ds/fontes";
 
 import "../ds.css";
 import "./lab.css";
@@ -21,9 +21,6 @@ import { NavegacaoDoLab } from "./_lab/navegacao";
  * A FONTE NOVA carrega só aqui, por enquanto. O resto do app segue no IBM Plex
  * até a migração chegar nele.
  */
-
-const geist = Geist({ subsets: ["latin"], variable: "--font-ds-sans", display: "swap" });
-const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-ds-mono", display: "swap" });
 
 export const metadata: Metadata = { title: "Laboratório — Nexo" };
 
