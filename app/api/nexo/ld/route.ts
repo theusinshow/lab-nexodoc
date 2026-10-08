@@ -12,6 +12,7 @@ import { accessDeniedResponse, requireActor } from "@/lib/access-control";
 import { getTemplateRegistry } from "@/server/templates/registry";
 import { casarPrefeituraDoCarimbo } from "@/server/nexo/agent/normalize";
 import { carregarEscritorio } from "@/lib/escritorio-config";
+import { caminhoDaLd, lerRede, type RedeDaLd } from "@/lib/ld/caminho-da-rede";
 
 export const runtime = "nodejs";
 
@@ -57,6 +58,10 @@ export async function POST(req: NextRequest) {
   let referenceTotal: number | undefined;
   /** A prefeitura escolhida no card, quando o plano tem capa/separatriz. */
   let templateId = "";
+  /** Onde o `.odt` mora na rede — a decisão da conversa. Ver lib/ld/caminho-da-rede.ts. */
+  let rede: RedeDaLd = {};
+  /** O editável leva o campo automático "nome do arquivo"; o do PDF, texto fixo. */
+  let editavel = false;
   /** A identidade do projeto corrigida à mão — a MESMA que a capa recebe. */
   const identidade: Record<string, string> = {};
   try {
@@ -112,6 +117,8 @@ export async function POST(req: NextRequest) {
       if (typeof valor === "string" && valor.trim()) identidade[chave] = valor.trim();
     }
     if (typeof body.templateId === "string") templateId = body.templateId.trim();
+    rede = lerRede(body.rede);
+    editavel = body.editavel === true;
   } catch {
     return NextResponse.json({ error: "Corpo invalido." }, { status: 400 });
   }
@@ -144,6 +151,11 @@ export async function POST(req: NextRequest) {
    * voltaria a errar exatamente onde este conserto mira.
    */
   let usarSecretaria = true;
+  /**
+   * A pasta do cliente na rede é o id do modelo: `pmcriciuma`, `prefchap`… são
+   * os mesmos nomes de `P:\cad\`. Sem modelo (Navegantes), só por colagem.
+   */
+  let clienteDaRede = "";
   try {
     const templates = await getTemplateRegistry();
     let modelo = templateId ? templates.find((t) => t.id === templateId) : undefined;
@@ -159,6 +171,7 @@ export async function POST(req: NextRequest) {
     }
     // Sem modelo reconhecido, nada muda: continua a regra de antes.
     if (modelo && !modelo.defaults.secretaria.trim()) usarSecretaria = false;
+    clienteDaRede = modelo?.id ?? "";
   } catch {
     // Registro de modelos indisponível não pode impedir a LD de sair.
   }
@@ -176,7 +189,19 @@ export async function POST(req: NextRequest) {
     referenceTotal,
     ...identidade,
   });
-  const result = await createLD(proposal.input);
+  // O caminho sai do que a proposta decidiu (código, disciplina do bloco,
+  // revisão): é o MESMO documento cujo rodapé ele descreve.
+  const caminho = caminhoDaLd({
+    cliente: clienteDaRede,
+    codigo: proposal.resumo.codigo,
+    disciplina: proposal.resumo.disciplinaCode,
+    revisao: proposal.resumo.revisao,
+    rede,
+  });
+  const result = await createLD({
+    ...proposal.input,
+    ...(caminho ? { caminho: { texto: caminho, campo: editavel ? "arquivo" : "fixo" } } : {}),
+  });
 
   /*
    * A LD gerada pelo Nexo entra no HISTÓRICO DO SERVIDOR.
@@ -240,6 +265,7 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({
     resumo: proposal.resumo,
+    caminho,
     ok: result.ok,
     blockingIssues: result.blockingIssues,
     warnings: result.warnings,

@@ -8,6 +8,7 @@ import { cabecalhosDeGeracao } from "@/lib/projeto-do-pedido";
 import { conferirSessao } from "./sessao";
 import { codigoDaFolha, rotuloDoCodigo } from "./disciplina-da-folha";
 import { limparIdentidade, type IdentidadeDoProjeto } from "./identidade";
+import type { RedeDaLd } from "@/lib/ld/caminho-da-rede";
 import type { Folha } from "./folhas";
 import type { SeloForLd } from "@/server/nexo/build-ld-proposal";
 import type { LightCheckResult } from "@/server/nexo/light-check-core";
@@ -25,6 +26,8 @@ export const ODT_MIME = "application/vnd.oasis.opendocument.text";
 
 export interface LdGenResult {
   resumo: { disciplina: string; codigo: string; revisao: string; totalFolhas: number };
+  /** O caminho de rede impresso no rodapé; ausente quando não havia como saber. */
+  caminho?: string;
   warnings: string[];
   odtUrl: string;
   odtName: string;
@@ -85,6 +88,12 @@ export interface LdOptions {
    * revisão que a capa — a correção vale nas duas.
    */
   identidade?: IdentidadeDoProjeto;
+  /** Onde o `.odt` mora na rede (a decisão `caminhoDaRede`). Vai no rodapé. */
+  rede?: RedeDaLd;
+  /** O editável da entrega: o rodapé leva o campo automático "nome do arquivo". */
+  editavel?: boolean;
+  /** O modelo da prefeitura escolhido — dá a pasta do cliente na rede. */
+  templateId?: string;
 }
 
 export async function postLd(
@@ -108,12 +117,16 @@ export async function postLd(
         : {}),
       // Sem `secretaria`: ela é da capa (a LD não a imprime).
       ...limparIdentidade({ ...opts.identidade, secretaria: undefined }),
+      ...(opts.rede ? { rede: opts.rede } : {}),
+      ...(opts.editavel ? { editavel: true } : {}),
+      ...(opts.templateId ? { templateId: opts.templateId } : {}),
     }),
   });
   conferirSessao(res);
   const payload = (await res.json().catch(() => null)) as
     | {
         error?: string;
+        caminho?: string;
         resumo?: LdGenResult["resumo"];
         warnings?: string[];
         files?: {
@@ -127,6 +140,7 @@ export async function postLd(
   }
   return {
     resumo: payload.resumo!,
+    caminho: payload.caminho || undefined,
     warnings: payload.warnings ?? [],
     odtName: payload.files.odt.name,
     odtUrl: base64ToUrl(payload.files.odt.data, ODT_MIME),

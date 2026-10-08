@@ -27,6 +27,8 @@ export interface CreateLDInput {
   tomos?: Tomo[];
   referenceTotal?: number | null;
   templateBase64?: string | null;
+  /** O caminho de rede impresso no rodapé. Ver `GeneratePayload.caminho`. */
+  caminho?: GeneratePayload["caminho"];
   includePdf?: boolean; // default true
   enforceValidation?: boolean; // default true — recusa se houver blockingIssues
 }
@@ -108,6 +110,7 @@ export async function createLD(input: CreateLDInput): Promise<CreateLDOutput> {
     tomos: input.tomos ?? [],
     templateBase64: input.templateBase64 ?? null,
     inconsistencies,
+    ...(input.caminho ? { caminho: input.caminho } : {}),
   };
 
   const odtBuffer = await generateOdtBuffer(payload);
