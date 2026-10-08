@@ -329,7 +329,7 @@ export function LinhaDoAchado({ f, a, sugestao, rapidas, onAbrir }: { f: Fila; a
   const ativo = a.chave === f.atual?.chave;
   return (
     <div
-      className={`rs-linha${ativo ? " rs-linha--ativa" : ""}${a.desfecho ? " rs-linha--encerrada" : ""}${a.desfecho?.tipo === "FIXED_IN_DOC" ? " rs-linha--corrigida" : ""}${f.marcados.length ? " rs-linha--selecionando" : ""}${rapidas ? " am-linha-com-rapidas" : ""}`}
+      className={`rs-linha${ativo ? " rs-linha--ativa" : ""}${a.desfecho ? " rs-linha--encerrada" : ""}${a.desfecho?.tipo === "FIXED_IN_DOC" ? " rs-linha--corrigida" : ""}${f.marcados.length ? " rs-linha--selecionando" : ""}${rapidas ? " am-linha-com-rapidas" : ""} rs-linha--sev-${a.nivel}`}
       /* Arrastada até o chat, vira uma pergunta sobre este achado (lib/pergunta-sobre-achado.ts). */
       draggable
       onDragStart={(e) => arrastarAchado(e.dataTransfer, a)}

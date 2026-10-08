@@ -100,7 +100,7 @@
 .ds .nd-margem .nd-etq--margem { position: static; transform: none; padding: 2px 4px; font-size: 10px; }
 
 /* A faixa do veredito (faixa-do-veredito.tsx): o veredito escrito no topo de toda leitura. */
-.ds .re-faixa { --re-tom: var(--ds-sev-block); display: grid; gap: 4px; margin: 0; padding: 10px 14px; border-radius: var(--ds-radius-card); background: color-mix(in srgb, var(--re-tom) 7%, var(--ds-surface-card)); box-shadow: inset 3px 0 0 var(--re-tom), var(--ds-edge); }
+.ds .re-faixa { --re-tom: var(--ds-sev-block); display: grid; gap: 4px; margin: 0; padding: 10px 14px; border-radius: var(--ds-radius-card); background: color-mix(in srgb, var(--re-tom) 7%, var(--ds-surface-card)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--re-tom) 24%, transparent); }
 .ds .re-faixa--decide { --re-tom: var(--ds-sev-decide); }
 .ds .re-faixa--ok { --re-tom: var(--ds-state-ok); }
 .ds .re-faixa .rs-selo { --rs-tom: var(--re-tom); flex: none; }

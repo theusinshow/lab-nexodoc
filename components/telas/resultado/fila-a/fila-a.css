@@ -41,6 +41,15 @@
 .ds .am-a-linhas { flex: 1; padding: 4px 6px 72px; }
 .ds .am-a-linhas .rs-linha-titulo { white-space: normal; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; line-height: 1.35; }
 .ds .am-a-linhas .rs-linha-corpo { height: auto; min-height: 44px; padding-top: 6px; padding-bottom: 6px; }
+.ds .re.re--embutido .am-a-linhas .rs-linha-corpo, .ds .am-a-linhas .rs-linha-corpo { padding-left: 18px; }
+/* A gravidade da linha: um traço solto entre o checkbox e o ID, e não borda do cartão (08/10/2026). */
+.ds .am-a-linhas .rs-linha { --linha-sev: var(--ds-text-tertiary); }
+.ds .am-a-linhas .rs-linha--sev-block { --linha-sev: var(--ds-sev-block); }
+.ds .am-a-linhas .rs-linha--sev-decide { --linha-sev: var(--ds-sev-decide); }
+.ds .am-a-linhas .rs-linha--sev-note { --linha-sev: var(--ds-sev-note); }
+.ds .am-a-linhas .rs-linha--sev-texto { --linha-sev: var(--ds-sev-texto); }
+.ds .am-a-linhas .rs-linha::before { content: ""; position: absolute; z-index: 1; left: 32px; top: 10px; bottom: 10px; width: 3px; border-radius: 2px; background: var(--linha-sev); pointer-events: none; }
+.ds .am-a-linhas .rs-linha--encerrada::before { opacity: 0.35; }
 .ds .am-exibicao-botao { justify-content: center; width: 34px; height: 32px; padding: 0; gap: 4px; }
 .ds .am-exibicao-botao:has(b) { width: auto; padding: 0 10px; }
 
