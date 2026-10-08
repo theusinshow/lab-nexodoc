@@ -47,6 +47,7 @@ import {
   type OrigemDoNumero,
 } from "@/server/nexo/parse-filename";
 import { runShellTransition } from "../lib/motion";
+import { esquecerDicas } from "../lib/dicas-da-auditoria";
 import { partidaPorId } from "../lib/partidas";
 import type { ProjetoPedido } from "../lib/projeto-pedido";
 import {
@@ -960,9 +961,19 @@ function NexoWorkspaceInner({
        * recibo nos dois lugares faria a mesma conta aparecer duas vezes com
        * formatos diferentes, que é como uma delas envelhece sozinha.
        */
+      /*
+       * PRANCHA ONDE SE ESPERAVA MEMORIAL (07/10/2026, U07). Quem veio pela
+       * tarefa "Auditar um memorial" e soltou uma prancha recebia "O que você
+       * quer que eu faça?" com LD e capa — e nada dizia que aquilo não é o
+       * memorial. A tarefa dela vem primeiro; as ofertas de volume ficam.
+       */
       content: `${reuso.trim()}${reuso && ressalva ? " " : ""}${ressalva.trim()}${
         reuso || ressalva ? " " : ""
-      }O que você quer que eu faça?`.trim(),
+      }${
+        tarefa?.id === "auditar" && !hasMemorial
+          ? "Isto é prancha, não o memorial descritivo. Para auditar, me manda o memorial em PDF. Com as pranchas, posso fazer outra coisa:"
+          : "O que você quer que eu faça?"
+      }`.trim(),
       ficha,
       /*
        * SEM SUGESTÃO, SEM SLOT. Com zero folhas lidas a lista fica vazia, e um
@@ -1032,27 +1043,23 @@ function NexoWorkspaceInner({
          * escrever ao agente — que não tem como aplicar a correção.
          */
         `Li as primeiras páginas: é o memorial descritivo. Esta ficha é a referência ` +
-        `da auditoria — um nome de outra obra no texto é o que denuncia reaproveitamento. ` +
-        `Confira os dados, principalmente o NOME DA OBRA, antes de auditar; se algum ` +
-        `estiver errado, corrija no lápis da linha.`,
+        `da auditoria — é pelo nome da obra que eu reconheço texto copiado de outro projeto. ` +
+        `Confira os dados, principalmente o NOME DA OBRA; se algum estiver errado, ` +
+        `corrija no lápis da linha. Estando certa, é só auditar.`,
       fichaDoMemorial: fichaDoMemorial(dossie, memorial.name, divergencia ? `Atenção: ${divergencia}.` : null),
-      slotRequest: {
-        slotId: "memorial",
-        taskKind: "auditoria",
-        prompt: "O que fazer com o memorial",
-        optional: true,
-        suggestions: [
-          /*
-           * UM BOTÃO SÓ. Havia "Auditar o memorial" e "Auditoria profunda" lado
-           * a lado, e a escolha era falsa: a profunda é a única que existe de
-           * verdade. Oferecer as duas fazia o usuário decidir entre a auditoria
-           * e uma versão pior dela, pelo mesmo preço. Ver `requirements.ts`.
-           */
-          { label: "Auditar o memorial", value: "audita o memorial", commit: "send" },
-          // "A obra está errada" saiu: a correção é no lápis de cada linha da
-          // ficha, que muda a régua de verdade (o texto ao agente não mudava).
-        ],
-      },
+      /*
+       * A PROPOSTA VEM JUNTO DA FICHA (auditoria UX do memorial, 07/10/2026).
+       * Antes era um botão "Auditar o memorial" que escrevia "audita o
+       * memorial" como fala do usuário, ia ao servidor só para voltar uma
+       * resposta fixa ("Confirme para começar") e trazia o cartão abaixo da
+       * dobra, repetindo a ficha com outros nomes, e com uma caixa a marcar.
+       * Três gestos para declarar uma coisa só. Agora o cartão nasce aqui,
+       * debaixo da ficha que ele usa, com um botão: "Conferi — auditar".
+       *
+       * O id do parecer continua sendo o desta mensagem
+       * ([[auditoria-da-proposta.ts]]): uma proposta, um resultado.
+       */
+      proposals: [{ kind: "auditoria", resumo: "Auditoria do memorial", params: { nivel: "deep" } }],
     });
 
     /*
@@ -1152,7 +1159,7 @@ function NexoWorkspaceInner({
         ),
       ].filter(Boolean);
       setRecusa(
-        `${exts.join(", ") || "Este formato"} não é aceito. O Nexo lê o carimbo de PDF — exporte a prancha em PDF e solte de novo.`,
+        `${exts.join(", ") || "Este formato"} não é aceito. O Nexo lê PDF — o memorial ou as pranchas: exporte em PDF e solte de novo.`,
       );
     } else {
       setRecusa(null);
@@ -1813,6 +1820,14 @@ function NexoWorkspaceInner({
   const [aberturasDaTela] = useState(() => criarUltimaAbertura());
   const reset = (opts?: { descartar?: boolean }) => {
     aberturasDaTela.comecar();
+    /*
+     * A TAREFA SOBREVIVE A "NOVA CONVERSA" FEITA NA TELA DELA, ainda vazia
+     * (07/10/2026, U21). Quem chegou por "Auditar um memorial" e apertou
+     * "Nova conversa" antes de soltar qualquer coisa perdia o convite e caía na
+     * saudação genérica. Conversa com conteúdo continua voltando à entrada.
+     */
+    const tarefaQueFica = tarefa && conv.messages.length === 0 ? tarefa.id : null;
+    const proxima = convId + 1;
     runShellTransition(() =>
       flushSync(() => {
         setStarted(false);
@@ -1829,6 +1844,7 @@ function NexoWorkspaceInner({
         setError(null);
         setReading(false);
         setConvId((c) => c + 1);
+        if (tarefaQueFica) setTarefaDaTela({ id: tarefaQueFica, conv: proxima });
       }),
     );
   };
@@ -2103,6 +2119,8 @@ function NexoWorkspaceInner({
    */
   const [tourAtivo, setTourAtivo] = useState(false);
   const iniciarTour = useCallback(async () => {
+    // Quem pede "Como funciona o Nexo" também quer as dicas da auditoria de volta, cada uma na hora dela.
+    esquecerDicas();
     const id = await criarProjetoExemplo();
     // `selectConv` é o MESMO caminho do clique na sidebar: o exemplo entra na
     // tela como qualquer conversa restaurada, e o `started` vem do registro.
@@ -2142,36 +2160,17 @@ function NexoWorkspaceInner({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Primeiro acesso: ninguém pede o tour: ele se oferece uma vez só.
-  const tourRef = useRef(false);
-  useEffect(() => {
-    if (tourRef.current) return;
-    tourRef.current = true;
-    let jaViu = true;
-    try {
-      jaViu = window.localStorage.getItem(CHAVE_TOUR_VISTO) === "1";
-    } catch {
-      jaViu = true;
-    }
-    /*
-     * QUEM CHEGA POR LINK NÃO QUER TOUR.
-     *
-     * `/nexo?auditoria=<id>` é o ABRIR da home: a pessoa clicou numa pendência
-     * dela e veio ver um parecer específico. O tour se oferece a quem nunca
-     * abriu o produto — e no primeiro login de alguém que recebeu achados as
-     * duas condições são verdadeiras ao mesmo tempo.
-     *
-     * Sem esta linha, o tour vence a corrida: ele semeia o projeto de exemplo
-     * de imediato, enquanto a auditoria pedida ainda está vindo do servidor. O
-     * link levava ao passeio guiado, e a pendência sumia.
-     */
-    const pediramUmaAuditoria = Boolean(contexto.auditoria);
-
-    if (jaViu || pediramUmaAuditoria || conv.conversations.length > 0) return;
-    const quadro = requestAnimationFrame(() => void iniciarTour());
-    return () => cancelAnimationFrame(quadro);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [conv.conversations.length]);
+  /*
+   * O TOUR NÃO ABRE MAIS SOZINHO (auditoria UX do memorial, 07/10/2026).
+   *
+   * Ele se oferecia na montagem a quem não tinha conversa — mas a lista chega
+   * do servidor depois do primeiro quadro, e o teste via zero: o tour de 11
+   * passos abriu por cima de `/nexo?intencao=auditar` para quem tinha 48
+   * conversas, ensinando volume a quem veio auditar, e deixou um "Exemplo
+   * guiado" na barra. Quem quer o passeio pede em "Como funciona o Nexo"; quem
+   * chega para uma tarefa recebe as dicas DELA, na hora em que faz cada coisa
+   * ([[modules/nexo/lib/dicas-da-auditoria.ts]]).
+   */
 
   const retomouRef = useRef(false);
   useEffect(() => {
@@ -3024,6 +3023,7 @@ function NexoWorkspaceInner({
                 mapa={
                   <NexoCanvas
                     memorial={memorialFile?.name ?? null}
+                    memorialArquivo={memorialFile}
                     folhas={selos}
                     numeros={numerosDasFolhas}
                     origens={origensDasFolhas}

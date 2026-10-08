@@ -151,7 +151,7 @@ test("o resumo diz o que mudou, sem adjetivo", () => {
     cap("3 FUNDACOES", "Estacas escavadas com diametro de 40cm.", 20),
     cap("4 METALICA", "Novo.", 40),
   ]);
-  assert.equal(resumoDoDelta(compararImpressoes(ANTES, agora)), "3 igual(is), 1 novo(s)");
+  assert.equal(resumoDoDelta(compararImpressoes(ANTES, agora)), "3 capítulos iguais, 1 novo");
 });
 
 console.log(`\n${passed} testes ok`);

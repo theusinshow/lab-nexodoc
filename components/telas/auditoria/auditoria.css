@@ -348,3 +348,11 @@
 .ds .au-geral-porque { margin: 0; padding: 0 24px 20px; font-size: var(--ds-text-xs); line-height: 1.5; color: var(--ds-text-secondary); }
 .ds .au--geral .au-anel--concluida .au-anel-arco { stroke-dasharray: none; }
 .ds .au-geral-tratados { margin-top: 10px; }
+
+/* No palco estreito (1440 px com conversas e chat abertos) o anel cobria o título
+   "Memorial bateria, revisão A": o título encolhia abaixo do conteúdo dele. Abaixo
+   de 620 px de palco, título em cima, relógio embaixo (auditoria UX, 07/10/2026). */
+.ds .au--embutido { container-type: inline-size; }
+@container (max-width: 620px) {
+  .ds .au--embutido .au-painel-topo { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+}

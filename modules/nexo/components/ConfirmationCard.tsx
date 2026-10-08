@@ -2202,6 +2202,7 @@ function AuditoriaConfirmation({
     podeGastar,
     motivoDaTrava,
     conferirAntesDeGastar,
+    messages,
   } = useConversation();
   const { refresh: refreshUsage } = useConversationUsage();
   const auditoria = useAuditoria();
@@ -2234,6 +2235,26 @@ function AuditoriaConfirmation({
         )
       : auditoriaId(selos, memorialFatos?.codigo));
   const result = getResult(id)?.payload as MemorialAuditResult | undefined;
+  /*
+   * A FICHA E O CARTÃO NUMA MENSAGEM SÓ (auditoria UX do memorial, 07/10/2026).
+   * O cartão repetia, com outros nomes, o que a ficha logo acima já mostrava
+   * ("Código" virava "Centro de custo", "Órgão" virava "Prefeitura"). Quando a
+   * proposta vem junto da ficha, os dados ficam só nela — onde se corrigem.
+   * Rodada nova ("Auditar de novo") não tem ficha na mensagem: aí o cartão
+   * mostra os dados, como sempre mostrou.
+   */
+  const posicaoDaMensagem = mensagemId ? messages.findIndex((m) => m.id === mensagemId) : -1;
+  const comFicha = posicaoDaMensagem >= 0 && Boolean(messages[posicaoDaMensagem].fichaDoMemorial);
+  /*
+   * PROPOSTA SUPERADA: pedir de novo ("audita o memorial" escrito no campo)
+   * criava um segundo cartão, e os dois ficavam com "Auditar" aceso — mesmo
+   * depois do parecer. Sem parecer próprio e com outra proposta de auditoria
+   * abaixo, este cartão cede o lugar àquela.
+   */
+  const superada =
+    !result &&
+    posicaoDaMensagem >= 0 &&
+    messages.slice(posicaoDaMensagem + 1).some((m) => m.proposals?.some((p) => p.kind === "auditoria"));
   /*
    * AUDITAR DE NOVO abre OUTRA proposta, com outro cartão. Rodar no mesmo
    * cartão sobrescrevia o parecer anterior, e a comparação entre as rodadas
@@ -2372,8 +2393,38 @@ function AuditoriaConfirmation({
   const [escolhaDeProjeto, setEscolhaDeProjeto] = useState<{
     projetos: ProjetoConhecido[];
     comTranscricao: boolean;
+    /** Perguntada ANTES do clique (sem código legível), e não depois dele. */
+    proativa?: boolean;
   } | null>(null);
   const [projetoEscolhido, setProjetoEscolhido] = useState("");
+  /*
+   * O PROJETO ANTES DO CLIQUE (07/10/2026, U18). Sem código legível, a pergunta
+   * "de qual projeto é?" só aparecia depois de apertar Auditar — uma etapa a
+   * mais, descoberta tarde. Agora o cartão pergunta assim que nasce. A espera
+   * curta dá tempo ao vínculo do anexo, que roda em segundo plano e quase
+   * sempre resolve sozinho; vinculada a conversa, a pergunta some.
+   */
+  const perguntouProjeto = useRef(false);
+  useEffect(() => {
+    if (result || projetoDaConversa || !memorialFile || perguntouProjeto.current) return;
+    let vivo = true;
+    const espera = setTimeout(() => {
+      perguntouProjeto.current = true;
+      void resolverProjetoDaAuditoria(memorialFatos?.codigo, undefined, { prefeitura, obra, municipio })
+        .then((destino) => {
+          if (vivo && destino.tipo === "sem-codigo" && destino.projetos.length > 0) {
+            setEscolhaDeProjeto({ projetos: destino.projetos, comTranscricao: false, proativa: true });
+          }
+        })
+        .catch(() => {});
+    }, 1500);
+    return () => {
+      vivo = false;
+      clearTimeout(espera);
+    };
+  }, [result, projetoDaConversa, memorialFile, memorialFatos?.codigo, prefeitura, obra, municipio]);
+  /** Vinculada a conversa, a pergunta feita de antemão não vale mais. */
+  const escolhaVisivel = projetoDaConversa && escolhaDeProjeto?.proativa ? null : escolhaDeProjeto;
 
   async function confirm(comTranscricao = false, projetoDaEscolha?: string) {
     /*
@@ -2386,7 +2437,7 @@ function AuditoriaConfirmation({
      */
     if (!memorialFile) {
       setError(
-        "O PDF do memorial não está nesta aba. Anexe o arquivo de novo (arraste para o chat) e clique em Auditar.",
+        "O PDF do memorial não está nesta aba. Anexe o arquivo de novo (arraste para o chat) e clique em “Conferi — auditar”.",
       );
       return;
     }
@@ -2659,7 +2710,12 @@ function AuditoriaConfirmation({
    * e um gabarito errado acusa o documento certo. Quem audita marca que
    * conferiu; o botão espera.
    */
-  const [dadosConferidos, setDadosConferidos] = useState(false);
+  /*
+   * UM GESTO SÓ (07/10/2026, D1): a caixa "Conferi os dados da obra" e o botão
+   * Auditar eram dois cliques para declarar a mesma coisa, depois de um
+   * terceiro ("Auditar o memorial"). A garantia continua: o botão carrega o
+   * verbo — "Conferi — auditar" — e nada roda sem esse clique explícito.
+   */
   /*
    * Cartão com parecer não reabre o formulário: rodar de novo é outra proposta
    * (`auditarDeNovo`). Reabrir aqui gravaria a rodada nova por cima desta.
@@ -2670,6 +2726,14 @@ function AuditoriaConfirmation({
    * COM PARECER, É UMA FALA DO NEXO, não um cartão (o desenho do lab): a moldura
    * de proposta já cumpriu seu papel, e o que resta é dizer o que achou.
    */
+  if (superada && !busy) {
+    return (
+      <p className="cx-texto text-xs text-muted-foreground" data-proposta-superada>
+        Esta proposta foi refeita mais abaixo na conversa.
+      </p>
+    );
+  }
+
   if (result) {
     return (
       <>
@@ -2688,13 +2752,14 @@ function AuditoriaConfirmation({
     <CardShell kind="auditoria" resumo={resumo}>
       {podeAuditar && (
         <>
+          {!comFicha && (
           <div className="space-y-2">
             <SummaryRow
               label="Memorial"
               value={memorialFile ? memorialFile.name : "arraste o PDF do memorial →"}
               missing={!memorialFile}
             />
-            <SummaryRow label="Obra (gabarito)" value={obra ?? "—"} missing={!obra} destaque />
+            <SummaryRow label="Obra de referência" value={obra ?? "—"} missing={!obra} destaque />
             <SummaryRow
               label="Prefeitura"
               value={prefeitura ?? "—"}
@@ -2721,9 +2786,10 @@ function AuditoriaConfirmation({
               procurada depois.
             */}
             {memorialFatos?.codigo && (
-              <SummaryRow label="Centro de custo" value={memorialFatos.codigo} />
+              <SummaryRow label="Código" value={memorialFatos.codigo} />
             )}
           </div>
+          )}
           {/*
             De ONDE veio a régua muda o peso do que a auditoria vai dizer. Obra
             saída do CARIMBO é fonte independente do memorial — é ela que denuncia
@@ -2888,21 +2954,10 @@ function AuditoriaConfirmation({
               {progressoDaTranscricao.total}…
             </p>
           )}
-          <label className="cx-conferi flex items-start gap-2 text-xs leading-relaxed">
-            <input
-              type="checkbox"
-              className="mt-0.5"
-              checked={dadosConferidos}
-              onChange={(e) => setDadosConferidos(e.target.checked)}
-              disabled={busy}
-            />
-            <span>
-              <b className="font-medium text-foreground">Conferi os dados da obra</b>{" "}
-              <span className="text-muted-foreground">
-                — nome, prefeitura, município e código. Algum errado? Corrija no lápis da ficha do memorial, acima, antes de auditar.
-              </span>
-            </span>
-          </label>
+          <p className="cx-conferi text-xs leading-relaxed text-muted-foreground">
+            Ao auditar, você declara que conferiu a obra{comFicha ? " na ficha acima" : ""}: nome, prefeitura, município e código.
+            Algum errado? Corrija no lápis da ficha antes.
+          </p>
           <div className="flex flex-wrap items-center gap-2">
             {/*
               Com folha muda são DOIS caminhos, e o de transcrever é o primário:
@@ -2910,24 +2965,26 @@ function AuditoriaConfirmation({
               continua disponível porque a decisão de gastar é de quem paga —
               mas o texto dele diz o que se está abrindo mão.
             */}
+            {!escolhaVisivel?.proativa && (
             <ConfirmButton
               busy={busy}
-              disabled={!memorialFile || conferindoPaginas || !dadosConferidos}
+              disabled={!memorialFile || conferindoPaginas}
               label={
                 conferindoPaginas
                   ? "Conferindo páginas…"
                   : temFolhaMuda
-                    ? "Transcrever e auditar"
-                    : "Auditar"
+                    ? "Conferi — transcrever e auditar"
+                    : "Conferi — auditar"
               }
               busyLabel="Auditando…"
               onConfirm={() => confirm(temFolhaMuda)}
             />
-            {temFolhaMuda && (
+            )}
+            {temFolhaMuda && !escolhaVisivel?.proativa && (
               <Button
                 size="sm"
                 variant="ghost"
-                disabled={busy || !memorialFile || !dadosConferidos}
+                disabled={busy || !memorialFile}
                 onClick={() => confirm(false)}
               >
                 Auditar sem transcrever
@@ -2936,12 +2993,6 @@ function AuditoriaConfirmation({
             {paginasMudas.estado === "lendo" && (
               <span className="text-xs text-muted-foreground">
                 Conferindo se o documento tem texto…
-              </span>
-            )}
-            {/* O botão desligado diz por quê: sem isto ele parece quebrado. */}
-            {!dadosConferidos && !conferindoPaginas && memorialFile && (
-              <span className="text-xs text-muted-foreground">
-                Marque “Conferi os dados da obra” para liberar.
               </span>
             )}
             {/*
@@ -2995,9 +3046,9 @@ function AuditoriaConfirmation({
             escolha válida o botão não libera — auditoria sem projeto não tem
             fila, gate de emissão nem a quem atribuir achado.
           */}
-          {escolhaDeProjeto &&
+          {escolhaVisivel &&
             (() => {
-              const opcoes = opcoesDoSeletorDeProjeto(escolhaDeProjeto.projetos);
+              const opcoes = opcoesDoSeletorDeProjeto(escolhaVisivel.projetos);
               const idDoSeletor = `projeto-da-auditoria-${mensagemId ?? "cartao"}`;
               return (
                 <div
@@ -3005,7 +3056,7 @@ function AuditoriaConfirmation({
                   className="nx-cut-6 flex flex-col gap-2 border-0 bg-[var(--nexodoc-recessed)] px-3 py-2"
                 >
                   <label htmlFor={idDoSeletor} className="text-xs leading-relaxed text-foreground">
-                    {fraseDoImpasse({ tipo: "sem-codigo", projetos: escolhaDeProjeto.projetos })}
+                    {fraseDoImpasse({ tipo: "sem-codigo", projetos: escolhaVisivel.projetos })}
                   </label>
                   <div className="flex flex-wrap items-center gap-2">
                     <select
@@ -3024,9 +3075,9 @@ function AuditoriaConfirmation({
                     <Button
                       size="sm"
                       disabled={busy || !projetoEscolhidoValido(projetoEscolhido, opcoes)}
-                      onClick={() => void confirm(escolhaDeProjeto.comTranscricao, projetoEscolhido)}
+                      onClick={() => void confirm(escolhaVisivel.proativa ? temFolhaMuda : escolhaVisivel.comTranscricao, projetoEscolhido)}
                     >
-                      Auditar neste projeto
+                      Conferi — auditar neste projeto
                     </Button>
                   </div>
                 </div>

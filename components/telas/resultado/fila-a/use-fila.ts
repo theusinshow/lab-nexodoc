@@ -15,6 +15,7 @@ import type { Desfecho } from "@/lib/desfecho-do-achado";
 import { resolverFonte, type FonteDoCatalogo } from "@/lib/fonte-da-evidencia";
 import { formatarEmBrasilia } from "@/lib/fuso-de-brasilia";
 import { linkDoAchado } from "@/lib/link-do-achado";
+import { marcarDica } from "@/modules/nexo/lib/dicas-da-auditoria";
 import { DISCIPLINAS, NIVEIS, type Nivel } from "@/lib/nivel-do-achado";
 
 import type { AchadoDaTela, ParecerVivo } from "@/components/telas/resultado/use-parecer-vivo";
@@ -87,6 +88,8 @@ export function useFila({
   const [escolheu, setEscolheu] = useState(false);
   const [direcao, setDirecao] = useState(1);
   const [decisao, setDecisao] = useState(false);
+  /** A lista de atalhos (tecla ?), aberta por cima da fila. */
+  const [verAtalhos, setVerAtalhos] = useState(false);
   const [motivo, setMotivo] = useState("");
   const [marcados, setMarcados] = useState<string[]>([]);
   const [aba, setAba] = useState<Aba>("evidencia");
@@ -209,6 +212,8 @@ export function useFila({
     if (!a || a.desfecho) return false;
     const ok = await parecer.encerrar(a, tipo, nota);
     if (ok) {
+      // O primeiro encerramento é a dica da primeira revisão cumprida (M4).
+      marcarDica("primeira-revisao");
       setUltimo(a.chave);
       setDecisao(false);
       setMotivo("");
@@ -234,14 +239,18 @@ export function useFila({
       if (alvo.closest("[role='dialog']")) return;
       const digitando = alvo.closest("input, textarea, select, [contenteditable='true']");
       if (e.key === "Escape") {
-        if (decisao) (e.preventDefault(), setDecisao(false));
+        if (verAtalhos) (e.preventDefault(), setVerAtalhos(false));
+        else if (decisao) (e.preventDefault(), setDecisao(false));
         else if (marcados.length) (e.preventDefault(), setMarcados([]));
         else if (digitando && busca) (e.preventDefault(), setBusca(""));
         return;
       }
       if (digitando || e.ctrlKey || e.metaKey || e.altKey || !atual) return;
       const k = e.key.toLowerCase();
-      if (k === "j") ir(1);
+      // Quem usa uma tecla de encerrar já sabe dos atalhos: a dica deles não precisa vir (M5).
+      if (!atual.desfecho && (k === "c" || k === "f" || k === "d")) marcarDica("atalhos");
+      if (k === "?") (e.preventDefault(), setVerAtalhos((v) => !v));
+      else if (k === "j") ir(1);
       else if (k === "k") ir(-1);
       else if (k === "m" && temArquivo(atual)) onVerNoMemorial(atual.chave);
       else if (k === "/") (e.preventDefault(), campoDeBusca?.focus());
@@ -269,6 +278,8 @@ export function useFila({
   }
 
   return {
+    verAtalhos,
+    setVerAtalhos,
     parecer,
     auditId,
     aoGerarTexto,

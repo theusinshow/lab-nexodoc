@@ -15,11 +15,10 @@ export default {
 
     await ctx.anexar(["tests/117_25_md_geral_a.pdf"]);
     await ctx.esperarTexto(/Li as primeiras páginas/, 120_000);
-    await (await ctx.esperarBotao(/Auditar o memorial/, 30_000)).click();
 
     // O documento tem folhas mudas: o cartão oferece as duas saídas. Aqui interessa
     // a leitura da IA, não a transcrição.
-    const semTranscrever = await ctx.esperarBotao(/Auditar sem transcrever|^Auditar$/, 120_000);
+    const semTranscrever = await ctx.esperarBotao(/Auditar sem transcrever|^Conferi — auditar$/, 120_000);
     await semTranscrever.click();
 
     await ctx.esperarTexto(/A IA NÃO LEU O DOCUMENTO/, 600_000);

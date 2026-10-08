@@ -60,7 +60,7 @@ export const PARTIDAS: readonly Partida[] = [
     tela: {
       convite: "Vamos auditar um memorial. Me manda o memorial em PDF.",
       pede: "Solte o memorial descritivo em PDF",
-      faz: "O Nexo lê a capa, mostra a ficha da obra para você conferir e audita o documento contra ela.",
+      faz: "O Nexo lê a capa, mostra a ficha da obra para você conferir e audita o documento inteiro contra ela. Leva de 1 a 5 minutos, e você pode fechar a aba.",
       botao: "Escolher o memorial",
     },
   },

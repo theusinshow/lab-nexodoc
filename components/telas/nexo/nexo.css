@@ -165,3 +165,6 @@
 @media (prefers-reduced-motion: reduce) {
   .ds .react-flow__node.nx-onda > *, .ds .react-flow__node.nx-varredura > * { animation: none; }
 }
+/* A capa do memorial no palco vazio da preparação (NexoCanvas, CapaDoMemorial). */
+.ds .nx-capa-do-memorial { width: 300px; max-width: 100%; aspect-ratio: 210 / 297; overflow: hidden; border-radius: 6px; background: #fff; box-shadow: var(--ds-edge-strong); }
+.ds .nx-capa-do-memorial svg { width: auto; height: auto; }

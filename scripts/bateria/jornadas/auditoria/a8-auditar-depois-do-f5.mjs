@@ -22,7 +22,7 @@
 import { conferirDados } from "../../lib/contexto.mjs";
 
 async function estadoDoAuditar(pagina) {
-  const botao = pagina.getByRole("button", { name: /^(Auditar|Conferindo páginas…|Transcrever e auditar)$/ }).last();
+  const botao = pagina.getByRole("button", { name: /^(Conferi — auditar|Conferindo páginas…|Conferi — transcrever e auditar)$/ }).last();
   if ((await botao.count()) === 0) return { existe: false, rotulo: null, habilitado: false };
   const rotulo = ((await botao.textContent().catch(() => "")) ?? "").trim();
   const habilitado = await botao.isEnabled().catch(() => false);
@@ -30,15 +30,19 @@ async function estadoDoAuditar(pagina) {
 }
 
 /**
- * O memorial NA LINHA "Memorial" do cartão, e não em qualquer lugar: o nome do
- * arquivo também aparece na mensagem do anexo, e contar essa passaria sem o
- * cartão ter recebido arquivo nenhum.
+ * O memorial na ficha da mensagem que traz o cartão (ver o comentário abaixo).
  */
 function memorialNoCartao(pagina, nome) {
-  return pagina
-    .locator("div.flex.items-baseline", { has: pagina.getByText("Memorial", { exact: true }) })
-    .getByText(nome, { exact: true })
-    .last();
+  // Desde 07/10/2026 o cartão não repete os dados da ficha logo acima: o
+  // memorial aparece no cabeçalho dela. O nome ali vem da mensagem gravada, e
+  // por isso só vale junto do teste abaixo — sem o arquivo, o cartão acende o
+  // aviso âmbar "O PDF do memorial não está nesta aba".
+  return pagina.locator(".nx-ficha-arquivo").getByText(nome, { exact: true });
+}
+
+/** O arquivo de verdade na aba: o aviso de memorial ausente NÃO está na tela. */
+async function semAvisoDeMemorialAusente(pagina) {
+  return (await pagina.getByText(/O PDF do memorial não está nesta aba/).count()) === 0;
 }
 
 /**
@@ -57,7 +61,7 @@ async function esperarAuditarHabilitado(pagina, ms) {
       linha.push(`${Date.now() - inicio}ms ${marca}`);
       ultimo = marca;
     }
-    if (e.existe && e.rotulo === "Auditar" && e.habilitado) return { ok: true, linha };
+    if (e.existe && e.rotulo === "Conferi — auditar" && e.habilitado) return { ok: true, linha };
     await pagina.waitForTimeout(250);
   }
   return { ok: false, linha };
@@ -81,7 +85,7 @@ export default {
     // E o localizador do memorial acha o nome ANTES: senão o "não mostra" de
     // depois poderia ser só um seletor que nunca achou nada.
     const memorialAntes = memorialNoCartao(page, nomeDoMemorial);
-    ctx.verificar("antes de restaurar, o cartão mostra o memorial", (await memorialAntes.count()) > 0 && (await ctx.visivelRolando(memorialAntes)), `contagem=${await memorialAntes.count()}`);
+    ctx.verificar("antes de restaurar, o cartão mostra o memorial", (await memorialAntes.count()) > 0 && (await ctx.visivelRolando(memorialAntes)) && (await semAvisoDeMemorialAusente(page)), `contagem=${await memorialAntes.count()}`);
 
     const id = await ctx.conversaAberta();
     // O memorial RETIDO no disco é a condição para a restauração ter o que
@@ -96,14 +100,14 @@ export default {
     const abriuNaAba2 = await ctx.esperar(async () => (await ctx.conversaAberta(aba2)) === id && (await aba2.getByText(/Li as primeiras páginas/).count()) > 0, 30_000, 500);
     ctx.verificar("a aba 2 abriu a mesma conversa, com a leitura do memorial", abriuNaAba2, `aberta=${await ctx.conversaAberta(aba2)} esperada=${id}`);
     const naAba2 = await esperarAuditarHabilitado(aba2, 20_000);
-    const botaoDaAba2 = aba2.getByRole("button", { name: /^Auditar$/ }).last();
+    const botaoDaAba2 = aba2.getByRole("button", { name: /^Conferi — auditar$/ }).last();
     ctx.verificar(
       "na aba 2, o Auditar habilita em até 20s, visível de verdade",
       naAba2.ok && (await botaoDaAba2.isEnabled().catch(() => false)) && (await ctx.visivelRolando(botaoDaAba2)),
       naAba2.linha.join(" → "),
     );
     const memorialNaAba2 = memorialNoCartao(aba2, nomeDoMemorial);
-    ctx.verificar("na aba 2, o cartão mostra o memorial retido", (await memorialNaAba2.count()) > 0 && (await ctx.visivelRolando(memorialNaAba2)), `contagem=${await memorialNaAba2.count()}`);
+    ctx.verificar("na aba 2, o cartão mostra o memorial retido", (await memorialNaAba2.count()) > 0 && (await ctx.visivelRolando(memorialNaAba2)) && (await semAvisoDeMemorialAusente(aba2)), `contagem=${await memorialNaAba2.count()}`);
     auditoriasDaAba2.parar();
     ctx.verificar("a aba 2 não gastou nada", auditoriasDaAba2.total() === 0, `POSTs /api/audit=${auditoriasDaAba2.total()}`);
     await aba2.close();
@@ -114,19 +118,19 @@ export default {
     const restaurou = await ctx.esperar(async () => (await ctx.conversaAberta()) === id && (await page.getByText(/Li as primeiras páginas/).count()) > 0, 30_000, 500);
     ctx.verificar("depois do F5 a mesma conversa volta, com a leitura do memorial", restaurou, `aberta=${await ctx.conversaAberta()} esperada=${id}`);
     const depoisDoF5 = await esperarAuditarHabilitado(page, 20_000);
-    const botao = page.getByRole("button", { name: /^Auditar$/ }).last();
+    const botao = page.getByRole("button", { name: /^Conferi — auditar$/ }).last();
     ctx.verificar(
       "depois do F5, o Auditar habilita em até 20s, visível de verdade",
       depoisDoF5.ok && (await botao.isEnabled().catch(() => false)) && (await ctx.visivelRolando(botao)),
       depoisDoF5.linha.join(" → "),
     );
     const memorialNaAba1 = memorialNoCartao(page, nomeDoMemorial);
-    ctx.verificar("depois do F5, o cartão mostra o memorial retido", (await memorialNaAba1.count()) > 0 && (await ctx.visivelRolando(memorialNaAba1)), `contagem=${await memorialNaAba1.count()}`);
+    ctx.verificar("depois do F5, o cartão mostra o memorial retido", (await memorialNaAba1.count()) > 0 && (await ctx.visivelRolando(memorialNaAba1)) && (await semAvisoDeMemorialAusente(page)), `contagem=${await memorialNaAba1.count()}`);
     // O botão pode ficar habilitado por um instante e apagar em seguida (a
     // corrida suspeita). Um segundo depois ele ainda tem de estar lá.
     await page.waitForTimeout(1500);
     const aindaHabilitado = await estadoDoAuditar(page);
-    ctx.verificar("e continua habilitado 1,5s depois", aindaHabilitado.rotulo === "Auditar" && aindaHabilitado.habilitado, JSON.stringify(aindaHabilitado));
+    ctx.verificar("e continua habilitado 1,5s depois", aindaHabilitado.rotulo === "Conferi — auditar" && aindaHabilitado.habilitado, JSON.stringify(aindaHabilitado));
 
     if (!depoisDoF5.ok) return; // sem botão clicável, o resto só repetiria a falha
 

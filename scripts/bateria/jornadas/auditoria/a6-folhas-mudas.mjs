@@ -17,7 +17,7 @@ export default {
 
     await ctx.abrirCartaoDeAuditoria(f.memorialComFolhaMuda);
     const transcrever = await ctx.esperarBotao(
-      /^Transcrever e auditar$/,
+      /^Conferi — transcrever e auditar$/,
       120_000,
     );
 

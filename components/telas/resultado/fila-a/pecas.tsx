@@ -5,6 +5,7 @@
  * modelos de layout arranjarem. Comportamento idêntico ao da fila de produção
  * (`components/telas/resultado/fila.tsx`); só a disposição muda entre modelos.
  */
+import { encerrouComMouse } from "@/modules/nexo/lib/dicas-da-auditoria";
 import { AnimatePresence, motion } from "motion/react";
 import { ArrowDown, ArrowUp, Check, ChevronDown, CircleCheck, Copy, FileSearch, Files, Gauge, Link2, Mail, Search, SlidersHorizontal, Split, ThumbsUp, Undo2, UserPlus, X } from "lucide-react";
 import { useState } from "react";
@@ -292,7 +293,7 @@ export function MetaDaLinha({ f, a }: { f: Fila; a: AchadoDaTela }) {
     <>
       {f.agrupar === "disciplina" ? <i className={`rs-ponto rs-ponto--${a.nivel}`} title={NIVEIS.find((n) => n.id === a.nivel)?.nome} /> : <SeloDaDisciplina disc={a.disc} />}
       {a.comentarios > 0 && <span className="rs-linha-conversa ds-num" title={conta(a.comentarios, "comentário", "comentários")}>{a.comentarios}</span>}
-      {a.responsavel ? <Avatar iniciais={iniciais(a.responsavel.nome)} pequeno /> : <span className="rs-sem-dono">sem dono</span>}
+      {a.responsavel ? <Avatar iniciais={iniciais(a.responsavel.nome)} pequeno /> : <span className="rs-sem-dono">sem responsável</span>}
     </>
   );
 }
@@ -302,17 +303,21 @@ export function AcoesRapidas({ f, a }: { f: Fila; a: AchadoDaTela }) {
   if (a.desfecho || !a.confirmado) return null;
   return (
     <span className="am-rapidas" onClick={(e) => e.stopPropagation()}>
-      <button type="button" className="am-rapida" title="Marcar corrigido" aria-label={`Marcar ${a.id} como corrigido`} disabled={!f.auditId || f.parecer.salvando === a.chave} onClick={() => void f.encerrar("FIXED_IN_DOC", undefined, a)}>
+      <button type="button" className="am-rapida" title="Marcar corrigido" aria-label={`Marcar ${a.id} como corrigido`} disabled={!f.auditId || f.parecer.salvando === a.chave} onClick={() => (encerrouComMouse(), void f.encerrar("FIXED_IN_DOC", undefined, a))}>
         <Check size={14} />
       </button>
-      <MenuSolto
-        rotulo={<UserPlus />}
-        icone
-        variante="quiet"
+      <Flutuante
+        className="am-pessoas"
+        largura={300}
         alinhar="direita"
-        titulo={`Atribuir ${a.id} a…`}
-        itens={f.opcoesDePessoas.map((p) => ({ rotulo: p.rotulo, onClick: () => void f.parecer.atribuir([a.chave], p.valor) }))}
-      />
+        gatilho={(aberto, alternar) => (
+          <Botao variante="quiet" tamanho="sm" icone aria-haspopup="dialog" aria-expanded={aberto} title={`Atribuir ${a.id}`} aria-label={`Atribuir ${a.id}`} disabled={!f.auditId} onClick={alternar}>
+            <UserPlus />
+          </Botao>
+        )}
+      >
+        {(fechar) => <ListaDePessoas f={f} atual={a.responsavel?.email ?? null} aoEscolher={(email) => void f.parecer.atribuir([a.chave], email)} fechar={fechar} />}
+      </Flutuante>
     </span>
   );
 }
@@ -436,15 +441,25 @@ export function BarraDeSelecao({ f, flutuante = true }: { f: Fila; flutuante?: b
         <motion.div className={`rs-selecao${flutuante ? "" : " am-selecao-fixa"}`} initial={{ y: 16, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 16, opacity: 0 }}>
           <b className="ds-num">{f.marcados.length}</b> selecionados
           <span className="rs-selecao-acoes">
-            <MenuSolto
-              rotulo={
-                <>
-                  <UserPlus /> Atribuir a…
-                </>
-              }
+            <Flutuante
+              className="am-pessoas"
+              largura={300}
               lado={flutuante ? "cima" : "baixo"}
-              itens={f.opcoesDePessoas.map((p) => ({ rotulo: p.rotulo, onClick: () => void f.parecer.atribuir(f.marcados, p.valor).then((ok) => ok && f.setMarcados([])) }))}
-            />
+              gatilho={(aberto, alternar) => (
+                <Botao variante="ghost" tamanho="sm" aria-haspopup="dialog" aria-expanded={aberto} onClick={alternar}>
+                  <UserPlus /> Atribuir
+                </Botao>
+              )}
+            >
+              {(fechar) => (
+                <ListaDePessoas
+                  f={f}
+                  atual={null}
+                  aoEscolher={(email) => void f.parecer.atribuir(f.marcados, email).then((ok) => ok && f.setMarcados([]))}
+                  fechar={fechar}
+                />
+              )}
+            </Flutuante>
             <Botao variante="quiet" tamanho="sm" icone aria-label="Limpar seleção (Esc)" title="Limpar seleção (Esc)" onClick={() => f.setMarcados([])}>
               <X />
             </Botao>
@@ -643,13 +658,6 @@ export function AvaliarIA({ f, a }: { f: Fila; a: AchadoDaTela }) {
  * primeiro, e a marca em quem está com o achado.
  */
 export function Atribuidor({ f, a }: { f: Fila; a: AchadoDaTela }) {
-  const [busca, setBusca] = useState("");
-  const eu = f.parecer.euSou;
-  const pessoas = [...f.parecer.membros]
-    .map((m) => ({ email: m.email, nome: m.name || m.email, convidado: m.status === "INVITED", souEu: Boolean(eu) && m.email.toLowerCase() === eu }))
-    .sort((x, y) => Number(y.souEu) - Number(x.souEu) || x.nome.localeCompare(y.nome, "pt-BR"));
-  const q = busca.trim().toLowerCase();
-  const filtradas = q ? pessoas.filter((p) => `${p.nome} ${p.email}`.toLowerCase().includes(q)) : pessoas;
   const com = a.responsavel;
   if (a.desfecho) {
     return com ? (
@@ -672,42 +680,60 @@ export function Atribuidor({ f, a }: { f: Fila; a: AchadoDaTela }) {
         </Dica>
       )}
     >
-      {(fechar) => (
-        <div className="am-pessoas-dentro">
-          <label className="am-pessoas-busca">
-            <Search size={13} />
-            <input autoFocus value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar pessoa" aria-label="Buscar pessoa para atribuir" />
-          </label>
-          <div className="am-pessoas-lista" role="listbox" aria-label="Pessoas do escritório">
-            {filtradas.map((p) => {
-              const atual = com?.email.toLowerCase() === p.email.toLowerCase();
-              return (
-                <button
-                  key={p.email}
-                  type="button"
-                  role="option"
-                  aria-selected={atual}
-                  className="am-pessoa"
-                  onClick={() => {
-                    if (!atual) void f.parecer.atribuir([a.chave], p.email);
-                    setBusca("");
-                    fechar();
-                  }}
-                >
-                  <Avatar iniciais={iniciais(p.nome)} pequeno />
-                  <span className="am-pessoa-nome">
-                    {p.souEu ? `${p.nome} (você)` : p.nome}
-                    <small>{p.convidado ? "convidado, ainda não entrou" : p.email}</small>
-                  </span>
-                  {atual && <Check size={14} className="am-menu-marca" />}
-                </button>
-              );
-            })}
-            {filtradas.length === 0 && <p className="am-menu-vazio">Ninguém com “{busca}”.</p>}
-          </div>
-        </div>
-      )}
+      {(fechar) => <ListaDePessoas f={f} atual={com?.email ?? null} aoEscolher={(email) => void f.parecer.atribuir([a.chave], email)} fechar={fechar} />}
     </Flutuante>
+  );
+}
+
+/**
+ * AS PESSOAS DO ESCRITÓRIO, com busca e você primeiro — a MESMA lista na linha,
+ * no lote e no detalhe (07/10/2026, R4). Eram dois menus diferentes: com busca
+ * no detalhe, sem busca na linha e no lote, e com rótulos diferentes
+ * ("Atribuir", "Atribuir a…", o ícone). Atribuir não manda e-mail: quem
+ * recebeu aparece em "Notificar por e-mail", no topo da fila.
+ */
+export function ListaDePessoas({ f, atual, aoEscolher, fechar }: { f: Fila; atual: string | null; aoEscolher: (email: string) => void; fechar: () => void }) {
+  const [busca, setBusca] = useState("");
+  const eu = f.parecer.euSou;
+  const pessoas = [...f.parecer.membros]
+    .map((m) => ({ email: m.email, nome: m.name || m.email, convidado: m.status === "INVITED", souEu: Boolean(eu) && m.email.toLowerCase() === eu }))
+    .sort((x, y) => Number(y.souEu) - Number(x.souEu) || x.nome.localeCompare(y.nome, "pt-BR"));
+  const q = busca.trim().toLowerCase();
+  const filtradas = q ? pessoas.filter((p) => `${p.nome} ${p.email}`.toLowerCase().includes(q)) : pessoas;
+  return (
+    <div className="am-pessoas-dentro">
+      <label className="am-pessoas-busca">
+        <Search size={13} />
+        <input autoFocus value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar pessoa" aria-label="Buscar pessoa para atribuir" />
+      </label>
+      <div className="am-pessoas-lista" role="listbox" aria-label="Pessoas do escritório">
+        {filtradas.map((p) => {
+          const marcada = atual?.toLowerCase() === p.email.toLowerCase();
+          return (
+            <button
+              key={p.email}
+              type="button"
+              role="option"
+              aria-selected={marcada}
+              className="am-pessoa"
+              onClick={() => {
+                if (!marcada) aoEscolher(p.email);
+                setBusca("");
+                fechar();
+              }}
+            >
+              <Avatar iniciais={iniciais(p.nome)} pequeno />
+              <span className="am-pessoa-nome">
+                {p.souEu ? `${p.nome} (você)` : p.nome}
+                <small>{p.convidado ? "convidado, ainda não entrou" : p.email}</small>
+              </span>
+              {marcada && <Check size={14} className="am-menu-marca" />}
+            </button>
+          );
+        })}
+        {filtradas.length === 0 && <p className="am-menu-vazio">Ninguém com “{busca}”.</p>}
+      </div>
+    </div>
   );
 }
 
@@ -985,7 +1011,7 @@ export function AcoesDoAchado({ f, a, compacta }: { f: Fila; a: AchadoDaTela; co
       ) : (
         <div className="rs-botoes">
           <GrupoDeBotoes rotulo="Encerrar o achado">
-            <BotaoDoGrupo principal tecla={compacta ? undefined : "C"} curto="Corrigido" disabled={!f.auditId || p.salvando === a.chave} onClick={() => void f.encerrar("FIXED_IN_DOC", undefined, a)}>
+            <BotaoDoGrupo principal tecla={compacta ? undefined : "C"} curto="Corrigido" disabled={!f.auditId || p.salvando === a.chave} onClick={() => (encerrouComMouse(), void f.encerrar("FIXED_IN_DOC", undefined, a))}>
               <Check /> Marcar corrigido
             </BotaoDoGrupo>
             <BotaoDoGrupo
@@ -999,7 +1025,7 @@ export function AcoesDoAchado({ f, a, compacta }: { f: Fila; a: AchadoDaTela; co
             >
               Decisão técnica
             </BotaoDoGrupo>
-            <BotaoDoGrupo tecla={compacta ? undefined : "F"} curto="Falso positivo" disabled={!f.auditId || p.salvando === a.chave} onClick={() => void f.encerrar("FALSE_POSITIVE", undefined, a)}>
+            <BotaoDoGrupo tecla={compacta ? undefined : "F"} curto="Falso positivo" disabled={!f.auditId || p.salvando === a.chave} onClick={() => (encerrouComMouse(), void f.encerrar("FALSE_POSITIVE", undefined, a))}>
               Falso positivo
             </BotaoDoGrupo>
           </GrupoDeBotoes>

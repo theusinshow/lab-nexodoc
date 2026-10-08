@@ -21,6 +21,7 @@ import { resolverFonte, type FonteDoCatalogo } from "@/lib/fonte-da-evidencia";
 import type { TextoCorrigido } from "@/lib/texto-corrigido";
 import type { Nivel } from "@/lib/nivel-do-achado";
 
+import { FaixaDoVeredito } from "./faixa-do-veredito";
 import { FilaDeAchadosA } from "./fila-a/fila-a";
 import { NoDocumento } from "./no-documento";
 import { RelatorioDoParecer } from "./relatorio";
@@ -49,6 +50,8 @@ export function ResultadoDoParecer({
   chatDoVisor,
   aoGerarTexto,
   comparado,
+  total,
+  tratados,
 }: {
   report: AuditReport;
   parecer: ParecerVivo;
@@ -65,6 +68,9 @@ export function ResultadoDoParecer({
   aoGerarTexto?: (findingId: string, texto: TextoCorrigido) => void;
   /** O que mudou desde a auditoria anterior desta conversa (o cartão "Desde 18/09" do lab). */
   comparado?: ComparadoComAnterior | null;
+  /** Os mesmos números do anel do trilho: a faixa e o anel não podem discordar. */
+  total: number;
+  tratados: number;
 }) {
   const { dur } = useTempo();
   const [aberto, setAberto] = useState<string | null>(achadoEmFoco ?? null);
@@ -134,6 +140,7 @@ export function ResultadoDoParecer({
 
   return (
     <div className="re-conteudo rs rd re re--embutido">
+      {vista !== "geral" && <FaixaDoVeredito report={report} parecer={parecer} total={total} tratados={tratados} />}
       <AvisoDeAuditoriaIncompleta report={report} className="re-aviso" />
       <AnimatePresence mode="wait" initial={false} custom={dir}>
         <motion.div

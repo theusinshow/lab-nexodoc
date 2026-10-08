@@ -17,7 +17,9 @@
 import { ChevronDown, ChevronUp } from "lucide-react";
 
 import { Botao, Selo, Tecla } from "@/components/ds/basicos";
+import { DicaDeUmaVez } from "@/components/telas/comum/dica-de-uma-vez";
 import { SeloDaDisciplina } from "@/components/telas/comum/disciplina";
+import { useEncerradosComMouse } from "@/modules/nexo/lib/dicas-da-auditoria";
 import type { FonteDoCatalogo } from "@/lib/fonte-da-evidencia";
 import { NIVEIS, type Nivel } from "@/lib/nivel-do-achado";
 import type { TextoCorrigido } from "@/lib/texto-corrigido";
@@ -46,6 +48,7 @@ import "./fila-a.css";
 
 /** O layout, dado o cérebro da fila. */
 export function FilaA({ f }: { f: Fila }) {
+  const encerradosComMouse = useEncerradosComMouse();
   const a = f.atual;
   const nivel = a ? NIVEIS.find((n) => n.id === a.nivel) : null;
 
@@ -118,11 +121,23 @@ export function FilaA({ f }: { f: Fila }) {
           <AbasDoAchado f={f} a={a} />
         </div>
 
+        <DicaDeUmaVez id="primeira-revisao" titulo="Como encerrar um achado">
+          <ul>
+            <li><b>Marcar corrigido</b>: você vai corrigir (ou já corrigiu) o memorial. O PDF não muda sozinho.</li>
+            <li><b>Decisão técnica</b>: o projeto segue assim de propósito. O motivo vai no parecer.</li>
+            <li><b>Falso positivo</b>: a IA errou. Isso ensina o motor.</li>
+          </ul>
+          <p>Tudo se desfaz: Z logo depois, ou Reabrir.</p>
+        </DicaDeUmaVez>
+        <DicaDeUmaVez id="atalhos" titulo="Dá para ir mais rápido" quando={encerradosComMouse >= 3}>
+          <p>J e K andam, C, D e F encerram, M abre o PDF. A tecla ? mostra todos.</p>
+        </DicaDeUmaVez>
+        {f.verAtalhos && <AtalhosDaFila onFechar={() => f.setVerAtalhos(false)} />}
         <footer className="am-a-rodape">
           <AcoesDoAchado f={f} a={a} />
           <span className="am-a-atalhos" aria-hidden>
             <Tecla>J</Tecla>
-            <Tecla>K</Tecla> andam · <Tecla>M</Tecla> PDF
+            <Tecla>K</Tecla> andam · <Tecla>M</Tecla> PDF · <Tecla>?</Tecla> atalhos
           </span>
         </footer>
       </section>
@@ -155,4 +170,40 @@ export function FilaDeAchadosA({
 }) {
   const f = useFila({ parecer, auditId: auditId ?? null, catalogo, onVerNoMemorial, inicial: inicial ?? null, nivelInicial: nivelInicial ?? null, filtroInicial: filtroInicial ?? null, aoGerarTexto, teclado });
   return <FilaA f={f} />;
+}
+
+/** OS ATALHOS DA FILA (tecla ?): estavam espalhados em dicas e rodapés, e nenhum lugar os listava juntos. */
+const ATALHOS: [string, string][] = [
+  ["J / K", "próximo / anterior"],
+  ["C", "marcar corrigido"],
+  ["D", "decisão técnica (pede o motivo)"],
+  ["F", "falso positivo"],
+  ["Z", "desfazer o último, logo depois"],
+  ["M", "abrir o PDF na página do trecho"],
+  ["/", "buscar"],
+  ["1 2 3 4", "Resumo, Achados, Relatório, No documento"],
+  ["Esc", "fechar"],
+];
+
+function AtalhosDaFila({ onFechar }: { onFechar: () => void }) {
+  return (
+    <aside className="am-atalhos" aria-label="Atalhos da fila">
+      <header>
+        <b>Atalhos</b>
+        <Botao variante="quiet" tamanho="sm" onClick={onFechar}>
+          Fechar <Tecla>Esc</Tecla>
+        </Botao>
+      </header>
+      <dl>
+        {ATALHOS.map(([tecla, faz]) => (
+          <div key={tecla}>
+            <dt>
+              <Tecla>{tecla}</Tecla>
+            </dt>
+            <dd>{faz}</dd>
+          </div>
+        ))}
+      </dl>
+    </aside>
+  );
 }

@@ -60,7 +60,7 @@ await test("cobertura parcial, falha operacional ou resumo ilegível do motor bl
   assert.equal(partial.estado, "incompleto");
   assert(partial.pendencias.some(p => /cobertura do motor not_started/.test(p)));
   const failures = avaliarEmissao(report({ motor: motor({ counts: { confirmed: 0, inconclusive: 0, rejectedRules: 0, operationalFailures: 2 } }) }));
-  assert(failures.estado === "incompleto" && failures.pendencias.some(p => /2 verificação/.test(p)));
+  assert(failures.estado === "incompleto" && failures.pendencias.some(p => /2 verificaç(ão|ões)/.test(p)));
   const broken = avaliarEmissao(report({ motor: { version: "engine-report/1" } as unknown as EngineReportV1 }));
   assert(broken.estado === "incompleto" && broken.pendencias.some(p => /integridade da persistência/.test(p)));
 });
@@ -69,7 +69,7 @@ await test("liberado diz o escopo efetivo, nunca conformidade integral; sugestã
   const r = report({ motor: motor(), incongruencias: [finding({ tier: "sugestao", impacto: "critico_documental", prioridade: "Alta" })] });
   const a = avaliarEmissao(r);
   assert.equal(a.estado, "liberado");
-  assert.match(a.veredito.detail, /no escopo analisado \(1 arquivo\(s\), 2 página\(s\); cobertura rastreada \(complete\)\)/);
+  assert.match(a.veredito.detail, /no escopo analisado \(1 arquivo, 2 páginas; cobertura rastreada \(complete\)\)/);
   channels(r);
   const legacy = avaliarEmissao(report());
   assert.match(legacy.escopo, /cobertura não rastreada/);
@@ -83,7 +83,7 @@ await test("desenho não avaliado: limite no modo textual, pendência quando o m
   // Cobertura com visual pendente já é "partial" no motor: a auditoria não é liberada em nenhum modo...
   assert.equal(avaliarEmissao(r).estado, "incompleto");
   // ...e o modo que prometia desenho nomeia a pendência explicitamente.
-  assert(avaliarEmissao(r, { promessaVisual: true }).pendencias.some(p => /desenho prometidas/.test(p)));
+  assert(avaliarEmissao(r, { promessaVisual: true }).pendencias.some(p => /desenho prometidas?/.test(p)));
 });
 
 await test("questão crítica em aberto impede liberado; editorial confirmado segue com ressalvas", () => {

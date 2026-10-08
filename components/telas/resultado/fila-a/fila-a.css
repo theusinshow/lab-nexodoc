@@ -144,3 +144,35 @@
 /* No palco do Nexo a fila tinha 700px; a A segue a mesma altura lá. */
 .ds .re .am-a { height: 720px; }
 .ds .am-a--vazia { display: grid; align-content: start; gap: 12px; height: auto; padding: 24px; border-radius: var(--ds-radius-card); background: var(--ds-surface-card); box-shadow: var(--ds-edge); }
+
+/* As dicas de uma vez e a lista de atalhos (tecla ?), acima do rodapé do detalhe. */
+.ds .am-a-detalhe > .dica-uma { margin: 0 14px 8px; }
+.ds .am-atalhos { margin: 0 14px 8px; padding: 10px 12px; border-radius: var(--ds-radius-card); background: var(--ds-surface-card); box-shadow: var(--ds-edge-strong); }
+.ds .am-atalhos header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; font-size: var(--ds-text-2xs); }
+.ds .am-atalhos dl { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 4px 16px; margin: 0; }
+.ds .am-atalhos dl > div { display: flex; align-items: center; gap: 8px; font-size: var(--ds-text-2xs); color: var(--ds-text-secondary); }
+.ds .am-atalhos dt { flex: none; min-width: 64px; }
+.ds .am-atalhos dd { margin: 0; }
+
+/* Detalhe estreito (1440 px com chat aberto: ~590 px): a linha "Atribuir · A IA
+   acertou?" e o par texto | prévia cortavam à direita (auditoria UX, 07/10/2026). */
+.ds .am-a-detalhe { container-type: inline-size; }
+@container (max-width: 700px) {
+  .ds .am-a-meta { flex-wrap: wrap; row-gap: 6px; }
+  .ds .am-a-identidade { flex-wrap: wrap; row-gap: 4px; }
+  .ds .am-a-lado-a-lado { grid-template-columns: minmax(0, 1fr); }
+}
+/* As dicas e a lista de atalhos entram entre o meio e o rodapé: linhas próprias,
+   para o rodapé com os botões de encerrar não sair da caixa. */
+.ds .am-a-detalhe { grid-template-rows: auto minmax(0, 1fr) auto auto auto auto; }
+/* Mesma causa da `.re-conteudo`: a coluna implícita `auto` crescia até 716 px num
+   detalhe de 586, e o voto, as páginas e a prévia saíam pela direita. */
+.ds .am-a-detalhe { grid-template-columns: minmax(0, 1fr); }
+/* Com a faixa do veredito acima (~60 px), a fila de 720 px empurrava o rodapé com
+   os botões de encerrar para baixo da dobra a 900 px de altura. */
+.ds .re-faixa ~ .re-leitura .am-a { height: 656px; }
+/* No detalhe estreito, a dica de teclas do rodapé tomava o lugar de "Falso
+   positivo". As teclas seguem nos botões e na lista do "?". */
+@container (max-width: 700px) {
+  .ds .am-a-atalhos { display: none; }
+}

@@ -3,6 +3,8 @@
 import { Orbe } from "@/components/ds/basicos";
 import { Cronometro, Trelica } from "@/components/ds/micro";
 import { textoComRotulos } from "@/lib/rotulo-do-achado";
+import { lerPerguntaSobreAchado } from "@/lib/pergunta-sobre-achado";
+import { RotuloDaPergunta } from "@/components/achado/rotulo-da-pergunta";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Loader2, FileText, X, Copy, Check, ArrowDown } from "lucide-react";
 import type { NexoAgentTurn, NexoChatMessage, LdPreviewData } from "../types";
@@ -233,6 +235,22 @@ export function NexoChat({
     if (!ultimaEhDoUsuario) return;
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
   }, [messages.length, ultimaEhDoUsuario]);
+  /*
+   * ABRIR UMA CONVERSA É CHEGAR NO FIM DELA (07/10/2026, U13). Quem voltava a
+   * uma auditoria pelo "Continuar" via a ficha do memorial no topo e não a
+   * fala final, com o veredito e os achados que travam. A regra acima continua
+   * valendo para o que chega DEPOIS; isto é só a posição de abertura, uma vez.
+   */
+  const abriuNoFim = useRef(false);
+  useEffect(() => {
+    if (abriuNoFim.current || messages.length === 0) return;
+    // A guarda é marcada dentro do quadro: marcada antes, um quadro cancelado deixaria a conversa no topo.
+    const raf = requestAnimationFrame(() => {
+      abriuNoFim.current = true;
+      scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [messages.length]);
 
   // `responding` = já chegou texto (o modelo saiu do raciocínio e está escrevendo).
   const responding = busy && messages[messages.length - 1]?.role === "assistant";
@@ -1191,11 +1209,14 @@ function MessageBubble({
    * mouse — o engenheiro cola no e-mail. A medida de leitura fica em 72ch.
    */
   if (isUser) {
+    // A pergunta feita no visor sobre um achado: o rótulo inteiro, não a frase crua.
+    const sobre = lerPerguntaSobreAchado(content);
     return (
       <div className="cx-voce nx-voce">
+        {sobre && <RotuloDaPergunta achado={sobre} />}
         <p>
           <span className="sr-only">Você: </span>
-          {shown}
+          {sobre ? sobre.pergunta : shown}
         </p>
       </div>
     );

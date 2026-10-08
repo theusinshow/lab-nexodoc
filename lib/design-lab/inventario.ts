@@ -221,7 +221,7 @@ export const INVENTARIO: Grupo[] = [
         id: "no-documento",
         nome: "No documento",
         rota: "/nexo",
-        fontes: ["AuditCanvas.tsx", "MemorialPageNode.tsx", "FindingCardNode.tsx"],
+        fontes: ["no-documento.tsx"],
         trabalho: "Ver onde cada achado mora no PDF.",
         situacoes: [
           { id: "paginas", nome: "Páginas com achados", quando: "Aba No documento." },

@@ -506,7 +506,10 @@ function CanvasInterno({
   tomosDeclarados = 0,
   conferencia,
   memorial = null,
+  memorialArquivo = null,
 }: {
+  /** Os bytes do memorial, para o palco mostrar a capa enquanto a ficha é conferida. */
+  memorialArquivo?: File | null;
   /**
    * O memorial desta conversa, quando há. Sem pranchas, o palco vazio fala da
    * AUDITORIA, e não do volume: uma conversa de memorial mostrava "Anexe as
@@ -1299,10 +1302,10 @@ function CanvasInterno({
   if (nodes.length === 0 && memorial) {
     return (
       <div className="nx-palco-vazio" data-palco-vazio="memorial">
-        <FileSearch aria-hidden />
+        {memorialArquivo ? <CapaDoMemorial arquivo={memorialArquivo} /> : <FileSearch aria-hidden />}
         <p>
           <b>{memorial}</b>
-          O parecer da auditoria aparece aqui. Confira a ficha do memorial no chat e peça a auditoria quando ela estiver certa.
+          O parecer da auditoria aparece aqui. Confira a ficha do memorial no chat; estando certa, clique em “Conferi — auditar”.
         </p>
       </div>
     );
@@ -1558,10 +1561,48 @@ export function NexoCanvas(props: {
   tomosDeclarados?: number;
   conferencia?: { findings: { severidade: string; campo: string; mensagem: string; folhas?: string[] }[] };
   memorial?: string | null;
+  memorialArquivo?: File | null;
 }) {
   return (
     <ReactFlowProvider>
       <CanvasInterno {...props} />
     </ReactFlowProvider>
+  );
+}
+
+/**
+ * A CAPA DO MEMORIAL NO PALCO (auditoria UX do memorial, 07/10/2026, U08).
+ *
+ * Enquanto a ficha é conferida no chat, o centro da tela era um ícone e uma
+ * frase mandando olhar para a direita. A capa real é o que a ficha resume: com
+ * ela ao lado, conferir o nome da obra é comparar o que está escrito com o que
+ * foi lido — sem abrir o PDF em outro programa.
+ */
+/*
+ * O ENDEREÇO DO ARQUIVO SÓ SAI QUANDO NINGUÉM MAIS O USA. Revogar na limpeza do
+ * efeito quebrava a capa no StrictMode do dev: o React monta, desmonta e monta
+ * de novo, e a segunda montagem reaproveitava o `blob:` já revogado ("Unexpected
+ * server response (0) while retrieving PDF"). A revogação espera um quadro e
+ * confere se alguma montagem voltou a usá-lo.
+ */
+const usosDaCapa = new Map<string, number>();
+
+function CapaDoMemorial({ arquivo }: { arquivo: File }) {
+  const url = useMemo(() => URL.createObjectURL(arquivo), [arquivo]);
+  useEffect(() => {
+    usosDaCapa.set(url, (usosDaCapa.get(url) ?? 0) + 1);
+    return () => {
+      usosDaCapa.set(url, (usosDaCapa.get(url) ?? 1) - 1);
+      setTimeout(() => {
+        if ((usosDaCapa.get(url) ?? 0) > 0) return;
+        usosDaCapa.delete(url);
+        URL.revokeObjectURL(url);
+      }, 0);
+    };
+  }, [url]);
+  return (
+    <div className="nx-capa-do-memorial" aria-label={`Capa de ${arquivo.name}`}>
+      <ArtifactThumb pdfUrl={url} pageNumber={1} width={300} kind="auditoria" />
+    </div>
   );
 }

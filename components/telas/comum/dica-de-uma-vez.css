@@ -1,0 +1,9 @@
+/* A dica de uma vez (dica-de-uma-vez.tsx): nota na tela, não balão. */
+.ds .dica-uma { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: start; gap: 10px; margin: 0; padding: 10px 12px; border-radius: var(--ds-radius-card); background: var(--ds-nexo-wash); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ds-nexo) 22%, transparent); font-size: var(--ds-text-2xs); line-height: 1.5; color: var(--ds-text-secondary); }
+.ds .dica-uma-icone { margin-top: 2px; color: var(--ds-nexo); }
+.ds .dica-uma-corpo { display: grid; gap: 4px; min-width: 0; }
+.ds .dica-uma-corpo b { font-weight: 500; color: var(--ds-text-primary); }
+.ds .dica-uma-corpo p { margin: 0; }
+.ds .dica-uma-corpo ul { display: grid; gap: 3px; margin: 0; padding-left: 16px; }
+.ds .dica-uma-fechar { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border: 0; border-radius: 999px; background: none; font: inherit; color: var(--ds-text-secondary); cursor: pointer; white-space: nowrap; }
+.ds .dica-uma-fechar:hover { background: rgb(255 255 255 / 0.06); color: var(--ds-text-primary); }

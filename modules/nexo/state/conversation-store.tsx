@@ -10,6 +10,7 @@
  * sem tocar nesta camada.
  */
 
+import { tituloDoMemorial } from "@/lib/titulo-do-memorial";
 import { comPrazo } from "../lib/com-prazo";
 import {
   createContext,
@@ -965,7 +966,9 @@ export function ConversationStoreProvider({ children }: { children: ReactNode })
        * sozinho não distingue duas auditorias na mesma lista.
        */
       title: folderKey
-        ? nomeDoConjunto || (s.memorialMeta ? "Memorial" : s.title)
+        ? // O nome do arquivo diz qual memorial e qual revisão (07/10/2026):
+          // "Memorial" sozinho fazia três auditorias da mesma obra parecerem uma.
+          nomeDoConjunto || (s.memorialMeta ? tituloDoMemorial(s.memorialMeta.name) : s.title)
         : s.title,
       createdAt: s.createdAt,
       updatedAt: Date.now(),

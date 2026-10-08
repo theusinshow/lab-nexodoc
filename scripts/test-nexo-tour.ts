@@ -5,6 +5,9 @@
  *   node scripts/test-nexo-tour.ts   (== npm run test:nexo:tour)
  */
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 import {
   posicaoDoBalao,
@@ -122,6 +125,30 @@ test("cobre os dois carros-chefe: montagem e auditoria", () => {
   const ids = PASSOS_DO_TOUR.map((p) => p.id).join(" ");
   assert.ok(/volume|selo|mapa/.test(ids), "faltou a montagem");
   assert.ok(/auditoria|veredito|documento/.test(ids), "faltou a auditoria");
+});
+
+// Um passo que aponta para um elemento que não existe mais é um balão no
+// centro falando de algo invisível (07/10/2026: `abrir-parecer` só vivia no
+// AuditCanvas, que nenhuma tela monta). Todo alvo tem de estar no código vivo.
+test("todo alvo existe numa tela viva", () => {
+  const raiz = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+  const fontes: string[] = [];
+  const andar = (dir: string) => {
+    for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+      const f = path.join(dir, e.name);
+      if (e.isDirectory()) andar(f);
+      else if (f.endsWith(".tsx") && !f.endsWith("AuditCanvas.tsx")) fontes.push(fs.readFileSync(f, "utf8"));
+    }
+  };
+  andar(path.join(raiz, "modules/nexo/components"));
+  andar(path.join(raiz, "components/telas"));
+  const todo = fontes.join("\n");
+  for (const passo of PASSOS_DO_TOUR) {
+    for (const seletor of [passo.alvo, passo.clicarAntes]) {
+      const nome = seletor && /data-tour="([^"]+)"/.exec(seletor)?.[1];
+      if (nome) assert.ok(todo.includes(`data-tour="${nome}"`) || todo.includes(`"${nome}"`), `${passo.id}: alvo ${nome} não existe`);
+    }
+  }
 });
 
 console.log(`\n${passed} testes ok`);
