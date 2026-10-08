@@ -17,6 +17,7 @@ import { gerarEditaveisConsolidados, parametrosDaEntrega } from "../lib/editavei
 import { assinaturaDosDocumentos } from "../lib/editaveis-no-projeto";
 import { passosDaEntrega, tomosMontados, tomosPlanejados, volumeDaCapa } from "../lib/entrega-do-volume";
 import { nomeDoZipDosVolumes, nomesDosEditaveis } from "../lib/nome-do-volume";
+import { redeParaGerar } from "../lib/rede-da-conversa";
 import { volumesProntosDosResultados } from "../lib/volumes-prontos";
 import { useConversation } from "./conversation-store";
 import { useLiberacaoDoVolume } from "./use-liberacao-do-volume";
@@ -32,7 +33,7 @@ function baixarUrl(url: string, nome: string) {
 }
 
 export function useEntregaDoVolume(selos: SeloForLd[]) {
-  const { results, identidade, editaveisSalvos, registrarEditaveisSalvos } = useConversation();
+  const { results, identidade, decisoes, editaveisSalvos, registrarEditaveisSalvos } = useConversation();
   const liberacao = useLiberacaoDoVolume();
   const [ocupado, setOcupado] = useState<"editaveis" | "volumes" | null>(null);
   const [erro, setErro] = useState<string | null>(null);
@@ -55,11 +56,13 @@ export function useEntregaDoVolume(selos: SeloForLd[]) {
     try {
       const assinatura = assinaturaDosDocumentos(results);
       const nomes = nomesDosEditaveis(selos, identidade ?? {});
+      const params = parametrosDaEntrega(results);
       const { editaveis: todos, falhas } = await gerarEditaveisConsolidados({
         selos,
         nomes,
-        params: parametrosDaEntrega(results),
+        params,
         identidade,
+        rede: redeParaGerar(decisoes, params),
       });
       // Liberar com um editável faltando é liberar o volume que perde a capa
       // editável — exatamente o que a trava existe para impedir.

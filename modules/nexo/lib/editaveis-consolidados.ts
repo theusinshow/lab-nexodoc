@@ -1,7 +1,8 @@
 "use client";
 
 /**
- * OS TRÊS EDITÁVEIS DA ENTREGA: uma capa, uma LD, uma separatriz.
+ * OS EDITÁVEIS DA ENTREGA: uma capa, uma separatriz e uma LD — ou uma LD POR
+ * DISCIPLINA quando o volume é misto (08/10/2026, ver abaixo).
  *
  * A montagem gera um documento POR TOMO, porque cada volume físico precisa da
  * sua capa dentro dele. Para ENTREGAR é o oposto: num projeto de seis tomos, o
@@ -21,6 +22,10 @@ import type { SavedResult } from "../state/conversation-store";
 import type { IdentidadeDoProjeto } from "./identidade";
 import { postCapa, postLd, postSeparatriz } from "./generate";
 import type { Editavel } from "./editaveis";
+import { nomeDaLd, type RedeDaLd } from "@/lib/ld/caminho-da-rede";
+import { blocoGera, blocosDasFolhas, misturaDisciplinas } from "./blocos";
+import { codigoDaFolha, rotuloDoCodigo } from "./disciplina-da-folha";
+import type { Folha } from "./folhas";
 
 /** O que os cards já gerados dizem sobre como este volume foi montado. */
 export interface ParametrosDaEntrega {
@@ -93,6 +98,8 @@ export async function gerarEditaveisConsolidados(args: {
   referenceTotal?: number;
   /** Os nomes de entrega (`nomesDosEditaveis`). Sem eles, o nome do gerador. */
   nomes?: { capa: string; ld: string; separatriz: string };
+  /** Onde cada LD mora na rede — vai no rodapé, como campo "nome do arquivo". */
+  rede?: RedeDaLd;
 }): Promise<{ editaveis: Editavel[]; falhas: string[] }> {
   const { selos, params, identidade } = args;
   const editaveis: Editavel[] = [];
@@ -119,19 +126,45 @@ export async function gerarEditaveisConsolidados(args: {
     }
   }
 
-  try {
-    const r = await postLd(selos, {
-      tituloLd: params.tituloLd,
-      numTomos: params.numTomos,
-      tomoInicial: params.tomoInicial,
-      // `tomoAtual: 0` = documento ÚNICO com os tomos como seções.
-      tomoAtual: 0,
-      ...(args.referenceTotal ? { referenceTotal: args.referenceTotal } : {}),
-      identidade,
-    });
-    editaveis.push({ nome: args.nomes?.ld ?? `ld--${r.odtName}`, url: r.odtUrl });
-  } catch (err) {
-    falhas.push(`LD (${err instanceof Error ? err.message : "erro"})`);
+  /*
+   * UMA LD POR DISCIPLINA no volume misto (08/10/2026). No escritório cada LD é
+   * um `.odt` na pasta da sua disciplina, e o rodapé de cada uma diz qual — uma
+   * LD só juntando urbanismo, paisagismo e maquete não tem rodapé que acerte.
+   * Disciplina única continua um documento só, com os tomos como seções.
+   */
+  const blocos = blocosDasFolhas(selos as Folha[], codigoDaFolha, rotuloDoCodigo);
+  const daLd = { editavel: true, rede: args.rede, templateId: params.templateId, identidade };
+  if (misturaDisciplinas(blocos)) {
+    for (const bloco of blocos.filter((b) => b.codigo && blocoGera("ld", b))) {
+      try {
+        const r = await postLd(selos, {
+          ...daLd,
+          // Vazio: o servidor dá o título pelo léxico da disciplina do bloco.
+          numTomos: 1,
+          tomoAtual: 0,
+          folhasDoTomo: bloco.ids,
+          respeitarOrdem: true,
+        });
+        editaveis.push({ nome: nomeDaLd(r.resumo.codigo, bloco.codigo, r.resumo.revisao), url: r.odtUrl });
+      } catch (err) {
+        falhas.push(`LD de ${bloco.rotulo || bloco.codigo} (${err instanceof Error ? err.message : "erro"})`);
+      }
+    }
+  } else {
+    try {
+      const r = await postLd(selos, {
+        ...daLd,
+        tituloLd: params.tituloLd,
+        numTomos: params.numTomos,
+        tomoInicial: params.tomoInicial,
+        // `tomoAtual: 0` = documento ÚNICO com os tomos como seções.
+        tomoAtual: 0,
+        ...(args.referenceTotal ? { referenceTotal: args.referenceTotal } : {}),
+      });
+      editaveis.push({ nome: args.nomes?.ld ?? `ld--${r.odtName}`, url: r.odtUrl });
+    } catch (err) {
+      falhas.push(`LD (${err instanceof Error ? err.message : "erro"})`);
+    }
   }
 
   if (params.titulosDaSeparatriz.length > 0) {
