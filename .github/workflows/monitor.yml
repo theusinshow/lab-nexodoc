@@ -57,6 +57,8 @@ jobs:
             resposta="$(curl -sS -m 20 -w '\n%{http_code}' "$URL" 2>&1 || true)"
             codigo="$(printf '%s' "$resposta" | tail -n1)"
             corpo="$(printf '%s' "$resposta" | sed '$d' | head -c 300)"
+            # Uma página de erro em HTML não diz nada útil na issue.
+            case "$corpo" in "<"*) corpo="(página HTML)" ;; esac
             if [ "$codigo" = "200" ] && printf '%s' "$corpo" | grep -q '"ok":true'; then
               ok=true
               break
@@ -78,7 +80,10 @@ jobs:
           CODIGO: ${{ steps.checar.outputs.codigo }}
           CORPO: ${{ steps.checar.outputs.corpo }}
         run: |
-          aberta="$(gh issue list --state open --search "in:title \"$TITULO\"" --json number,createdAt --jq '.[0] // empty')"
+          # Listagem, e não `--search`: a busca do GitHub indexa com atraso, e no
+          # ensaio de 08/10 a issue recém-aberta não aparecia nela — a checagem
+          # seguinte abriria uma duplicada a cada 10 minutos de queda.
+          aberta="$(gh issue list --state open -L 100 --json number,title,createdAt --jq 'map(select(.title == env.TITULO)) | .[0] // empty')"
           numero="$(printf '%s' "$aberta" | jq -r '.number // empty')"
           agora="$(TZ=America/Sao_Paulo date '+%d/%m/%Y %H:%M')"
 
