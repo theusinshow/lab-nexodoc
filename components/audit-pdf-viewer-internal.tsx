@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import { Skeleton } from "@/components/ui/skeleton";
 import { alturasDosPinos, faixasPorLinha, segmentosPorItem, type Caixa } from "@/lib/faixas-do-grifo";
@@ -91,7 +91,14 @@ type AuditPdfViewerInternalProps = {
   /** O achado sob o mouse (na lista ao lado ou no pino): o grifo dele acende. */
   realce?: string | null;
   onRealce?: (chave: string | null) => void;
+  /**
+   * O BALÃO DO ACHADO (08/10/2026): o conteúdo vem do dono; aqui ele é
+   * ancorado no trecho do ativo — embaixo da última linha, ou em cima da
+   * primeira quando o trecho está no pé da folha — e rola junto com a página.
+   */
+  balao?: ReactNode;
 };
+const LARGURA_DO_BALAO = 360;
 
 function escaparHtml(value: string) {
   return value
@@ -136,6 +143,7 @@ export default function AuditPdfViewerInternal({
   onEscolher,
   realce,
   onRealce,
+  balao,
 }: AuditPdfViewerInternalProps) {
   const [numPages, setNumPages] = useState(0);
   const [itens, setItens] = useState<ItemDeTexto[] | null>(null);
@@ -206,7 +214,7 @@ export default function AuditPdfViewerInternal({
    * A faixa se pinta da esquerda para a direita UMA vez quando o grifo chega
    * (página ou trecho novos). Zoom só remede: a mesma marca não chega de novo.
    */
-  const [desenho, setDesenho] = useState<{ chave: string; grupos: { grifo: number; faixas: Caixa[] }[]; pintar: boolean } | null>(null);
+  const [desenho, setDesenho] = useState<{ chave: string; grupos: { grifo: number; faixas: Caixa[] }[]; pintar: boolean; largura: number; altura: number } | null>(null);
   const ultimaPintada = useRef("");
   const chaveDoDesenho = `${page}|${needle}|${chaveDosOutros}`;
   const medirOGrifo = useCallback(() => {
@@ -232,7 +240,7 @@ export default function AuditPdfViewerInternal({
     // Só o ATIVO chegando pinta: trocar os outros ou o zoom não é chegada.
     const pintar = porGrifo.has(0) && ultimaPintada.current !== doAtivo;
     if (porGrifo.has(0)) ultimaPintada.current = doAtivo;
-    setDesenho({ chave: `${page}|${needle}|${chaveDosOutros}`, grupos, pintar });
+    setDesenho({ chave: `${page}|${needle}|${chaveDosOutros}`, grupos, pintar, largura: folha.offsetWidth, altura: folha.offsetHeight });
   }, [page, needle, chaveDosOutros]);
 
   const aoPintarOTexto = useCallback(() => {
@@ -268,6 +276,25 @@ export default function AuditPdfViewerInternal({
     },
     [segmentos],
   );
+
+  // Onde o balão encosta: as linhas do grifo ativo, já medidas.
+  const linhasDoAtivo = desenho && desenho.chave === chaveDoDesenho ? desenho.grupos.find((g) => g.grifo === 0)?.faixas : undefined;
+  const lugarDoBalao = (() => {
+    if (!balao || !desenho || !linhasDoAtivo?.length) return null;
+    const primeira = linhasDoAtivo[0];
+    const ultima = linhasDoAtivo[linhasDoAtivo.length - 1];
+    const largura = Math.min(LARGURA_DO_BALAO, desenho.largura - 16);
+    const left = Math.max(8, Math.min(primeira.x, desenho.largura - largura - 8));
+    // No terço de baixo da folha, o balão abre para cima: aberto, ele não cabe embaixo.
+    const acima = ultima.y + ultima.h > desenho.altura * 0.68;
+    const estilo: CSSProperties & Record<`--${string}`, string> = {
+      left,
+      maxWidth: largura,
+      ...(acima ? { bottom: desenho.altura - primeira.y + 8 } : { top: ultima.y + ultima.h + 8 }),
+      "--grifo-balao-seta": `${Math.max(10, Math.min(primeira.x - left + 10, largura - 24))}px`,
+    };
+    return { acima, estilo };
+  })();
 
   /*
    * OS PINOS NA MARGEM: um por achado grifado nesta folha, na altura da
@@ -349,6 +376,11 @@ export default function AuditPdfViewerInternal({
                 />
               ));
             })}
+          </div>
+        )}
+        {lugarDoBalao && (
+          <div className={`grifo-balao grifo-balao--${lugarDoBalao.acima ? "acima" : "abaixo"}`} data-tom={tom} style={lugarDoBalao.estilo}>
+            {balao}
           </div>
         )}
         {pinos.length > 0 && (

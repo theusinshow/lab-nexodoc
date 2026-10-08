@@ -8,7 +8,7 @@
  * entre as páginas DO achado aberto; + − ampliam; Esc fecha.
  */
 import { AnimatePresence, motion } from "motion/react";
-import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ChevronLeft, ChevronRight, Minus, Plus, SearchX, X } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Minus, Plus, SearchX, X } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -164,6 +164,65 @@ function GrifoForaDaVista({ mesa, rotulo }: { mesa: React.RefObject<HTMLDivEleme
   );
 }
 
+/*
+ * O BALÃO DO ACHADO (08/10/2026): o achado ao lado da prova, preso ao trecho.
+ * Recolhido, é uma pílula com o que está errado em uma linha — cobre pouco do
+ * texto em volta. Aberto (clique ou B), traz o que fazer e o texto corrigido.
+ * Aberto ou recolhido vale para os próximos achados até a pessoa trocar.
+ */
+function BalaoDoAchado({ achado, aberto, onAlternar, onAbrirNaFila }: { achado: AchadoDaTela; aberto: boolean; onAlternar: () => void; onAbrirNaFila: () => void }) {
+  const errado = achado.estruturado.descricao || achado.titulo;
+  const fazer = achado.estruturado.acao;
+  // Só a troca pronta: "sem troca" já está dito no "o que fazer".
+  const troca = achado.bruto.texto_corrigido?.tipo === "troca" ? achado.bruto.texto_corrigido : null;
+  if (!aberto) {
+    return (
+      <button type="button" className={`vm-balao-pilula vm--${achado.nivel}`} onClick={onAlternar} title="Abrir o achado aqui (B)" aria-expanded={false}>
+        <i aria-hidden />
+        <b>{achado.id}</b>
+        <span>{errado}</span>
+        <ChevronDown size={13} aria-hidden />
+      </button>
+    );
+  }
+  return (
+    <section className={`vm-balao vm--${achado.nivel}`} aria-label={`${achado.id} no trecho`}>
+      <header>
+        <i aria-hidden />
+        <b>{achado.id}</b>
+        <small>{NIVEIS.find((n) => n.id === achado.nivel)?.nome}</small>
+        <button type="button" onClick={onAlternar} title="Recolher (B)" aria-label="Recolher o balão (B)" aria-expanded>
+          <ChevronUp size={14} />
+        </button>
+      </header>
+      <dl>
+        <div>
+          <dt>O que está errado</dt>
+          <dd>{errado}</dd>
+        </div>
+        {fazer && (
+          <div>
+            <dt>O que fazer</dt>
+            <dd>{fazer}</dd>
+          </div>
+        )}
+        {troca && (
+          <div>
+            <dt>Texto corrigido</dt>
+            <dd className="vm-balao-corrigido">
+              <s>{troca.procure_por}</s>
+              <span>{troca.substitua_por}</span>
+            </dd>
+          </div>
+        )}
+      </dl>
+      <button type="button" className="vm-balao-fila" onClick={onAbrirNaFila}>
+        Abrir na fila <ArrowRight size={13} />
+      </button>
+    </section>
+  );
+}
+
 /** O número curto do achado no pino da folha: "ACH-007" vira "7". */
 const rotuloDoPino = (id: string) => id.replace(/^\D*0*/, "") || id;
 
@@ -235,6 +294,7 @@ export function VisorDoMemorial({
   const [total, setTotal] = useState(0);
   // O achado sob o mouse, na lista ou no pino: o grifo dele acende na folha.
   const [sobre, setSobre] = useState<string | null>(null);
+  const [balaoAberto, setBalaoAberto] = useState(false);
   const mesaRef = useRef<HTMLDivElement>(null);
 
   /*
@@ -320,6 +380,7 @@ export function VisorDoMemorial({
       else if (e.key.toLowerCase() === "j" && !e.ctrlKey && !e.metaKey) vizinha(1);
       else if (e.key.toLowerCase() === "k" && !e.ctrlKey && !e.metaKey) vizinha(-1);
       else if (e.key.toLowerCase() === "g" && !e.ctrlKey && !e.metaKey) voltarAoGrifo(mesaRef.current);
+      else if (e.key.toLowerCase() === "b" && !e.ctrlKey && !e.metaKey) setBalaoAberto((v) => !v);
     };
     document.addEventListener("keydown", tecla, true);
     return () => document.removeEventListener("keydown", tecla, true);
@@ -419,6 +480,7 @@ export function VisorDoMemorial({
                       onEscolher={setAtivo}
                       realce={sobre}
                       onRealce={setSobre}
+                      balao={doAtivo ? <BalaoDoAchado achado={doAtivo} aberto={balaoAberto} onAlternar={() => setBalaoAberto((v) => !v)} onAbrirNaFila={() => onIrParaAchado(doAtivo.chave)} /> : undefined}
                       zoom={zoom}
                       onNumPages={setTotal}
                       onGrifo={aoGrifo}
@@ -490,7 +552,7 @@ export function VisorDoMemorial({
                     })}
                   </div>
                   <p className="rs-nota">
-                    <Tecla>J</Tecla> <Tecla>K</Tecla> entre elas, <Tecla>←</Tecla> <Tecla>→</Tecla> folheia, <Tecla>Shift</Tecla> <Tecla>→</Tecla> segue o achado, <Tecla>+</Tecla> <Tecla>−</Tecla> zoom, <Tecla>G</Tecla> volta ao grifo
+                    <Tecla>J</Tecla> <Tecla>K</Tecla> entre elas, <Tecla>←</Tecla> <Tecla>→</Tecla> folheia, <Tecla>Shift</Tecla> <Tecla>→</Tecla> segue o achado, <Tecla>+</Tecla> <Tecla>−</Tecla> zoom, <Tecla>G</Tecla> volta ao grifo, <Tecla>B</Tecla> abre o balão
                   </p>
                 </div>
               </aside>

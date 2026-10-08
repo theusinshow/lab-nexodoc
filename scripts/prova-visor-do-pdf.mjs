@@ -105,6 +105,27 @@ const grifo = () =>
     const cobre = marcas.every((m) => faixas.some((f) => m.left >= f.x - 1 && m.right <= f.d + 1 && m.top >= f.y - 1 && m.bottom <= f.b + 1));
     return { faixas, marcas: marcas.length, fundoDaMarca, tom, cobre, outros, realce, pinos };
   });
+/** O balão do achado: onde está, se cobre o grifo, e o que diz. */
+const balao = () =>
+  page.evaluate(() => {
+    const b = document.querySelector(".vm-pdf .grifo-balao");
+    const folha = document.querySelector(".vm-pdf .react-pdf__Page");
+    if (!b || !folha) return null;
+    const r = b.getBoundingClientRect();
+    const f = folha.getBoundingClientRect();
+    const faixas = [...folha.querySelectorAll(".grifo-faixa--ativo")].map((x) => x.getBoundingClientRect());
+    const cobre = faixas.some((x) => x.left < r.right && x.right > r.left && x.top < r.bottom && x.bottom > r.top);
+    const acima = b.classList.contains("grifo-balao--acima");
+    const encosta = faixas.length ? (acima ? faixas[0].top - r.bottom : r.top - faixas[faixas.length - 1].bottom) : null;
+    return {
+      acima,
+      encosta,
+      cobre,
+      dentro: r.left >= f.left - 1 && r.right <= f.right + 1,
+      aberto: Boolean(b.querySelector(".vm-balao")),
+      texto: b.textContent ?? "",
+    };
+  });
 /** Espera a folha pedida estar desenhada (o canvas do react-pdf troca). */
 const esperarFolha = async () => {
   await page.waitForFunction(() => document.querySelector(".vm-pdf .react-pdf__Page canvas"), null, { timeout: 15000 });
@@ -165,6 +186,10 @@ try {
         confianca: "alta",
         origem: "ia",
         impacto: "revisao_editorial",
+        // O balão mostra a troca pronta do texto corrigido.
+        ...(a.id === "INC-001"
+          ? { texto_corrigido: { tipo: "troca", procure_por: "trecho de conferencia 3", substitua_por: "trecho de conferência 3", modelo: "qa", geradoEm: new Date(0).toISOString() } }
+          : {}),
       }));
       await put("conversations", {
         id: convId,
@@ -281,6 +306,24 @@ try {
   // Volta ao INC-001 para o resto da prova.
   await page.locator(".grifo-pino:not(.grifo-pino--ativo)").first().click();
   await page.waitForTimeout(900);
+
+  // --- 1d. o balão do achado ------------------------------------------------
+  const b1 = await balao();
+  check("o balão do achado está na folha, recolhido", b1 && !b1.aberto && /ACH-001/.test(b1.texto), b1?.texto.slice(0, 60));
+  check("no pé da folha, o balão abre para cima", b1?.acima === true);
+  check("o balão encosta no trecho (até 16px) sem cobrir o grifo", b1 && b1.encosta !== null && b1.encosta >= 0 && b1.encosta <= 16 && !b1.cobre, `vão ${b1?.encosta}px, cobre=${b1?.cobre}`);
+  check("o balão não sai da folha", b1?.dentro === true);
+  await page.locator(".vm-balao-pilula").click();
+  await page.waitForTimeout(500);
+  const b2 = await balao();
+  check("clicar abre o achado no balão", b2?.aberto === true && /O que está errado/.test(b2.texto));
+  check("o balão aberto traz o texto corrigido", /trecho de conferência 3/.test(b2?.texto ?? ""));
+  check("aberto, continua sem cobrir o grifo e dentro da folha", b2 && !b2.cobre && b2.dentro);
+  await page.screenshot({ path: `${OUT}/visor-1d-balao.png` });
+  await page.evaluate(() => document.activeElement instanceof HTMLElement && document.activeElement.blur());
+  await page.keyboard.press("b");
+  await page.waitForTimeout(400);
+  check("B recolhe o balão", (await balao())?.aberto === false);
 
   // --- 2. a folha órfã, pelo campo ----------------------------------------
   await ir(PAGINA_ORFA);

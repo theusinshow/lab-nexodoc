@@ -79,6 +79,24 @@
 .grifo-pino--ativo { background: var(--grifo-tom); color: color-mix(in srgb, var(--grifo-tom) 18%, black); cursor: default; box-shadow: 0 1px 4px rgb(0 0 0 / 0.25); }
 .grifo-pino--ativo:hover, .grifo-pino--ativo.grifo-pino--realce { background: var(--grifo-tom); }
 
+/*
+ * O BALÃO DO ACHADO (08/10/2026): preso ao trecho do ativo, rola com a folha.
+ * Recolhido é uma pílula curta (cobre pouco do texto em volta); aberto é o
+ * cartão do achado. A ponta aponta para o começo do grifo.
+ */
+.grifo-balao { position: absolute; z-index: 4; pointer-events: auto; }
+.grifo-balao::before {
+  content: "";
+  position: absolute;
+  left: var(--grifo-balao-seta, 14px);
+  width: 10px;
+  height: 10px;
+  background: inherit;
+  rotate: 45deg;
+}
+.grifo-balao--abaixo::before { top: -4px; }
+.grifo-balao--acima::before { bottom: -4px; }
+
 @media (prefers-reduced-motion: reduce) {
   .grifo-faixa--pinta { animation: none; }
   .grifo-faixa, .grifo-pino { transition: none; }
