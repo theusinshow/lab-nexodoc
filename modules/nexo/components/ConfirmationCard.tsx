@@ -132,6 +132,8 @@ import { assinaturaDoTomo, folhasDoTomo } from "../lib/drop-folhas";
 import { fatosDaConversa } from "@/server/nexo/agent/fatos";
 import { useAuditoria } from "../state/auditoria-store";
 import { opcoesDoTomo } from "../lib/editar-artefato";
+import { parametrosDaEntrega } from "../lib/editaveis-consolidados";
+import { redeParaGerar } from "../lib/rede-da-conversa";
 import {
   estadoDoArtefato,
   type EstadoArtefato,
@@ -670,7 +672,7 @@ function LdConfirmation({
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { getResult, saveResult, totaisPorDisciplina, identidade, podeGastar, motivoParaNaoGastar, motivoDaTrava } =
+  const { getResult, saveResult, totaisPorDisciplina, identidade, podeGastar, motivoParaNaoGastar, motivoDaTrava, decisoes, results } =
     useConversation();
   const id = ldId(selos) + tomo.sufixo;
   const saved = getResult(id);
@@ -738,6 +740,9 @@ function LdConfirmation({
         ...(referenceTotal ? { referenceTotal } : {}),
         // A LD imprime a mesma obra/código/revisão que a capa.
         identidade,
+        // Onde o `.odt` mora na rede, com a data e o modelo da capa já gerada.
+        rede: redeParaGerar(decisoes, parametrosDaEntrega(results)),
+        templateId: parametrosDaEntrega(results).templateId,
         ...opts,
       });
       await saveResult({
@@ -1441,6 +1446,7 @@ function VolumeConfirmation({
     motivoParaNaoGastar,
     motivoDaTrava,
     conferirAntesDeGastar,
+    decisoes,
   } = useConversation();
   const { registrar } = useMontadoresDeVolume();
   const { fases, marcarFase, publicarSituacao } = useFasesDaMontagem();
@@ -1815,6 +1821,8 @@ function VolumeConfirmation({
                 ? { referenceTotal: totaisPorDisciplina[bloco.codigo] }
                 : {}),
               identidade,
+              rede: redeParaGerar(decisoes, parametrosDaEntrega(results)),
+              templateId: parametrosDaEntrega(results).templateId,
             });
             ldDoBloco64 = ld.pdfUrl ? await urlToBase64(ld.pdfUrl) : null;
             const ldSalva = await saveResult({

@@ -52,6 +52,7 @@ import {
   type ItemDoPlano,
 } from "../lib/editar-artefato";
 import { estadoDoArtefato } from "../lib/estado-do-artefato";
+import { CAMPO_DA_REDE, redeParaGerar } from "../lib/rede-da-conversa";
 import {
   blocoGera,
   blocosDasFolhas,
@@ -410,6 +411,13 @@ export function PlanoDeGeracao({
           tituloLd: mesclado.valores.tituloLd ?? "",
           numTomos: inteiro(mesclado.valores.numTomos, 1),
           tomoInicial: inteiro(mesclado.valores.tomoInicial, 1),
+          /*
+           * O caminho da rede entra nos params da LD — e SÓ nos dela, e só
+           * quando decidido: mudá-lo envelhece a LD (é o rodapé dela que muda),
+           * não a capa; e as LDs geradas antes desta decisão existir não
+           * amanhecem todas "pendentes".
+           */
+          ...(mesclado.valores[CAMPO_DA_REDE] ? { [CAMPO_DA_REDE]: mesclado.valores[CAMPO_DA_REDE] } : {}),
         },
       };
     }
@@ -725,6 +733,9 @@ export function PlanoDeGeracao({
         // Os marcadores que o engenheiro acrescentou ao modelo. Sem eles,
         // o campo que o frame ofereceu sairia literal no documento.
         extras,
+        // Onde o `.odt` da LD mora na rede, com a data e o modelo DESTE plano.
+        rede: redeParaGerar(decisoes, mesclado.valores),
+        templateId: mesclado.valores.templateId ?? "",
       });
       return null;
     } catch (err) {

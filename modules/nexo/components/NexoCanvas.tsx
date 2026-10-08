@@ -43,6 +43,8 @@ import { useConversation } from "../state/conversation-store";
 import { agruparPorTomo, tomoDoArtefato, tomosDeFileira } from "../lib/results";
 import { orfaosAposDivisao } from "../lib/edicao";
 import { camposDoArtefato, aplicarEdicaoNoNo } from "../lib/editar-artefato";
+import { parametrosDaEntrega } from "../lib/editaveis-consolidados";
+import { redeParaGerar } from "../lib/rede-da-conversa";
 import { aplicarIdentidade, separarIdentidade } from "../lib/identidade";
 import { summarizeSelos } from "../lib/agent-context";
 import type { ParagrafoDoModelo } from "@/server/odt/layout";
@@ -378,6 +380,8 @@ function ArtifactNode({ data, selected }: NodeProps<Node<ArtifactNodeData>>) {
             saveResult: conv.saveResult,
             totais: conv.totaisPorDisciplina,
             identidade: corrigida,
+            rede: redeParaGerar(conv.decisoes, parametrosDaEntrega(conv.results)),
+            templateId: parametrosDaEntrega(conv.results).templateId,
           });
           // A frase vai para o HISTÓRICO: é o que faz o próximo turno do agente
           // enxergar a decisão em vez de re-propor o valor antigo por cima.

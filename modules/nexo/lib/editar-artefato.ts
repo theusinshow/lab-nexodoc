@@ -51,6 +51,7 @@ import {
 import { orfaosAposDivisao } from "./edicao";
 import { tomoDoArtefato } from "./results";
 import type { SaveResultInput, SavedResult } from "../state/conversation-store";
+import type { RedeDaLd } from "@/lib/ld/caminho-da-rede";
 
 const PDF_MIME = "application/pdf";
 
@@ -201,6 +202,10 @@ export async function aplicarEdicaoNoNo(args: {
   totais?: Record<string, number>;
   /** Identidade do projeto corrigida à mão (órgão, obra, código, revisão…). */
   identidade?: IdentidadeDoProjeto;
+  /** Onde o `.odt` da LD mora na rede (decisão `caminhoDaRede` + data da capa). */
+  rede?: RedeDaLd;
+  /** O modelo da prefeitura: dá a pasta do cliente na rede. */
+  templateId?: string;
 }): Promise<boolean> {
   if (mudouADivisao(args.paramsAntigos, args.valores)) return false;
 
@@ -262,6 +267,8 @@ export async function aplicarEdicaoNoNo(args: {
       tomoAtual: tomo > 0 ? tomo - num("tomoInicial", 1) + 1 : 0,
       ...(referenceTotal ? { referenceTotal } : {}),
       identidade: args.identidade,
+      rede: args.rede,
+      templateId: args.templateId,
     });
     await args.saveResult({
       artifactId: args.artifactId,
@@ -320,6 +327,10 @@ export async function gerarItem(args: {
   totais?: Record<string, number>;
   /** Identidade do projeto corrigida à mão (órgão, obra, código, revisão…). */
   identidade?: IdentidadeDoProjeto;
+  /** Onde o `.odt` da LD mora na rede (decisão `caminhoDaRede` + data da capa). */
+  rede?: RedeDaLd;
+  /** O modelo da prefeitura: dá a pasta do cliente na rede. */
+  templateId?: string;
   /**
    * Marcadores que o engenheiro acrescentou ao MODELO e o Nexo não conhece.
    * Só a capa os usa — a LD e a separatriz têm modelo próprio.
@@ -425,6 +436,8 @@ export async function gerarItem(args: {
       tomoAtual: item.tomoAtual,
       ...(referenceTotal ? { referenceTotal } : {}),
       identidade: args.identidade,
+      rede: args.rede,
+      templateId: args.templateId,
       ...opts,
       ...(item.bloco
         ? { folhasDoTomo: doBloco.map((f) => f.id), respeitarOrdem: true }
