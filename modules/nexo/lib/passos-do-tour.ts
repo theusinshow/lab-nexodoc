@@ -97,22 +97,6 @@ export const PASSOS_DO_TOUR: PassoDoTour[] = [
     clicarAntes: '[data-tour="chip-no-documento"]',
   },
   {
-    id: "pilha-recorrente",
-    titulo: "O mesmo erro em várias páginas",
-    corpo:
-      "Texto reaproveitado repete o engano. A pilha conta quantas vezes e liga uma linha a cada página — um problema só, espalhado, em vez de vários iguais.",
-    alvo: '[data-tour="palco"]',
-    lado: "esquerda",
-  },
-  {
-    id: "parecer-completo",
-    titulo: "O parecer inteiro, sem largar o documento",
-    corpo:
-      "Ele abre por cima e fecha com Esc. As páginas continuam montadas atrás, no mesmo lugar onde você estava.",
-    alvo: '[data-tour="abrir-parecer"]',
-    lado: "abaixo",
-  },
-  {
     id: "fecho",
     titulo: "É isso",
     corpo:

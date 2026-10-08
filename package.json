@@ -177,7 +177,6 @@
     "test:nexo:audit-marcos": "node scripts/test-nexo-audit-marcos.ts",
     "test:nexo:audit-graph": "node scripts/test-nexo-audit-graph.ts",
     "test:nexo:locate-term": "node scripts/test-nexo-locate-term.ts",
-    "test:nexo:audit-layout": "node scripts/test-nexo-audit-layout.ts",
     "test:nexo:tour": "node scripts/test-nexo-tour.ts",
     "test:ai-budget": "node scripts/test-ai-budget.ts",
     "test:vazao": "node scripts/test-vazao-de-auditoria.ts",

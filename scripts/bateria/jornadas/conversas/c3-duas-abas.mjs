@@ -84,7 +84,7 @@ export default {
      */
     const ePost = (caminho) => (req) => req.method() === "POST" && new URL(req.url()).pathname === caminho;
     await aba2.bringToFront();
-    const auditarNaAba2 = aba2.getByRole("button", { name: /^Auditar$/ });
+    const auditarNaAba2 = aba2.getByRole("button", { name: /^Conferi — auditar$/ });
     const habilitadoAntes = await ctx.esperar(async () => (await auditarNaAba2.count()) > 0 && (await auditarNaAba2.last().isEnabled()), 20_000, 250);
     ctx.verificar(
       "antes do gesto, o Auditar da aba 2 está habilitado e visível de verdade",

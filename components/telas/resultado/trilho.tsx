@@ -27,7 +27,7 @@ import "./trilho.css";
 
 type Estado = ReturnType<typeof avaliarEmissao>["estado"];
 
-const SELO: Record<Estado, { rotulo: string; tom: "block" | "decide" | "ok" }> = {
+export const SELO: Record<Estado, { rotulo: string; tom: "block" | "decide" | "ok" }> = {
   incompleto: { rotulo: "Análise parcial", tom: "block" },
   nao_emitir: { rotulo: "Não emitir", tom: "block" },
   revisar: { rotulo: "Revisar antes de emitir", tom: "decide" },

@@ -19,8 +19,17 @@ const CHAVE = "nexo:areas-recolhidas";
 const NENHUMA: AreasRecolhidas = { projetos: false, chat: false };
 const ouvintes = new Set<() => void>();
 let atual: AreasRecolhidas | null = null;
+/*
+ * A FILA RECOLHE AS CONVERSAS SOZINHA, e só enquanto ela está aberta
+ * (auditoria UX do memorial, 07/10/2026, U11). A 1440 px, com a lista de
+ * conversas e o chat abertos, o detalhe do achado cortava "Decisão técnica" e
+ * "Falso positivo". Isto vale só na memória: não é escolha da pessoa e não vai
+ * para o armazenamento. "Mostrar conversas" desfaz na hora.
+ */
+let pelaFila = false;
+let instantaneo: AreasRecolhidas | null = null;
 
-function ler(): AreasRecolhidas {
+function guardadas(): AreasRecolhidas {
   if (atual) return atual;
   try {
     const cru = JSON.parse(window.localStorage.getItem(CHAVE) ?? "null") as Partial<AreasRecolhidas> | null;
@@ -31,6 +40,19 @@ function ler(): AreasRecolhidas {
   return atual;
 }
 
+/** O que a tela mostra: o guardado, mais o recolhimento da fila. */
+function ler(): AreasRecolhidas {
+  if (instantaneo) return instantaneo;
+  const g = guardadas();
+  instantaneo = pelaFila && !g.projetos ? { ...g, projetos: true } : g;
+  return instantaneo;
+}
+
+function avisar() {
+  instantaneo = null;
+  for (const f of ouvintes) f();
+}
+
 function definir(proximo: AreasRecolhidas) {
   atual = proximo;
   try {
@@ -38,7 +60,14 @@ function definir(proximo: AreasRecolhidas) {
   } catch {
     // Sem armazenamento a escolha vale só nesta aba — continua funcionando.
   }
-  for (const f of ouvintes) f();
+  avisar();
+}
+
+/** Liga ou desliga o recolhimento temporário da lista de conversas (a fila aberta em tela estreita). */
+export function recolherConversasPelaFila(ligar: boolean) {
+  if (pelaFila === ligar) return;
+  pelaFila = ligar;
+  avisar();
 }
 
 function assinar(f: () => void) {
@@ -51,12 +80,16 @@ export function useAreasRecolhidas() {
   return {
     ...areas,
     foco: areas.projetos && areas.chat,
-    alternarProjetos: () => definir({ ...ler(), projetos: !ler().projetos }),
-    alternarChat: () => definir({ ...ler(), chat: !ler().chat }),
-    /** Foco na revisão liga os dois; sair do foco devolve os dois. */
+    alternarProjetos: () => {
+      // Recolhida pela fila: o clique devolve a lista, sem gravar nada.
+      if (pelaFila && !guardadas().projetos) return recolherConversasPelaFila(false);
+      definir({ ...guardadas(), projetos: !guardadas().projetos });
+    },
+    alternarChat: () => definir({ ...guardadas(), chat: !guardadas().chat }),
     alternarFoco: () => {
       const a = ler();
       const ligar = !(a.projetos && a.chat);
+      pelaFila = false;
       definir({ projetos: ligar, chat: ligar });
     },
   };

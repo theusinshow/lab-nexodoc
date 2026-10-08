@@ -32,8 +32,8 @@ export default {
       (req) =>
         req.method() === "POST" && new URL(req.url()).pathname === "/api/audit",
     );
-    await ctx.auditarNoCartao();
-
+    // Desde 07/10/2026 o cartão pergunta o projeto ANTES do clique (U18): o
+    // seletor nasce sozinho, e o "Conferi — auditar" só volta depois da escolha.
     const seletor = page.getByLabel(FRASE);
     await seletor.waitFor({ timeout: 30_000 }).catch(() => {});
     ctx.verificar(
@@ -51,7 +51,7 @@ export default {
         opcoes.includes("063-26 · CRICIÚMA"),
       JSON.stringify(opcoes),
     );
-    const botao = page.getByRole("button", { name: "Auditar neste projeto" });
+    const botao = page.getByRole("button", { name: "Conferi — auditar neste projeto" });
     const botaoPresente = (await botao.count()) === 1;
     const botaoVisivel = botaoPresente && (await ctx.visivelRolando(botao));
     ctx.verificar(

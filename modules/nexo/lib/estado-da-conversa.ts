@@ -23,7 +23,7 @@ export type EstadoDaConversa =
   | { tipo: "volume"; tomos: number; folhas: number; disciplinas: string[] }
   | { tipo: "documentos"; capas: number; lds: number; separatrizes: number; folhas: number; disciplinas: string[] }
   | { tipo: "leitura"; folhas: number; disciplinas: string[] }
-  | { tipo: "conversa" };
+  | { tipo: "conversa"; memorialSemAuditoria?: boolean };
 
 /** O que o estado precisa do resumo da conversa (`ConversaResumida`). */
 export interface FatosDoEstado {
@@ -38,6 +38,8 @@ export interface FatosDoEstado {
   separatrizes?: number;
   volumes?: number;
   disciplinas?: readonly string[];
+  /** A seção da conversa (`tipo-de-trabalho.ts`): "auditoria" já com o memorial anexado. */
+  tipo?: string | null;
 }
 
 const semAcento = (v: string) => v.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
@@ -84,6 +86,11 @@ export function estadoDaConversa(c: FatosDoEstado): EstadoDaConversa {
     };
   }
   if (c.folhas > 0) return { tipo: "leitura", folhas: c.folhas, disciplinas };
+  /*
+   * Memorial anexado e auditoria nunca rodada: era "sem tarefa", e a tarefa
+   * estava lá — só faltava rodar (07/10/2026).
+   */
+  if (c.tipo === "auditoria") return { tipo: "conversa", memorialSemAuditoria: true };
   return { tipo: "conversa" };
 }
 

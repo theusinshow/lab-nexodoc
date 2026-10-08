@@ -32,7 +32,12 @@ export function VistaDoVolume({
   const [vista, setVista] = useState<"obra" | "volume" | "lista">("volume");
   const lista = temDocumentos && vista === "lista";
   const obra = temObra && vista === "obra";
-  const mostrarControle = temDocumentos || temObra;
+  /*
+   * Numa conversa só de memorial não há volume: as abas "Obra | Volume" ficavam
+   * sobre o palco vazio de quem veio auditar (07/10/2026, U08). Elas aparecem
+   * quando há o que montar — folhas lidas ou documentos gerados.
+   */
+  const mostrarControle = temDocumentos || (temObra && selos.length > 0);
 
   return (
     <div className="relative flex h-full min-h-0 flex-col" data-prova="vista-do-volume">

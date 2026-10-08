@@ -17,6 +17,7 @@
  * título só para o que sobrou.
  */
 import { createHash } from "node:crypto";
+import { plural } from "./plural.ts";
 
 import type { AuditTextChunk } from "./pdf-text";
 // O TIPO mora no relatório (que o navegador lê); o CÁLCULO mora aqui, com o
@@ -132,9 +133,9 @@ export function fracaoJaLida(delta: DeltaDeCapitulos): number {
 /** Uma frase para a tela: o que mudou, sem adjetivo. */
 export function resumoDoDelta(delta: DeltaDeCapitulos): string {
   const partes: string[] = [];
-  if (delta.iguais.length > 0) partes.push(`${delta.iguais.length} igual(is)`);
-  if (delta.alterados.length > 0) partes.push(`${delta.alterados.length} alterado(s)`);
-  if (delta.novos.length > 0) partes.push(`${delta.novos.length} novo(s)`);
-  if (delta.sumidos.length > 0) partes.push(`${delta.sumidos.length} removido(s)`);
+  if (delta.iguais.length > 0) partes.push(plural(delta.iguais.length, "capítulo igual", "capítulos iguais"));
+  if (delta.alterados.length > 0) partes.push(plural(delta.alterados.length, "alterado", "alterados"));
+  if (delta.novos.length > 0) partes.push(plural(delta.novos.length, "novo", "novos"));
+  if (delta.sumidos.length > 0) partes.push(plural(delta.sumidos.length, "removido", "removidos"));
   return partes.length > 0 ? partes.join(", ") : "nenhum capítulo reconhecido";
 }

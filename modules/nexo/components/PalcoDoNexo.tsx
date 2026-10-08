@@ -45,7 +45,7 @@ import {
 import { auditoriaParaBuscarArquivos } from "@/lib/fonte-do-documento";
 import { catalogoDoParecer, resolverFonte } from "@/lib/fonte-da-evidencia";
 
-import { useAreasRecolhidas } from "../lib/areas-recolhidas";
+import { recolherConversasPelaFila, useAreasRecolhidas } from "../lib/areas-recolhidas";
 import { TrilhoDoResultado } from "@/components/telas/resultado/trilho";
 import { AuditoriaEmCurso } from "./AuditoriaEmCurso";
 import type { AberturaPorLink } from "./use-abrir-auditoria-por-link";
@@ -522,6 +522,18 @@ export function PalcoDoNexo({
    * clique no canvas ser desfeito pelo parâmetro da URL a cada render.
    */
 
+  /*
+   * A FILA PRECISA DA LARGURA (07/10/2026, U11): com a fila aberta e a janela
+   * abaixo de 1600 px, a lista de conversas recolhe sozinha — só enquanto a
+   * fila estiver aberta, sem gravar a escolha. Ver `areas-recolhidas.ts`.
+   */
+  const naFila = mostrandoAuditoria && Boolean(report) && !noDocumento && vistaDoParecer === "findings";
+  useEffect(() => {
+    if (!naFila || window.innerWidth >= 1600) return;
+    recolherConversasPelaFila(true);
+    return () => recolherConversasPelaFila(false);
+  }, [naFila]);
+
   return (
     <div className="nw-palco nx-palco relative flex h-full w-full flex-col">
       {/*
@@ -732,12 +744,15 @@ export function PalcoDoNexo({
                     chatDoVisor={chatDoVisor}
                     aoGerarTexto={aoGerarTextoCorrigido}
                     comparado={comparado}
+                    total={totalDeAchados}
+                    tratados={salvo?.auditId ? tratadosNoServidor : tratadosDesta}
                   />
                 </div>
               </div>
               <TrilhoDoResultado
                 compacto
-                onPerguntar={perguntarAoNexo}
+                /* Com o chat aberto ao lado, o botão não mudava nada na tela (R10). */
+                onPerguntar={areasDoPalco.chat ? perguntarAoNexo : undefined}
                 report={report}
                 total={totalDeAchados}
                 tratados={salvo?.auditId ? tratadosNoServidor : tratadosDesta}

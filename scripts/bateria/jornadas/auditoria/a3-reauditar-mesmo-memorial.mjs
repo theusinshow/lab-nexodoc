@@ -26,7 +26,6 @@ export default {
     // seletores de a1-leitura-da-ia-aborta.mjs — mesmo documento, mesmo início.
     await ctx.anexar(["tests/117_25_md_geral_a.pdf"]);
     await ctx.esperarTexto(/Li as primeiras páginas/, 120_000);
-    await (await ctx.esperarBotao(/Auditar o memorial/, 30_000)).click();
     await (await ctx.esperarBotao(/Auditar sem transcrever/, 120_000)).click();
     await ctx.esperarTexto(/14 PÁGINAS NÃO FORAM LIDAS/, 600_000);
 
@@ -35,7 +34,7 @@ export default {
     // para "Auditar de novo" quando não há), transcrevendo desta vez.
     const deNovo = await ctx.esperarBotao(/Transcrever e auditar de novo|Auditar de novo/, 30_000);
     await deNovo.click();
-    const transcrever = await ctx.esperarBotao(/^Transcrever e auditar$/, 180_000);
+    const transcrever = await ctx.esperarBotao(/^Conferi — transcrever e auditar$/, 180_000);
     ctx.verificar("cartão novo oferece Transcrever e auditar", await transcrever.isEnabled());
     await transcrever.click();
 

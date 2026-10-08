@@ -203,10 +203,13 @@ export async function criarContexto({ browser, base }) {
     },
 
     /** Anexa o memorial, espera a leitura e pede a auditoria pelo chip. */
+    /*
+     * Desde 07/10/2026 a ficha do memorial já traz o cartão de auditoria: não
+     * há mais o botão "Auditar o memorial" no meio (auditoria UX do memorial).
+     */
     async abrirCartaoDeAuditoria(caminho) {
       await ctx.anexar([caminho]);
       await ctx.esperarTexto(/Li as primeiras páginas/, 120_000);
-      await (await ctx.esperarBotao(/Auditar o memorial/, 30_000)).click();
     },
 
     /**
@@ -215,7 +218,7 @@ export async function criarContexto({ browser, base }) {
      * voltar (ConfirmationCard, 14/09/2026 17:49).
      */
     async auditarNoCartao() {
-      await (await ctx.esperarBotao(/^Auditar$/, 120_000)).click();
+      await (await ctx.esperarBotao(/^Conferi — auditar$/, 120_000)).click();
     },
 
     async esperarParecer(quantos = 1, ms = 300_000) {

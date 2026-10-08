@@ -47,16 +47,14 @@ export default {
     // `page.evaluate` despejando o texto real da bolha). Substring pega a
     // resposta pronta sem depender do rótulo.
     //
-    // O chip "Auditar o memorial" do `abrirCartaoDeAuditoria` MANDA "audita o
-    // memorial" pelo mesmo composer (`NexoWorkspace.tsx:933`, `commit: "send"`)
-    // — e como ainda não havia parecer naquele momento, foi ao agente e já
-    // deixou UMA bolha "Vou auditar o memorial (resposta simulada)." na
-    // conversa. É por isso que a prova de resposta compara antes/depois, e
-    // não apenas `count() > 0`: a contagem "antes" já nasce em 1.
+    // A prova de resposta compara antes/depois, e não apenas `count() > 0`:
+    // até 07/10/2026 o chip "Auditar o memorial" já deixava uma bolha do
+    // agente antes do pedido. Hoje a ficha traz o cartão direto e a contagem
+    // "antes" nasce em 0 — a comparação continua certa nos dois casos.
     const respostas = ctx.page.getByText(RESPOSTA_DO_AGENTE);
     const respostasAntes = await respostas.count();
     const botoesAuditarAntes = await ctx.page
-      .getByRole("button", { name: /^Auditar$/ })
+      .getByRole("button", { name: /^Conferi — auditar$/ })
       .count();
     ctx.verificar(
       "antes do pedido não há cartão esperando auditoria",
@@ -76,7 +74,7 @@ export default {
       async () => (await respostas.count()) > respostasAntes,
       60_000,
     );
-    const auditar = ctx.page.getByRole("button", { name: /^Auditar$/ });
+    const auditar = ctx.page.getByRole("button", { name: /^Conferi — auditar$/ });
     await auditar
       .first()
       .waitFor({ timeout: 120_000 })

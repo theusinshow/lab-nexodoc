@@ -16,6 +16,7 @@
  * deste navegador (modules/nexo/lib/tempos-da-auditoria.ts); sem histórico ele
  * não aparece e o anel gira sem fingir porcentagem.
  */
+import { DicaDeUmaVez } from "@/components/telas/comum/dica-de-uma-vez";
 import { AnimatePresence, motion } from "motion/react";
 import { ChevronDown, FileText } from "lucide-react";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
@@ -277,10 +278,13 @@ export function AuditoriaEmCurso({
                   {arquivo}
                   {totalDePaginas ? `, ${totalDePaginas} páginas` : ""}
                 </span>
-                <span className="au-sep" />
-                <span title={nivel === "deep" ? "Leitura do documento inteiro e revisão de cada achado por um segundo modelo" : undefined}>
-                  {nivel === "deep" ? "Análise profunda" : "Análise padrão"}
-                </span>
+                {/* "Análise profunda" saiu (07/10/2026): há um nível só, e um rótulo que nunca varia não informa nada. */}
+                {nivel !== "deep" && (
+                  <>
+                    <span className="au-sep" />
+                    <span>Análise padrão</span>
+                  </>
+                )}
                 <span className="au-sep" />
                 <span>{primeiroNome ? `${primeiroNome}, às` : "começou às"} {hora(inicioMs, false)}</span>
               </p>
@@ -343,6 +347,15 @@ export function AuditoriaEmCurso({
             </div>
           ) : (
             <LinhaDoTempo passos={passos} agora={decorrido} total={total} />
+          )}
+          {/* A primeira auditoria explica o que está acontecendo, uma vez (M3). */}
+          {!retomada && (
+            <DicaDeUmaVez id="processamento" titulo="Enquanto lê">
+              <p>
+                O Nexo procura nome de outra obra no texto, contradições entre capítulos e referências que não existem.
+                Um segundo modelo confere cada ponto antes de ele entrar no parecer.
+              </p>
+            </DicaDeUmaVez>
           )}
         </section>
 
@@ -440,6 +453,9 @@ export function AuditoriaEmCurso({
                   <>
                     <time>{hora(ultima.ms)}</time> {ultima.texto}
                   </>
+                ) : retomada ? (
+                  // Depois do F5 o envio já aconteceu há muito: dizer "Enviando" contradizia o "reconectada" acima.
+                  "Reconectada: aguardando o servidor terminar."
                 ) : (
                   "Enviando o documento para análise…"
                 )}

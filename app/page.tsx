@@ -63,16 +63,25 @@ export default async function PainelPage({ searchParams }: { searchParams: Promi
         where: { userEmail: actor.email },
         orderBy: { updatedAt: "desc" },
         take: QUANTOS_CONTINUAR,
-        select: { id: true, title: true, tipo: true, auditoriaPendente: true, updatedAt: true, project: { select: { code: true, client: true } } },
+        select: { id: true, title: true, tipo: true, auditoriaPendente: true, updatedAt: true, folderKey: true, project: { select: { code: true, client: true } } },
       }),
       comVoce(actor.email, actor.userId, actor.organizationId),
       resumoDoEscritorio(actor.organizationId),
     ]);
 
+    /*
+     * SEM PROJETO, A PASTA (07/10/2026, U24): conversa ainda não endereçada mas
+     * já guardada na pasta da obra ("999-26-CRICIUMA") saía "sem obra", e as
+     * cinco linhas do Continuar ficavam iguais. A pasta diz código e cidade.
+     */
+    const daPasta = (pasta: string | null) => {
+      const m = /^([A-Z]*\d{2,3}-\d{2})-(.+)$/i.exec(pasta ?? "");
+      return m ? { codigo: m[1], cidade: m[2].replace(/-/g, " ") } : null;
+    };
     continuar = conversas.map((c) => ({
       conversaId: c.id,
-      codigo: c.project?.code ?? null,
-      cliente: c.project ? cidadeDoCliente(c.project.client) || c.project.client : "",
+      codigo: c.project?.code ?? daPasta(c.folderKey)?.codigo ?? null,
+      cliente: c.project ? cidadeDoCliente(c.project.client) || c.project.client : (daPasta(c.folderKey)?.cidade ?? ""),
       trabalho: c.title || "Conversa sem título",
       estado: c.auditoriaPendente ? "auditoria em curso" : c.tipo === "auditoria" ? "auditoria" : c.tipo === "volume" ? "volume" : "conversa",
       tom: c.auditoriaPendente ? "decide" : null,

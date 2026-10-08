@@ -18,6 +18,8 @@
  * aplique. O gesto seguinte é sempre anexar, então ele vem junto.
  */
 
+import { useState } from "react";
+
 import { PARTIDAS, faltaInsumo } from "../lib/partidas";
 import { useComposer } from "../state/composer-controller";
 
@@ -38,6 +40,22 @@ export function PartidasDoNexo({
   onEscolher?: (id: string) => void;
 }) {
   const composer = useComposer();
+  const [outras, setOutras] = useState(false);
+
+  /*
+   * A TAREFA JÁ ESCOLHIDA NÃO SE ESCOLHE DE NOVO (07/10/2026, R11). Quem veio
+   * do Painel por "Auditar um memorial" via a saudação oferecer as três
+   * tarefas outra vez, a dele no meio. Escolhida, fica só a saída discreta.
+   */
+  if (ativa && !outras) {
+    return (
+      <div data-partidas className="cx-atalhos">
+        <button type="button" data-outra-tarefa onClick={() => setOutras(true)}>
+          Fazer outra coisa
+        </button>
+      </div>
+    );
+  }
 
   /* Os atalhos da conversa nova (Conversa v2): escrevem o pedido no campo; Enter envia. */
   return (
@@ -56,7 +74,7 @@ export function PartidasDoNexo({
                 : "Escreve o pedido no campo abaixo. Enter envia."
             }
             onClick={() => {
-              // Sem o memorial ainda, a leitura dele já trará "Auditar o memorial": só abre o seletor.
+              // Sem o memorial ainda, a leitura dele já trará a ficha com "Conferi — auditar": só abre o seletor.
               if (!(falta && partida.precisa === "memorial")) composer.fill(partida.frase);
               onEscolher?.(partida.id);
               if (falta) onAnexar?.();

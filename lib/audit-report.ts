@@ -965,13 +965,13 @@ export function buildExecutiveSummary(findings: AuditFinding[]) {
 
   if (technical.length > 0) {
     parts.push(
-      `${technical.length} ponto(s) técnico(s)/contratual(is) exigem conferência antes da emissão.`,
+      `${plural(technical.length, "ponto técnico/contratual exige", "pontos técnicos/contratuais exigem")} conferência antes da emissão.`,
     );
   }
 
   if (editorial.length > 0) {
     parts.push(
-      `${editorial.length} ponto(s) editorial(is) devem ser revisados sem o mesmo peso dos erros documentais.`,
+      `${plural(editorial.length, "ponto editorial deve ser revisado", "pontos editoriais devem ser revisados")} sem o mesmo peso dos erros documentais.`,
     );
   }
 
@@ -1036,7 +1036,7 @@ export function getEmissionVerdict(
     return {
       emoji: "🟡",
       label: "REVISAR ANTES DE EMITIR",
-      detail: `${groups.tecnico_contratual.length} ponto(s) técnico(s)/contratual(is) exigem conferência.`,
+      detail: `${plural(groups.tecnico_contratual.length, "ponto técnico/contratual exige", "pontos técnicos/contratuais exigem")} conferência.`,
     };
   }
 
@@ -1044,7 +1044,7 @@ export function getEmissionVerdict(
     return {
       emoji: "🟢",
       label: "LIBERADO COM RESSALVAS EDITORIAIS",
-      detail: `${groups.revisao_editorial.length} ajuste(s) editorial(is), sem impacto documental.`,
+      detail: `${plural(groups.revisao_editorial.length, "ajuste editorial", "ajustes editoriais")}, sem impacto documental.`,
     };
   }
 
@@ -1093,28 +1093,28 @@ export function avaliarEmissao(report: AuditReport, opcoes: { promessaVisual?: b
     // Coerência: o resumo tem de bater com os achados publicados; achado do motor
     // corrompido não pode sumir da conta nem ser lido como legado.
     const porEstado = countByState(report.incongruencias);
-    if (porEstado.invalid > 0) impeditivas.push(`${porEstado.invalid} achado(s) do motor ilegível(is): integridade não confirmada`);
+    if (porEstado.invalid > 0) impeditivas.push(`${plural(porEstado.invalid, "achado do motor ilegível", "achados do motor ilegíveis")}: integridade não confirmada`);
     else if (porEstado.confirmed !== motor.value.counts.confirmed) {
-      impeditivas.push(`contagem do motor (${motor.value.counts.confirmed} confirmado(s)) não confere com os achados publicados (${porEstado.confirmed})`);
+      impeditivas.push(`contagem do motor (${plural(motor.value.counts.confirmed, "confirmado", "confirmados")}) não confere com os achados publicados (${porEstado.confirmed})`);
     }
     const cov = motor.value.coverage;
     if (cov.status !== "complete" && cov.status !== "complete_with_inherited" && cov.status !== "empty") {
       const pct = cov.completedRatio === null ? "—" : `${Math.round(cov.completedRatio * 100)}%`;
       impeditivas.push(`cobertura do motor ${cov.status}: ${pct} do texto concluído`);
     }
-    if (motor.value.counts.operationalFailures > 0) impeditivas.push(`${motor.value.counts.operationalFailures} verificação(ões) não concluída(s) por falha ou orçamento`);
+    if (motor.value.counts.operationalFailures > 0) impeditivas.push(`${plural(motor.value.counts.operationalFailures, "verificação não concluída", "verificações não concluídas")} por falha ou orçamento`);
     visualPendente = cov.revisions.reduce((n, r) => n + r.visualPending.length, 0);
-    if (visualPendente && opcoes.promessaVisual) impeditivas.push(`${visualPendente} página(s) de desenho prometidas e não avaliadas`);
+    if (visualPendente && opcoes.promessaVisual) impeditivas.push(`${plural(visualPendente, "página de desenho prometida e não avaliada", "páginas de desenho prometidas e não avaliadas")}`);
   }
   const criticasAbertas = report.incongruencias.filter((f) => f.motor?.state === "inconclusive" && f.prioridade === "Alta").length;
-  if (criticasAbertas) ressalvas.push(`${criticasAbertas} questão(ões) crítica(s) em aberto`);
+  if (criticasAbertas) ressalvas.push(`${plural(criticasAbertas, "questão crítica", "questões críticas")} em aberto`);
 
   const arquivos = report.arquivos_analisados ?? [];
   const paginas = arquivos.reduce((n, a) => n + (a.paginas ?? 0), 0);
   const escopo = [
-    `${arquivos.length} arquivo(s)${paginas ? `, ${paginas} página(s)` : ""}`,
+    `${plural(arquivos.length, "arquivo", "arquivos")}${paginas ? `, ${plural(paginas, "página", "páginas")}` : ""}`,
     motor.kind === "engine" ? `cobertura rastreada (${motor.value.coverage.status})` : "cobertura não rastreada (parecer anterior ao motor)",
-    visualPendente && !opcoes.promessaVisual ? `desenhos não avaliados em ${visualPendente} página(s) — limite do modo textual` : "",
+    visualPendente && !opcoes.promessaVisual ? `desenhos não avaliados em ${plural(visualPendente, "página", "páginas")} — limite do modo textual` : "",
   ].filter(Boolean).join("; ");
 
   const ehIncompleto = base.label.includes("NÃO USE PARA EMITIR");

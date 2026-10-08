@@ -11,7 +11,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { ArrowRight, Check, ChevronDown, FileSearch } from "lucide-react";
 import { useState } from "react";
 
-import { Avatar, Botao, Tecla } from "@/components/ds/basicos";
+import { Avatar, Botao } from "@/components/ds/basicos";
 import { MapaDasPaginas } from "@/components/ds/graficos";
 import type { AuditReport } from "@/lib/audit-report";
 import { rotuloDaContagem } from "@/lib/auditoria-incompleta";
@@ -141,7 +141,7 @@ export function ResumoDoParecer({
           <span className="rs-nota">{rotuloDaContagem(report)}, na ordem de impacto</span>
           {achados.length > 0 && (
             <Botao variante="quiet" tamanho="sm" onClick={() => onAbrir()}>
-              Abrir a fila <Tecla>2</Tecla>
+              Abrir a fila
             </Botao>
           )}
         </header>
@@ -171,7 +171,7 @@ export function ResumoDoParecer({
                       <button type="button" className="rc-linha-corpo" onClick={() => onAbrir(a.chave)}>
                         <span className="rc-titulo">{a.titulo}</span>
                         <SeloDaDisciplina disc={a.disc} />
-                        {a.responsavel ? <Avatar iniciais={iniciais(a.responsavel.nome)} pequeno /> : <span className="rc-sem">sem dono</span>}
+                        {a.responsavel ? <Avatar iniciais={iniciais(a.responsavel.nome)} pequeno /> : <span className="rc-sem">sem responsável</span>}
                       </button>
                       <span className="rc-acoes">
                         <button

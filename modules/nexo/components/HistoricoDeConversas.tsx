@@ -141,7 +141,7 @@ function ComoTerminou({ e }: { e: EstadoDaConversa }) {
       frase = <span className="hs-estado-resto">folhas lidas, nada gerado ainda</span>;
       break;
     case "conversa":
-      frase = <span className="hs-estado-resto">sem tarefa</span>;
+      frase = <span className="hs-estado-resto">{e.memorialSemAuditoria ? "memorial lido, auditoria não rodou" : "sem tarefa"}</span>;
   }
   const marca = marcaDe(e);
   const detalhe = e.tipo === "volume" || e.tipo === "documentos" || e.tipo === "leitura" ? e : null;
