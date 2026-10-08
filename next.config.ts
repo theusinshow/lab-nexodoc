@@ -15,12 +15,10 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ["pdfjs-dist"],
   /*
    * O `<ViewTransition>` do React — a transição entre páginas
-   * (components/layout/transicao-de-pagina.tsx). Sem a flag o componente
-   * existe mas não anima nada.
+   * (components/layout/transicao-de-pagina.tsx) — dispensa flag desde a Next
+   * 16.4: `experimental.viewTransition` deixou de existir e quebrava o build
+   * (08/10/2026, subida de segurança 16.2.6 → 16.4.0).
    */
-  experimental: {
-    viewTransition: true,
-  },
   /*
    * Os arquivos que as rotas LEEM do disco em tempo de execução. O rastreador
    * não os enxerga: o caminho é montado com `process.cwd()`, então sem esta
