@@ -162,4 +162,13 @@ test("o anel por MODELO nao se fatia por operacao", () => {
   assert.equal(r.porModelo[0].totalTokens, 300);
 });
 
+test("o que a OpenAI cobriu é separado do total de tabela", () => {
+  const r = aggregateUsage([
+    { flow: "audit", operation: "audit-global", status: "success", model: "sol", totalTokens: 100, estimatedCostUsd: 0.3, cobertoPelaOpenAi: true },
+    { flow: "audit", operation: "audit-chunk", status: "success", model: "sol", totalTokens: 100, estimatedCostUsd: 0.1 },
+  ]);
+  assert.equal(Number(r.totalCostUsd!.toFixed(3)), 0.4);
+  assert.equal(Number(r.cobertoPelaOpenAiUsd.toFixed(3)), 0.3);
+});
+
 console.log(`\n${passed} teste(s) da agregação de consumo OK.`);

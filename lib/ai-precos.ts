@@ -129,3 +129,25 @@ export function estimateOpenAiCostUsd(model: string, usage: TokenUsageForPricing
     1_000_000
   );
 }
+
+/**
+ * QUEM PAGOU A CHAMADA — lido da resposta, não suposto (07/10/2026).
+ *
+ * A resposta da OpenAI traz `billing.payer`. Na organização do Matheus ele vem
+ * `"openai"`: as chamadas entram na cota gratuita do programa de
+ * compartilhamento de dados e NÃO saem do saldo. O anel do chat mostrava US$
+ * 0,40 de uma auditoria enquanto o painel da OpenAI nem se mexia — os dois
+ * estavam certos, cada um sobre uma coisa. O preço de tabela continua gravado
+ * (`estimatedCostUsd`: é o que a mesma corrida custaria a um cliente sem a
+ * cota); o pagador vai junto, para a tela separar "custou" de "foi cobrado".
+ *
+ * `null` quando a resposta não diz (provedor sem o campo, chamada que nem
+ * respondeu): ausência, não "a conta pagou".
+ */
+export type PagadorDaChamada = "openai" | "conta";
+
+export function quemPagou(response: unknown): PagadorDaChamada | null {
+  const payer = (response as { billing?: { payer?: unknown } } | null | undefined)?.billing?.payer;
+  if (typeof payer !== "string" || !payer.trim()) return null;
+  return payer.trim().toLowerCase() === "openai" ? "openai" : "conta";
+}

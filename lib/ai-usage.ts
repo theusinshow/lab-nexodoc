@@ -1,6 +1,6 @@
 import type { Prisma } from "@prisma/client";
 
-import { estimateConferenteCostUsd, estimateOpenAiCostUsd } from "@/lib/ai-precos";
+import { estimateConferenteCostUsd, estimateOpenAiCostUsd, quemPagou } from "@/lib/ai-precos";
 import type { AiProvider, AiProviderFlow } from "@/lib/ai-providers";
 import { getPrisma, isDatabaseConfigured } from "@/lib/db";
 
@@ -107,6 +107,13 @@ export async function recordAiUsage(args: RecordAiUsageArgs) {
       : args.provider === "typesafe"
         ? estimateConferenteCostUsd(args.model, usage)
         : null;
+  // Quem pagou vai no `metadata`, e não numa coluna: o evento antigo não sabe,
+  // e um campo nulo numa coluna nova se leria "a conta pagou". Ver `quemPagou`.
+  const pagoPor = quemPagou(args.response);
+  const metadata =
+    pagoPor && (args.metadata === undefined || (typeof args.metadata === "object" && args.metadata !== null && !Array.isArray(args.metadata)))
+      ? { ...((args.metadata as Record<string, Prisma.InputJsonValue> | undefined) ?? {}), pagoPor }
+      : args.metadata;
 
   try {
     await getPrisma().aiUsageEvent.create({
@@ -125,7 +132,7 @@ export async function recordAiUsage(args: RecordAiUsageArgs) {
         totalTokens: usage.totalTokens,
         estimatedCostUsd,
         durationMs: args.durationMs,
-        metadata: args.metadata ?? undefined,
+        metadata: metadata ?? undefined,
         error: args.error ? getErrorMessage(args.error) : null,
         userEmail: args.userEmail || null,
         conversationId: args.conversationId || null,

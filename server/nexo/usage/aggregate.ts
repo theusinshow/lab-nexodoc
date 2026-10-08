@@ -22,6 +22,11 @@ export interface UsageRow {
   model: string;
   totalTokens: number;
   estimatedCostUsd: number | null;
+  /**
+   * A OpenAI pagou esta chamada (cota gratuita, `billing.payer`). O custo de
+   * tabela continua em `estimatedCostUsd`; isto só diz que ele não saiu do saldo.
+   */
+  cobertoPelaOpenAi?: boolean;
 }
 
 /** Uma fatia do anel. */
@@ -57,6 +62,12 @@ export interface UsageSummary {
    * perdido"), por isso nunca e nulo.
    */
   desperdicioUsd: number;
+  /**
+   * Parte de `totalCostUsd` que a OpenAI pagou (cota gratuita). O que sai da
+   * conta é `totalCostUsd - cobertoPelaOpenAiUsd` — é ESSE número que precisa
+   * bater com o painel da OpenAI. Zero quando nada foi coberto.
+   */
+  cobertoPelaOpenAiUsd: number;
 }
 
 /** Fluxo técnico → o nome que o engenheiro reconhece. */
@@ -84,6 +95,9 @@ const OPERATION_LABELS: Record<string, string> = {
   "audit-cross-document": "Comparação entre arquivos",
   "audit-refutation": "Refutação dos achados",
   "audit-chat-answer": "Perguntas sobre o parecer",
+  "audit-chat-turn": "Perguntas sobre o parecer",
+  "audit-texto-corrigido": "Texto corrigido",
+  "audit-transcricao": "Transcrição de página",
   "nexo-agent-turn": "Turnos da conversa",
   "nexo-selo": "Leitura de selo",
   "nexo-selo-image": "Recorte do selo",
@@ -119,6 +133,7 @@ export function aggregateUsage(rows: UsageRow[]): UsageSummary {
   let totalTokens = 0;
   let totalCostUsd: number | null = null;
   let desperdicioUsd = 0;
+  let cobertoPelaOpenAiUsd = 0;
 
   for (const row of rows) {
     // Item 4 (decisão fechada): filtra por CONSUMO, não por status. Uma chamada
@@ -134,6 +149,7 @@ export function aggregateUsage(rows: UsageRow[]): UsageSummary {
 
     const falhou = row.status !== "success";
     if (falhou) desperdicioUsd += row.estimatedCostUsd ?? 0;
+    if (row.cobertoPelaOpenAi) cobertoPelaOpenAiUsd += row.estimatedCostUsd ?? 0;
 
     const slice = byModel.get(row.model);
     if (slice) {
@@ -180,5 +196,6 @@ export function aggregateUsage(rows: UsageRow[]): UsageSummary {
     totalTokens,
     totalCostUsd,
     desperdicioUsd,
+    cobertoPelaOpenAiUsd,
   };
 }

@@ -106,6 +106,19 @@ console.log(
     total.toFixed(3).padStart(9),
 );
 
+// A cota gratuita da OpenAI (`metadata.pagoPor`, ver lib/ai-precos.ts#quemPagou):
+// o total acima é preço de tabela; o que sai do saldo é o que sobra.
+const coberto = eventos.reduce(
+  (s, e) => s + ((e.metadata as { pagoPor?: unknown } | null)?.pagoPor === "openai" ? (e.estimatedCostUsd ?? 0) : 0),
+  0,
+);
+if (coberto > 0) {
+  console.log(
+    `
+US$ ${coberto.toFixed(3)} pagos pela cota gratuita da OpenAI. Cobrado da conta: US$ ${(total - coberto).toFixed(3)}.`,
+  );
+}
+
 if (desperdicio > 0) {
   console.log(
     `\nUS$ ${desperdicio.toFixed(3)} (${Math.round((desperdicio / total) * 100)}%) foram para chamadas que FALHARAM.\n` +

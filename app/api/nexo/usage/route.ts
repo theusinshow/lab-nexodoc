@@ -15,6 +15,7 @@ const VAZIO = {
   totalTokens: 0,
   totalCostUsd: null,
   desperdicioUsd: 0,
+  cobertoPelaOpenAiUsd: 0,
 };
 
 /**
@@ -58,7 +59,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const events = (await getPrisma().aiUsageEvent.findMany({
+    const linhas = await getPrisma().aiUsageEvent.findMany({
       where: { conversationId, userEmail },
       select: {
         flow: true,
@@ -70,8 +71,14 @@ export async function GET(req: NextRequest) {
         model: true,
         totalTokens: true,
         estimatedCostUsd: true,
+        // `pagoPor` (lib/ai-precos.ts#quemPagou): o que a OpenAI cobriu não sai do saldo.
+        metadata: true,
       },
-    })) satisfies UsageRow[];
+    });
+    const events: UsageRow[] = linhas.map(({ metadata, ...linha }) => ({
+      ...linha,
+      cobertoPelaOpenAi: (metadata as { pagoPor?: unknown } | null)?.pagoPor === "openai",
+    }));
 
     return NextResponse.json(aggregateUsage(events));
   } catch (error) {

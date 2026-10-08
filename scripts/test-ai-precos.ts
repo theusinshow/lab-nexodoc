@@ -13,7 +13,7 @@
  */
 import assert from "node:assert/strict";
 
-import { estimateOpenAiCostUsd, isModelPriceKnown } from "../lib/ai-precos.ts";
+import { estimateOpenAiCostUsd, isModelPriceKnown, quemPagou } from "../lib/ai-precos.ts";
 import { esforcoAceitoPeloModelo, validateAiModelName } from "../lib/ai-model-name.ts";
 
 let passed = 0;
@@ -160,6 +160,15 @@ test("o astra não recebe 'none', que a API recusa para ele", () => {
   assert.equal(esforcoAceitoPeloModelo("gpt-6-sol", "none"), "none");
   assert.equal(esforcoAceitoPeloModelo("gpt-6-luna", "none"), "none");
   assert.equal(esforcoAceitoPeloModelo("gpt-6-astra", undefined), undefined);
+});
+
+test("quem pagou sai de billing.payer, e ausência não vira 'a conta pagou'", () => {
+  // Resposta real de 07/10/2026 na organização do Matheus: a cota gratuita paga.
+  assert.equal(quemPagou({ billing: { payer: "openai" } }), "openai");
+  assert.equal(quemPagou({ billing: { payer: "developer" } }), "conta");
+  assert.equal(quemPagou({ billing: {} }), null);
+  assert.equal(quemPagou({}), null);
+  assert.equal(quemPagou(undefined), null);
 });
 
 console.log(`\n${passed} verificações de preço passaram.`);

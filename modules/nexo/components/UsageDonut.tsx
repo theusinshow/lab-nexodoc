@@ -44,6 +44,15 @@ export function UsageDonut({ data }: { data: UsageSummary | null }) {
    */
   const cores = fatiasDaEscala(data.porModelo.length);
 
+  /*
+   * O QUE SAI DA CONTA, e não o preço de tabela (07/10/2026). A cota gratuita
+   * da OpenAI paga parte das chamadas (`billing.payer`), e o anel dizia "US$
+   * 0,40" de uma auditoria que não mexeu no saldo. O número da barra é o que
+   * precisa bater com o painel da OpenAI; o de tabela fica no popover.
+   */
+  const coberto = data.cobertoPelaOpenAiUsd ?? 0;
+  const cobrado = data.totalCostUsd == null ? null : Math.max(0, data.totalCostUsd - coberto);
+
   // Cada fatia começa onde a anterior terminou (rotação -90 põe o zero no topo).
   // Acumula via `reduce` puro (sem mutar variável de fora) — o compilador do
   // React exige que o corpo do componente não reatribua estado entre iterações.
@@ -71,7 +80,7 @@ export function UsageDonut({ data }: { data: UsageSummary | null }) {
           aria-expanded={open}
           title="Ver o gasto por passada — modelos, tokens e custo"
           aria-label={`Consumo desta conversa: ${data.totalTokens.toLocaleString("pt-BR")} tokens${
-            data.totalCostUsd == null ? "" : `, ${dinheiro(data.totalCostUsd)}`
+            cobrado == null ? "" : `, ${dinheiro(cobrado)} cobrados da conta`
           }. Abrir a quebra por passada.`}
           className="flex h-9 shrink-0 items-center gap-1.5 rounded-md px-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/25"
         >
@@ -105,7 +114,7 @@ export function UsageDonut({ data }: { data: UsageSummary | null }) {
           */}
           <span className="font-mono text-[9px] tabular-nums">
             {abreviar(data.totalTokens)}
-            {data.totalCostUsd == null ? "" : ` · ${dinheiro(data.totalCostUsd)}`}
+            {cobrado == null ? "" : ` · ${dinheiro(cobrado)}`}
           </span>
           {/* O sinal de que ISTO ABRE. Sem ele, o anel se lê como enfeite — e
               foi exatamente como se leu. */}
@@ -160,7 +169,7 @@ export function UsageDonut({ data }: { data: UsageSummary | null }) {
         <tfoot>
           <tr className="border-t border-border">
             <td className="pt-1.5 text-muted-foreground" colSpan={2}>
-              Total
+              {coberto > 0 ? "Total de tabela" : "Total"}
             </td>
             <td className="pt-1.5 text-right font-mono tabular-nums text-foreground">
               {abreviar(data.totalTokens)}
@@ -171,6 +180,12 @@ export function UsageDonut({ data }: { data: UsageSummary | null }) {
           </tr>
         </tfoot>
       </table>
+      {coberto > 0 ? (
+        <p className="mt-2 border-t border-border pt-2 text-[11px] leading-5 text-muted-foreground">
+          {dinheiro(coberto)} foram pagos pela cota gratuita da OpenAI e não entram na fatura.{" "}
+          <span className="text-foreground">Cobrado da conta: {dinheiro(cobrado)}.</span>
+        </p>
+      ) : null}
       {data.desperdicioUsd > 0 ? (
         <p className="mt-2 border-t border-border pt-2 text-[11px] leading-5 text-[var(--status-warning)]">
           {dinheiro(data.desperdicioUsd)} foram para chamadas que não completaram.

@@ -94,6 +94,7 @@ import {
   TENTATIVAS_PADRAO,
 } from "@/lib/falha-transitoria";
 import { impressaoDoAchado } from "@/lib/impressao-do-achado";
+import { estenderGrafiaRepetida } from "@/lib/grafia-repetida";
 import { linhaDeLog, type ContestacaoDeRegra } from "@/lib/contestacao-de-regra";
 import { semNotasDeConsolidacao } from "@/lib/nota-de-consolidacao";
 import {
@@ -4345,12 +4346,22 @@ async function executarAuditoria(
       console.warn("[audit] dedupe pareado falhou; o parecer sai com os dois achados", error);
     }
 
+    /*
+     * A GRAFIA ERRADA QUE SE REPETE (07/10/2026): o modelo aponta "CMB" no bloco
+     * em que reparou; a varredura acha a mesma sigla nas outras páginas e
+     * estende o MESMO achado. Ver [[grafia-repetida.ts]].
+     */
+    const paginasPorArquivo = new Map(uploadedFiles.map((file) => [file.file.name, file.extracted.pages]));
+    const grafia = estenderGrafiaRepetida(
+      semEscrituracao.mantidos.filter((finding) => !duplicadosPareados.has(finding.id)),
+      (arquivo) =>
+        (arquivo ? paginasPorArquivo.get(arquivo) : undefined) ??
+        (uploadedFiles.length === 1 ? uploadedFiles[0].extracted.pages : undefined),
+    );
+    for (const nota of grafia.notas) console.log(`[audit] grafia repetida: ${nota}`);
+
     const ordenados = sortAuditFindings(
-      compactRepeatedIdentityFindings(
-        filterFalsePositiveIdentityFindings(
-          semEscrituracao.mantidos.filter((finding) => !duplicadosPareados.has(finding.id)),
-        ),
-      ),
+      compactRepeatedIdentityFindings(filterFalsePositiveIdentityFindings(grafia.achados)),
     );
 
     /*

@@ -4,7 +4,8 @@
  * O VISOR DO MEMORIAL (desenho do lab: resultado-e/visor.tsx), com o PDF de
  * verdade. Abre por cima do resultado, na página do achado, com o trecho
  * grifado; ao lado, os achados daquela página e a fita das páginas que têm
- * achado. ← → folheiam; J K pulam entre páginas com achado; Esc fecha.
+ * achado. ← → folheiam; J K pulam entre páginas com achado; Shift+← → andam
+ * entre as páginas DO achado aberto; + − ampliam; Esc fecha.
  */
 import { AnimatePresence, motion } from "motion/react";
 import { ArrowRight, ArrowUp, ChevronLeft, ChevronRight, Minus, Plus, SearchX, X } from "lucide-react";
@@ -17,6 +18,8 @@ import { CURVA } from "@/lib/ds/movimento";
 import { candidatosDoGrifo, porQueSemGrifo, type FolhasSemCamada } from "@/lib/grifo-do-achado";
 import { useTempo } from "@/lib/ds/tempo";
 import { NIVEIS } from "@/lib/nivel-do-achado";
+import { lerPerguntaSobreAchado, textoDaPergunta } from "@/lib/pergunta-sobre-achado";
+import { RotuloDaPergunta } from "@/components/achado/rotulo-da-pergunta";
 
 import type { AchadoDaTela } from "./use-parecer-vivo";
 import { NOME_DO_DESFECHO } from "./textos";
@@ -27,7 +30,7 @@ const AuditPdfViewer = dynamic(() => import("@/components/audit-pdf-viewer-inter
   loading: () => <div className="vm-carregando">Abrindo o memorial…</div>,
 });
 
-const ZOOMS = [0.75, 1, 1.25, 1.5, 2];
+const ZOOMS = [0.75, 1, 1.25, 1.5, 2, 2.5, 3];
 
 /** A conversa do Nexo vista pelo visor: o que já foi dito e como perguntar. */
 export type ChatDoVisor = {
@@ -57,7 +60,7 @@ function ChatNoVisor({ chat, achado, pagina }: { chat: ChatDoVisor; achado: Acha
     const pergunta = texto.trim();
     if (!pergunta || !achado) return;
     if (desde === null) setDesde(chat.mensagens.length);
-    chat.enviar(`Sobre o ${achado.id} (“${achado.titulo}”, p. ${pagina}): ${pergunta}`);
+    chat.enviar(textoDaPergunta(achado, pagina, pergunta));
     setTexto("");
   };
 
@@ -70,11 +73,15 @@ function ChatNoVisor({ chat, achado, pagina }: { chat: ChatDoVisor; achado: Acha
       </p>
       {novas.length > 0 || esperando ? (
         <div className="vm-chat-mensagens">
-          {novas.map((m) => (
-            <p key={m.id} className={`vm-chat-msg vm-chat-msg--${m.role === "user" ? "eu" : "nexo"}`}>
-              {m.content}
-            </p>
-          ))}
+          {novas.map((m) => {
+            const sobre = m.role === "user" ? lerPerguntaSobreAchado(m.content) : null;
+            return (
+              <div key={m.id} className={`vm-chat-msg vm-chat-msg--${m.role === "user" ? "eu" : "nexo"}`}>
+                {sobre && <RotuloDaPergunta achado={sobre} />}
+                <p>{sobre ? sobre.pergunta : m.content}</p>
+              </div>
+            );
+          })}
           {esperando && <p className="vm-chat-msg vm-chat-msg--nexo vm-chat-pensando">Nexo está lendo o memorial…</p>}
           <div ref={fim} />
         </div>
@@ -98,6 +105,36 @@ function ChatNoVisor({ chat, achado, pagina }: { chat: ChatDoVisor; achado: Acha
         </Botao>
       </form>
     </section>
+  );
+}
+/** "Página [12] de 40": digitar o número e Enter leva até ela. */
+function IrParaPagina({ pagina, total, onIr }: { pagina: number; total: number; onIr: (p: number) => void }) {
+  const [texto, setTexto] = useState<string | null>(null);
+  const confirmar = () => {
+    const n = Number(texto);
+    if (texto !== null && Number.isInteger(n) && n >= 1) onIr(n);
+    setTexto(null);
+  };
+  return (
+    <label className="ds-num vm-irpara">
+      Página
+      <input
+        inputMode="numeric"
+        value={texto ?? String(pagina)}
+        onChange={(e) => setTexto(e.target.value.replace(/[^0-9]/g, "").slice(0, 4))}
+        onFocus={(e) => e.target.select()}
+        onBlur={confirmar}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            (e.target as HTMLInputElement).blur();
+          } else if (e.key === "Escape") setTexto(null);
+        }}
+        aria-label="Ir para a página"
+        size={Math.max(2, String(total || pagina).length)}
+      />
+      {total ? ` de ${total}` : ""}
+    </label>
   );
 }
 const ease = (c: readonly number[]) => [...c] as [number, number, number, number];
@@ -164,13 +201,27 @@ export function VisorDoMemorial({
   // Sem memo: o visor do PDF já reduz a lista a uma chave estável (`needle`).
   const grifo = doAtivo ? candidatosDoGrifo(doAtivo.bruto, pagina) : undefined;
 
+  /*
+   * FOLHEAR NÃO TROCA DE ACHADO (07/10/2026). `ir` escolhia o primeiro achado
+   * da página nova: no achado que se repete em várias páginas, avançar para a
+   * próxima grifava OUTRO achado que estivesse lá. O ativo só muda quando a
+   * página nova não tem nada dele.
+   */
   const ir = (p: number) => {
     setProcurando(false);
     const alvo = Math.max(1, total ? Math.min(total, p) : p);
     setPagina(alvo);
+    const atual = achados.find((x) => x.chave === ativo);
+    if (atual?.paginas.includes(alvo)) return;
     const a = achados.find((x) => x.paginas.includes(alvo));
     if (a) setAtivo(a.chave);
   };
+  // As páginas DO achado aberto, para andar entre elas sem passar pelas outras.
+  const paginasDoAtivo = doAtivo ? [...new Set(doAtivo.paginas)].sort((x, y) => x - y) : [];
+  const posicaoNoAtivo = paginasDoAtivo.indexOf(pagina);
+  const anteriorDoAtivo = [...paginasDoAtivo].reverse().find((p) => p < pagina);
+  const proximaDoAtivo = paginasDoAtivo.find((p) => p > pagina);
+  const zoomPasso = (passo: number) => setZoom((z) => ZOOMS[Math.min(ZOOMS.length - 1, Math.max(0, ZOOMS.indexOf(z) + passo))]);
   const vizinha = (passo: number) => {
     const lista = paginasComAchado;
     if (!lista.length) return;
@@ -191,8 +242,14 @@ export function VisorDoMemorial({
         e.preventDefault();
         e.stopPropagation();
         onFechar();
+      } else if (e.key === "ArrowRight" && e.shiftKey) {
+        if (proximaDoAtivo) ir(proximaDoAtivo);
+      } else if (e.key === "ArrowLeft" && e.shiftKey) {
+        if (anteriorDoAtivo) ir(anteriorDoAtivo);
       } else if (e.key === "ArrowRight") ir(pagina + 1);
       else if (e.key === "ArrowLeft") ir(pagina - 1);
+      else if ((e.key === "+" || e.key === "=") && !e.ctrlKey && !e.metaKey) zoomPasso(1);
+      else if (e.key === "-" && !e.ctrlKey && !e.metaKey) zoomPasso(-1);
       else if (e.key.toLowerCase() === "j" && !e.ctrlKey && !e.metaKey) vizinha(1);
       else if (e.key.toLowerCase() === "k" && !e.ctrlKey && !e.metaKey) vizinha(-1);
     };
@@ -232,20 +289,17 @@ export function VisorDoMemorial({
                 <Botao variante="quiet" tamanho="sm" icone aria-label="Página anterior (←)" onClick={() => ir(pagina - 1)} disabled={pagina <= 1}>
                   <ChevronLeft />
                 </Botao>
-                <span className="ds-num">
-                  Página <b>{pagina}</b>
-                  {total ? ` de ${total}` : ""}
-                </span>
+                <IrParaPagina pagina={pagina} total={total} onIr={ir} />
                 <Botao variante="quiet" tamanho="sm" icone aria-label="Próxima página (→)" onClick={() => ir(pagina + 1)} disabled={Boolean(total) && pagina >= total}>
                   <ChevronRight />
                 </Botao>
               </div>
               <div className="vm-zoom">
-                <Botao variante="quiet" tamanho="sm" icone aria-label="Diminuir zoom" onClick={() => setZoom((z) => ZOOMS[Math.max(0, ZOOMS.indexOf(z) - 1)])} disabled={zoom === ZOOMS[0]}>
+                <Botao variante="quiet" tamanho="sm" icone aria-label="Diminuir zoom (−)" title="Diminuir zoom (−)" onClick={() => zoomPasso(-1)} disabled={zoom === ZOOMS[0]}>
                   <Minus />
                 </Botao>
                 <span className="ds-num">{Math.round(zoom * 100)}%</span>
-                <Botao variante="quiet" tamanho="sm" icone aria-label="Aumentar zoom" onClick={() => setZoom((z) => ZOOMS[Math.min(ZOOMS.length - 1, ZOOMS.indexOf(z) + 1)])} disabled={zoom === ZOOMS[ZOOMS.length - 1]}>
+                <Botao variante="quiet" tamanho="sm" icone aria-label="Aumentar zoom (+)" title="Aumentar zoom (+)" onClick={() => zoomPasso(1)} disabled={zoom === ZOOMS[ZOOMS.length - 1]}>
                   <Plus />
                 </Botao>
               </div>
@@ -256,6 +310,27 @@ export function VisorDoMemorial({
 
             <div className="vm-corpo">
               <div className="vm-esquerda">
+              {doAtivo && paginasDoAtivo.length > 1 && (
+                <nav className={`vm-doachado vm--${doAtivo.nivel}`} aria-label={`Páginas do ${doAtivo.id}`}>
+                  <span className="vm-doachado-rotulo">
+                    <i aria-hidden /> <b>{doAtivo.id}</b> em {paginasDoAtivo.length} páginas
+                    {posicaoNoAtivo >= 0 && <span className="ds-num"> · {posicaoNoAtivo + 1} de {paginasDoAtivo.length}</span>}
+                  </span>
+                  <Botao variante="quiet" tamanho="sm" icone aria-label="Página anterior deste achado (Shift ←)" title="Página anterior deste achado (Shift ←)" onClick={() => anteriorDoAtivo && ir(anteriorDoAtivo)} disabled={!anteriorDoAtivo}>
+                    <ChevronLeft />
+                  </Botao>
+                  <span className="vm-doachado-paginas">
+                    {paginasDoAtivo.map((p) => (
+                      <button key={p} type="button" className={p === pagina ? "vm-doachado-aqui" : undefined} aria-current={p === pagina ? "page" : undefined} onClick={() => ir(p)}>
+                        p. {p}
+                      </button>
+                    ))}
+                  </span>
+                  <Botao variante="quiet" tamanho="sm" icone aria-label="Próxima página deste achado (Shift →)" title="Próxima página deste achado (Shift →)" onClick={() => proximaDoAtivo && ir(proximaDoAtivo)} disabled={!proximaDoAtivo}>
+                    <ChevronRight />
+                  </Botao>
+                </nav>
+              )}
               <div className="vm-mesa vm-mesa--pdf">
                 {url ? (
                   <div className="vm-pdf">
@@ -266,6 +341,12 @@ export function VisorDoMemorial({
                       </p>
                     ) : null}
                     <AuditPdfViewer url={url} page={pagina} highlight={grifo} zoom={zoom} onNumPages={setTotal} onGrifo={aoGrifo} />
+                    {/* No pé da folha, onde a leitura acaba: o achado continua adiante. */}
+                    {proximaDoAtivo && doAtivo && (
+                      <Botao variante="ghost" tamanho="sm" className={`vm-continua vm--${doAtivo.nivel}`} onClick={() => ir(proximaDoAtivo)}>
+                        {doAtivo.id} continua na p. {proximaDoAtivo} <ArrowRight />
+                      </Botao>
+                    )}
                   </div>
                 ) : (
                   <p className="vm-sem">O arquivo deste memorial não está nesta máquina. Anexe-o de novo na conversa para ver o trecho na página.</p>
@@ -318,7 +399,7 @@ export function VisorDoMemorial({
                     })}
                   </div>
                   <p className="rs-nota">
-                    <Tecla>J</Tecla> <Tecla>K</Tecla> entre elas, <Tecla>←</Tecla> <Tecla>→</Tecla> folheia
+                    <Tecla>J</Tecla> <Tecla>K</Tecla> entre elas, <Tecla>←</Tecla> <Tecla>→</Tecla> folheia, <Tecla>Shift</Tecla> <Tecla>→</Tecla> segue o achado, <Tecla>+</Tecla> <Tecla>−</Tecla> zoom
                   </p>
                 </div>
               </aside>
