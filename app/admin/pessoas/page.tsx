@@ -16,6 +16,7 @@ import { formatarDiaMes, formatarHora } from "@/lib/fuso-de-brasilia";
 import { AtividadeDaPessoa } from "@/components/telas/admin/atividade-da-pessoa";
 import { useTempo } from "@/lib/ds/tempo";
 import { palavra, plural } from "@/lib/plural";
+import { GRUPOS_TECNICOS } from "@/server/nexo/disciplinas";
 import "@/components/telas/admin/pessoas-banco.css";
 
 /*
@@ -34,7 +35,7 @@ import "@/components/telas/admin/pessoas-banco.css";
  * pergunta NA TELA antes de ir.
  */
 
-type Vinculo = { role: "OWNER" | "ADMIN" | "MEMBER"; status: "ACTIVE" | "INVITED" | "DISABLED"; organizationId: string } | null;
+type Vinculo = { role: "OWNER" | "ADMIN" | "MEMBER"; status: "ACTIVE" | "INVITED" | "DISABLED"; organizationId: string; grupo?: string | null } | null;
 type Pessoa = {
   id: string;
   name: string;
@@ -74,7 +75,8 @@ function haQuanto(iso: string | null | undefined): string {
 }
 type Porta = "prosul" | "convite" | "outra";
 type Escritorio = "fora" | "MEMBER" | "ADMIN" | "OWNER";
-type Chaves = { ativo: boolean; admin: boolean; escritorio: Escritorio };
+/** `grupo` vazio = sem grupo técnico (avatar cinza). */
+type Chaves = { ativo: boolean; admin: boolean; escritorio: Escritorio; grupo: string };
 
 const PORTAS: { id: Porta; rotulo: string }[] = [
   { id: "prosul", rotulo: "Entra na PROSUL como MEMBER" },
@@ -90,7 +92,8 @@ const NOME_DO_ESCRITORIO: Record<Escritorio, string> = { fora: "fora", MEMBER: "
 const ULTIMO_ADMIN = "Este é o último admin ativo. Promova outro usuário antes de rebaixar ou desativar este.";
 
 const rotuloDoVinculo = (v: Vinculo) => (!v ? "fora" : v.status === "INVITED" ? "CONVIDADO" : v.status === "DISABLED" ? "DESLIGADO" : v.role);
-const chavesDe = (p: Pessoa): Chaves => ({ ativo: p.isActive, admin: p.role === "ADMIN", escritorio: p.escritorio ? p.escritorio.role : "fora" });
+const chavesDe = (p: Pessoa): Chaves => ({ ativo: p.isActive, admin: p.role === "ADMIN", escritorio: p.escritorio ? p.escritorio.role : "fora", grupo: p.escritorio?.grupo ?? "" });
+const nomeDoGrupo = (g: string) => (g ? (GRUPOS_TECNICOS[g as keyof typeof GRUPOS_TECNICOS] ?? g) : "sem grupo");
 
 type Confirmacao = { texto: string; perigo: boolean; aplicar: () => void } | null;
 
@@ -155,6 +158,7 @@ function Ficha({ p, porta, adminsAtivos, ocupado, onFechar, onAplicar }: { p: Pe
   if (nova.ativo !== atual.ativo) mudancas.push(`conta → ${nova.ativo ? "ativa" : "desativada"}`);
   if (nova.admin !== atual.admin) mudancas.push(`centro de controle → ${nova.admin ? "admin" : "usuário"}`);
   if (nova.escritorio !== atual.escritorio) mudancas.push(`escritório → ${NOME_DO_ESCRITORIO[nova.escritorio]}`);
+  if (nova.grupo !== atual.grupo && nova.escritorio !== "fora") mudancas.push(`grupo técnico → ${nomeDoGrupo(nova.grupo)}`);
 
   const tiraAcesso = (atual.ativo && !nova.ativo) || (atual.escritorio !== "fora" && nova.escritorio === "fora");
   const perdeAdmin = atual.admin && atual.ativo && (!nova.admin || !nova.ativo);
@@ -188,7 +192,7 @@ function Ficha({ p, porta, adminsAtivos, ocupado, onFechar, onAplicar }: { p: Pe
             <Chave rotulo="Papel na plataforma" valor={nova.admin ? "ADMIN" : "USER"} opcoes={[{ id: "USER", rotulo: "Usuário" }, { id: "ADMIN", rotulo: "Admin" }]} onTrocar={(v) => setNova((n) => ({ ...n, admin: v === "ADMIN" }))} />
             <p>{textoDoAdmin}</p>
           </div>
-          <div className={`pb-chave${nova.escritorio !== atual.escritorio ? " pb-chave--mudou" : ""}`}>
+          <div className={`pb-chave${nova.escritorio !== atual.escritorio || nova.grupo !== atual.grupo ? " pb-chave--mudou" : ""}`}>
             <h4>
               Escritório PROSUL
               {p.escritorio?.status === "INVITED" && <span className="pb-vinculo-rotulo pb-vinculo--convidado">CONVIDADO</span>}
@@ -208,6 +212,22 @@ function Ficha({ p, porta, adminsAtivos, ocupado, onFechar, onAplicar }: { p: Pe
               />
             )}
             <p>{textoDoEscritorio}</p>
+            {/* O GRUPO TÉCNICO (08/10/2026): pinta o avatar e põe a pessoa no topo de quem recebe achado da disciplina dela. */}
+            {nova.escritorio !== "fora" && (
+              <label className="pb-grupo">
+                <span>Grupo técnico</span>
+                <select className="pb-campo pb-select" value={nova.grupo} onChange={(e) => setNova((n) => ({ ...n, grupo: e.target.value }))} aria-label="Grupo técnico">
+                  <option value="">Sem grupo</option>
+                  {Object.entries(GRUPOS_TECNICOS).map(([id, rotulo]) => (
+                    <option key={id} value={id}>
+                      {rotulo}
+                    </option>
+                  ))}
+                  {/* Grupo gravado fora da lista (seed antigo): aparece em vez de sumir calado. */}
+                  {nova.grupo && !(nova.grupo in GRUPOS_TECNICOS) && <option value={nova.grupo}>{nova.grupo}</option>}
+                </select>
+              </label>
+            )}
           </div>
         </div>
         <AtividadeDaPessoa email={p.email} />
@@ -303,8 +323,8 @@ export default function AdminPessoasPage() {
   }
 
   /** Escritório: liberar (nasce convidado), mudar o papel, ou remover. */
-  async function vincular(email: string, acao: "liberar" | "papel" | "remover", role?: "MEMBER" | "ADMIN") {
-    const r = await fetch("/api/admin/users/escritorio", { method: "POST", headers: autorizado(true), body: JSON.stringify({ email, acao, ...(role ? { role } : {}) }) });
+  async function vincular(email: string, acao: "liberar" | "papel" | "remover" | "grupo", role?: "MEMBER" | "ADMIN", grupo?: string) {
+    const r = await fetch("/api/admin/users/escritorio", { method: "POST", headers: autorizado(true), body: JSON.stringify({ email, acao, ...(role ? { role } : {}), ...(acao === "grupo" ? { grupo: grupo ?? "" } : {}) }) });
     const corpo = (await r.json().catch(() => null)) as { escritorio?: Vinculo; error?: string } | null;
     if (!r.ok) throw new Error(corpo?.error ?? "Não foi possível mudar o vínculo com o escritório.");
     return corpo?.escritorio ?? null;
@@ -325,6 +345,10 @@ export default function AdminPessoasPage() {
             ? await vincular(p.email, "remover")
             : await vincular(p.email, antes.escritorio === "fora" ? "liberar" : "papel", c.escritorio === "ADMIN" ? "ADMIN" : "MEMBER");
         atual = { ...atual, escritorio: c.escritorio === "fora" ? null : vinculo };
+      }
+      // Depois do vínculo: quem acabou de ser liberado já existe para receber o grupo.
+      if (c.escritorio !== "fora" && c.grupo !== antes.grupo) {
+        atual = { ...atual, escritorio: await vincular(p.email, "grupo", undefined, c.grupo) };
       }
       trocar(p.id, () => atual);
       setAberta(null);

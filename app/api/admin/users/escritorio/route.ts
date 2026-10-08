@@ -17,6 +17,7 @@ import { NextResponse } from "next/server";
 import { checkAdminRequest } from "@/lib/admin-gate";
 import { registrarAcao } from "@/lib/trilha-administrativa";
 import { getPrisma } from "@/lib/db";
+import { GRUPOS_TECNICOS } from "@/server/nexo/disciplinas";
 
 export const runtime = "nodejs";
 
@@ -41,6 +42,7 @@ export async function POST(request: Request) {
     email?: unknown;
     acao?: unknown;
     role?: unknown;
+    grupo?: unknown;
   } | null;
 
   const email = typeof corpo?.email === "string" ? corpo.email.trim().toLowerCase() : "";
@@ -70,6 +72,42 @@ export async function POST(request: Request) {
     return NextResponse.json({ escritorio: null });
   }
 
+  if (acao === "grupo") {
+    /*
+     * O GRUPO TÉCNICO (08/10/2026): pinta o avatar e ordena quem recebe um
+     * achado. Só os grupos da lista do escritório; vazio tira o grupo.
+     */
+    const bruto = typeof corpo?.grupo === "string" ? corpo.grupo.trim() : "";
+    if (bruto && !(bruto in GRUPOS_TECNICOS)) {
+      return jsonError("Grupo técnico desconhecido.", 400);
+    }
+    const grupo = bruto || null;
+
+    const existente = await getPrisma().organizationMember.findFirst({
+      where: { organizationId: ORG, email },
+      select: { id: true },
+    });
+
+    if (!existente) {
+      return jsonError("Essa pessoa não faz parte do escritório.", 404);
+    }
+
+    const membro = await getPrisma().organizationMember.update({
+      where: { id: existente.id },
+      data: { grupo },
+      select: { role: true, status: true, organizationId: true, grupo: true },
+    });
+
+    await registrarAcao({
+      quem: portao.email,
+      acao: "escritorio",
+      alcance: email,
+      resumo: { acao: "grupo", grupo },
+    });
+
+    return NextResponse.json({ escritorio: membro });
+  }
+
   if (acao !== "liberar" && acao !== "papel") {
     return jsonError("Ação inválida.", 400);
   }
@@ -89,7 +127,7 @@ export async function POST(request: Request) {
     const membro = await getPrisma().organizationMember.update({
       where: { id: existente.id },
       data: { role },
-      select: { role: true, status: true, organizationId: true },
+      select: { role: true, status: true, organizationId: true, grupo: true },
     });
 
     await registrarAcao({
@@ -111,7 +149,7 @@ export async function POST(request: Request) {
      * ninguém tivesse pedido isso.
      */
     update: { role },
-    select: { role: true, status: true, organizationId: true },
+    select: { role: true, status: true, organizationId: true, grupo: true },
   });
 
   await registrarAcao({

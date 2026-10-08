@@ -89,11 +89,11 @@ function getFilters(request: Request): Prisma.UserWhereInput {
 async function vinculoDoEscritorio(email: string) {
   const membro = await getPrisma().organizationMember.findFirst({
     where: { email },
-    select: { role: true, status: true, organizationId: true },
+    select: { role: true, status: true, organizationId: true, grupo: true },
   });
 
   return membro
-    ? { role: membro.role, status: membro.status, organizationId: membro.organizationId }
+    ? { role: membro.role, status: membro.status, organizationId: membro.organizationId, grupo: membro.grupo }
     : null;
 }
 
