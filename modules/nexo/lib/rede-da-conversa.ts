@@ -8,6 +8,7 @@
  *
  * Ver lib/ld/caminho-da-rede.ts e o spec 2026-10-08-caminho-da-rede-na-ld.
  */
+import { partesEmBrasilia } from "@/lib/fuso-de-brasilia";
 import { lerRede, type RedeDaLd } from "@/lib/ld/caminho-da-rede";
 
 import type { DecisoesDoProjeto } from "./decisoes";
@@ -15,12 +16,22 @@ import type { DecisoesDoProjeto } from "./decisoes";
 /** O campo das decisões. Um nome só, para o plano, o canvas e a entrega. */
 export const CAMPO_DA_REDE = "caminhoDaRede";
 
+/**
+ * O mês e o ano que a CAPA imprime: o decidido, senão o de agora em Brasília —
+ * a mesma regra do `build-capa-proposal`. Sem isto a sugestão saía sem data
+ * justo quando ninguém mexeu no mês, que é o caso comum.
+ */
+export function dataDaCapa(capa: { mes?: string; ano?: string }): { mes: string; ano: string } {
+  const agora = partesEmBrasilia(new Date());
+  return {
+    mes: capa.mes?.trim() || String(agora.mes),
+    ano: capa.ano?.trim() || String(agora.ano),
+  };
+}
+
 export function redeParaGerar(
   decisoes: DecisoesDoProjeto,
   capa: { mes?: string; ano?: string },
 ): RedeDaLd {
-  const rede = lerRede(decisoes[CAMPO_DA_REDE]?.valor);
-  if (capa.mes?.trim()) rede.mes = capa.mes.trim();
-  if (capa.ano?.trim()) rede.ano = capa.ano.trim();
-  return rede;
+  return { ...lerRede(decisoes[CAMPO_DA_REDE]?.valor), ...dataDaCapa(capa) };
 }

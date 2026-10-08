@@ -52,7 +52,9 @@ import {
   type ItemDoPlano,
 } from "../lib/editar-artefato";
 import { estadoDoArtefato } from "../lib/estado-do-artefato";
-import { CAMPO_DA_REDE, redeParaGerar } from "../lib/rede-da-conversa";
+import { CAMPO_DA_REDE, dataDaCapa as mesAnoDaCapa, redeParaGerar } from "../lib/rede-da-conversa";
+import { gravarRede, lerRede } from "@/lib/ld/caminho-da-rede";
+import { PerguntaDaRede } from "./PerguntaDaRede";
 import {
   blocoGera,
   blocosDasFolhas,
@@ -1026,6 +1028,27 @@ export function PlanoDeGeracao({
          * não digitado): mostrar um campo editável ali seria oferecer uma
          * decisão que a geração ignora.
          */}
+        {/*
+         * ONDE AS LDs FICAM NA REDE — o caminho do rodapé. Opcional e já
+         * preenchido: quem não liga não clica. Uma linha por disciplina que
+         * gera LD, porque cada uma tem a sua pasta.
+         */}
+        {proposals.some((p) => p.kind === "ld") && (
+          <PerguntaDaRede
+            cliente={mesclado.valores.templateId ?? ""}
+            codigo={codigo}
+            revisao={revisao || "a"}
+            {...mesAnoDaCapa(mesclado.valores)}
+            disciplinas={
+              misto
+                ? blocos.filter((b) => b.codigo && blocoGera("ld", b)).map((b) => b.codigo)
+                : [blocos.find((b) => b.codigo)?.codigo ?? ""]
+            }
+            rede={lerRede(decisoes[CAMPO_DA_REDE]?.valor)}
+            onMudar={(rede) => decidir(CAMPO_DA_REDE, gravarRede({ ...rede, revisao: revisao || "a" }), "")}
+          />
+        )}
+
         {proposals.some((p) => p.kind === "ld") &&
           (misto ? (
             /*
