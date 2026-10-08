@@ -13,7 +13,8 @@ import { AnimatePresence, motion } from "motion/react";
 import { Check, ChevronDown, ChevronUp, CircleCheck, Copy, FileSearch, Files, Link2, Mail, Search, SlidersHorizontal, Split, Undo2, UserPlus, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { Avatar, Botao, Menu, Segmento, Selo, Seletor, Tecla } from "@/components/ds/basicos";
+import { Botao, Menu, Segmento, Selo, Seletor, Tecla } from "@/components/ds/basicos";
+import { AvatarDaPessoa } from "@/components/ds/avatar-da-pessoa";
 import { BotaoDoGrupo, GrupoDeBotoes } from "@/components/ds/micro";
 import { CartaoDoMotor } from "@/components/achado/cartao-do-motor";
 import { ConversaDoAchado } from "@/components/achado/conversa-do-achado";
@@ -390,7 +391,7 @@ export function FilaDeAchados({
               <>
                 {agrupar === "disciplina" ? <i className={`rs-ponto rs-ponto--${a.nivel}`} title={NIVEIS.find((n) => n.id === a.nivel)?.nome} /> : <SeloDaDisciplina disc={a.disc} />}
                 {a.comentarios > 0 && <span className="rs-linha-conversa ds-num" title={conta(a.comentarios, "comentário", "comentários")}>{a.comentarios}</span>}
-                {a.responsavel ? <Avatar iniciais={iniciais(a.responsavel.nome)} pequeno /> : <span className="rs-sem-dono">sem dono</span>}
+                {a.responsavel ? <AvatarDaPessoa email={a.responsavel.email} iniciais={iniciais(a.responsavel.nome)} pequeno /> : <span className="rs-sem-dono">sem dono</span>}
               </>
             )}
           </span>
@@ -800,7 +801,7 @@ export function FilaDeAchados({
             <div className="rs-dono">
               {atual.responsavel ? (
                 <>
-                  <Avatar iniciais={iniciais(atual.responsavel.nome)} pequeno /> Com {atual.responsavel.souEu ? "você" : atual.responsavel.nome}
+                  <AvatarDaPessoa email={atual.responsavel.email} iniciais={iniciais(atual.responsavel.nome)} pequeno /> Com {atual.responsavel.souEu ? "você" : atual.responsavel.nome}
                 </>
               ) : (
                 <span className="rs-sem-dono">Sem responsável</span>

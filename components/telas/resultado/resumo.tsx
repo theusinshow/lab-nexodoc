@@ -11,7 +11,8 @@ import { AnimatePresence, motion } from "motion/react";
 import { ArrowRight, Check, ChevronDown, FileSearch } from "lucide-react";
 import { useState } from "react";
 
-import { Avatar, Botao } from "@/components/ds/basicos";
+import { Botao } from "@/components/ds/basicos";
+import { AvatarDaPessoa } from "@/components/ds/avatar-da-pessoa";
 import { MapaDasPaginas } from "@/components/ds/graficos";
 import type { AuditReport } from "@/lib/audit-report";
 import { rotuloDaContagem } from "@/lib/auditoria-incompleta";
@@ -171,7 +172,7 @@ export function ResumoDoParecer({
                       <button type="button" className="rc-linha-corpo" onClick={() => onAbrir(a.chave)}>
                         <span className="rc-titulo">{a.titulo}</span>
                         <SeloDaDisciplina disc={a.disc} />
-                        {a.responsavel ? <Avatar iniciais={iniciais(a.responsavel.nome)} pequeno /> : <span className="rc-sem">sem responsável</span>}
+                        {a.responsavel ? <AvatarDaPessoa email={a.responsavel.email} iniciais={iniciais(a.responsavel.nome)} pequeno /> : <span className="rc-sem">sem responsável</span>}
                       </button>
                       <span className="rc-acoes">
                         <button

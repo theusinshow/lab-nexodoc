@@ -10,7 +10,8 @@ import { AnimatePresence, motion } from "motion/react";
 import { ArrowDown, ArrowUp, Check, ChevronDown, CircleCheck, Copy, FileSearch, Files, Gauge, Link2, Mail, Search, SlidersHorizontal, Split, ThumbsUp, Undo2, UserPlus, X } from "lucide-react";
 import { useState } from "react";
 
-import { Avatar, Botao, Menu, Segmento, Selo, Seletor, Tecla } from "@/components/ds/basicos";
+import { Botao, Menu, Segmento, Selo, Seletor, Tecla } from "@/components/ds/basicos";
+import { AvatarDaPessoa } from "@/components/ds/avatar-da-pessoa";
 import { BotaoDoGrupo, Dica, GrupoDeBotoes } from "@/components/ds/micro";
 import { CartaoDoMotor } from "@/components/achado/cartao-do-motor";
 import { ConversaDoAchado } from "@/components/achado/conversa-do-achado";
@@ -293,7 +294,7 @@ export function MetaDaLinha({ f, a }: { f: Fila; a: AchadoDaTela }) {
     <>
       {f.agrupar === "disciplina" ? <i className={`rs-ponto rs-ponto--${a.nivel}`} title={NIVEIS.find((n) => n.id === a.nivel)?.nome} /> : <SeloDaDisciplina disc={a.disc} />}
       {a.comentarios > 0 && <span className="rs-linha-conversa ds-num" title={conta(a.comentarios, "comentário", "comentários")}>{a.comentarios}</span>}
-      {a.responsavel ? <Avatar iniciais={iniciais(a.responsavel.nome)} pequeno /> : <span className="rs-sem-dono">sem responsável</span>}
+      {a.responsavel ? <AvatarDaPessoa email={a.responsavel.email} iniciais={iniciais(a.responsavel.nome)} pequeno /> : <span className="rs-sem-dono">sem responsável</span>}
     </>
   );
 }
@@ -662,7 +663,7 @@ export function Atribuidor({ f, a }: { f: Fila; a: AchadoDaTela }) {
   if (a.desfecho) {
     return com ? (
       <span className="am-atribuidor am-atribuidor--fixo">
-        <Avatar iniciais={iniciais(com.nome)} pequeno /> Estava com {com.souEu ? "você" : com.nome}
+        <AvatarDaPessoa email={com.email} iniciais={iniciais(com.nome)} pequeno /> Estava com {com.souEu ? "você" : com.nome}
       </span>
     ) : null;
   }
@@ -673,7 +674,7 @@ export function Atribuidor({ f, a }: { f: Fila; a: AchadoDaTela }) {
       gatilho={(aberto, alternar) => (
         <Dica texto={com ? "Trocar o responsável" : "Atribuir a alguém"}>
           <button type="button" className={`am-atribuidor${com ? " am-atribuidor--com" : ""}`} aria-haspopup="dialog" aria-expanded={aberto} disabled={!f.auditId} onClick={alternar}>
-            {com ? <Avatar iniciais={iniciais(com.nome)} pequeno /> : <span className="am-atribuidor-icone"><UserPlus size={14} /></span>}
+            {com ? <AvatarDaPessoa email={com.email} iniciais={iniciais(com.nome)} pequeno /> : <span className="am-atribuidor-icone"><UserPlus size={14} /></span>}
             <span>{com ? (com.souEu ? "Com você" : `Com ${com.nome}`) : "Atribuir"}</span>
             <ChevronDown size={13} className="am-voto-seta" />
           </button>
@@ -722,7 +723,7 @@ export function ListaDePessoas({ f, atual, aoEscolher, fechar }: { f: Fila; atua
                 fechar();
               }}
             >
-              <Avatar iniciais={iniciais(p.nome)} pequeno />
+              <AvatarDaPessoa email={p.email} iniciais={iniciais(p.nome)} pequeno />
               <span className="am-pessoa-nome">
                 {p.souEu ? `${p.nome} (você)` : p.nome}
                 <small>{p.convidado ? "convidado, ainda não entrou" : p.email}</small>
@@ -755,7 +756,7 @@ export function Responsavel({ f, a, verNoMemorial = true }: { f: Fila; a: Achado
     <div className="rs-dono">
       {a.responsavel ? (
         <>
-          <Avatar iniciais={iniciais(a.responsavel.nome)} pequeno /> Com {a.responsavel.souEu ? "você" : a.responsavel.nome}
+          <AvatarDaPessoa email={a.responsavel.email} iniciais={iniciais(a.responsavel.nome)} pequeno /> Com {a.responsavel.souEu ? "você" : a.responsavel.nome}
         </>
       ) : (
         <span className="rs-sem-dono">Sem responsável</span>

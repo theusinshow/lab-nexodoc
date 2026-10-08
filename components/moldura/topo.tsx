@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useId, useRef, useState, type KeyboardEvent as KE, type ReactNode, type RefObject } from "react";
 
 import { Avatar, Botao, Orbe, Tecla } from "@/components/ds/basicos";
+import { corDaPessoa } from "@/lib/cor-da-pessoa";
 import { CURVA } from "@/lib/ds/movimento";
 import { useTempo } from "@/lib/ds/tempo";
 import { linkDoAchado } from "@/lib/link-do-achado";
@@ -364,7 +365,7 @@ function MenuDaConta({ dados }: { dados: DadosDaMoldura }) {
         }}
       >
         <span className="pn-quem-brilho" aria-hidden />
-        <Avatar iniciais={u.iniciais} />
+        <Avatar iniciais={u.iniciais} cor={corDaPessoa({ grupo: u.grupo, role: u.papelNoEscritorio })} />
         <span className="pn-quem-texto">
           {u.nome.split(" ")[0]}
           <small>{[u.escritorio, u.ehAdmin ? "admin" : papel].filter(Boolean).join(", ")}</small>

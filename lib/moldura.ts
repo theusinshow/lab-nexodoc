@@ -28,6 +28,8 @@ export interface UsuarioDaMoldura {
   /** Centro de controle: quem administra o sistema. */
   ehAdmin: boolean;
   escritorio: string | null;
+  /** Grupo técnico no escritório ("arquitetura", "estrutural"...): pinta o avatar. */
+  grupo: string | null;
   /** Papel no escritório (as duas chaves de Pessoas). */
   papelNoEscritorio: "OWNER" | "ADMIN" | "MEMBER" | null;
 }
@@ -110,6 +112,7 @@ const lerMoldura = cache(async (): Promise<ResultadoDaMoldura> => {
     ehAdmin: access.isAdmin,
     escritorio: null,
     papelNoEscritorio: null,
+    grupo: null,
   };
 
   if (!isDatabaseConfigured()) {
@@ -119,8 +122,12 @@ const lerMoldura = cache(async (): Promise<ResultadoDaMoldura> => {
   try {
     const actor = await requireActor();
     const prisma = getPrisma();
-    const [org, pendencias, projetos, auditorias] = await Promise.all([
+    const [org, vinculo, pendencias, projetos, auditorias] = await Promise.all([
       prisma.organization.findUnique({ where: { id: actor.organizationId }, select: { name: true } }),
+      prisma.organizationMember.findUnique({
+        where: { organizationId_email: { organizationId: actor.organizationId, email: actor.email } },
+        select: { grupo: true },
+      }),
       pendenciasDe(actor.email, actor.organizationId),
       prisma.project.findMany({
         where: { organizationId: actor.organizationId, deletedAt: null, status: "ACTIVE" },
@@ -139,6 +146,7 @@ const lerMoldura = cache(async (): Promise<ResultadoDaMoldura> => {
     ]);
     usuario.escritorio = org?.name ?? null;
     usuario.papelNoEscritorio = actor.orgRole;
+    usuario.grupo = vinculo?.grupo ?? null;
     return {
       tipo: "ok",
       dados: {

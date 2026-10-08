@@ -415,6 +415,22 @@
   background: linear-gradient(140deg, #3a3d52, #23252e);
 }
 .ds .ds-avatar--xs { width: 20px; height: 20px; font-size: 8.5px; }
+/*
+ * A EQUIPE NO AVATAR (lib/cor-da-pessoa.ts): as cores das disciplinas, cheias, com
+ * iniciais escuras — tom apagado some em 20px (medido no atribuidor, 08/10). O admin ganha um anel na cor da própria
+ * equipe (cinza, sem equipe) — nunca vermelho, que nos achados quer dizer "bloqueia".
+ */
+.ds .ds-avatar--arq { --av-tom: var(--ds-disc-arq); }
+.ds .ds-avatar--est { --av-tom: var(--ds-disc-est); }
+.ds .ds-avatar--comp { --av-tom: var(--ds-disc-pai); }
+.ds .ds-avatar--arq,
+.ds .ds-avatar--est,
+.ds .ds-avatar--comp {
+  color: #15161c;
+  background: linear-gradient(140deg, var(--av-tom), color-mix(in oklab, var(--av-tom) 72%, #23252e));
+}
+.ds .ds-avatar--admin { box-shadow: 0 0 0 1.5px var(--ds-surface-page), 0 0 0 3px var(--av-tom, var(--ds-text-secondary)); }
+.ds .ds-avatar--xs.ds-avatar--admin { box-shadow: 0 0 0 1.5px var(--ds-surface-page), 0 0 0 2.5px var(--av-tom, var(--ds-text-secondary)); }
 
 /* ---------- menu ---------- */
 .ds .ds-menu {

@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { Check, ChevronDown } from "lucide-react";
 import { useEffect, useId, useRef, useState, type ComponentPropsWithRef, type ReactNode } from "react";
 
+import type { CorDaPessoa } from "@/lib/cor-da-pessoa";
 import { CURVA } from "@/lib/ds/movimento";
 import { useTempo } from "@/lib/ds/tempo";
 
@@ -186,9 +187,13 @@ export function Tecla({ children }: { children: ReactNode }) {
   return <kbd className="ds-kbd">{children}</kbd>;
 }
 
-export function Avatar({ iniciais, pequeno }: { iniciais: string; pequeno?: boolean }) {
+/** `cor` sai de `corDaPessoa` (lib/cor-da-pessoa.ts): o tom do grupo técnico e o anel de admin. */
+export function Avatar({ iniciais, pequeno, cor }: { iniciais: string; pequeno?: boolean; cor?: CorDaPessoa }) {
+  const cls = ["ds-avatar", pequeno && "ds-avatar--xs", cor?.tom && `ds-avatar--${cor.tom}`, cor?.admin && "ds-avatar--admin"]
+    .filter(Boolean)
+    .join(" ");
   return (
-    <span className={`ds-avatar${pequeno ? " ds-avatar--xs" : ""}`} aria-hidden>
+    <span className={cls} title={cor?.rotulo ?? undefined} aria-hidden>
       {iniciais}
     </span>
   );
