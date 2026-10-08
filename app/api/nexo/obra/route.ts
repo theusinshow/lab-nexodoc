@@ -5,6 +5,7 @@ import { getPrisma, isDatabaseConfigured } from "@/lib/db";
 import { accessDeniedResponse, requireActor } from "@/lib/access-control";
 import { ordenarVolumes, resumoDoVolume } from "@/modules/nexo/lib/entrega-do-volume";
 import type { SavedResult } from "@/modules/nexo/state/conversation-store";
+import { CAMPO_DA_REDE } from "@/modules/nexo/lib/rede-da-conversa";
 
 export const runtime = "nodejs";
 
@@ -47,7 +48,18 @@ export async function GET(req: NextRequest) {
       // Auditoria de memorial não é volume.
       .filter((l) => l.tipo !== "auditoria")
       .map((l) => resumoDoVolume(l.id, l.title, resultadosGravados(l.data)));
-    return NextResponse.json({ volumes: ordenarVolumes(volumes) });
+    /*
+     * O CAMINHO DA REDE do volume irmão mais recente (08/10/2026): o volume
+     * seguinte da mesma obra parte dele, em vez de pedir a colagem de novo.
+     * `?conversa=` exclui a própria — ela não é o "anterior" de si mesma.
+     */
+    const conversa = req.nextUrl.searchParams.get("conversa")?.trim();
+    const rede =
+      linhas
+        .filter((l) => l.id !== conversa)
+        .map((l) => redeGravada(l.data))
+        .find(Boolean) ?? null;
+    return NextResponse.json({ volumes: ordenarVolumes(volumes), rede });
   } catch (error) {
     console.error("[nexo-obra] falha ao ler os volumes", error);
     return NextResponse.json({ error: "falha ao ler os volumes" }, { status: 500 });
@@ -69,4 +81,10 @@ function resultadosGravados(data: unknown): SavedResult[] {
       files: files.map((f) => ({ ...(f as object), url: typeof f.blobKey === "string" ? `gravado:${f.blobKey}` : "" })),
     } as SavedResult;
   });
+}
+
+/** `data.decisoes.caminhoDaRede.valor`, a decisão como a conversa a grava. */
+function redeGravada(data: unknown): string | null {
+  const valor = (data as { decisoes?: Record<string, { valor?: unknown }> } | null)?.decisoes?.[CAMPO_DA_REDE]?.valor;
+  return typeof valor === "string" && valor.trim() ? valor : null;
 }

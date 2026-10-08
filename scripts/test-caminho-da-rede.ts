@@ -15,6 +15,7 @@ import {
   gravarRede,
   lerRede,
   nomeDaLd,
+  redeDoVolumeAnterior,
   separarCaminhoColado,
   sugerirEmissao,
 } from "../lib/ld/caminho-da-rede.ts";
@@ -179,6 +180,20 @@ test("lerRede tolera lixo; gravarRede de vazio é vazio", () => {
   assert.equal(gravarRede({}), "");
   const ida = { emissao: "1_x", porDisciplina: { cab: { emissao: "" } } };
   assert.deepEqual(lerRede(gravarRede(ida)), ida);
+});
+
+test("volume anterior da mesma revisão: tudo vale, inclusive a emissão", () => {
+  const anterior = { cliente: "pmnavegantes", emissao: "1_x", revisao: "a", porDisciplina: { gme: { base: "P:\\cad\\pmnavegantes\\113_22\\climatizacao\\documentos", emissao: "1_y" } } };
+  assert.deepEqual(redeDoVolumeAnterior(anterior, "a"), anterior);
+});
+
+test("volume anterior de outra revisão: pastas valem, emissões voltam a ser sugeridas", () => {
+  const anterior = { cliente: "pmnavegantes", emissao: "1_x", revisao: "a", porDisciplina: { gme: { base: "P:\\b", emissao: "1_y" }, cab: { emissao: "1_z" } } };
+  assert.deepEqual(redeDoVolumeAnterior(anterior, "b"), {
+    cliente: "pmnavegantes",
+    revisao: "b",
+    porDisciplina: { gme: { base: "P:\\b" } },
+  });
 });
 
 console.log(`\n${passed} testes passaram.`);

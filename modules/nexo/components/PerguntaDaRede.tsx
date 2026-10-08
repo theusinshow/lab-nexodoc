@@ -151,9 +151,12 @@ export function PerguntaDaRede({
     mudar({ ...rede, porDisciplina: Object.keys(por).length > 0 ? por : undefined });
   };
 
+  // Uma disciplina só: o resumo é a linha dela (a colagem grava na linha).
+  // Várias: o topo, e as próprias contadas ao lado.
+  const doResumo = varias ? emissaoDoTopo : linhas[0].emissao;
   const resumo = semCliente
     ? "Na rede: falta a pasta do cliente"
-    : `Na rede: ${fimDaBase(linhas[0].base, 1)}${emissaoDoTopo ? `${emissaoDoTopo}\\` : ""}`;
+    : `Na rede: ${fimDaBase(linhas.find((l) => l.base)?.base ?? "", 1)}${doResumo ? `${doResumo}\\` : ""}`;
 
   return (
     <section

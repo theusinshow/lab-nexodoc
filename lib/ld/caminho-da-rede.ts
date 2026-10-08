@@ -224,6 +224,25 @@ export function caminhoDaLd(a: {
   return [base, emissao.trim(), nomeDaLd(a.codigo, disc, revisao)].filter(Boolean).join(SEP);
 }
 
+/**
+ * O ponto de partida de um volume novo da mesma obra: a decisão do volume
+ * anterior. As PASTAS (cliente, disciplina colada) são da obra e valem sempre;
+ * a EMISSÃO é da entrega — mesma revisão, mesma emissão (os volumes 3, 5 e 7 da
+ * mesma entrega moram na mesma pasta); revisão nova, emissão sugerida de novo.
+ */
+export function redeDoVolumeAnterior(anterior: RedeDaLd, revisao: string): RedeDaLd {
+  const atual = revisao.trim().toLowerCase() || "a";
+  if ((anterior.revisao ?? "").trim().toLowerCase() === atual) return lerRede(anterior);
+  const rede: RedeDaLd = { revisao: atual };
+  if (anterior.cliente) rede.cliente = anterior.cliente;
+  const por: Record<string, AjusteDaDisciplina> = {};
+  for (const [d, ajuste] of Object.entries(anterior.porDisciplina ?? {})) {
+    if (ajuste.base) por[d] = { base: ajuste.base };
+  }
+  if (Object.keys(por).length > 0) rede.porDisciplina = por;
+  return rede;
+}
+
 function texto(v: unknown): string | undefined {
   return typeof v === "string" ? v : undefined;
 }

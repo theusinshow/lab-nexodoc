@@ -53,7 +53,7 @@ import {
 } from "../lib/editar-artefato";
 import { estadoDoArtefato } from "../lib/estado-do-artefato";
 import { CAMPO_DA_REDE, dataDaCapa as mesAnoDaCapa, redeParaGerar } from "../lib/rede-da-conversa";
-import { gravarRede, lerRede } from "@/lib/ld/caminho-da-rede";
+import { gravarRede, lerRede, redeDoVolumeAnterior } from "@/lib/ld/caminho-da-rede";
 import { PerguntaDaRede } from "./PerguntaDaRede";
 import {
   blocoGera,
@@ -266,6 +266,8 @@ export function PlanoDeGeracao({
     decisoes,
     decidir,
     guardarDecisoesVivas,
+    conversationId,
+    pastaDaObra,
     podeGastar,
     motivoParaNaoGastar,
     motivoDaTrava,
@@ -455,6 +457,36 @@ export function PlanoDeGeracao({
     volume: mesclado.valores.volume ?? "",
   });
   const motivoDeBloqueio = motivoDeEspera ?? motivoDoVolume;
+
+  /*
+   * O CAMINHO DA REDE DO VOLUME ANTERIOR. Conversa sem decisão própria, numa
+   * obra que já tem outro volume decidido, parte dele — as pastas são da obra;
+   * a emissão só vem junto se a revisão for a mesma (`redeDoVolumeAnterior`).
+   * Uma vez por conversa, e nunca por cima de uma decisão tomada enquanto a
+   * resposta viajava.
+   */
+  const temLdNoPlano = itens.some((i) => i.kind === "ld");
+  const revisaoDoVolume = identidade.revisao?.trim() || summarizeSelos(selos).revisao || "a";
+  const decisoesAtuais = useRef(decisoes);
+  decisoesAtuais.current = decisoes;
+  const herdouRede = useRef<string | null>(null);
+  useEffect(() => {
+    if (!temLdNoPlano || !pastaDaObra || herdouRede.current === conversationId) return;
+    if (decisoesAtuais.current[CAMPO_DA_REDE]) return;
+    herdouRede.current = conversationId;
+    const url = `/api/nexo/obra?pasta=${encodeURIComponent(pastaDaObra)}&conversa=${encodeURIComponent(conversationId)}`;
+    fetch(url)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j: { rede?: string | null } | null) => {
+        if (!j?.rede || decisoesAtuais.current[CAMPO_DA_REDE]) return;
+        const valor = gravarRede(redeDoVolumeAnterior(lerRede(j.rede), revisaoDoVolume));
+        if (valor) decidir(CAMPO_DA_REDE, valor, "");
+      })
+      .catch(() => {
+        // Sem a obra, a sugestão de sempre — nada a avisar.
+      });
+  }, [temLdNoPlano, pastaDaObra, conversationId, revisaoDoVolume, decidir]);
+
   if (itens.length === 0) return null;
 
   const capa = propostas.find((p) => p.kind === "capa")?.params as
