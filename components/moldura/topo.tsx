@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, LayoutGroup, motion } from "motion/react";
-import { ArrowRight, Bell, ChevronDown, FolderOpen, Keyboard, LayoutGrid, LifeBuoy, ListChecks, LogOut, MessageSquare, Repeat2, Search, ShieldCheck } from "lucide-react";
+import { ArrowRight, Bell, Bug, ChevronDown, FolderOpen, Keyboard, LayoutGrid, LifeBuoy, ListChecks, LogOut, MessageSquare, Repeat2, Search, ShieldCheck } from "lucide-react";
 import { signOut } from "next-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -14,6 +14,7 @@ import { useTempo } from "@/lib/ds/tempo";
 import { linkDoAchado } from "@/lib/link-do-achado";
 import type { DadosDaMoldura, DestinoDoTopo } from "@/lib/moldura";
 import { plural } from "@/lib/plural";
+import { abrirSuporte } from "@/lib/suporte/cliente";
 
 import { useMoldura } from "./contexto";
 import "./topo.css";
@@ -405,6 +406,11 @@ function MenuDaConta({ dados }: { dados: DadosDaMoldura }) {
                 <Keyboard size={15} aria-hidden />
                 Atalhos de teclado
                 <Tecla>?</Tecla>
+              </button>
+              <button type="button" role="menuitem" onClick={() => (fechar(false), abrirSuporte())}>
+                <Bug size={15} aria-hidden />
+                Reportar um problema
+                <Tecla>Ctrl ⇧ B</Tecla>
               </button>
             </div>
             <div className="pn-menu-grupo">

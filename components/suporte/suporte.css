@@ -39,3 +39,12 @@
 
 .ds .sp-aviso { position: fixed; left: 50%; bottom: 24px; z-index: 75; width: min(560px, calc(100% - 32px)); transform: translateX(-50%); }
 .ds .sp-aviso-link { padding: 0; border: 0; background: none; color: inherit; font: inherit; text-decoration: underline; cursor: pointer; }
+
+/* "Meus chamados", no fim da Ajuda */
+.ds .sp-meus { margin-top: 16px; }
+.ds .sp-meus-cabeca { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 20px; flex-wrap: wrap; }
+.ds .sp-meus-cabeca h2 { margin: 0 0 2px; font-size: 15px; font-weight: 600; }
+.ds .sp-meus-lista { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--ds-line-subtle); }
+.ds .sp-meus-lista li { display: grid; grid-template-columns: 64px 80px 120px 1fr; align-items: center; gap: 12px; padding: 10px 20px; border-bottom: 1px solid var(--ds-line-subtle); font-size: 13px; }
+.ds .sp-meus-resposta { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 640px) { .ds .sp-meus-lista li { grid-template-columns: 64px 1fr; } .ds .sp-meus-resposta { grid-column: 1 / -1; } }

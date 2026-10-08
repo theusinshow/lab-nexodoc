@@ -4,6 +4,8 @@ import { RotateCw, Search } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 
 import { Botao, Tecla } from "@/components/ds/basicos";
+import { abrirSuporte } from "@/lib/suporte/cliente";
+import { formatarProtocolo } from "@/lib/suporte/comum";
 
 import { useMoldura } from "./contexto";
 import "./sobreposicoes.css";
@@ -54,7 +56,16 @@ export function PaginaQueNaoExiste({ logado }: { logado: boolean }) {
  * `lib/estado-da-carga`: o que aconteceu e que nada foi alterado. "Tentar de
  * novo" refaz a renderização da rota; o painel é a saída se insistir.
  */
-export function PaginaQueNaoCarregou({ onTentar, codigo }: { onTentar: () => void; codigo?: string }) {
+export function PaginaQueNaoCarregou({
+  onTentar,
+  codigo,
+  chamado,
+}: {
+  onTentar: () => void;
+  codigo?: string;
+  /** O chamado que o erro já abriu sozinho ([[lib/suporte/cliente.ts]]); o relato da pessoa entra nele. */
+  chamado?: { id: string; protocolo: number } | null;
+}) {
   const caminho = usePathname() ?? "";
   const router = useRouter();
   return (
@@ -63,13 +74,22 @@ export function PaginaQueNaoCarregou({ onTentar, codigo }: { onTentar: () => voi
         {caminho} · {codigo ? `o servidor falhou (${codigo})` : "o servidor não respondeu"}
       </p>
       <h1>Esta página não carregou.</h1>
-      <p className="pc-404-texto">O servidor não conseguiu montar esta tela. Nada foi alterado — tente de novo.</p>
+      <p className="pc-404-texto">
+        O servidor não conseguiu montar esta tela. Nada foi alterado — tente de novo.
+        {chamado && <> Já fomos avisados ({formatarProtocolo(chamado.protocolo)}).</>}
+      </p>
       <div className="pc-404-acoes">
         <Botao variante="primary" onClick={onTentar}>
           <RotateCw size={15} /> Tentar de novo
         </Botao>
         <Botao variante="ghost" onClick={() => router.push("/")}>
           Ir para o painel
+        </Botao>
+        <Botao
+          variante="quiet"
+          onClick={() => abrirSuporte(chamado ? { chamadoId: chamado.id, protocolo: chamado.protocolo, categoria: "ERRO" } : { categoria: "ERRO" })}
+        >
+          Contar o que aconteceu
         </Botao>
       </div>
     </div>

@@ -7,6 +7,7 @@ import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { Botao, Tecla } from "@/components/ds/basicos";
+import { MeusChamados } from "@/components/suporte/meus-chamados";
 import { useTempo } from "@/lib/ds/tempo";
 
 import { RITMO, SUAVE } from "../comum/ritmo";
@@ -438,6 +439,8 @@ export function TelaAjuda({ ultimoParecer }: { ultimoParecer: string | null }) {
           <span className="mp-rodape-fim">os nomes são os da tela</span>
         </footer>
       </section>
+
+      <MeusChamados />
     </div>
   );
 }
