@@ -13,6 +13,7 @@ import { getTemplateRegistry } from "@/server/templates/registry";
 import { casarPrefeituraDoCarimbo } from "@/server/nexo/agent/normalize";
 import { carregarEscritorio } from "@/lib/escritorio-config";
 import { caminhoDaLd, lerRede, type RedeDaLd } from "@/lib/ld/caminho-da-rede";
+import { partesEmBrasilia } from "@/lib/fuso-de-brasilia";
 
 export const runtime = "nodejs";
 
@@ -118,6 +119,11 @@ export async function POST(req: NextRequest) {
     }
     if (typeof body.templateId === "string") templateId = body.templateId.trim();
     rede = lerRede(body.rede);
+    // Sem mês/ano, os de agora em Brasília — a mesma regra da capa
+    // (`build-capa-proposal`): a sugestão da emissão não sai sem data.
+    const agora = partesEmBrasilia(new Date());
+    rede.mes ||= String(agora.mes);
+    rede.ano ||= String(agora.ano);
     editavel = body.editavel === true;
   } catch {
     return NextResponse.json({ error: "Corpo invalido." }, { status: 400 });
