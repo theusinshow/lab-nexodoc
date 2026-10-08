@@ -340,7 +340,7 @@ export function VisorDoMemorial({
                         <span>{porQueSemGrifo(pagina, folhas)}</span>
                       </p>
                     ) : null}
-                    <AuditPdfViewer url={url} page={pagina} highlight={grifo} zoom={zoom} onNumPages={setTotal} onGrifo={aoGrifo} />
+                    <AuditPdfViewer url={url} page={pagina} highlight={grifo} tom={doAtivo?.nivel} zoom={zoom} onNumPages={setTotal} onGrifo={aoGrifo} />
                     {/* No pé da folha, onde a leitura acaba: o achado continua adiante. */}
                     {proximaDoAtivo && doAtivo && (
                       <Botao variante="ghost" tamanho="sm" className={`vm-continua vm--${doAtivo.nivel}`} onClick={() => ir(proximaDoAtivo)}>

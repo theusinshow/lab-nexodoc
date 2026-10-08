@@ -69,6 +69,7 @@ export function PreviaDoTrecho({
             url={url}
             page={pagina}
             highlight={candidatosDoGrifo(achado.bruto, pagina)}
+            tom={achado.nivel}
             zoom={1.5}
             rolagem="contida"
             onGrifo={aoGrifo}

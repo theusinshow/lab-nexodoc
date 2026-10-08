@@ -3,11 +3,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import { Skeleton } from "@/components/ui/skeleton";
+import { faixasPorLinha, type Caixa } from "@/lib/faixas-do-grifo";
 import { marcacaoDoTrecho, type FaixasDaMarcacao } from "@/lib/marcacao-do-trecho";
 import type { ItemDeTexto } from "@/lib/texto-do-pdf";
 
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
+import "./audit-pdf-grifo.css";
 
 // IMPORTANTE: o worker precisa casar com a versão do pdfjs que o react-pdf usa
 // (nested 5.4.296), não com o engine 5.7.284 do repo — senão dá
@@ -52,6 +54,11 @@ type AuditPdfViewerInternalProps = {
    * arrastaria o painel inteiro.
    */
   rolagem?: "janela" | "contida";
+  /**
+   * A gravidade do achado (`block`, `decide`, `note`, `texto`): pinta o grifo
+   * no tom dela. Sem ela, o amarelo de marca-texto.
+   */
+  tom?: string;
 };
 
 function escaparHtml(value: string) {
@@ -91,6 +98,7 @@ export default function AuditPdfViewerInternal({
   onNumPages,
   onGrifo,
   rolagem = "janela",
+  tom,
 }: AuditPdfViewerInternalProps) {
   const [numPages, setNumPages] = useState(0);
   const [itens, setItens] = useState<ItemDeTexto[] | null>(null);
@@ -141,6 +149,42 @@ export default function AuditPdfViewerInternal({
     marca.scrollIntoView({ block: "center", inline: "nearest", behavior: "smooth" });
   }, [faixas, rolagem]);
 
+  /*
+   * O MARCA-TEXTO CONTÍNUO (08/10/2026). O `<mark>` fica na camada de texto —
+   * é ele que a seleção e o Ctrl+F acham —, mas transparente. O que se vê são
+   * as faixas: as caixas dos `<mark>` medidas depois que a camada pinta, uma
+   * por linha (`lib/faixas-do-grifo.ts`), desenhadas por baixo do texto.
+   *
+   * A faixa se pinta da esquerda para a direita UMA vez quando o grifo chega
+   * (página ou trecho novos). Zoom só remede: a mesma marca não chega de novo.
+   */
+  const [desenho, setDesenho] = useState<{ chave: string; faixas: Caixa[]; pintar: boolean } | null>(null);
+  const ultimaPintada = useRef("");
+  const medirOGrifo = useCallback(() => {
+    const chave = `${page}|${needle}`;
+    const marcas = [...(caixa.current?.querySelectorAll(".textLayer mark") ?? [])];
+    const folha = marcas[0]?.closest<HTMLElement>(".react-pdf__Page");
+    if (!folha || !faixas || faixas.size === 0) {
+      setDesenho(null);
+      return;
+    }
+    const f = folha.getBoundingClientRect();
+    // Com `zoom` de CSS no caminho (a `.ds` em tela larga), a caixa medida e o
+    // px do `position: absolute` diferem; a razão desfaz a diferença.
+    const escala = f.width / (folha.offsetWidth || f.width);
+    const caixas: Caixa[] = marcas.flatMap((m) =>
+      [...m.getClientRects()].map((r) => ({ x: (r.left - f.left) / escala, y: (r.top - f.top) / escala, w: r.width / escala, h: r.height / escala })),
+    );
+    const pintar = ultimaPintada.current !== chave;
+    ultimaPintada.current = chave;
+    setDesenho({ chave, faixas: faixasPorLinha(caixas), pintar });
+  }, [page, needle, faixas]);
+
+  const aoPintarOTexto = useCallback(() => {
+    medirOGrifo();
+    rolarAteOGrifo();
+  }, [medirOGrifo, rolarAteOGrifo]);
+
   // O resultado do casamento sobe uma vez por página lida (e por trecho).
   useEffect(() => {
     if (!onGrifo || !itens || paginaDosItens !== page || needle.length < 3) return;
@@ -173,7 +217,7 @@ export default function AuditPdfViewerInternal({
   const safePage = numPages > 0 ? Math.min(Math.max(1, page), numPages) : Math.max(1, page);
 
   return (
-    <div ref={caixa} className="contents">
+    <div ref={caixa} className="contents" data-grifo-tom={tom}>
     <Document
       file={url}
       onLoadSuccess={(pdf) => {
@@ -210,10 +254,22 @@ export default function AuditPdfViewerInternal({
           setPaginaDosItens(safePage);
         }}
         customTextRenderer={textRenderer}
-        onRenderTextLayerSuccess={rolarAteOGrifo}
+        onRenderTextLayerSuccess={aoPintarOTexto}
         renderAnnotationLayer={false}
         className="shadow-sm"
-      />
+      >
+        {desenho && desenho.chave === `${page}|${needle}` && (
+          <div className="grifo-faixas" aria-hidden>
+            {desenho.faixas.map((r, i) => (
+              <span
+                key={`${desenho.chave}:${i}`}
+                className={desenho.pintar ? "grifo-faixa grifo-faixa--pinta" : "grifo-faixa"}
+                style={{ left: r.x, top: r.y, width: r.w, height: r.h, animationDelay: `${180 + i * 110}ms` }}
+              />
+            ))}
+          </div>
+        )}
+      </Page>
     </Document>
     </div>
   );

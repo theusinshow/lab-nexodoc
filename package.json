@@ -326,6 +326,7 @@
     "test:titulos-do-bloco": "node --import ./scripts/lib/resolver-de-imports.mjs scripts/test-titulos-do-bloco.ts",
     "test:ld:rodape": "node --import ./scripts/lib/resolver-de-imports.mjs scripts/test-ld-rodape.ts",
     "test:marcacao": "node scripts/test-marcacao-do-trecho.ts",
+    "test:faixas-do-grifo": "node scripts/test-faixas-do-grifo.ts",
     "test:pagina-muda": "node scripts/test-pagina-muda.ts",
     "test:imagem-nao-lida": "node scripts/test-imagem-nao-lida.ts",
     "test:quadro-em-imagem": "node --import ./scripts/lib/resolver-de-imports.mjs scripts/test-quadro-em-imagem.ts",

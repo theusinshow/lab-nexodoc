@@ -1,0 +1,40 @@
+/*
+ * O MARCA-TEXTO DO VISOR DE PDF (08/10/2026) — ver `audit-pdf-viewer-internal.tsx`.
+ *
+ * O `<mark>` da camada de texto fica transparente: continua lá para a seleção e
+ * o Ctrl+F, mas quem se vê é a faixa, uma por linha, por baixo do texto e por
+ * cima do canvas. `multiply` deixa a tinta da folha preta sobre a cor, como no
+ * papel.
+ */
+.react-pdf__Page { isolation: isolate; }
+.react-pdf__Page .textLayer mark { background: transparent; color: transparent; }
+
+.grifo-faixas {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  mix-blend-mode: multiply;
+  --grifo-tom: #f2c230;
+}
+[data-grifo-tom="block"] .grifo-faixas { --grifo-tom: #d9483a; }
+[data-grifo-tom="decide"] .grifo-faixas { --grifo-tom: #e0a22a; }
+[data-grifo-tom="note"] .grifo-faixas { --grifo-tom: #7d8db0; }
+[data-grifo-tom="texto"] .grifo-faixas { --grifo-tom: #4f8fd9; }
+
+.grifo-faixa {
+  position: absolute;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--grifo-tom) 42%, white);
+  box-shadow: inset 0 -2px 0 var(--grifo-tom);
+}
+
+/* A chegada: a faixa se pinta da esquerda para a direita, uma vez. */
+.grifo-faixa--pinta { animation: grifo-pinta 420ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+@keyframes grifo-pinta {
+  from { clip-path: inset(0 100% 0 0 round 3px); }
+  to { clip-path: inset(0 0 0 0 round 3px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .grifo-faixa--pinta { animation: none; }
+}
