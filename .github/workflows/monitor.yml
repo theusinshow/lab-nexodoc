@@ -1,0 +1,103 @@
+# O MONITOR DE QUEDA: o Nexo de pé, visto de fora.
+#
+# O suporte (/admin/suporte) registra os erros que ACONTECEM dentro do app; se
+# o site cair inteiro, não há app para registrar nada. Este workflow olha o
+# /api/saude a cada 10 minutos e fala por ISSUE:
+#
+#   · caiu   → abre "[monitor] nexo-doc.com fora do ar" (o GitHub manda e-mail
+#              a quem acompanha o repositório);
+#   · voltou → comenta quanto tempo ficou fora e fecha a issue.
+#
+# Uma issue por queda, não uma por checagem: enquanto continua fora, ele não
+# abre outra. Três tentativas com 20 s de intervalo antes de declarar queda —
+# um soluço de rede não vira alarme.
+#
+# Limites do GitHub: o agendamento pode atrasar alguns minutos em horário de
+# pico, e é desligado após 60 dias sem atividade no repositório.
+name: monitor
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  # Disparo à mão; `url` serve para ENSAIAR uma queda (um endereço que não
+  # responde) sem derrubar nada — a issue abre e, no disparo seguinte sem
+  # `url`, fecha.
+  workflow_dispatch:
+    inputs:
+      url:
+        description: "Endereço a checar (vazio = o /api/saude de produção)"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: monitor
+  cancel-in-progress: false
+
+jobs:
+  saude:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      URL: ${{ inputs.url || 'https://nexo-doc.com/api/saude' }}
+      TITULO: "[monitor] nexo-doc.com fora do ar"
+
+    steps:
+      - name: Checar o /api/saude
+        id: checar
+        run: |
+          ok=false
+          for tentativa in 1 2 3; do
+            resposta="$(curl -sS -m 20 -w '\n%{http_code}' "$URL" 2>&1 || true)"
+            codigo="$(printf '%s' "$resposta" | tail -n1)"
+            corpo="$(printf '%s' "$resposta" | sed '$d' | head -c 300)"
+            if [ "$codigo" = "200" ] && printf '%s' "$corpo" | grep -q '"ok":true'; then
+              ok=true
+              break
+            fi
+            echo "tentativa $tentativa: HTTP $codigo — $corpo"
+            [ "$tentativa" -lt 3 ] && sleep 20
+          done
+          echo "ok=$ok" >> "$GITHUB_OUTPUT"
+          {
+            echo "codigo=$codigo"
+            echo "corpo<<FIM"
+            echo "$corpo"
+            echo "FIM"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Abrir ou fechar a issue
+        env:
+          OK: ${{ steps.checar.outputs.ok }}
+          CODIGO: ${{ steps.checar.outputs.codigo }}
+          CORPO: ${{ steps.checar.outputs.corpo }}
+        run: |
+          aberta="$(gh issue list --state open --search "in:title \"$TITULO\"" --json number,createdAt --jq '.[0] // empty')"
+          numero="$(printf '%s' "$aberta" | jq -r '.number // empty')"
+          agora="$(TZ=America/Sao_Paulo date '+%d/%m/%Y %H:%M')"
+
+          if [ "$OK" = "true" ]; then
+            if [ -n "$numero" ]; then
+              desde="$(printf '%s' "$aberta" | jq -r '.createdAt')"
+              minutos=$(( ( $(date +%s) - $(date -d "$desde" +%s) ) / 60 ))
+              gh issue close "$numero" --comment "Voltou em $agora (Brasília). Fora do ar por cerca de $minutos min."
+              echo "Voltou; issue #$numero fechada."
+            else
+              echo "De pé."
+            fi
+            exit 0
+          fi
+
+          if [ -z "$numero" ]; then
+            gh issue create --title "$TITULO" --body "$(printf 'O %s não respondeu bem em 3 tentativas (%s, Brasília).\n\n- HTTP: %s\n- Resposta: `%s`\n\nConferir os deploys e os logs na Railway. Esta issue fecha sozinha quando o site voltar.' "$URL" "$agora" "$CODIGO" "$CORPO")"
+          else
+            echo "Continua fora; issue #$numero já aberta."
+          fi
+          # Vermelho na aba Actions também, enquanto estiver fora.
+          exit 1
