@@ -260,6 +260,16 @@ try {
   await page.waitForFunction(() => document.querySelectorAll(".vm-lado-folha .react-pdf__Page canvas").length === 2, null, { timeout: 15000 });
   await page.waitForTimeout(1500);
 
+  // --- 0a. o foco mora no visor ---------------------------------------------
+  const foco = await page.evaluate(() => Boolean(document.activeElement?.closest('[role="dialog"]')));
+  check("o foco entra no visor ao abrir", foco);
+  let escapou = 0;
+  for (let i = 0; i < 40; i++) {
+    await page.keyboard.press(i % 7 === 6 ? "Shift+Tab" : "Tab");
+    if (!(await page.evaluate(() => Boolean(document.activeElement?.closest('[role="dialog"]'))))) escapou++;
+  }
+  check("Tab e Shift+Tab dão a volta dentro do visor", escapou === 0, `${escapou} de 40 saíram`);
+
   // --- 0. o conflito entre páginas abre lado a lado ------------------------
   /*
    * O INC-001 cita "Pág. 3: … | Pág. 7: …": é um conflito entre páginas, e a
@@ -319,8 +329,6 @@ try {
     caixa && caixa.x >= 0 && caixa.y >= 0 && caixa.x + caixa.width <= LARGURA + 1 && caixa.y + caixa.height <= ALTURA + 1,
     caixa ? `${Math.round(caixa.x)},${Math.round(caixa.y)} ${Math.round(caixa.width)}×${Math.round(caixa.height)}` : "sem caixa",
   );
-  const foco = await page.evaluate(() => Boolean(document.activeElement?.closest('[role="dialog"]')));
-  check("o foco entra no visor ao abrir", foco);
   const c100 = await canvas();
   const m100 = await mesa();
   check(
@@ -433,6 +441,11 @@ try {
   await visor.getByRole("button", { name: /Diminuir zoom/ }).click();
   await esperarFolha();
   check("− volta ao tamanho de antes", (await canvas())?.w === base);
+  await visor.getByRole("button", { name: /Aumentar zoom/ }).click();
+  await esperarFolha();
+  await page.locator(".vm-zoom-valor").click();
+  await esperarFolha();
+  check("clicar no número do zoom ajusta à largura (100%)", (await canvas())?.w === base && /100%/.test(await page.locator(".vm-zoom-valor").innerText()));
   for (let i = 0; i < 4; i++) await visor.getByRole("button", { name: /Aumentar zoom/ }).click();
   await esperarFolha();
   const ampliada = (await canvas())?.w ?? 0;
@@ -508,6 +521,37 @@ try {
   await page.keyboard.press("g");
   await page.waitForTimeout(1200);
   check("G também volta ao grifo", (await seta.count()) === 0);
+
+  // --- 8c. a roda passa de folha ------------------------------------------
+  // 100% já é a largura da mesa: a folha é mais alta que a mesa e tem rolagem.
+  for (let i = 0; i < 6; i++) await page.locator(".vm-zoom-valor").click().catch(() => {});
+  await page.locator(".vm-zoom-valor").click();
+  await ir(5);
+  await page.evaluate(() => {
+    const m = document.querySelector(".vm-mesa");
+    if (m) m.scrollTop = m.scrollHeight;
+  });
+  const sobreAMesa = await page.locator(".vm-mesa").boundingBox();
+  await page.mouse.move(sobreAMesa.x + sobreAMesa.width / 2, sobreAMesa.y + sobreAMesa.height / 2);
+  await page.mouse.wheel(0, 40);
+  await page.waitForTimeout(300);
+  check("um toque de roda no pé não vira a folha", (await paginaAtual()) === 5);
+  for (let i = 0; i < 3; i++) {
+    await page.mouse.wheel(0, 120);
+    await page.waitForTimeout(60);
+  }
+  await esperarFolha();
+  const desceu = await mesa();
+  check("continuar rolando no pé da folha leva à seguinte, pelo topo", (await paginaAtual()) === 6 && desceu.top <= 4, `p. ${await paginaAtual()}, rolagem ${desceu?.top}`);
+  await page.waitForTimeout(800);
+  for (let i = 0; i < 3; i++) {
+    await page.mouse.wheel(0, -120);
+    await page.waitForTimeout(60);
+  }
+  await esperarFolha();
+  await page.waitForTimeout(900);
+  const subiu = await mesa();
+  check("rolar para cima no topo volta à anterior, pelo pé", (await paginaAtual()) === 5 && subiu.top >= subiu.alto - 4, `p. ${await paginaAtual()}, rolagem ${subiu?.top} de ${subiu?.alto}`);
 
   // --- 9. sair ------------------------------------------------------------
   await page.evaluate(() => document.activeElement instanceof HTMLElement && document.activeElement.blur());

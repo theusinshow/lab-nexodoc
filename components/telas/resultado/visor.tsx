@@ -345,6 +345,65 @@ export function VisorDoMemorial({
   // O conflito entre páginas já abre lado a lado; o resto, na folha única.
   const [ladoALado, setLadoALado] = useState(() => paginasEmConflito(primeiro?.bruto.evidencia).length >= 2);
   const mesaRef = useRef<HTMLDivElement>(null);
+  const visorRef = useRef<HTMLElement>(null);
+
+  /*
+   * O FOCO MORA NO VISOR (08/10/2026). Ele abria por cima da tela e o foco
+   * ficava lá atrás: Tab andava pela fila escondida. Agora o foco entra ao
+   * abrir, o Tab dá a volta dentro dele e, ao fechar, volta para quem o abriu.
+   */
+  useEffect(() => {
+    if (!aberto) return;
+    const antes = document.activeElement as HTMLElement | null;
+    const quadro = requestAnimationFrame(() => visorRef.current?.focus({ preventScroll: true }));
+    return () => {
+      cancelAnimationFrame(quadro);
+      if (antes?.isConnected) antes.focus({ preventScroll: true });
+    };
+  }, [aberto]);
+
+  /*
+   * 100% É A LARGURA DA MESA (08/10/2026). A folha tinha 520 px fixos numa
+   * mesa de 780 — 67% do espaço, letra pequena sem necessidade. Agora 100% é a
+   * folha na largura da mesa (menos o respiro), e o zoom multiplica isso.
+   */
+  const [larguraDaMesa, setLarguraDaMesa] = useState(0);
+  useEffect(() => {
+    const m = mesaRef.current;
+    if (!aberto || !m) return;
+    const medir = () => setLarguraDaMesa(m.clientWidth);
+    medir();
+    const obs = new ResizeObserver(medir);
+    obs.observe(m);
+    return () => obs.disconnect();
+  });
+  const larguraDaFolha = larguraDaMesa ? Math.max(320, larguraDaMesa - 56) : 0;
+
+  /*
+   * A RODA PASSA DE FOLHA (08/10/2026). O visor mostra uma folha por vez; no
+   * pé dela, continuar rolando para baixo leva à seguinte (pelo topo), e no
+   * topo, rolar para cima leva à anterior (pelo pé). Um tanto de giro
+   * acumulado, para um toque à toa não virar a página.
+   */
+  const giro = useRef({ soma: 0, ate: 0 });
+  // Por onde a folha virada pela roda chega. A roda não se cancela (o evento é
+  // passivo): os giros que ainda vêm rolariam a folha nova; ela fica presa no
+  // topo (ou no pé) durante a pausa.
+  const chegada = useRef<"topo" | "pe" | null>(null);
+  useEffect(() => {
+    const lado = chegada.current;
+    chegada.current = null;
+    const m = mesaRef.current;
+    if (!lado || !m) return;
+    const fim = performance.now() + 700;
+    let quadro = 0;
+    const prender = () => {
+      m.scrollTop = lado === "pe" ? m.scrollHeight : 0;
+      if (performance.now() < fim) quadro = requestAnimationFrame(prender);
+    };
+    quadro = requestAnimationFrame(prender);
+    return () => cancelAnimationFrame(quadro);
+  }, [pagina]);
 
   /*
    * O GRIFO PODE ESTAR EM OUTRA PÁGINA DO ACHADO: ele cita "1, 2" e o trecho
@@ -415,6 +474,25 @@ export function VisorDoMemorial({
   useEffect(() => {
     if (!aberto) return;
     const tecla = (e: KeyboardEvent) => {
+      if (e.key === "Tab" && visorRef.current) {
+        // O Tab dá a volta dentro do visor.
+        const focaveis = [...visorRef.current.querySelectorAll<HTMLElement>('button:not([disabled]), input:not([disabled]), [tabindex="0"]')].filter((el) => el.offsetParent !== null);
+        if (!focaveis.length) return;
+        const primeiro = focaveis[0];
+        const ultimo = focaveis[focaveis.length - 1];
+        const aqui = document.activeElement;
+        if (!visorRef.current.contains(aqui) || aqui === visorRef.current) {
+          e.preventDefault();
+          (e.shiftKey ? ultimo : primeiro).focus();
+        } else if (e.shiftKey && aqui === primeiro) {
+          e.preventDefault();
+          ultimo.focus();
+        } else if (!e.shiftKey && aqui === ultimo) {
+          e.preventDefault();
+          primeiro.focus();
+        }
+        return;
+      }
       if ((e.target as HTMLElement).closest("input, textarea")) {
         // No campo do chat, Esc só sai do campo; o visor fecha no segundo Esc.
         if (e.key === "Escape") (e.target as HTMLElement).blur();
@@ -435,6 +513,7 @@ export function VisorDoMemorial({
       else if (e.key.toLowerCase() === "j" && !e.ctrlKey && !e.metaKey) vizinha(1);
       else if (e.key.toLowerCase() === "k" && !e.ctrlKey && !e.metaKey) vizinha(-1);
       else if (e.key.toLowerCase() === "g" && !e.ctrlKey && !e.metaKey) voltarAoGrifo(mesaRef.current);
+      else if (e.key === "0" && !e.ctrlKey && !e.metaKey) setZoom(1);
       else if (e.key.toLowerCase() === "b" && !e.ctrlKey && !e.metaKey) setBalaoAberto((v) => !v);
       else if (e.key.toLowerCase() === "l" && !e.ctrlKey && !e.metaKey && paginasDoAtivo.length >= 2) {
         if (!ladoALado && !paginasDoAtivo.includes(pagina)) ir(paginasDoAtivo[0]);
@@ -460,8 +539,11 @@ export function VisorDoMemorial({
       {aberto && (
         <motion.div className="vm-fundo" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: dur("state") }} onMouseDown={(e) => e.target === e.currentTarget && onFechar()}>
           <motion.section
+            ref={visorRef}
+            tabIndex={-1}
             className="vm"
             role="dialog"
+            aria-modal="true"
             aria-label="Memorial com os achados"
             initial={{ x: 48, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
@@ -486,7 +568,9 @@ export function VisorDoMemorial({
                 <Botao variante="quiet" tamanho="sm" icone aria-label="Diminuir zoom (−)" title="Diminuir zoom (−)" onClick={() => zoomPasso(-1)} disabled={zoom === ZOOMS[0]}>
                   <Minus />
                 </Botao>
-                <span className="ds-num">{Math.round(zoom * 100)}%</span>
+                <button type="button" className="ds-num vm-zoom-valor" onClick={() => setZoom(1)} title="Ajustar à largura (0)" aria-label={`Zoom de ${Math.round(zoom * 100)}%. Ajustar à largura (0)`}>
+                  {Math.round(zoom * 100)}%
+                </button>
                 <Botao variante="quiet" tamanho="sm" icone aria-label="Aumentar zoom (+)" title="Aumentar zoom (+)" onClick={() => zoomPasso(1)} disabled={zoom === ZOOMS[ZOOMS.length - 1]}>
                   <Plus />
                 </Botao>
@@ -552,7 +636,26 @@ export function VisorDoMemorial({
                   })}
                 </div>
               ) : (
-              <div ref={mesaRef} className="vm-mesa vm-mesa--pdf">
+              <div
+                ref={mesaRef}
+                className="vm-mesa vm-mesa--pdf"
+                onWheel={(e) => {
+                  const m = e.currentTarget;
+                  const agora = performance.now();
+                  if (agora < giro.current.ate) return;
+                  const noPe = m.scrollTop + m.clientHeight >= m.scrollHeight - 2;
+                  const noTopo = m.scrollTop <= 0;
+                  if ((e.deltaY > 0 && noPe) || (e.deltaY < 0 && noTopo)) giro.current.soma += e.deltaY;
+                  else giro.current.soma = 0;
+                  if (Math.abs(giro.current.soma) < 240) return;
+                  const passo = giro.current.soma > 0 ? 1 : -1;
+                  giro.current = { soma: 0, ate: agora + 700 };
+                  const alvo = pagina + passo;
+                  if (alvo < 1 || (total && alvo > total)) return;
+                  chegada.current = passo < 0 ? "pe" : "topo";
+                  ir(alvo);
+                }}
+              >
                 {url ? (
                   <div className="vm-pdf">
                     {!procurando && casou?.pagina === pagina && !casou.achou && grifo?.length ? (
@@ -573,6 +676,7 @@ export function VisorDoMemorial({
                       onRealce={setSobre}
                       balao={doAtivo ? <BalaoDoAchado achado={doAtivo} aberto={balaoAberto} onAlternar={() => setBalaoAberto((v) => !v)} onAbrirNaFila={() => onIrParaAchado(doAtivo.chave)} /> : undefined}
                       zoom={zoom}
+                      largura={larguraDaFolha || undefined}
                       onNumPages={setTotal}
                       onGrifo={aoGrifo}
                     />
