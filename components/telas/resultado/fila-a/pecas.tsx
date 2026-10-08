@@ -25,6 +25,7 @@ import type { AchadoDaTela } from "@/components/telas/resultado/use-parecer-vivo
 import { findingCard } from "@/lib/audit-engine/finding-card";
 import { resolverFonte } from "@/lib/fonte-da-evidencia";
 import { NIVEIS } from "@/lib/nivel-do-achado";
+import { arrastarAchado } from "@/lib/pergunta-sobre-achado";
 import { paginasEmConflito, trechosDaEvidencia } from "@/lib/trechos-da-evidencia";
 
 import { Flutuante, MenuSolto } from "./flutuante";
@@ -327,7 +328,13 @@ export function AcoesRapidas({ f, a }: { f: Fila; a: AchadoDaTela }) {
 export function LinhaDoAchado({ f, a, sugestao, rapidas, onAbrir }: { f: Fila; a: AchadoDaTela; sugestao?: boolean; rapidas?: boolean; onAbrir?: () => void }) {
   const ativo = a.chave === f.atual?.chave;
   return (
-    <div className={`rs-linha${ativo ? " rs-linha--ativa" : ""}${a.desfecho ? " rs-linha--encerrada" : ""}${a.desfecho?.tipo === "FIXED_IN_DOC" ? " rs-linha--corrigida" : ""}${f.marcados.length ? " rs-linha--selecionando" : ""}${rapidas ? " am-linha-com-rapidas" : ""}`}>
+    <div
+      className={`rs-linha${ativo ? " rs-linha--ativa" : ""}${a.desfecho ? " rs-linha--encerrada" : ""}${a.desfecho?.tipo === "FIXED_IN_DOC" ? " rs-linha--corrigida" : ""}${f.marcados.length ? " rs-linha--selecionando" : ""}${rapidas ? " am-linha-com-rapidas" : ""}`}
+      /* Arrastada até o chat, vira uma pergunta sobre este achado (lib/pergunta-sobre-achado.ts). */
+      draggable
+      onDragStart={(e) => arrastarAchado(e.dataTransfer, a)}
+      title="Arraste para o chat para perguntar ao Nexo sobre este achado"
+    >
       {ativo && <span className="rs-linha-fundo" />}
       <Marcar f={f} a={a} desligado={sugestao} />
       <button type="button" className="rs-linha-corpo" onClick={() => (onAbrir ? onAbrir() : f.abrir(a.chave, f.visiveis.indexOf(a) > f.posicao ? 1 : -1))}>

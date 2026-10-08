@@ -286,6 +286,13 @@
 .ds .nx-chat-pe { padding: 8px 20px 14px; }
 .ds .nx-chat-pe .cx-campo { width: 100%; }
 .ds .nx-chat-pe-dentro { width: min(760px, 100%); margin: 0 auto; }
+/* O achado arrastado da fila: o campo acende enquanto ele está por cima, e depois fica preso acima dele. */
+.ds .nx-chat--soltando-achado .cx-campo { box-shadow: 0 0 0 2px color-mix(in srgb, var(--ds-nexo) 60%, transparent), 0 16px 40px rgb(0 0 0 / 0.35); }
+.ds .nx-solta-achado { margin: 0 0 8px; padding: 10px 12px; border-radius: 10px; border: 1px dashed color-mix(in srgb, var(--ds-nexo) 55%, transparent); font-size: 12px; text-align: center; color: var(--ds-text-secondary); }
+.ds .nx-achado-anexado { position: relative; margin: 0 0 8px; }
+.ds .nx-achado-anexado .pa-rotulo { padding-right: 34px; }
+.ds .nx-achado-anexado-tirar { position: absolute; top: 6px; right: 6px; display: grid; place-items: center; width: 24px; height: 24px; padding: 0; border: 0; border-radius: 6px; background: none; color: var(--ds-text-tertiary); cursor: pointer; }
+.ds .nx-achado-anexado-tirar:hover { background: rgb(255 255 255 / 0.06); color: var(--ds-text-primary); }
 .ds .nx-chat-erro { width: min(760px, calc(100% - 28px)); margin: 0 auto 8px; }
 .ds .nx-descer { position: sticky; left: auto; bottom: 12px; display: flex; width: max-content; margin: 0 auto; }
 .ds .nx-campo textarea { outline: none; }

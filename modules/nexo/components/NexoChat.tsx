@@ -3,7 +3,13 @@
 import { Orbe } from "@/components/ds/basicos";
 import { Cronometro, Trelica } from "@/components/ds/micro";
 import { textoComRotulos } from "@/lib/rotulo-do-achado";
-import { lerPerguntaSobreAchado } from "@/lib/pergunta-sobre-achado";
+import {
+  lerAchadoArrastado,
+  lerPerguntaSobreAchado,
+  temAchadoArrastado,
+  textoDaPergunta,
+  type AchadoArrastado,
+} from "@/lib/pergunta-sobre-achado";
 import { RotuloDaPergunta } from "@/components/achado/rotulo-da-pergunta";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Loader2, FileText, X, Copy, Check, ArrowDown } from "lucide-react";
@@ -175,6 +181,13 @@ export function NexoChat({
   const { data: usage, refresh: refreshUsage } = useConversationUsage();
   const { online } = useConexao();
   const [input, setInput] = useState("");
+  /*
+   * O ACHADO SOLTO NO CHAT (08/10/2026): arrastado da fila, ele fica preso
+   * acima do campo, e a próxima pergunta digitada sai como pergunta sobre ele
+   * — o mesmo texto do chat do visor (`textoDaPergunta`).
+   */
+  const [achadoAnexado, setAchadoAnexado] = useState<AchadoArrastado | null>(null);
+  const [soltandoAchado, setSoltandoAchado] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [templates, setTemplates] = useState<NexoTemplateOption[]>([]);
@@ -376,7 +389,10 @@ export function NexoChat({
    * saída o turno voltaria ao chat da auditoria para sempre, e a tela travaria.
    */
   async function send(textArg?: string, forcarNexo = false) {
-    const text = (textArg ?? input).trim();
+    const digitado = (textArg ?? input).trim();
+    // O achado preso só vale para o que foi DIGITADO: chip e "tentar de novo" mandam o texto deles.
+    const sobre = textArg === undefined ? achadoAnexado : null;
+    const text = sobre && digitado ? textoDaPergunta(sobre, sobre.pagina, digitado) : digitado;
     if (!text || busy) return;
     // Aba travada (conversa mudada em outra aba) não chama o agente: o turno
     // seria pago e descartado pela fila. O campo já diz o porquê.
@@ -405,6 +421,7 @@ export function NexoChat({
     appendMessage(userMsg);
     setLastSent(text);
     setInput("");
+    if (sobre) setAchadoAnexado(null);
     // O campo esvaziou por um caminho que não passa pelo `onChange` — sem isto,
     // o orbe continuaria achando que há texto escrito depois de enviado.
     publicarFoco({ focado: focadoRef.current, temTexto: false });
@@ -600,7 +617,28 @@ export function NexoChat({
   });
 
   return (
-    <div className="cx nx-chat flex h-full min-h-0 flex-col">
+    <div
+      className={`cx nx-chat flex h-full min-h-0 flex-col${soltandoAchado ? " nx-chat--soltando-achado" : ""}`}
+      onDragOver={(e) => {
+        if (!temAchadoArrastado(e.dataTransfer)) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "copy";
+        if (!soltandoAchado) setSoltandoAchado(true);
+      }}
+      onDragLeave={(e) => {
+        // Sair para um filho não é sair da coluna.
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setSoltandoAchado(false);
+      }}
+      onDrop={(e) => {
+        if (!temAchadoArrastado(e.dataTransfer)) return;
+        e.preventDefault();
+        setSoltandoAchado(false);
+        const achado = lerAchadoArrastado(e.dataTransfer);
+        if (!achado) return;
+        setAchadoAnexado(achado);
+        requestAnimationFrame(() => inputRef.current?.focus());
+      }}
+    >
       {/* Quem sabe montar cada tomo — sem tela; o canvas e o cartão curto chamam. */}
       <MontadoresDoVolume selos={selos} pranchaFiles={pranchaFiles} templates={templates} />
       {/* Log aberto — sem "card" embrulhando (respiro). Coluna de leitura central. */}
@@ -827,6 +865,25 @@ export function NexoChat({
             </div>
           )}
           <TitulosLidos selos={selos} />
+          {soltandoAchado && !achadoAnexado && (
+            <p className="nx-solta-achado" aria-hidden>
+              Solte para perguntar ao Nexo sobre este achado
+            </p>
+          )}
+          {achadoAnexado && (
+            <div className="nx-achado-anexado">
+              <RotuloDaPergunta achado={{ ...achadoAnexado, pergunta: "" }} />
+              <button
+                type="button"
+                className="nx-achado-anexado-tirar"
+                aria-label={`Tirar o ${achadoAnexado.id} da pergunta`}
+                title="Tirar o achado"
+                onClick={() => setAchadoAnexado(null)}
+              >
+                <X size={14} aria-hidden />
+              </button>
+            </div>
+          )}
           <NexoComposer
             variant="docked"
             value={input}
