@@ -47,13 +47,21 @@ export async function registrarErro(a: {
   const agora = new Date();
 
   /*
-   * O 5xx QUE O NAVEGADOR VIU costuma ser o erro que o servidor JÁ registrou
-   * (onRequestError). Casar pela rota numa janela curta evita dois chamados
-   * para um defeito — e o complemento de quem estava na tela cai no certo.
+   * O ERRO QUE O NAVEGADOR VIU costuma ser o que o servidor JÁ registrou
+   * (onRequestError) — a mesma ocorrência, vista do outro lado. Casar evita
+   * dois chamados para um defeito, e o complemento de quem estava na tela cai
+   * no certo. Dois elos:
+   *
+   *   · o DIGEST, na tela que caiu: em produção o Next troca a mensagem do lado
+   *     do navegador por um texto genérico, e a impressão digital nunca bateria;
+   *     o digest é o mesmo dos dois lados (medido em 08/10).
+   *   · a ROTA numa janela curta, no 5xx de API (fetch não traz digest).
    */
-  if (a.http) {
+  if (a.origem === "ERRO_CLIENTE" && (a.digest || a.http)) {
     const doServidor = await prisma.chamadoDeSuporte.findFirst({
-      where: { origem: "ERRO_SERVIDOR", rota, ultimaOcorrencia: { gte: new Date(agora.getTime() - JANELA_DE_CASAMENTO_MS) } },
+      where: a.digest
+        ? { origem: "ERRO_SERVIDOR", digest: a.digest }
+        : { origem: "ERRO_SERVIDOR", rota, ultimaOcorrencia: { gte: new Date(agora.getTime() - JANELA_DE_CASAMENTO_MS) } },
       orderBy: { ultimaOcorrencia: "desc" },
       select: { id: true, protocolo: true, email: true },
     });
