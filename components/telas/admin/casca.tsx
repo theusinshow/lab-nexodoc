@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "motion/react";
-import { BarChart3, Database, FolderOpen, Gauge, KeyRound, RefreshCcw, ShieldCheck, UsersRound } from "lucide-react";
+import { BarChart3, Database, FolderOpen, Gauge, KeyRound, LifeBuoy, RefreshCcw, ShieldCheck, UsersRound } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
@@ -29,6 +29,7 @@ export const DESTINOS_DO_ADMIN = [
   { href: "/admin/pessoas", nome: "Pessoas", pergunta: "quem entra?", icone: UsersRound },
   { href: "/admin/dados", nome: "Dados", pergunta: "o que o banco guarda?", icone: Database },
   { href: "/admin/projetos", nome: "Projetos", pergunta: "o que cada obra guarda?", icone: FolderOpen },
+  { href: "/admin/suporte", nome: "Suporte", pergunta: "quem precisa de mim?", icone: LifeBuoy },
 ] as const;
 
 /** O que a tela aberta conta ao cabeçalho: de quando são os dados e o que mais vai lá (o período do Dinheiro). */
@@ -55,7 +56,7 @@ export function CascaDoAdmin({ children }: { children: ReactNode }) {
   // IGUALDADE EXATA: "/admin" é prefixo dos outros
   const atual = DESTINOS_DO_ADMIN.find((d) => d.href === caminho) ?? DESTINOS_DO_ADMIN[0];
 
-  // 1–6 trocam de destino; R relê os dados
+  // 1–7 trocam de destino; R relê os dados
   useEffect(() => {
     const tecla = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.metaKey || e.altKey || digitando(e.target)) return;

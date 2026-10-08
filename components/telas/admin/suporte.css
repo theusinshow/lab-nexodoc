@@ -1,0 +1,34 @@
+/* A caixa de suporte do admin: fila à esquerda, chamado inteiro à direita. */
+.ds .sa { display: grid; gap: 12px; margin: 0 32px 32px; }
+.ds .sa-alerta { display: flex; align-items: center; gap: 8px; margin: 0; padding: 10px 14px; border-radius: var(--ds-radius-card); background: var(--ds-sev-decide-wash); color: var(--ds-text-primary); font-size: 13px; }
+.ds .sa-grade { display: grid; grid-template-columns: minmax(280px, 380px) 1fr; gap: 12px; align-items: start; }
+.ds .sa .mp-painel { margin: 0; }
+.ds .sa-lista { list-style: none; padding: 0; max-height: calc(100vh - 220px); overflow-y: auto; }
+.ds .sa-linha { display: grid; grid-template-columns: auto auto; justify-content: start; gap: 4px 8px; width: 100%; padding: 10px 14px; border: 0; border-bottom: 1px solid var(--ds-line-subtle); background: none; color: var(--ds-text-primary); text-align: left; font: inherit; font-size: 13px; cursor: pointer; }
+.ds .sa-linha[aria-current] { background: var(--ds-p-gray-3); }
+.ds .sa-linha:focus-visible { outline: none; box-shadow: inset var(--ds-focus-ring); }
+.ds .sa-linha-titulo { grid-column: 1 / -1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ds .sa-linha-meta { grid-column: 1 / -1; color: var(--ds-text-tertiary); font-size: 12px; }
+.ds .sa-vazio { padding: 24px; color: var(--ds-text-tertiary); font-size: 13px; list-style: none; }
+.ds .sa-detalhe { display: grid; gap: 16px; padding: 16px 20px 20px; }
+.ds .sa-cabeca { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.ds .sa-cabeca h2 { margin: 0; font-size: 15px; font-weight: 600; }
+.ds .sa-ficha { display: grid; gap: 4px; margin: 0; font-size: 13px; }
+.ds .sa-ficha div { display: grid; grid-template-columns: 96px 1fr; gap: 8px; }
+.ds .sa-ficha dt { color: var(--ds-text-tertiary); }
+.ds .sa-ficha dd { margin: 0; overflow-wrap: anywhere; }
+.ds .sa-erro { margin: 0; padding: 12px; border-radius: var(--ds-radius-card); background: var(--ds-p-gray-1); font-family: var(--ds-font-mono); font-size: 11px; white-space: pre-wrap; max-height: 240px; overflow: auto; }
+.ds .sa-print img { display: block; width: 100%; border-radius: var(--ds-radius-card); box-shadow: var(--ds-edge); }
+.ds .sa-mensagens { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.ds .sa-mensagens li { padding: 10px 12px; border-radius: var(--ds-radius-card); background: var(--ds-p-gray-2); }
+.ds .sa-mensagens li[data-papel="DEV"] { background: var(--ds-nexo-wash); }
+.ds .sa-mensagens p { margin: 4px 0 0; white-space: pre-wrap; font-size: 14px; }
+.ds .sa-trilha { font-size: 12px; color: var(--ds-text-secondary); }
+.ds .sa-trilha summary { cursor: pointer; }
+.ds .sa-trilha ol { margin: 8px 0 0; padding-left: 20px; display: grid; gap: 2px; }
+.ds .sa-trilha-tipo { color: var(--ds-text-tertiary); }
+.ds .sa-responder { display: grid; gap: 8px; }
+.ds .sa-responder textarea { padding: 10px 12px; border-radius: var(--ds-radius-control); border: 1px solid var(--ds-line-default); background: var(--ds-p-gray-1); color: var(--ds-text-primary); font: inherit; font-size: 14px; resize: vertical; }
+.ds .sa-responder textarea:focus-visible { outline: none; box-shadow: var(--ds-focus-ring); }
+.ds .sa-responder-acoes { display: flex; justify-content: flex-end; gap: 8px; }
+@media (max-width: 900px) { .ds .sa-grade { grid-template-columns: 1fr; } }
