@@ -34,6 +34,14 @@ export type GeneratePayload = {
   tomos: Tomo[];
   templateBase64?: string | null;
   inconsistencies?: InconsistencyPayload;
+  /**
+   * O caminho de rede do `.odt`, impresso no rodapé antes do "Pág." como nas
+   * LDs do escritório. `fixo` = propriedade do documento (o PDF: a conversão
+   * no servidor trocaria o campo automático pela pasta temporária); `arquivo` =
+   * o campo "nome do arquivo" do LibreOffice (o editável: salvo na pasta certa,
+   * mostra a pasta certa). Ver lib/ld/caminho-da-rede.ts.
+   */
+  caminho?: { texto: string; campo: "fixo" | "arquivo" };
 };
 
 export type InconsistencyPayload = {
@@ -182,6 +190,23 @@ function updateDisplayedProperties(xml: string, data: LdData) {
   return nextXml;
 }
 
+/**
+ * Põe o caminho no rodapé, na linha do "Pág." — onde as 62 LDs medidas o têm
+ * (`P:\cad\…\116_25_arq_ld_a.odt   Pág.1`). Template sem essa âncora (um
+ * alternativo enviado à mão) fica como veio: melhor sem caminho que fora do lugar.
+ */
+function inserirCaminhoNoRodape(stylesXml: string, caminho: NonNullable<GeneratePayload["caminho"]>) {
+  const valor = escapeXml(caminho.texto);
+  const campo =
+    caminho.campo === "arquivo"
+      ? `<text:file-name text:display="full">${valor}</text:file-name>`
+      : `<text:user-defined text:name="Caminho">${valor}</text:user-defined>`;
+
+  return stylesXml.replace(/<style:footer>[\s\S]*?<\/style:footer>/, (rodape) =>
+    rodape.replace(/<text:tab\/>(?=P[áa]g\.)/, `${campo}<text:tab/>`),
+  );
+}
+
 function getRowsForTomo(rows: ReviewRow[], tomo: Tomo, isSingleTomo: boolean) {
   if (isSingleTomo) {
     return rows;
@@ -312,8 +337,12 @@ export async function generateOdtBuffer(payload: GeneratePayload) {
     return sheetA - sheetB;
   });
 
-  zip.file("meta.xml", updateMetaXml(metaXml, payload.ldData));
-  zip.file("styles.xml", updateDisplayedProperties(stylesXml, payload.ldData));
+  const caminho = payload.caminho?.texto.trim() ? payload.caminho : undefined;
+  const meta = updateMetaXml(metaXml, payload.ldData);
+  const styles = updateDisplayedProperties(stylesXml, payload.ldData);
+
+  zip.file("meta.xml", caminho ? replaceUserDefined(meta, "Caminho", caminho.texto) : meta);
+  zip.file("styles.xml", caminho ? inserirCaminhoNoRodape(styles, caminho) : styles);
   zip.file(
     "content.xml",
     buildContentXml(contentXml, payload.ldData, sortedRows, payload.tomos ?? []),
