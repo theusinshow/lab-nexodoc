@@ -378,6 +378,16 @@ export interface NexoChatMessage {
    */
   fichaDoMemorial?: FichaDoMemorial;
   /**
+   * A OFERTA DE LEVAR A OBRA CORRIGIDA AO CADASTRO DO PROJETO.
+   *
+   * Corrigir a obra na ficha muda a conversa, não o projeto: o nome do projeto
+   * é gravado uma vez, na criação, e nenhum documento o sobrescreve (ver
+   * `app/api/projects/por-centro-de-custo/route.ts`). Quem corrige no chat
+   * espera ver a aba Projetos mudar — então o Nexo PERGUNTA, e só a pessoa
+   * decide. `estado` guarda a resposta para a pergunta não voltar após o F5.
+   */
+  cadastroDaObra?: { para: string; estado: "pendente" | "atualizado" | "mantido" };
+  /**
    * O BASTIDOR DO TURNO em uma linha ("leu 23 selos · propôs LD · 8,4s").
    *
    * Guardado JÁ MONTADO, e não como números soltos: a frase é o que a conversa

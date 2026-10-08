@@ -2722,6 +2722,7 @@ function NexoWorkspaceInner({
       content: anterior
         ? `Corrigi ${rotulo}: era “${anterior}”, agora é “${valor.trim()}”. A auditoria usa a ficha corrigida.`
         : `Anotei ${rotulo}: “${valor.trim()}”. A auditoria usa a ficha com ele.`,
+      ...(campo === "obra" ? { cadastroDaObra: { para: valor.trim(), estado: "pendente" as const } } : {}),
     });
   };
 

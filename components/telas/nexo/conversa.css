@@ -347,6 +347,13 @@
 .ds .nx-ficha-aviso i { flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--ds-sev-decide); transform: translateY(-1px); }
 @media (hover: none) { .ds .nx-ficha-botao { opacity: 1; } }
 
+/* A obra corrigida na ficha, oferecida ao cadastro do projeto (CadastroDaObra.tsx) */
+.ds .nx-cadastro { justify-self: stretch; max-width: 560px; display: grid; gap: 10px; padding: 12px 14px; border-radius: var(--ds-radius-card); background: var(--ds-surface-card); box-shadow: inset 0 0 0 1px var(--ds-line-subtle); }
+.ds .nx-cadastro-texto { margin: 0; font-size: var(--ds-text-sm); color: var(--ds-text-primary); }
+.ds .nx-cadastro-acoes { display: flex; flex-wrap: wrap; gap: 8px; }
+.ds .nx-cadastro-erro { margin: 0; font-size: var(--ds-text-xs); color: var(--ds-sev-block); }
+.ds .nx-cadastro--feito { margin: 0; padding: 0; background: none; box-shadow: none; font-size: var(--ds-text-xs); color: var(--ds-text-secondary); }
+
 /* As citações de achado no chat (lab: nexo-auditoria.css): a linha que abre o achado no palco */
 .ds .na-citas { display: grid; gap: 6px; width: 100%; }
 .ds .na-cita {

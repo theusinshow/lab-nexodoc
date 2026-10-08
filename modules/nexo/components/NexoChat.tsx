@@ -30,6 +30,7 @@ import { LinhaDoPensamento, type PensamentoDoTurno } from "./LinhaDoPensamento";
 import { VolumesDesatualizados } from "./VolumesDesatualizados";
 import { FichaDoDropCard } from "./FichaDoDrop";
 import { FichaDoMemorialCard } from "./FichaDoMemorial";
+import { CadastroDaObraCard } from "./CadastroDaObra";
 import { QuickReplyChips, NextStepChips } from "./QuickReplyChips";
 import { useConexao } from "../lib/use-conexao";
 import { estadoDoAnexo, type EstadoDoAnexo, type SeloLido } from "../lib/estado-do-anexo";
@@ -679,6 +680,8 @@ export function NexoChat({
                   {m.ficha && <FichaDoDropCard ficha={m.ficha} />}
                   {/* A ficha do memorial: o que a capa trouxe, cada linha corrigível. */}
                   {m.fichaDoMemorial && <FichaDoMemorialCard mensagemId={m.id} ficha={m.fichaDoMemorial} />}
+                  {/* A obra corrigida na ficha: levar também ao cadastro do projeto? */}
+                  {m.cadastroDaObra && <CadastroDaObraCard mensagemId={m.id} oferta={m.cadastroDaObra} />}
                   {/* UM plano para tudo que sai de capa/LD/separatriz; volume,
                       auditoria e conferência seguem com cartão próprio. */}
                   {m.proposals && m.proposals.length > 0 && (
