@@ -1,0 +1,41 @@
+/* O suporte: gaveta à direita, editor do print em tela cheia, aviso de falha.
+   Acima das sobreposições da moldura (paleta z 80): é o último recurso da pessoa. */
+.ds.sp-raiz { display: contents; }
+
+.ds .sp-veu { position: fixed; inset: 0; z-index: 90; background: rgb(6 7 9 / 0.5); }
+.ds .sp-gaveta { position: fixed; top: 0; right: 0; bottom: 0; z-index: 91; display: flex; flex-direction: column; width: min(440px, 100vw); background: var(--ds-surface-card); box-shadow: var(--ds-shadow-overlay); color: var(--ds-text-primary); }
+.ds .sp-cabeca { display: flex; align-items: center; justify-content: space-between; padding: 16px 16px 12px 20px; border-bottom: 1px solid var(--ds-line-subtle); }
+.ds .sp-cabeca h2 { margin: 0; font-size: 15px; font-weight: 600; }
+.ds .sp-corpo { display: flex; flex-direction: column; gap: 16px; padding: 16px 20px 20px; overflow-y: auto; flex: 1; }
+.ds .sp-sub { margin: 0; color: var(--ds-text-secondary); font-size: 13px; }
+
+.ds .sp-print { display: grid; gap: 8px; }
+.ds .sp-print img { width: 100%; max-height: 220px; object-fit: contain; object-position: top; border-radius: var(--ds-radius-card); box-shadow: var(--ds-edge); background: var(--ds-p-gray-1); }
+.ds .sp-print-acoes { display: flex; gap: 8px; }
+
+.ds .sp-campo { display: grid; gap: 6px; font-size: 13px; color: var(--ds-text-secondary); }
+.ds .sp-campo textarea { resize: vertical; min-height: 96px; padding: 10px 12px; border-radius: var(--ds-radius-control); border: 1px solid var(--ds-line-default); background: var(--ds-p-gray-1); color: var(--ds-text-primary); font: inherit; font-size: 14px; }
+.ds .sp-campo textarea:focus-visible { outline: none; box-shadow: var(--ds-focus-ring); }
+
+.ds .sp-junto { font-size: 12px; color: var(--ds-text-secondary); }
+.ds .sp-junto summary { cursor: pointer; color: var(--ds-text-secondary); }
+.ds .sp-junto dl { display: grid; gap: 4px; margin: 10px 0; }
+.ds .sp-junto dl div { display: grid; grid-template-columns: 72px 1fr; gap: 8px; }
+.ds .sp-junto dt { color: var(--ds-text-tertiary); }
+.ds .sp-junto dd { margin: 0; overflow-wrap: anywhere; }
+.ds .sp-trilha { margin: 0; padding-left: 20px; display: grid; gap: 2px; font-family: var(--ds-font-mono); font-size: 11px; }
+.ds .sp-trilha-tipo, .ds .sp-trilha-status { color: var(--ds-text-tertiary); }
+
+.ds .sp-erro { margin: 0; color: var(--ds-sev-block); font-size: 13px; }
+.ds .sp-rodape { display: flex; justify-content: flex-end; gap: 8px; margin-top: auto; }
+.ds .sp-feito { display: grid; justify-items: start; gap: 10px; padding: 24px 20px; }
+.ds .sp-feito p { margin: 0; }
+
+.ds .sp-editor { position: fixed; inset: 0; z-index: 92; display: flex; flex-direction: column; background: var(--ds-p-gray-0); }
+.ds .sp-editor-barra { display: flex; align-items: center; gap: 8px; padding: 12px 16px; border-bottom: 1px solid var(--ds-line-subtle); flex-wrap: wrap; }
+.ds .sp-editor-dica { flex: 1; min-width: 200px; color: var(--ds-text-tertiary); font-size: 12px; }
+.ds .sp-editor-palco { flex: 1; display: grid; place-items: center; padding: 16px; overflow: auto; }
+.ds .sp-editor-tela { max-width: 100%; max-height: calc(100vh - 96px); cursor: crosshair; touch-action: none; box-shadow: var(--ds-edge); }
+
+.ds .sp-aviso { position: fixed; left: 50%; bottom: 24px; z-index: 75; width: min(560px, calc(100% - 32px)); transform: translateX(-50%); }
+.ds .sp-aviso-link { padding: 0; border: 0; background: none; color: inherit; font: inherit; text-decoration: underline; cursor: pointer; }

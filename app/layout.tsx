@@ -8,6 +8,7 @@ import { Suspense } from "react";
 
 import { ProgressoDaNavegacao } from "@/components/layout/progresso-da-navegacao";
 import { VERSAO_DA_MARCA } from "@/components/brand/versao-da-marca";
+import { Reportador } from "@/components/suporte/reportador";
 
 // IBM Plex Sans/Mono (DESIGN.md secao 3): familia unica de engenharia,
 // fora do look v0/IA. Pesos conforme a rampa: 400 body, 500 label/title,
@@ -86,6 +87,7 @@ export default function RootLayout({
         <TooltipProvider>
           <div id="main-content">{children}</div>
         </TooltipProvider>
+        <Reportador />
       </body>
     </html>
   );

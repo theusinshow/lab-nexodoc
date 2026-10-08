@@ -138,17 +138,22 @@ export function instalarSuporte(aoFalhar: (c: ChamadoCurto | null) => void) {
   window.addEventListener("error", (e) => trilha.registrar({ tipo: "erro", texto: e.message || "erro de script" }));
   window.addEventListener("unhandledrejection", (e) => trilha.registrar({ tipo: "erro", texto: `promessa: ${textoDe(e.reason)}` }));
 
-  // requisições: registra e, em 5xx da nossa API, reporta
+  /*
+   * requisições: só as da NOSSA API entram na trilha (e, em 5xx, reportam).
+   * Medido em 08/10: o próprio print baixa as fontes (`/_next/static/...`) pelo
+   * fetch, e sem este filtro as 30 posições viravam 30 arquivos .woff2.
+   */
   window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
     const inicio = performance.now();
     const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
     const metodo = (init?.method ?? (input instanceof Request ? input.method : "GET")).toUpperCase();
-    const caminho = caminhoMesmaOrigem(url, location.origin);
+    const mesmaOrigem = caminhoMesmaOrigem(url, location.origin);
+    const caminho = mesmaOrigem?.startsWith("/api/") ? mesmaOrigem : null;
     try {
       const r = await original(input, init);
       if (caminho) {
         trilha.registrar({ tipo: "requisicao", texto: `${metodo} ${normalizarRota(caminho)}`, status: r.status, ms: Math.round(performance.now() - inicio) });
-        if (r.status >= 500 && caminho.startsWith("/api/") && !caminho.startsWith("/api/suporte")) {
+        if (r.status >= 500 && !caminho.startsWith("/api/suporte")) {
           void reportarErro({ nome: `HTTP ${r.status}`, mensagem: `${metodo} ${normalizarRota(caminho)}`, http: true, rota: caminho }).then((c) => {
             if (Date.now() - ultimoAviso < AVISO_A_CADA_MS) return;
             ultimoAviso = Date.now();

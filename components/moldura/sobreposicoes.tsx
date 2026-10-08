@@ -29,6 +29,7 @@ export const ATALHOS: GrupoDeAtalhos[] = [
       { teclas: ["Ctrl", "K"], texto: "Buscar obra, código ou ação" },
       { teclas: ["?"], texto: "Mostrar estes atalhos" },
       { teclas: ["Esc"], texto: "Fechar o que estiver aberto" },
+      { teclas: ["Ctrl", "Shift", "B"], texto: "Reportar um problema" },
     ],
   },
   {
