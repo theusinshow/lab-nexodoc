@@ -15,7 +15,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useReactFlow } from "@xyflow/react";
-import { Plus, RotateCcw, Search, Undo2 } from "lucide-react";
+import { Merge, Plus, RotateCcw, Search, Split, Undo2 } from "lucide-react";
 
 import { ehDigitacao } from "../lib/navegacao-por-teclado";
 import { Chip } from "@/components/ui/chip";
@@ -117,6 +117,8 @@ export function NavegacaoDoCanvas({
   removidas = [],
   onRestaurarFolhas,
   temFolhas = false,
+  juntar,
+  pares = [],
 }: {
   /** Há folhas no canvas: a busca "Ir para a folha" só existe aí. */
   temFolhas?: boolean;
@@ -133,6 +135,10 @@ export function NavegacaoDoCanvas({
   /** As folhas tiradas do conjunto — ficam aqui para poderem voltar. */
   removidas?: { id: string; rotulo: string }[];
   onRestaurarFolhas?: () => void;
+  /** As folhas selecionadas cobrem duas disciplinas soltas: oferece juntá-las. */
+  juntar?: { rotulo: string; aoJuntar: () => void };
+  /** Os pares já juntados — cada um com o seu "Separar", que é o desfazer. */
+  pares?: { rotulo: string; aoSeparar: () => void }[];
 }) {
   const fluxo = useReactFlow();
 
@@ -198,7 +204,7 @@ export function NavegacaoDoCanvas({
    * não foi lida precisa de um lugar para nascer, e ele não pode depender de o
    * volume já estar dividido em tomos.
    */
-  if (!podeNavegar && !temGrupoManual && !onCriarFolha && removidas.length === 0 && !temFolhas) {
+  if (!podeNavegar && !temGrupoManual && !onCriarFolha && removidas.length === 0 && !temFolhas && !juntar && pares.length === 0) {
     return null;
   }
 
@@ -307,6 +313,39 @@ export function NavegacaoDoCanvas({
           </TooltipContent>
         </Tooltip>
       )}
+
+      {/*
+        JUNTAR BLOCOS (09/10/2026). Aparece quando a seleção cobre exatamente
+        duas disciplinas soltas; o par juntado fica sempre à vista com o seu
+        "Separar" — fusão que não se vê é fusão que ninguém lembra de desfazer.
+      */}
+      {juntar && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Chip variant="quiet" onClick={juntar.aoJuntar} className="min-h-7 px-2.5 py-0.5 text-[11px]">
+              <Merge aria-hidden />
+              {juntar.rotulo}
+            </Chip>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">
+            Uma separatriz e uma LD para as duas disciplinas, como o escritório faz em
+            Geometria e Terraplenagem. A LD e a separatriz delas pedem para ser geradas de novo.
+          </TooltipContent>
+        </Tooltip>
+      )}
+      {pares.map((par) => (
+        <Tooltip key={par.rotulo}>
+          <TooltipTrigger asChild>
+            <Chip variant="quiet" onClick={par.aoSeparar} className="min-h-7 px-2.5 py-0.5 text-[11px]">
+              <Split aria-hidden />
+              {par.rotulo} · Separar
+            </Chip>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">
+            Volta a uma separatriz e uma LD para cada disciplina.
+          </TooltipContent>
+        </Tooltip>
+      ))}
 
       {temGrupoManual && onVoltarAoAutomatico && (
         <Tooltip>

@@ -563,7 +563,7 @@ function CanvasInterno({
   tomosDeclarados?: number;
 }) {
   const { artifacts } = useArtifactStore();
-  const { results, blocosFundidos } = useConversation();
+  const { results, blocosFundidos, juntarBlocos, separarBlocos } = useConversation();
   // O par juntado é UMA disciplina para o corte de tomos e para o "envelheceu".
   const codigoDe = useMemo(() => {
     const noVolume = codigoNoVolume(blocosFundidos);
@@ -1204,6 +1204,33 @@ function CanvasInterno({
    */
   const idsEmOrdem = useMemo(() => nodes.map((n) => n.id), [nodes]);
   const selecionados = useMemo(() => nodes.filter((n) => n.selected), [nodes]);
+
+  /*
+   * JUNTAR BLOCOS (09/10/2026): as folhas selecionadas cobrem exatamente duas
+   * disciplinas, nenhuma delas já num par → o chip oferece juntá-las.
+   */
+  const juntar = useMemo(() => {
+    const porIdDaFolha = new Map(folhas.map((f) => [f.id, f]));
+    const jaEmPar = new Set(blocosFundidos.flat());
+    const codigos = new Set<string>();
+    for (const n of selecionados) {
+      if (n.type !== "folha") continue;
+      const folha = porIdDaFolha.get((n.data as { id?: string }).id ?? "");
+      const codigo = folha ? codigoDaFolha(folha).trim().toLowerCase() : "";
+      if (codigo) codigos.add(codigo);
+    }
+    if (codigos.size !== 2 || [...codigos].some((c) => jaEmPar.has(c))) return undefined;
+    const [a, b] = [...codigos];
+    return { rotulo: `Juntar ${a.toUpperCase()} e ${b.toUpperCase()}`, aoJuntar: () => juntarBlocos(a, b) };
+  }, [selecionados, folhas, blocosFundidos, juntarBlocos]);
+  const pares = useMemo(
+    () =>
+      blocosFundidos.map(([a, b]) => ({
+        rotulo: `${a.toUpperCase()} + ${b.toUpperCase()}`,
+        aoSeparar: () => separarBlocos(a),
+      })),
+    [blocosFundidos, separarBlocos],
+  );
   /** Só há "o nó selecionado" quando é UM. Com quarenta marcados, `E` não tem alvo. */
   const alvoDoTeclado = selecionados.length === 1 ? selecionados[0] : null;
   const fluxoDoTeclado = useReactFlow();
@@ -1373,6 +1400,8 @@ function CanvasInterno({
         onCriarFolha={onCriarFolha}
         removidas={removidas}
         onRestaurarFolhas={onRestaurarFolhas}
+        juntar={juntar}
+        pares={pares}
       />
       <ReenquadrarAoCrescer quantidade={nodes.length} />
       <RemedirAlcas ids={idsEmOrdem} />
