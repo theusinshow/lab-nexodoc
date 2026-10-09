@@ -9,6 +9,7 @@
  *
  * Sem `@/` de propósito: testado em node cru (`scripts/test-pranchas-na-sessao.ts`).
  */
+import { LIMITE_DO_ARQUIVO_BYTES } from "../../../lib/limite-do-anexo.ts";
 
 export type FichaDePrancha = {
   fileName: string;
@@ -143,8 +144,6 @@ export async function listarFichas(projeto: string): Promise<FichaDePrancha[]> {
   return ((await res.json()) as { pranchas: FichaDePrancha[] }).pranchas;
 }
 
-/** O mesmo teto do servidor ([[lib/pranchas/regras.ts]]); aqui ele poupa a viagem. */
-const TETO_DA_PRANCHA_BYTES = 40 * 1024 * 1024;
 
 export function enviarPrancha(projeto: string, file: File): Promise<FichaDePrancha> {
   /*
@@ -152,7 +151,8 @@ export function enviarPrancha(projeto: string, file: File): Promise<FichaDePranc
    * viagem inteira por uma resposta que já se sabe. E é recusa, não falha de
    * rede — `comTentativas` não repete.
    */
-  if (file.size > TETO_DA_PRANCHA_BYTES) {
+  // O mesmo teto do servidor ([[lib/limite-do-anexo.ts]]); aqui ele poupa a viagem.
+  if (file.size > LIMITE_DO_ARQUIVO_BYTES) {
     return Promise.reject(new EnvioRecusado(413, `${file.name} passa de 40 MB e não pode ser guardada.`));
   }
   return comTentativas(async () => {

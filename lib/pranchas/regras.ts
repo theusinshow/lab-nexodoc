@@ -6,8 +6,10 @@
  * escorrega por baixo de uma checagem. Aqui cada portão é uma função com teste.
  */
 
+import { LIMITE_DO_ARQUIVO_BYTES } from "../limite-do-anexo.ts";
+
 /** O mesmo teto dos anexos ([[lib/limite-do-anexo.ts]]): uma régua só. */
-export const TETO_DA_PRANCHA_BYTES = 40 * 1024 * 1024;
+export const TETO_DA_PRANCHA_BYTES = LIMITE_DO_ARQUIVO_BYTES;
 
 /**
  * A trava por projeto. O 084-25 inteiro tem ~180 MB de pranchas; 2 GB é dez
