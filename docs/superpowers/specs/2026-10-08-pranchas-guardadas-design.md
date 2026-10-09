@@ -73,6 +73,14 @@ As pré-condições do volume e o cartão de confirmação passam a contar ficha
 A prancha só sobe quando a conversa já tem `projectId`. Sem projeto, fica em
 memória como hoje e sobe assim que o projeto existir.
 
+**O vínculo pelo carimbo (acrescentado em 09/10/2026, na execução).** O spec
+supunha que conversa de pranchas tinha projeto; não tinha — só o memorial
+vinculava, e no banco de dev 42 de 42 conversas com pranchas lidas estavam
+sem projeto. Terminada a leitura dos selos, o código do carimbo
+(`summarizeSelos`, a mesma leitura que nomeia a pasta da obra) passa por
+`vincularProjetoDaConversa`, o caminho do memorial: acha o projeto, ou o cria
+pelo centro de custo. Sem código legível, nada (`vinculo-pelos-selos.ts`).
+
 ### Ligar o bucket
 
 `NEXODOC_STORAGE_PROVIDER=s3` + `NEXODOC_S3_*` na Railway. A partir daí
