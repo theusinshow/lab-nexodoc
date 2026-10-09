@@ -270,18 +270,19 @@ async function arquivosQueMorrem(alvo: AlvoResolvido) {
   }
 
   /*
-   * O PROJETO INTEIRO leva também o que foi guardado nele: documentos, envios e
-   * artefatos. Sem isto as linhas iam embora e os bytes ficavam no
+   * O PROJETO INTEIRO leva também o que foi guardado nele: documentos, envios,
+   * artefatos e pranchas guardadas. Sem isto as linhas iam embora e os bytes ficavam no
    * `StoredFile` sem ninguém apontando — espaço pago para sempre.
    */
   if (alvo.projectId) {
     const doProjeto = { projectId: alvo.projectId, checksumSha256: { not: null } };
-    const [docs, envios, artefatos] = await Promise.all([
+    const [docs, envios, artefatos, pranchas] = await Promise.all([
       prisma.projectDocument.findMany({ where: doProjeto, select: { checksumSha256: true } }),
       prisma.projectUpload.findMany({ where: doProjeto, select: { checksumSha256: true } }),
       prisma.documentArtifact.findMany({ where: doProjeto, select: { checksumSha256: true } }),
+      prisma.pranchaDoProjeto.findMany({ where: { projectId: alvo.projectId }, select: { checksumSha256: true } }),
     ]);
-    for (const linha of [...docs, ...envios, ...artefatos]) {
+    for (const linha of [...docs, ...envios, ...artefatos, ...pranchas]) {
       if (linha.checksumSha256) candidatos.add(linha.checksumSha256);
     }
   }
@@ -295,12 +296,12 @@ async function arquivosQueMorrem(alvo: AlvoResolvido) {
   const foraDoProjeto = alvo.projectId ? { OR: [{ projectId: null }, { NOT: { projectId: alvo.projectId } }] } : {};
 
   /*
-   * QUEM AINDA APONTA, depois de tirar o que vai morrer. As quatro tabelas que
+   * QUEM AINDA APONTA, depois de tirar o que vai morrer. As cinco tabelas que
    * referenciam `StoredFile` por checksum são consultadas — esquecer uma
    * apagaria bytes que ela ainda usa, e o sintoma apareceria semanas depois num
    * "arquivo não encontrado" que ninguém liga a este expurgo.
    */
-  const [deAuditoria, deUpload, deDocumento, deArtefato] = await Promise.all([
+  const [deAuditoria, deUpload, deDocumento, deArtefato, dePrancha] = await Promise.all([
     prisma.auditFile.findMany({
       where: { checksumSha256: { in: lista }, auditId: { notIn: alvo.auditIds } },
       select: { checksumSha256: true },
@@ -323,9 +324,17 @@ async function arquivosQueMorrem(alvo: AlvoResolvido) {
       },
       select: { checksumSha256: true },
     }),
+    // `projectId` da ficha nunca é nulo: aqui não precisa do `OR` com o nulo.
+    prisma.pranchaDoProjeto.findMany({
+      where: {
+        checksumSha256: { in: lista },
+        ...(alvo.projectId ? { NOT: { projectId: alvo.projectId } } : {}),
+      },
+      select: { checksumSha256: true },
+    }),
   ]);
 
-  const vivos = [...deAuditoria, ...deUpload, ...deDocumento, ...deArtefato]
+  const vivos = [...deAuditoria, ...deUpload, ...deDocumento, ...deArtefato, ...dePrancha]
     .map((linha) => linha.checksumSha256)
     .filter((valor): valor is string => Boolean(valor));
 
@@ -474,7 +483,7 @@ export async function executarExpurgo(alcance: Alcance, quem: string) {
 
   /*
    * O PROJETO por último entre as linhas: documentos e envios antes (eles têm
-   * `SetNull` e ficariam órfãos segurando checksum); `ProjectEvent` sai por
+   * `SetNull` e ficariam órfãos segurando checksum); `ProjectEvent` e `PranchaDoProjeto` saem por
    * cascade; `AiTask` e `AiUsageEvent` ficam, como em todo expurgo — o gasto é
    * histórico.
    */
