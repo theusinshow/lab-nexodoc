@@ -16,6 +16,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { chromium } from "playwright";
 
+import { entrarSemTela } from "./lib/sessao-de-teste.mjs";
+
 const BASE = process.env.NEXODOC_BASE ?? "http://localhost:3000";
 const AUDITORIA = process.env.NEXODOC_PROVA_AUDITORIA;
 const SAIDA = process.env.NEXODOC_PROVA_SAIDA ?? path.join(process.cwd(), "tmp", "prova-holofote");
@@ -31,34 +33,9 @@ const confere = (ok, msg) => {
   if (!ok) falhas++;
 };
 
-/*
- * A SESSÃO. O build de produção (o único que não recarrega sozinho, ver
- * [[nexodoc-manifesto-recarrega-dev]]) não tem o "Entrar como dev". Então a
- * prova assina o mesmo JWT que o login dev assinaria, com o AUTH_SECRET local,
- * para o ator do ambiente (NEXODOC_DEV_AUTH_EMAIL).
- */
-const env = Object.fromEntries(
-  fs
-    .readFileSync(".env.local", "utf8")
-    .split(/\r?\n/)
-    .map((l) => /^([A-Z0-9_]+)=(.*)$/.exec(l))
-    .filter(Boolean)
-    .map(([, k, v]) => [k, v.replace(/^["']|["']$/g, "")]),
-);
-const email = (process.env.NEXODOC_DEV_AUTH_EMAIL ?? env.NEXODOC_DEV_AUTH_EMAIL ?? "").trim().toLowerCase();
-const secret = process.env.AUTH_SECRET ?? env.AUTH_SECRET;
-if (!email || !secret) {
-  console.error("Falta NEXODOC_DEV_AUTH_EMAIL ou AUTH_SECRET (.env.local).");
-  process.exit(2);
-}
-const { encode } = await import("next-auth/jwt");
-const COOKIE = "authjs.session-token";
-const nome = env.NEXODOC_DEV_AUTH_NAME?.trim() || "Usuário Dev";
-const sessao = await encode({ salt: COOKIE, secret, token: { sub: email, email, name: nome } });
-
 const browser = await chromium.launch();
 const contexto = await browser.newContext({ viewport: { width: 1440, height: 900 } });
-await contexto.addCookies([{ name: COOKIE, value: sessao, url: BASE, httpOnly: true, sameSite: "Lax" }]);
+await entrarSemTela(contexto, BASE);
 const page = await contexto.newPage();
 const erros = [];
 page.on("pageerror", (e) => erros.push(String(e)));

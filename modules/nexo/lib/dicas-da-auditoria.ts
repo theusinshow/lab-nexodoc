@@ -13,20 +13,38 @@
  * - `tour-do-resultado`: o passo a passo da tela de resultado, que abre sozinho
  *   na primeira vez que a pessoa vê um parecer (e volta pelo "?" do trilho).
  *
+ * E as de MONTAR UM VOLUME (09/10/2026), que perdeu as suas quando o tour saiu
+ * do primeiro acesso — mesma regra, cada uma na hora:
+ *
+ * - `volume-plano`: como um volume se compõe e o que conferir (o plano, na primeira vez);
+ * - `volume-canvas`: o que é cada fileira e onde se monta (o canvas, com tomo à vista);
+ * - `volume-entrega`: por que os editáveis vêm antes dos PDFs (a doca, na primeira vez);
+ * - `volume-teto`: o que fazer com tomo acima de 20 MB (só quando acontece).
+ *
  * Guardadas no navegador (decisão D4): não há preferência por usuário no
  * banco, e um navegador novo mostrar as dicas de novo é um custo pequeno.
  * "Como funciona o Nexo" as traz de volta (`esquecerDicas`).
  */
 import { useSyncExternalStore } from "react";
 
-export type IdDaDica = "processamento" | "primeira-revisao" | "atalhos" | "tour-do-resultado";
+const IDS = [
+  "processamento",
+  "primeira-revisao",
+  "atalhos",
+  "tour-do-resultado",
+  "volume-plano",
+  "volume-canvas",
+  "volume-entrega",
+  "volume-teto",
+] as const;
+export type IdDaDica = (typeof IDS)[number];
 
 const CHAVE = "nexo:dicas-vistas";
 const ouvintes = new Set<() => void>();
 let vistas: ReadonlySet<IdDaDica> | null = null;
 const NENHUMA: ReadonlySet<IdDaDica> = new Set();
 /** No servidor e antes de ler o navegador, nenhuma dica aparece: melhor calar do que piscar. */
-const TODAS: ReadonlySet<IdDaDica> = new Set(["processamento", "primeira-revisao", "atalhos", "tour-do-resultado"]);
+const TODAS: ReadonlySet<IdDaDica> = new Set(IDS);
 
 function ler(): ReadonlySet<IdDaDica> {
   if (vistas) return vistas;

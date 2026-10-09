@@ -8,6 +8,8 @@
 import { CircleCheck, FileDown, FolderDown } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 
+import { DicaDeUmaVez } from "@/components/telas/comum/dica-de-uma-vez";
+import { useDica } from "../lib/dicas-da-auditoria";
 import { Button } from "@/components/ui/button";
 import { CURVA, DURACAO } from "@/lib/ds/movimento";
 import { formatarDataHora } from "@/lib/fuso-de-brasilia";
@@ -30,6 +32,8 @@ export function DocaDaEntrega({ selos }: { selos: SeloForLd[] }) {
    */
   const faltaMontar = passos.prontos < Math.max(passos.planejados, 1);
   const alerta = Boolean(e.erro || passos.editaveis.motivo || passos.acimaDoTeto.length > 0);
+  // Uma dica por vez: a do mapa (VistaDoVolume) primeiro, a da entrega depois.
+  const dicaDoMapaAberta = useDica("volume-canvas").mostrar;
 
   return (
     <AnimatePresence>
@@ -42,9 +46,31 @@ export function DocaDaEntrega({ selos }: { selos: SeloForLd[] }) {
           transition={{ duration: DURACAO.layout, ease: CURVA.out }}
           className="absolute bottom-3 left-1/2 z-20 flex w-[min(760px,calc(100%-140px))] -translate-x-1/2 flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border border-border bg-card/95 px-3 py-2 shadow-[var(--shadow-panel)] backdrop-blur"
           data-prova="doca-da-entrega"
+          data-tour="doca"
           role="region"
           aria-label="Entrega do volume"
         >
+          {/*
+            As dicas da entrega (09/10/2026), uma vez cada, DENTRO da doca: é aqui
+            que a pessoa estranha o botão travado e o tomo pesado demais.
+          */}
+          <div className="flex basis-full flex-col gap-2 empty:hidden">
+            {passos.acimaDoTeto.length > 0 ? (
+              <DicaDeUmaVez id="volume-teto" titulo="Tomo acima de 20 MB">
+                <p>
+                  A prefeitura recusa. No cabeçalho do tomo, <b>Comprimir imagens</b> mexe só nas imagens; <b>Dividir</b> reparte as
+                  folhas em mais tomos, sem perda.
+                </p>
+              </DicaDeUmaVez>
+            ) : (
+              <DicaDeUmaVez id="volume-entrega" titulo="Primeiro os editáveis" quando={!dicaDoMapaAberta}>
+                <p>
+                  Capa e LDs em ODT vão para a pasta do projeto: é o que a equipe corrige depois. Com eles baixados, os PDFs do
+                  volume liberam.
+                </p>
+              </DicaDeUmaVez>
+            )}
+          </div>
           {/* Passos NUMERADOS: círculos vazios se liam como botões de opção. */}
           <span className="flex items-center gap-1.5 text-xs">
             {passos.editaveis.feito ? <CircleCheck className="h-4 w-4 text-[var(--status-ok)]" aria-hidden /> : <Passo n={1} />}
@@ -58,11 +84,11 @@ export function DocaDaEntrega({ selos }: { selos: SeloForLd[] }) {
             {passos.prontos} de {Math.max(passos.planejados, 1)} montados{peso > 0 ? ` · ${formatarMb(peso)}` : ""}
           </span>
           <span className="ml-auto flex items-center gap-2">
-            <Button size="sm" variant={passos.editaveis.feito || faltaMontar ? "secondary" : "default"} loading={e.ocupado === "editaveis"} disabled={e.ocupado !== null} onClick={() => void e.baixarEditaveisZip()}>
+            <Button size="sm" data-tour="doca-editaveis" variant={passos.editaveis.feito || faltaMontar ? "secondary" : "default"} loading={e.ocupado === "editaveis"} disabled={e.ocupado !== null} onClick={() => void e.baixarEditaveisZip()}>
               <FolderDown className="mr-1.5 h-3.5 w-3.5" aria-hidden />
               Editáveis (ODT)
             </Button>
-            <Button size="sm" variant={passos.editaveis.feito ? "default" : "secondary"} loading={e.ocupado === "volumes"} disabled={e.ocupado !== null || !passos.volumes.liberado} title={trava ?? undefined} onClick={() => void e.baixarVolumes()}>
+            <Button size="sm" data-tour="doca-volumes" variant={passos.editaveis.feito ? "default" : "secondary"} loading={e.ocupado === "volumes"} disabled={e.ocupado !== null || !passos.volumes.liberado} title={trava ?? undefined} onClick={() => void e.baixarVolumes()}>
               <FileDown className="mr-1.5 h-3.5 w-3.5" aria-hidden />
               {passos.planejados > 1 ? `Baixar os ${passos.planejados} volumes` : "Baixar o volume"}
             </Button>
@@ -80,7 +106,7 @@ export function DocaDaEntrega({ selos }: { selos: SeloForLd[] }) {
               </motion.p>
             ) : (
               <p className="basis-full text-xs text-muted-foreground">
-                {faltaMontar ? "Monte os tomos pelo botão de cada um no canvas — depois baixe aqui." : trava}
+                {faltaMontar ? "Monte pelo botão Montar de cada tomo, ou de uma vez pelo cartão no chat — depois baixe aqui." : trava}
               </p>
             ))}
         </motion.div>

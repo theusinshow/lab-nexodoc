@@ -67,6 +67,7 @@ export function ColunaDaConferencia({
   return (
     <aside
       aria-label="Conferência da LD"
+      data-tour="conferencia-da-ld"
       /*
        * OCUPA ESPAÇO, não flutua. Como painel absoluto ela cobria a barra do
        * canvas ("+ Folha", "+ Tomo") e a dica dos atalhos — e o `fitView`

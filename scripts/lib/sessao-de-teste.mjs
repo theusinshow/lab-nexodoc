@@ -20,3 +20,29 @@ export async function pularTourGuiado(page) {
     }
   });
 }
+
+/**
+ * Sessão sem tela de login, para o build de produção (`next start`), que não
+ * tem "Entrar como dev" — e é o único que não recarrega sozinho
+ * ([[nexodoc-manifesto-recarrega-dev]]). Assina o mesmo JWT que o login dev
+ * assinaria, com o AUTH_SECRET do `.env.local`, para o ator do ambiente.
+ */
+export async function entrarSemTela(contexto, base) {
+  const fs = await import("node:fs");
+  const env = Object.fromEntries(
+    fs
+      .readFileSync(".env.local", "utf8")
+      .split(/\r?\n/)
+      .map((l) => /^([A-Z0-9_]+)=(.*)$/.exec(l))
+      .filter(Boolean)
+      .map(([, k, v]) => [k, v.replace(/^["']|["']$/g, "")]),
+  );
+  const email = (process.env.NEXODOC_DEV_AUTH_EMAIL ?? env.NEXODOC_DEV_AUTH_EMAIL ?? "").trim().toLowerCase();
+  const secret = process.env.AUTH_SECRET ?? env.AUTH_SECRET;
+  if (!email || !secret) throw new Error("Falta NEXODOC_DEV_AUTH_EMAIL ou AUTH_SECRET (.env.local).");
+  const { encode } = await import("next-auth/jwt");
+  const cookie = "authjs.session-token";
+  const name = env.NEXODOC_DEV_AUTH_NAME?.trim() || "Usuário Dev";
+  const value = await encode({ salt: cookie, secret, token: { sub: email, email, name } });
+  await contexto.addCookies([{ name: cookie, value, url: base, httpOnly: true, sameSite: "Lax" }]);
+}

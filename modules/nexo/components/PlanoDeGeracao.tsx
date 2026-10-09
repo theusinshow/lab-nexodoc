@@ -79,6 +79,7 @@ import { summarizeSelos } from "../lib/agent-context";
 import { MESES_PT } from "@/server/nexo/agent/requirements";
 import type { Folha } from "../lib/folhas";
 import { FrameDoDocumento } from "./FrameDoDocumento";
+import { DicaDeUmaVez } from "@/components/telas/comum/dica-de-uma-vez";
 import { PerguntasAntesDeGerar } from "./PerguntasAntesDeGerar";
 import {
   CAMPOS_DO_FRAME,
@@ -991,6 +992,23 @@ export function PlanoDeGeracao({
          * Modelo ilegível (ou prefeitura ainda não escolhida) cai na lista de
          * sempre — degradar é melhor que sumir.
          */}
+        {/*
+          A DICA DO PLANO (09/10/2026): a primeira vez que alguém vê um plano de
+          volume, o que é cada peça e o que conferir — antes da pergunta do
+          volume, que é onde a pessoa para. Uma vez, e não trava nada.
+        */}
+        {capa && (
+          <DicaDeUmaVez id="volume-plano" titulo="Como sai um volume">
+            <p>
+              Uma <b>capa</b> abre o volume; cada disciplina ganha uma <b>separatriz</b> e uma <b>LD</b> (lista de documentos) antes
+              das pranchas dela. Tudo sai do que o Nexo leu nos selos.
+            </p>
+            <p>
+              Confira a obra e a prefeitura, responda o número do volume (o da capa, como a prefeitura escreve) e gere. Qualquer
+              mudança depois se pede no chat, em português.
+            </p>
+          </DicaDeUmaVez>
+        )}
         {capa && (
           <PerguntasAntesDeGerar
             volume={(mesclado.valores.volume ?? "").trim()}

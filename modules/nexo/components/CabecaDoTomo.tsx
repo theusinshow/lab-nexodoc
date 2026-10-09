@@ -126,9 +126,9 @@ export function CabecaDoTomo({ data }: NodeProps<Node<CabecaDoTomoData & Record<
      * seis tomos), e com 12 px o cabeçalho virava um risco de 5 px — os botões
      * existiam e ninguém os lia. Medido no print da revisão de UX.
      */
-    <div className="nodrag nopan flex w-[880px] items-center gap-4 rounded-lg border border-border bg-card/90 px-5 py-3 backdrop-blur-sm" data-prova="cabeca-do-tomo" data-estado={t.estado}>
+    <div className="nodrag nopan flex w-[880px] items-center gap-4 rounded-lg border border-border bg-card/90 px-5 py-3 backdrop-blur-sm" data-prova="cabeca-do-tomo" data-tour="cabeca-do-tomo" data-estado={t.estado}>
       <span className="font-mono text-[20px] font-semibold uppercase tracking-[0.06em]">{rotulo}</span>
-      <span className="flex items-center gap-1.5">
+      <span className="flex items-center gap-1.5" data-tour="pecas-do-tomo">
         <Peca nome="Capa" pronta={data.pecas.capa} />
         <Peca nome="Separatriz" pronta={data.pecas.separatriz} nota={data.pecas.separatriz ? undefined : "ao montar"} />
         <Peca nome="LD" pronta={data.pecas.ld} />
@@ -160,7 +160,7 @@ export function CabecaDoTomo({ data }: NodeProps<Node<CabecaDoTomoData & Record<
           )
         )}
         {saidas && (
-          <>
+          <span className="flex items-center gap-2" data-tour="saidas-do-teto">
             <Button
               className="h-11 px-4 text-[15px]"
               variant="secondary"
@@ -175,9 +175,9 @@ export function CabecaDoTomo({ data }: NodeProps<Node<CabecaDoTomoData & Record<
               <SplitSquareVertical className="mr-2 h-5 w-5" aria-hidden />
               Dividir em {saidas.dividir.tomos} tomos
             </Button>
-          </>
+          </span>
         )}
-        <motion.span layout={!reduzido} transition={{ duration: DURACAO.state, ease: CURVA.out }}>
+        <motion.span layout={!reduzido} transition={{ duration: DURACAO.state, ease: CURVA.out }} data-tour="acao-do-tomo">
           {t.estado === "montando" ? (
             <span className="inline-flex h-11 items-center px-3" aria-hidden>
               <LoaderCircle className="h-6 w-6 animate-spin text-[var(--ds-nexo)] motion-reduce:animate-none" />

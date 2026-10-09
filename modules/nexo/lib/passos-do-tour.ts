@@ -40,6 +40,11 @@ export interface PassoDoTour {
    * próximo que trouxer outro. Ver [[capitulos-do-tour.ts]].
    */
   capitulo?: string;
+  /**
+   * O alvo mora dentro do canvas: o tour pede que ele enquadre o nó do alvo
+   * antes de medir. Ver [[aproximar-no-tour.ts]].
+   */
+  aproximar?: boolean;
 }
 
 export const PASSOS_DO_TOUR: PassoDoTour[] = [

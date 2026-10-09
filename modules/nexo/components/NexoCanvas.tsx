@@ -31,12 +31,14 @@ import {
   type Edge,
   type NodeProps,
   type OnNodeDrag,
+  type Viewport,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { useReducedMotion } from "motion/react";
 import { FileSearch, Waypoints, Maximize2, MessageSquare, Trash2, SlidersHorizontal } from "lucide-react";
 
 import type { NexoArtifactKind } from "../types";
+import { DURACAO_DA_APROXIMACAO_MS, EVENTO_APROXIMAR, EVENTO_DEVOLVER } from "../lib/aproximar-no-tour";
 import { useArtifactStore, type CanvasArtifact } from "../state/artifact-store";
 import { useComposer } from "../state/composer-controller";
 import { useConversation } from "../state/conversation-store";
@@ -1410,6 +1412,7 @@ function CanvasInterno({
         pares={pares}
       />
       <ReenquadrarAoCrescer quantidade={nodes.length} />
+      <AproximarNoTour />
       <RemedirAlcas ids={idsEmOrdem} />
       <ReactFlow
         nodes={nodes}
@@ -1531,6 +1534,40 @@ function CanvasInterno({
  * mudança de estado faria o canvas pular sob o cursor de quem está navegando,
  * que é pior do que o problema original.
  */
+/**
+ * O tour pede para chegar perto de um nó (o cabeçalho do tomo, a 0,4 de zoom,
+ * era um risco sob o holofote) e depois devolve o enquadramento que a pessoa
+ * tinha. Ver [[aproximar-no-tour.ts]].
+ */
+function AproximarNoTour() {
+  const fluxo = useReactFlow();
+  const reduzido = useReducedMotion();
+  useEffect(() => {
+    let salvo: Viewport | null = null;
+    const duracao = reduzido ? 0 : DURACAO_DA_APROXIMACAO_MS;
+    const aproximar = (e: Event) => {
+      const seletor = (e as CustomEvent<string>).detail;
+      const no = document.querySelector(seletor)?.closest<HTMLElement>(".react-flow__node");
+      const id = no?.dataset.id;
+      if (!id) return;
+      salvo ??= fluxo.getViewport();
+      void fluxo.fitView({ nodes: [{ id }], padding: 0.15, maxZoom: 1, duration: duracao });
+    };
+    const devolver = () => {
+      if (!salvo) return;
+      void fluxo.setViewport(salvo, { duration: duracao });
+      salvo = null;
+    };
+    window.addEventListener(EVENTO_APROXIMAR, aproximar);
+    window.addEventListener(EVENTO_DEVOLVER, devolver);
+    return () => {
+      window.removeEventListener(EVENTO_APROXIMAR, aproximar);
+      window.removeEventListener(EVENTO_DEVOLVER, devolver);
+    };
+  }, [fluxo, reduzido]);
+  return null;
+}
+
 function ReenquadrarAoCrescer({ quantidade }: { quantidade: number }) {
   const fluxo = useReactFlow();
   const anterior = useRef(quantidade);

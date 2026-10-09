@@ -23,6 +23,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { createPortal } from "react-dom";
 
 import { Button } from "@/components/ui/button";
+import { DURACAO_DA_APROXIMACAO_MS, pedirAproximacao, pedirDevolucao } from "../lib/aproximar-no-tour";
 import { capitulosDoRoteiro, cliqueQueOPassoPressupoe, ondeEsta } from "../lib/capitulos-do-tour";
 import { recorteDoAlvo, recorteDoHolofote } from "../lib/holofote";
 import { posicaoDoBalao, type Retangulo } from "../lib/posicao-do-balao";
@@ -64,6 +65,17 @@ export function TourDoNexo({
   const sentido = useRef<1 | -1>(1);
   /** Chegou ao passo por salto (retomada, voltar, pular capítulo): refaz o clique de vista que o caminho faria. */
   const saltou = useRef(indice > 0);
+  /** O canvas foi aproximado por um passo e ainda não devolveu o enquadramento. */
+  const aproximado = useRef(false);
+  /** Este passo mexeu no enquadramento do canvas: medir só depois que ele chegar. */
+  const mexeuNoCanvas = useRef(false);
+  // O fim do tour devolve o enquadramento que a pessoa tinha.
+  useEffect(
+    () => () => {
+      if (aproximado.current) pedirDevolucao();
+    },
+    [],
+  );
   /** O passo cuja tela já está pronta: até lá o balão não aparece (um passo que vai ser pulado não pisca). */
   const [pronto, setPronto] = useState<number | null>(null);
   /** O passo já medido: o balão aparece no lugar dele, nunca no do anterior. */
@@ -113,8 +125,17 @@ export function TourDoNexo({
       // O recorte fecha durante a troca de vista: a tela pulando atrás do holofote não é o que se quer mostrar.
       if (passo.clicarAntes) setAlvo(null);
       setPronto(indice);
-      if (!clique) return;
-      document.querySelector<HTMLElement>(clique)?.click();
+      if (clique) document.querySelector<HTMLElement>(clique)?.click();
+      // O canvas chega perto do alvo, ou devolve o enquadramento que a pessoa tinha.
+      if (passo.aproximar && passo.alvo) {
+        pedirAproximacao(passo.alvo);
+        aproximado.current = true;
+        mexeuNoCanvas.current = true;
+      } else if (aproximado.current) {
+        pedirDevolucao();
+        aproximado.current = false;
+        mexeuNoCanvas.current = true;
+      }
     };
     if (!passo.soSeExistir) {
       comecar();
@@ -219,9 +240,12 @@ export function TourDoNexo({
       quadro = requestAnimationFrame(medir);
     };
 
-    // Vista nova: o recorte termina de fechar antes de reabrir. Senão, um quadro de espera.
+    // Vista nova: o recorte termina de fechar antes de reabrir. Canvas se
+    // movendo: mede quando ele chegar. Senão, um quadro de espera.
     if (passo.clicarAntes) atraso = window.setTimeout(remedir, TROCA_DE_VISTA_MS);
+    else if (mexeuNoCanvas.current) atraso = window.setTimeout(remedir, DURACAO_DA_APROXIMACAO_MS + 30);
     else quadro = requestAnimationFrame(medir);
+    mexeuNoCanvas.current = false;
     window.addEventListener("resize", remedir);
     // Rolagem de qualquer painel (captura): o recorte acompanha o alvo.
     window.addEventListener("scroll", remedir, true);

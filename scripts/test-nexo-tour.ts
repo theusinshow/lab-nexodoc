@@ -17,6 +17,7 @@ import {
 } from "../modules/nexo/lib/posicao-do-balao.ts";
 import { PASSOS_DO_TOUR } from "../modules/nexo/lib/passos-do-tour.ts";
 import { PASSOS_DO_TOUR_DO_RESULTADO } from "../modules/nexo/lib/passos-do-tour-do-resultado.ts";
+import { PASSOS_DO_TOUR_DO_VOLUME } from "../modules/nexo/lib/passos-do-tour-do-volume.ts";
 import { pontosDoHolofote, recorteDoAlvo, recorteDoHolofote, RESPIRO } from "../modules/nexo/lib/holofote.ts";
 import { capitulosDoRoteiro, cliqueQueOPassoPressupoe, ondeEsta } from "../modules/nexo/lib/capitulos-do-tour.ts";
 
@@ -103,8 +104,8 @@ test("janela estreita (celular) ainda devolve posição dentro da tela", () => {
 
 // --- O roteiro -------------------------------------------------------------
 
-const ROTEIROS = { nexo: PASSOS_DO_TOUR, resultado: PASSOS_DO_TOUR_DO_RESULTADO };
-const TODOS_OS_PASSOS = [...PASSOS_DO_TOUR, ...PASSOS_DO_TOUR_DO_RESULTADO];
+const ROTEIROS = { nexo: PASSOS_DO_TOUR, resultado: PASSOS_DO_TOUR_DO_RESULTADO, volume: PASSOS_DO_TOUR_DO_VOLUME };
+const TODOS_OS_PASSOS = [...PASSOS_DO_TOUR, ...PASSOS_DO_TOUR_DO_RESULTADO, ...PASSOS_DO_TOUR_DO_VOLUME];
 
 test("todo passo tem título e corpo", () => {
   for (const passo of TODOS_OS_PASSOS) {
@@ -170,6 +171,21 @@ test("o tutorial do resultado só clica para trocar de leitura", () => {
     if (!passo.clicarAntes) continue;
     assert.match(passo.clicarAntes, /data-tour="(vista-[a-z]+|chip-no-documento)"/, `${passo.id} clica em ${passo.clicarAntes}`);
   }
+});
+
+// O volume aberto é real: Montar gasta e grava, Baixar baixa, Dividir muda o
+// plano. O passo a passo só pode trocar para a vista Volume.
+test("o tutorial do volume só clica na aba Volume", () => {
+  for (const passo of PASSOS_DO_TOUR_DO_VOLUME) {
+    if (!passo.clicarAntes) continue;
+    assert.equal(passo.clicarAntes, '[data-tour="aba-volume"]', `${passo.id} clica em ${passo.clicarAntes}`);
+  }
+});
+
+test("o tutorial do volume explica os dois botões da entrega e o teto", () => {
+  const ids = PASSOS_DO_TOUR_DO_VOLUME.map((p) => p.id);
+  for (const id of ["acao", "editaveis", "volumes", "teto"]) assert.ok(ids.includes(id), id);
+  assert.deepEqual(capitulosDoRoteiro(PASSOS_DO_TOUR_DO_VOLUME).map((c) => c.nome), ["O mapa", "A entrega"]);
 });
 
 test("o tutorial do resultado passa por cada botão de encerrar", () => {
