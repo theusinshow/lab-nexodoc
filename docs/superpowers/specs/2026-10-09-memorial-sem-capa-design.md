@@ -105,9 +105,10 @@ Hoje `Project` só tem `code`, `name`, `client`, `clientKey`.
    `gravarIdentidade(origem: "capa", fonte: arquivo p.1)`.
 2. Para cada auditoria anterior do mesmo `Project`, compara a régua com que ela
    rodou com a identidade nova — **determinístico, sem IA**
-   (`mesmaObraPorTokens` na obra). Grava no parecer
-   `identidadeConferida: { estado: "confere" | "diverge" | "sem_capa", em, detalhe? }`.
-   Auditoria nunca conferida fica `sem_capa`.
+   (`mesmaObraPorTokens` na obra). Grava em
+   `Project.identidade.conferencias[auditId] = { estado: "confere" | "diverge", obraDaAuditoria, obraDaCapa, em }`
+   — e não dentro de `Audit.report`: um lugar de escrita só, e o parecer
+   continua imutável. Auditoria sem entrada ali não foi conferida.
 3. Divergência aparece:
    - na fala do Nexo logo após o geral: "A capa do geral diz *X*; a auditoria
      estrutural de 03/10 foi feita com *Y*.";
