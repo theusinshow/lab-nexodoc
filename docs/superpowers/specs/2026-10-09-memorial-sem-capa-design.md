@@ -114,6 +114,35 @@ Hoje `Project` só tem `code`, `name`, `client`, `clientKey`.
    - no cabeçalho do parecer antigo, como selo.
 4. Nada é reauditado. "Auditar de novo" (já existe) é a saída manual.
 
+## 4b. O caso real que fixa o desenho: 040-26
+
+Disciplina `P:\cad\prefchap\040_26\estrutural_concreto\documentos\Memorial\040_26_est_md_a.pdf`
+(6 páginas; a página 1 é só "1 PROJETO ESTRUTURAL", separadora de capítulo).
+Geral: `docs/samples/040-26/1_memorial/040_26_md_geral_a.pdf`.
+
+| campo | disciplina hoje (corpo/rodapé) | capa do geral |
+|---|---|---|
+| obra | Feira Comercial de Chapecó | REVITALIZAÇÃO DA FEIRA MUNICIPAL DE CHAPECÓ |
+| código | **125-23** (regex do rodapé) | 040-26 |
+| órgão | — | PREFEITURA MUNICIPAL DE CHAPECÓ |
+| município | — (Chapecó está no rodapé e não é lido) | Chapecó |
+| secretaria | — ("Sec. de Planejamento e Desenvolvimento" no rodapé) | SECRETARIA DE PLANEJAMENTO E DESENVOLVIMENTO |
+
+O rodapé da disciplina foi herdado do projeto 125-23. Consequências no desenho:
+
+- **Código:** `audit-classify` pega o primeiro `\d{2,4}[_-]\d{2}` do texto e
+  devolveu 125-23. Na escada, o código é SEMPRE o do nome do arquivo; código
+  diferente achado no corpo vira **sinal** ("o rodapé cita 125-23"), igual a
+  `divergenciaDeCodigo` faz com a capa.
+- **Corpo é sugestão**, nunca fato: aqui ele erra a obra *e* o código.
+- **Conferência retroativa** precisa dizer `diverge` neste par ("Feira
+  Comercial de Chapecó" × "Revitalização da Feira Municipal de Chapecó"). Se
+  `mesmaObraPorTokens` disser que confere (Feira + Chapecó em comum), o teste
+  mostra e a regra é ajustada para este caso antes de seguir.
+- O PDF de disciplina entra em `docs/samples/040-26/estrutural_concreto/` (pasta
+  ignorada pelo git, como os demais samples); os testes leem dali e pulam com
+  aviso se o arquivo não existir.
+
 ## 5. Fora do escopo
 
 - Reauditoria automática.
