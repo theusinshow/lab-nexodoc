@@ -12,6 +12,7 @@ import { corDaPessoa } from "@/lib/cor-da-pessoa";
 import { CURVA } from "@/lib/ds/movimento";
 import { useTempo } from "@/lib/ds/tempo";
 import { linkDoAchado } from "@/lib/link-do-achado";
+import { diaEmBrasilia } from "@/lib/fuso-de-brasilia";
 import { dataCurta, marcaDeVisto, naoVistas, NOVIDADES } from "@/lib/novidades";
 import type { DadosDaMoldura, DestinoDoTopo } from "@/lib/moldura";
 import { plural } from "@/lib/plural";
@@ -307,14 +308,10 @@ function assinarNovidades(avisar: () => void) {
     window.removeEventListener("storage", avisar);
   };
 }
-/** "AAAA-MM-DD" em Brasília — o corte de "quem nunca abriu". */
-function hojeEmBrasilia(): string {
-  return new Date().toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" });
-}
 function useNovidades() {
   // "-" no servidor: nada novo até o cliente ler o navegador.
   const vistoAte = useSyncExternalStore(assinarNovidades, lerVistoAte, () => "-");
-  const novas = vistoAte === "-" ? [] : naoVistas(NOVIDADES, vistoAte || null, hojeEmBrasilia());
+  const novas = vistoAte === "-" ? [] : naoVistas(NOVIDADES, vistoAte || null, diaEmBrasilia(new Date()));
   const marcarVistas = useCallback(() => {
     const marca = marcaDeVisto(NOVIDADES);
     if (!marca) return;

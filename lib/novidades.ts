@@ -8,6 +8,7 @@
  *
  * Puro: testado em `scripts/test-novidades.ts`.
  */
+import { formatarDiaDeCalendario, somarDiasNaChave } from "./fuso-de-brasilia.ts";
 
 export interface Novidade {
   /**
@@ -58,9 +59,7 @@ export function naoVistas(
   hoje: string,
 ): Novidade[] {
   if (vistoAte) return novidades.filter((n) => n.id > vistoAte);
-  const corte = new Date(`${hoje}T12:00:00Z`);
-  corte.setUTCDate(corte.getUTCDate() - DIAS_PARA_QUEM_CHEGA);
-  const desde = corte.toISOString().slice(0, 10);
+  const desde = somarDiasNaChave(hoje, -DIAS_PARA_QUEM_CHEGA);
   return novidades.filter((n) => dataDo(n.id) > desde);
 }
 
@@ -71,7 +70,5 @@ export function marcaDeVisto(novidades: readonly Novidade[]): string | null {
 
 /** "9 de out." — a data como a lista mostra. */
 export function dataCurta(id: string): string {
-  const [, mes, dia] = dataDo(id).split("-").map(Number);
-  const MESES = ["jan.", "fev.", "mar.", "abr.", "mai.", "jun.", "jul.", "ago.", "set.", "out.", "nov.", "dez."];
-  return `${dia} de ${MESES[(mes ?? 1) - 1]}`;
+  return formatarDiaDeCalendario(dataDo(id), { day: "numeric", month: "short" });
 }
