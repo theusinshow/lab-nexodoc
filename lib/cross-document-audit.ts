@@ -719,6 +719,17 @@ function mesmaObraPorTokens(a: string, b: string): boolean {
   return true;
 }
 
+/**
+ * Dois nomes de obra, como humanos os escrevem, são a mesma obra? A forma
+ * exportável de `mesmaObraPorTokens`: canonicaliza antes (siglas de equipamento,
+ * acento, "bairro"). Usada pela conferência retroativa de
+ * [[identidade-do-projeto.ts]] — mesma régua da regra de identidade.
+ */
+export function mesmaObra(a: string, b: string): boolean {
+  if (!a.trim() || !b.trim()) return false;
+  return mesmaObraPorTokens(facilityCanonical(a), facilityCanonical(b));
+}
+
 function collectFacilityMentions(source: CrossDocumentSource): FacilityMention[] {
   const mentions: FacilityMention[] = [];
 

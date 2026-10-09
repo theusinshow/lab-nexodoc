@@ -225,6 +225,7 @@
     "test:folhas-do-memorial": "node scripts/test-folhas-do-memorial.ts",
     "test:com-prazo": "node scripts/test-com-prazo.ts",
     "test:identidade-do-parecer": "node scripts/test-identidade-do-parecer.ts",
+    "test:identidade-sem-capa": "node scripts/test-identidade-sem-capa.ts",
     "test:diff-de-pareceres": "node scripts/test-diff-de-pareceres.ts",
     "prova:texto-do-pdf": "node scripts/prova-texto-do-pdf.ts",
     "prova:conferente-certeza": "node --import ./scripts/lib/resolver-de-imports.mjs scripts/prova-conferente-certeza.ts",
@@ -374,6 +375,7 @@
     "react-dropzone": "^15.0.0",
     "react-pdf": "^10.4.1",
     "resend": "^6.22.1",
+    "sharp": "0.35.5",
     "tailwind-merge": "^3.4.0",
     "three": "^0.185.1"
   },

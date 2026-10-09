@@ -10,6 +10,7 @@
 
 import type { CaracterizacaoDaObra } from "@/lib/caracterizacao-obra";
 import type { LeituraDaCapa } from "@/lib/leitura-da-capa";
+import type { OrigemNaFicha } from "@/lib/escada-da-identidade";
 import type { FichaDoDrop } from "./lib/ficha-do-drop";
 import type { FichaDoMemorial } from "./lib/ficha-do-memorial";
 
@@ -192,6 +193,17 @@ export interface NexoDossieDraft {
   capa?: LeituraDaCapa;
   /** Endereço e áreas lidos do memorial — ver `NexoFileClassification`. */
   caracterizacao?: CaracterizacaoDaObra;
+  /**
+   * DE ONDE veio cada campo da identidade (09/10/2026): capa, projeto, corpo
+   * ou arquivo. A ficha mostra; o corpo vira "confira". Ver
+   * [[lib/escada-da-identidade.ts]].
+   */
+  origens?: Partial<
+    Record<
+      "obra" | "orgao" | "secretaria" | "bairro" | "municipio" | "codigo" | "mesAno",
+      { origem: OrigemNaFicha; fonte?: string }
+    >
+  >;
   disciplinas: string[];
   /** Estrutura por volume (agrupa pranchas/capas/separatrizes). */
   volumes: NexoVolumeGroup[];

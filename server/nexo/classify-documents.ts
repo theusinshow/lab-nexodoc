@@ -1,6 +1,7 @@
 import { extractPdfText } from "@/lib/pdf-text";
 import { classifyDocument } from "@/lib/audit-classify";
 import { divergenciaDeCodigo, type LeituraDaCapa } from "@/lib/leitura-da-capa";
+import { sinalDeCodigoDoCorpo } from "@/lib/escada-da-identidade";
 import type {
   NexoDossieDraft,
   NexoFileClassification,
@@ -129,9 +130,13 @@ export async function classifyDocuments(
       };
       /*
        * O nome do arquivo manda no código (é a chave do projeto); a capa só
-       * confere, e a divergência tem de aparecer em vez de ser engolida.
+       * confere, e a divergência tem de aparecer em vez de ser engolida. Sem
+       * capa, o código que o CORPO cita também confere (09/10/2026, 040-26: o
+       * rodapé trazia 125-23, herdado de outro projeto).
        */
-      const divergencia = divergenciaDeCodigo(parsed.codigo, doc.capa?.codigo ?? "");
+      const divergencia = doc.capa
+        ? divergenciaDeCodigo(parsed.codigo, doc.capa.codigo)
+        : sinalDeCodigoDoCorpo(parsed.codigo, doc.codigo);
       if (divergencia) content.sinais = [...content.sinais, divergencia];
     }
 
