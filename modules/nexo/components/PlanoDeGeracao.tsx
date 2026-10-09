@@ -59,6 +59,7 @@ import {
   blocoGera,
   blocosDoVolume,
   misturaDisciplinas,
+  porBloco,
   resumoDosBlocos,
   type Bloco,
   type ParFundido,
@@ -128,7 +129,7 @@ export function itensDoPlano(
   fundidos: readonly ParFundido[] = [],
 ): ItemDoPlano[] {
   const itens: ItemDoPlano[] = [];
-  const porBloco = misturaDisciplinas(blocos);
+  const vaiPorBloco = porBloco(blocos);
 
   for (const p of proposals) {
     if (!NO_PLANO.includes(p.kind as KindDoPlano)) continue;
@@ -140,7 +141,7 @@ export function itensDoPlano(
 
     // A capa é do volume; a LD e a separatriz são do bloco.
     const doTipo: (Bloco | undefined)[] =
-      porBloco && kind !== "capa" ? [...blocos] : [undefined];
+      vaiPorBloco && kind !== "capa" ? [...blocos] : [undefined];
 
     for (let i = 0; i < Math.max(1, numTomos); i++) {
       const temTomo = numTomos > 1;

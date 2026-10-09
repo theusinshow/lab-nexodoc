@@ -357,6 +357,29 @@ export function separarPar(fundidos: readonly ParFundido[], codigo: string): Par
 }
 
 /**
+ * O plano e a montagem vão por BLOCO quando o volume é misto — ou quando um
+ * bloco é um par, mesmo sendo o único (09/10/2026). Juntar as duas únicas
+ * disciplinas do volume deixa um bloco só; pelo caminho de "disciplina única",
+ * a LD sairia com o título da proposta do agente (o da primeira disciplina) e
+ * o par seria ignorado.
+ */
+export function porBloco(blocos: readonly Bloco[]): boolean {
+  return misturaDisciplinas(blocos) || blocos.some((b) => b.codigos.length > 1);
+}
+
+/**
+ * A LD e a separatriz do SEGUNDO código de um par (`ld:…:cft`, `separatriz:…:cft:t02`)
+ * ficam fora de cena enquanto o par existir: o par tem as suas, sob o código do
+ * primeiro. Não se apagam — separar o par as traz de volta como estavam.
+ */
+export function ocultoPeloPar(artifactId: string, fundidos: readonly ParFundido[]): boolean {
+  if (fundidos.length === 0) return false;
+  const m = /^(?:ld|separatriz):.*:([a-z]+)(?::t\d+)?$/.exec(artifactId);
+  if (!m) return false;
+  return fundidos.some(([, segundo]) => segundo === m[1]);
+}
+
+/**
  * O código de uma folha DENTRO do volume: o segundo do par vira o primeiro
  * (`ter → gmt`). Para quem agrupa folha a folha — corte de tomo, documento
  * envelhecido, totais —, o par é uma disciplina só; sem isto o tomo podia ser

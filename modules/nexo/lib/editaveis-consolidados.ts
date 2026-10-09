@@ -23,7 +23,7 @@ import type { IdentidadeDoProjeto } from "./identidade";
 import { postCapa, postLd, postSeparatriz } from "./generate";
 import type { Editavel } from "./editaveis";
 import { nomeDaLd, type RedeDaLd } from "@/lib/ld/caminho-da-rede";
-import { blocoGera, blocosDoVolume, misturaDisciplinas, type ParFundido } from "./blocos";
+import { blocoGera, blocosDoVolume, porBloco, type ParFundido } from "./blocos";
 import { nomesDoBloco } from "@/server/nexo/titulos-do-bloco";
 import { codigoDaFolha, rotuloDoCodigo } from "./disciplina-da-folha";
 import type { Folha } from "./folhas";
@@ -137,7 +137,7 @@ export async function gerarEditaveisConsolidados(args: {
    */
   const blocos = blocosDoVolume(selos as Folha[], codigoDaFolha, rotuloDoCodigo, args.fundidos ?? []);
   const daLd = { editavel: true, rede: args.rede, templateId: params.templateId, identidade };
-  if (misturaDisciplinas(blocos)) {
+  if (porBloco(blocos)) {
     for (const bloco of blocos.filter((b) => b.codigo && blocoGera("ld", b))) {
       try {
         const r = await postLd(selos, {
@@ -180,7 +180,7 @@ export async function gerarEditaveisConsolidados(args: {
    * par juntado: sem ele, vale o que foi salvo (título decidido incluído).
    */
   const titulosDaSeparatriz =
-    (args.fundidos?.length ?? 0) > 0 && misturaDisciplinas(blocos)
+    (args.fundidos?.length ?? 0) > 0 && porBloco(blocos)
     ? blocos
         .filter((b) => b.codigo && blocoGera("separatriz", b))
         .map((b) => nomesDoBloco(b).separatriz || b.rotulo.toUpperCase())

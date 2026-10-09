@@ -55,7 +55,7 @@ import { AgentPopover } from "@/components/ui/agent-popover";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { buildBalancedQuantities, planoPorDisciplina, repartirPorBlocos } from "@/lib/ld/ld-rules";
-import { codigoNoVolume, repartirDaLista } from "../lib/blocos";
+import { codigoNoVolume, ocultoPeloPar, repartirDaLista } from "../lib/blocos";
 import { codigoDaFolha } from "../lib/disciplina-da-folha";
 import {
   chaveDeOrdem,
@@ -562,8 +562,14 @@ function CanvasInterno({
   /** Tomos que o usuário declarou pelo canvas (fileiras que ainda estão vazias). */
   tomosDeclarados?: number;
 }) {
-  const { artifacts } = useArtifactStore();
+  const { artifacts: todosOsArtefatos } = useArtifactStore();
   const { results, blocosFundidos, juntarBlocos, separarBlocos } = useConversation();
+  // A LD e a separatriz do segundo código de um par saem de cena enquanto o par
+  // existe — sem apagar: separar as traz de volta (09/10/2026).
+  const artifacts = useMemo(
+    () => todosOsArtefatos.filter((a) => !ocultoPeloPar(a.id, blocosFundidos)),
+    [todosOsArtefatos, blocosFundidos],
+  );
   // O par juntado é UMA disciplina para o corte de tomos e para o "envelheceu".
   const codigoDe = useMemo(() => {
     const noVolume = codigoNoVolume(blocosFundidos);

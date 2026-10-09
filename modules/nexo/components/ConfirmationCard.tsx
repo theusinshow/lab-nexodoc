@@ -112,6 +112,7 @@ import {
   blocosDoVolume,
   codigoNoVolume,
   misturaDisciplinas,
+  porBloco,
   resumoDosBlocos,
   type Bloco,
 } from "../lib/blocos";
@@ -1548,7 +1549,8 @@ function VolumeConfirmation({
     () => blocosDoVolume(selosDoTomo as Folha[], codigoDaFolha, rotuloDoCodigo, blocosFundidos),
     [selosDoTomo, blocosFundidos],
   );
-  const misto = misturaDisciplinas(blocos);
+  // Par juntado conta como "por bloco": LD e separatriz próprias, não a única do volume.
+  const misto = porBloco(blocos);
 
   /*
    * O QUE IMPEDE ESTE VOLUME DE SER MONTADO — uma verdade só, consultada pelo
@@ -1759,7 +1761,8 @@ function VolumeConfirmation({
        */
       const montaveis: BlocoDoVolume[] = [];
       for (const bloco of blocos) {
-        const unico = blocos.length === 1;
+        // Um bloco que é PAR não é "único": tem LD e separatriz próprias (09/10/2026).
+        const unico = blocos.length === 1 && blocos[0].codigos.length < 2;
         const chave = unico ? "" : `:${bloco.codigo || "sem"}`;
         const doBloco = bloco.ids
           .map((fid) => porId.get(fid))

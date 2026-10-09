@@ -443,6 +443,9 @@ export async function gerarItem(args: {
         ? { folhasDoTomo: doBloco.map((f) => f.id), respeitarOrdem: true }
         : {}),
     });
+    // O par juntado não tem UMA disciplina: o servidor diria só a majoritária.
+    const disciplinaDoRotulo =
+      item.bloco && (item.bloco.codigos?.length ?? 0) > 1 ? item.bloco.rotulo.toUpperCase() : r.resumo.disciplina;
     await saveResult({
       artifactId: args.idsBase.ld + item.sufixo,
       kind: "ld",
@@ -453,9 +456,9 @@ export async function gerarItem(args: {
        * existe mais, sem nada na tela avisando.
        */
       payload: payloadDoItem({ item, selos, tituloDaSeparatriz: args.tituloDaSeparatriz })!,
-      summary: `LD ${r.resumo.disciplina} · ${r.resumo.codigo} · rev ${r.resumo.revisao} · ${r.resumo.totalFolhas} folhas`,
+      summary: `LD ${disciplinaDoRotulo} · ${r.resumo.codigo} · rev ${r.resumo.revisao} · ${r.resumo.totalFolhas} folhas`,
       canvas: {
-        label: `LD ${r.resumo.disciplina}`,
+        label: `LD ${disciplinaDoRotulo}`,
         detail: `${r.resumo.codigo} · rev ${r.resumo.revisao} · ${r.resumo.totalFolhas} folhas`,
         titulo: txt("tituloLd"),
         pageNumber: 1,

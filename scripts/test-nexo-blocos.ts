@@ -28,6 +28,9 @@ import {
   resumoDosBlocos,
   separarPar,
   juntarPar,
+  porBloco,
+  ocultoPeloPar,
+  type ParFundido,
   tabelasDoLexico,
 } from "../modules/nexo/lib/blocos.ts";
 import { folhas } from "../modules/nexo/lib/folhas.ts";
@@ -449,6 +452,27 @@ test("juntar grava o par uma vez; disciplina já num par não entra em outro", (
 test("separar tira o par de qualquer um dos dois códigos", () => {
   assert.deepEqual(separarPar([["gmt", "ter"], ["his", "inc"]], "ter"), [["his", "inc"]]);
   assert.deepEqual(separarPar([["gmt", "ter"]], "dre"), [["gmt", "ter"]]);
+});
+
+test("porBloco: volume misto, ou um bloco que é par (mesmo sendo o único)", () => {
+  assert.equal(porBloco([{ codigo: "cab", rotulo: "", ids: [], codigos: ["cab"] }]), false);
+  assert.equal(porBloco([{ codigo: "cab", rotulo: "", ids: [], codigos: ["cab", "cft"] }]), true);
+  assert.equal(
+    porBloco([
+      { codigo: "cab", rotulo: "", ids: [], codigos: ["cab"] },
+      { codigo: "cft", rotulo: "", ids: [], codigos: ["cft"] },
+    ]),
+    true,
+  );
+});
+
+test("documento do segundo código do par fica oculto enquanto o par existe", () => {
+  const pares: ParFundido[] = [["cab", "cft"]];
+  assert.equal(ocultoPeloPar("ld:084-25:cft", pares), true);
+  assert.equal(ocultoPeloPar("separatriz:084-25:cft:t02", pares), true);
+  assert.equal(ocultoPeloPar("ld:084-25:cab", pares), false);
+  assert.equal(ocultoPeloPar("ld:084-25", pares), false);
+  assert.equal(ocultoPeloPar("ld:084-25:cft", []), false);
 });
 
 test("codigoNoVolume leva o segundo do par ao primeiro, e não mexe no resto", () => {
