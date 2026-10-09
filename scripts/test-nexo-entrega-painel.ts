@@ -11,6 +11,7 @@ import {
   numerosDosTomos,
   passosDaEntrega,
   rotuloDoTomo,
+  saidasDoTeto,
   tomosMontados,
   tomosPlanejados,
   volumeDaCapa,
@@ -163,6 +164,38 @@ test("passos: tudo certo libera os volumes", () => {
   const p = passosDaEntrega({ tomos, planejados: 2, liberacao: livre, editaveisSalvosEm: 9 });
   assert.deepEqual(p.editaveis, { feito: true, quando: 9, motivo: null });
   assert.deepEqual(p.volumes, { liberado: true, motivo: null });
+});
+
+/* ─────────────── acima de 20 MB: comprimir ou dividir (09/10/2026) ─────────────── */
+
+const MiB = 1024 * 1024;
+
+test("dentro do teto não oferece nada", () => {
+  assert.equal(saidasDoTeto({ bytes: 19.8 * MiB, emJpeg: 18 * MiB }), null);
+});
+
+test("volume de imagem (040-26 vol. 5): comprimir alcança, com a estimativa", () => {
+  const s = saidasDoTeto({ bytes: 20.4 * MiB, emJpeg: 19.68 * MiB })!;
+  assert.equal(s.comprimir.possivel, true);
+  assert.ok(s.comprimir.estimativa < 15 * MiB && s.comprimir.estimativa > 13 * MiB, formatarMb(s.comprimir.estimativa));
+  assert.equal(s.dividir.tomos, 2);
+});
+
+test("volume de desenho (084-25 vol. 10): comprimir desligado, com o motivo", () => {
+  const s = saidasDoTeto({ bytes: 26.62 * MiB, emJpeg: 3.09 * MiB })!;
+  assert.equal(s.comprimir.possivel, false);
+  assert.match(s.comprimir.motivo ?? "", /desenho/);
+  assert.equal(s.dividir.tomos, 2);
+});
+
+test("já comprimido: não oferece comprimir de novo", () => {
+  const s = saidasDoTeto({ bytes: 21 * MiB, emJpeg: 15 * MiB, jaComprimido: true })!;
+  assert.equal(s.comprimir.possivel, false);
+  assert.match(s.comprimir.motivo ?? "", /já foram comprimidas/);
+});
+
+test("dividir leva tomos suficientes para cada um caber", () => {
+  assert.equal(saidasDoTeto({ bytes: 45 * MiB, emJpeg: 0 })!.dividir.tomos, 3);
 });
 
 console.log(`\n${passed} teste(s) da entrega do volume OK`);

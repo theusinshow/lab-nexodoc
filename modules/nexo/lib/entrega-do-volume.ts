@@ -21,6 +21,50 @@ export function formatarMb(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1).replace(".", ",")} MB`;
 }
 
+/**
+ * Quanto recomprimir os JPEG rende, medido em 09/10/2026: 040-26 vol. 5 perdeu
+ * 32% dos bytes em JPEG (20,4 → 14,1 MB); 084-25 vol. 10, 23%. A estimativa
+ * usa 32% e é prometida com "≈".
+ */
+const RENDE_COMPRIMIR = 0.32;
+
+export interface SaidasDoTeto {
+  comprimir: { possivel: boolean; estimativa: number; motivo?: string };
+  dividir: { tomos: number };
+}
+
+/**
+ * AS SAÍDAS DE UM TOMO ACIMA DE 20 MB — Parte 9, "perguntar a cada vez".
+ * Comprimir as imagens só é oferecido quando a estimativa cabe no teto: no
+ * volume em que o peso é desenho vetorial (084-25 vol. 10: 12% imagem),
+ * comprimir não alcança, e o botão diz por quê. Dividir em tomos não perde nada
+ * e cabe sempre.
+ */
+export function saidasDoTeto(args: { bytes: number; emJpeg: number; jaComprimido?: boolean }): SaidasDoTeto | null {
+  const { bytes, emJpeg } = args;
+  if (bytes <= TETO_DO_TOMO_BYTES) return null;
+  const estimativa = Math.round(bytes - emJpeg * RENDE_COMPRIMIR);
+  const tomos = Math.ceil(bytes / (TETO_DO_TOMO_BYTES * 0.95));
+  if (args.jaComprimido) {
+    return {
+      comprimir: { possivel: false, estimativa: bytes, motivo: "As imagens já foram comprimidas — divida em tomos." },
+      dividir: { tomos },
+    };
+  }
+  if (estimativa > TETO_DO_TOMO_BYTES) {
+    const pct = Math.round((1 - emJpeg / bytes) * 100);
+    return {
+      comprimir: {
+        possivel: false,
+        estimativa,
+        motivo: `${pct}% do peso é desenho e texto, que não comprime — chegaria a ≈ ${formatarMb(estimativa)}.`,
+      },
+      dividir: { tomos },
+    };
+  }
+  return { comprimir: { possivel: true, estimativa }, dividir: { tomos } };
+}
+
 /** "Tomo 04"; num volume sem divisão em tomos (`unico`) é só "Volume". */
 export function rotuloDoTomo(tomo: number, unico = false): string {
   return tomo > 0 && !unico ? `Tomo ${String(tomo).padStart(2, "0")}` : "Volume";
