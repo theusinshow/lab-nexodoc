@@ -17,6 +17,8 @@ import {
 } from "../modules/nexo/lib/posicao-do-balao.ts";
 import { PASSOS_DO_TOUR } from "../modules/nexo/lib/passos-do-tour.ts";
 import { PASSOS_DO_TOUR_DO_RESULTADO } from "../modules/nexo/lib/passos-do-tour-do-resultado.ts";
+import { pontosDoHolofote, recorteDoAlvo, recorteDoHolofote, RESPIRO } from "../modules/nexo/lib/holofote.ts";
+import { capitulosDoRoteiro, cliqueQueOPassoPressupoe, ondeEsta } from "../modules/nexo/lib/capitulos-do-tour.ts";
 
 let passed = 0;
 function test(name: string, fn: () => void) {
@@ -174,6 +176,58 @@ test("o tutorial do resultado passa por cada botão de encerrar", () => {
   const encerrar = PASSOS_DO_TOUR_DO_RESULTADO.find((p) => p.id === "encerrar");
   assert.ok(encerrar, "faltou o passo de encerrar");
   for (const rotulo of ["Marcar corrigido", "Decisão técnica", "Falso positivo"]) assert.ok(encerrar.corpo.includes(rotulo), rotulo);
+});
+
+// --- O holofote ------------------------------------------------------------
+
+// A transição de `clip-path` só interpola polígonos com o MESMO número de
+// pontos: se a contagem variar, o recorte salta em vez de deslizar.
+test("o recorte do holofote tem sempre 13 pontos", () => {
+  const casos = [null, { x: 600, y: 300, largura: 200, altura: 40 }, { x: 0, y: 0, largura: 1440, altura: 900 }, { x: 10, y: 10, largura: 2, altura: 2 }];
+  for (const alvo of casos) assert.equal(pontosDoHolofote(alvo, JANELA).length, 13, JSON.stringify(alvo));
+  assert.match(recorteDoHolofote(null, JANELA), /^polygon\(evenodd, /);
+});
+
+test("sem alvo, o recorte fecha num ponto no centro", () => {
+  for (const [x, y] of pontosDoHolofote(null, JANELA).slice(5, 12)) assert.deepEqual([x, y], [720, 450]);
+});
+
+test("o recorte abraça o alvo com respiro e não sai da janela", () => {
+  const r = recorteDoAlvo({ x: 600, y: 300, largura: 200, altura: 40 }, JANELA);
+  assert.deepEqual(r, { x: 600 - RESPIRO, y: 300 - RESPIRO, largura: 200 + 2 * RESPIRO, altura: 40 + 2 * RESPIRO });
+  for (const [x, y] of pontosDoHolofote({ x: -50, y: -50, largura: 3000, altura: 3000 }, JANELA))
+    assert.ok(x >= 0 && x <= 1440 && y >= 0 && y <= 900, `${x},${y}`);
+});
+
+// --- Os capítulos ----------------------------------------------------------
+
+test("os capítulos do resultado herdam e somam o roteiro inteiro", () => {
+  const caps = capitulosDoRoteiro(PASSOS_DO_TOUR_DO_RESULTADO);
+  assert.deepEqual(caps.map((c) => c.nome), ["Resumo", "Trilho", "Achados", "Outras leituras"]);
+  assert.equal(caps.reduce((n, c) => n + c.total, 0), PASSOS_DO_TOUR_DO_RESULTADO.length);
+});
+
+test("pular capítulo cai no primeiro passo do seguinte; no último, não há para onde", () => {
+  const caps = capitulosDoRoteiro(PASSOS_DO_TOUR_DO_RESULTADO);
+  const onde = ondeEsta(caps, PASSOS_DO_TOUR_DO_RESULTADO.findIndex((p) => p.id === "busca"));
+  assert.equal(onde.capitulo.nome, "Achados");
+  assert.equal(onde.passo, 2);
+  assert.equal(PASSOS_DO_TOUR_DO_RESULTADO[onde.proximoCapitulo!].id, "relatorio");
+  assert.equal(ondeEsta(caps, PASSOS_DO_TOUR_DO_RESULTADO.length - 1).proximoCapitulo, null);
+});
+
+test("roteiro sem capítulo é um capítulo só", () => {
+  const caps = capitulosDoRoteiro(PASSOS_DO_TOUR);
+  assert.equal(caps.length, 1);
+  assert.equal(caps[0].total, PASSOS_DO_TOUR.length);
+});
+
+// Quem retoma no meio da fila não passou pelo clique em "Achados": o passo
+// tem de saber que vista pressupõe, senão aponta para o Resumo.
+test("todo passo do resultado sabe que vista pressupõe", () => {
+  const busca = PASSOS_DO_TOUR_DO_RESULTADO.findIndex((p) => p.id === "busca");
+  assert.equal(cliqueQueOPassoPressupoe(PASSOS_DO_TOUR_DO_RESULTADO, busca), '[data-tour="vista-findings"]');
+  PASSOS_DO_TOUR_DO_RESULTADO.forEach((_, i) => assert.ok(cliqueQueOPassoPressupoe(PASSOS_DO_TOUR_DO_RESULTADO, i), `passo ${i}`));
 });
 
 console.log(`\n${passed} testes ok`);

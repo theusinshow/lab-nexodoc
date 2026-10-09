@@ -35,6 +35,11 @@ export interface PassoDoTour {
   soSeExistir?: string;
   /** Elemento que ganha `data-tour-revelado` durante o passo: o que só aparece no hover fica à vista. */
   revelar?: string;
+  /**
+   * Abre uma parte do roteiro ("Achados"). Os passos seguintes herdam até o
+   * próximo que trouxer outro. Ver [[capitulos-do-tour.ts]].
+   */
+  capitulo?: string;
 }
 
 export const PASSOS_DO_TOUR: PassoDoTour[] = [

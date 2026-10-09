@@ -1,0 +1,181 @@
+/*
+ * O HOLOFOTE DO TOUR (09/10/2026). Ver [[TourDoNexo.tsx]] e [[holofote.ts]].
+ *
+ * A película é um backdrop: recebe o clique e encerra o tour. Por isso ela tem
+ * `backdrop-filter` (só `blur()`, como o `.pc-veu`: com `saturate()` e o prefixo
+ * `-webkit-` o build descartava a declaração inteira), que a DESIGN.md §4 reserva ao vidro do chrome e ao
+ * backdrop de modal. Uma camada só: o desfoque nunca vai elemento por elemento.
+ */
+
+.tour-pelicula {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgb(6 8 10 / 0.42);
+  backdrop-filter: blur(6px);
+  transition: clip-path var(--duration-slow) var(--ease-entrance);
+  animation: tour-pelicula-entra var(--duration-slow) var(--ease-entrance) both;
+}
+
+@keyframes tour-pelicula-entra {
+  from {
+    opacity: 0;
+  }
+}
+
+/* A borda do recorte: um fio claro em chanfro. Neutro, não teal — o teal é só
+   do que se clica ([[nexodoc-acento-unico]]), e o alvo muitas vezes é uma seção. */
+.tour-moldura {
+  position: fixed;
+  z-index: 60;
+  pointer-events: none;
+  opacity: 0;
+  background: color-mix(in oklab, var(--foreground) 42%, transparent);
+  clip-path: polygon(
+    evenodd,
+    8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px, 8px 0,
+    8.6px 1.5px, calc(100% - 1.5px) 1.5px, calc(100% - 1.5px) calc(100% - 8.6px),
+    calc(100% - 8.6px) calc(100% - 1.5px), 1.5px calc(100% - 1.5px), 1.5px 8.6px, 8.6px 1.5px,
+    8px 0
+  );
+  transition:
+    left var(--duration-slow) var(--ease-entrance),
+    top var(--duration-slow) var(--ease-entrance),
+    width var(--duration-slow) var(--ease-entrance),
+    height var(--duration-slow) var(--ease-entrance),
+    opacity var(--duration-base) var(--ease-feedback);
+}
+
+.tour-moldura[data-aceso] {
+  opacity: 1;
+}
+
+/* O balão. Some na troca de passo e entra depois que o recorte chegou. */
+.tour-balao {
+  position: fixed;
+  z-index: 61;
+  filter: drop-shadow(0 12px 32px rgb(0 0 0 / 0.45));
+  animation: tour-balao-entra var(--duration-base) var(--ease-entrance) 120ms both;
+}
+
+.tour-balao[data-centro] {
+  left: 50%;
+  top: 50%;
+  translate: -50% -50%;
+}
+
+@keyframes tour-balao-entra {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+.tour-balao-corpo {
+  --nx-fill: var(--card);
+  --nx-edge: var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px 16px;
+}
+
+.tour-balao-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.tour-balao-onde {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted-foreground);
+}
+
+.tour-balao-sair {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  margin: -4px -6px -4px 0;
+  border: 0;
+  background: none;
+  color: var(--muted-foreground);
+  cursor: pointer;
+}
+
+.tour-balao-sair:hover {
+  color: var(--foreground);
+}
+
+.tour-balao-sair:focus-visible {
+  outline: 1px solid var(--ring);
+  outline-offset: -1px;
+}
+
+/* Uma barra por capítulo, do tamanho do capítulo. */
+.tour-capitulos {
+  display: flex;
+  gap: 3px;
+  margin-bottom: 2px;
+}
+
+.tour-capitulo {
+  flex-basis: 0;
+  height: 2px;
+  overflow: hidden;
+  background: color-mix(in oklab, var(--foreground) 14%, transparent);
+}
+
+.tour-capitulo > span {
+  display: block;
+  height: 100%;
+  background: color-mix(in oklab, var(--foreground) 55%, transparent);
+  transition: width var(--duration-slow) var(--ease-entrance);
+}
+
+.tour-capitulo[data-atual] > span {
+  background: var(--foreground);
+}
+
+.tour-balao-titulo {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.25;
+  color: var(--foreground);
+}
+
+.tour-balao-texto {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--muted-foreground);
+}
+
+.tour-balao-acoes {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .tour-pelicula {
+    backdrop-filter: none;
+    background: rgb(6 8 10 / 0.72);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tour-pelicula,
+  .tour-moldura,
+  .tour-balao,
+  .tour-capitulo > span {
+    transition: none;
+    animation: none;
+  }
+}

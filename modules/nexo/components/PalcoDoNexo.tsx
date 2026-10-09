@@ -50,6 +50,7 @@ import { TrilhoDoResultado } from "@/components/telas/resultado/trilho";
 import { marcarDica, useDica } from "../lib/dicas-da-auditoria";
 import { PASSOS_DO_TOUR_DO_RESULTADO } from "../lib/passos-do-tour-do-resultado";
 import { ID_CONVERSA_EXEMPLO } from "../lib/projeto-exemplo";
+import { useRetomada } from "../lib/retomada-do-tour";
 import { TourDoNexo } from "./TourDoNexo";
 import { AuditoriaEmCurso } from "./AuditoriaEmCurso";
 import type { AberturaPorLink } from "./use-abrir-auditoria-por-link";
@@ -546,6 +547,8 @@ export function PalcoDoNexo({
    */
   const tourDoResultado = useDica("tour-do-resultado");
   const [tourPedido, setTourPedido] = useState(false);
+  // Quem saiu no meio (clique fora, Esc) volta ao passo em que estava.
+  const tourPelaMetade = Boolean(useRetomada("resultado"));
   const tourDoResultadoAberto =
     Boolean(report) &&
     mostrandoAuditoria &&
@@ -781,6 +784,7 @@ export function PalcoDoNexo({
                 /* Com o chat aberto ao lado, o botão não mudava nada na tela (R10). */
                 onPerguntar={areasDoPalco.chat ? perguntarAoNexo : undefined}
                 onTutorial={() => setTourPedido(true)}
+                tutorialPelaMetade={tourPelaMetade}
                 report={report}
                 total={totalDeAchados}
                 tratados={salvo?.auditId ? tratadosNoServidor : tratadosDesta}
@@ -799,6 +803,7 @@ export function PalcoDoNexo({
                   passos={PASSOS_DO_TOUR_DO_RESULTADO}
                   rotulo="Passo a passo do resultado da auditoria"
                   rotuloFinal="Entendi"
+                  roteiro="resultado"
                   aoSair={sairDoTourDoResultado}
                 />
               )}

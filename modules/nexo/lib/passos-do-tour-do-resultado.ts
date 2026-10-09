@@ -17,9 +17,10 @@ import type { PassoDoTour } from "./passos-do-tour.ts";
 export const PASSOS_DO_TOUR_DO_RESULTADO: PassoDoTour[] = [
   {
     id: "abertura",
+    capitulo: "Resumo",
     titulo: "O resultado da auditoria, parte por parte",
     corpo:
-      "Vou mostrar o que cada parte desta tela diz e o que cada botão faz. Nada é alterado no parecer durante o passo a passo. Setas do teclado andam, Esc sai.",
+      "Vou mostrar o que cada parte desta tela diz e o que cada botão faz. Nada é alterado no parecer durante o passo a passo. Setas do teclado andam; Esc ou um clique fora sai, e o botão de interrogação do trilho retoma de onde você parou.",
     clicarAntes: '[data-tour="vista-summary"]',
   },
 
@@ -89,6 +90,7 @@ export const PASSOS_DO_TOUR_DO_RESULTADO: PassoDoTour[] = [
   // --- O trilho -----------------------------------------------------------------
   {
     id: "anel",
+    capitulo: "Trilho",
     titulo: "O anel do veredito",
     corpo:
       "O ponto no meio tem a cor do veredito e o anel enche conforme os achados são tratados. Clique nele para o resumo completo: linha do tempo da auditoria, páginas e achados por nível.",
@@ -123,6 +125,7 @@ export const PASSOS_DO_TOUR_DO_RESULTADO: PassoDoTour[] = [
   // --- A fila -------------------------------------------------------------------
   {
     id: "fila",
+    capitulo: "Achados",
     titulo: "A fila de achados",
     corpo: "À esquerda a lista, à direita o achado escolhido. É aqui que cada achado é tratado, um de cada vez.",
     alvo: '[data-tour="palco-do-resultado"]',
@@ -240,6 +243,7 @@ export const PASSOS_DO_TOUR_DO_RESULTADO: PassoDoTour[] = [
   // --- As outras leituras ---------------------------------------------------------
   {
     id: "relatorio",
+    capitulo: "Outras leituras",
     titulo: "Relatório",
     corpo:
       "O parecer em texto corrido, seção por seção. \"Copiar o texto\" leva tudo para colar num e-mail ou num documento.",

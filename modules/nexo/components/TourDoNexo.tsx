@@ -1,37 +1,50 @@
 "use client";
 
 /**
- * O TOUR GUIADO: balão ancorado + anel no alvo, caminhando por um projeto de
- * exemplo real.
+ * O TOUR GUIADO: holofote no alvo + balão ao lado, caminhando pela tela real.
  *
- * Não é modal (DESIGN.md §11 manda esgotar o inline antes): a tela não é
- * escurecida nem bloqueada — o anel destaca o alvo, o balão explica ao lado, e
- * o app continua ali, vivo, atrás. Quem quiser sair sai com Esc.
+ * O HOLOFOTE (09/10/2026, pedido do Matheus: "desfocar as seções que não
+ * importam, focar na objetiva"). Uma película só cobre a janela, desfocada e
+ * escurecida, com um recorte em chanfro no alvo — o que o passo explica fica
+ * nítido e clicável, o resto recua. O recorte desliza de um alvo ao outro; o
+ * passo que troca de vista fecha o recorte, troca, e reabre. Geometria em
+ * [[holofote.ts]], desenho em docs/superpowers/specs/2026-10-09-holofote-do-tour-design.md.
+ *
+ * NÃO PRENDE: clique na película encerra, como Esc. O passo em que a pessoa
+ * saiu fica guardado ([[retomada-do-tour.ts]]) e o tour reabre nele.
  *
  * O tour DIRIGE a tela clicando nos mesmos controles que o usuário clicaria
  * (`clicarAntes`), em vez de mexer no estado por dentro: o que ele mostra é o
  * comportamento de verdade, e não uma encenação que pode divergir do produto.
  */
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { X } from "lucide-react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { capitulosDoRoteiro, cliqueQueOPassoPressupoe, ondeEsta } from "../lib/capitulos-do-tour";
+import { recorteDoAlvo, recorteDoHolofote } from "../lib/holofote";
 import { posicaoDoBalao, type Retangulo } from "../lib/posicao-do-balao";
 import { PASSOS_DO_TOUR, type PassoDoTour } from "../lib/passos-do-tour";
+import { esquecerRetomada, guardarRetomada, lerRetomada } from "../lib/retomada-do-tour";
+
+import "./tour-do-nexo.css";
 
 const LARGURA_BALAO = 340;
 /** Quadros (~1 s) esperando um alvo nascer antes de o balão desistir dele e ir para o centro. */
 const QUADROS_DE_ESPERA = 60;
 /** Quanto um passo com `soSeExistir` espera o que explica entrar na tela antes de ser pulado. */
 const ESPERA_DO_ALVO_MS = 2500;
+/** O recorte fechado antes de reabrir numa vista nova: o `--duration-slow` da película. */
+const TROCA_DE_VISTA_MS = 240;
 
 export function TourDoNexo({
   aoSair,
   passos = PASSOS_DO_TOUR,
   rotulo = "Passo a passo do Nexo",
   rotuloFinal = "Começar",
+  roteiro,
 }: {
   aoSair: () => void;
   /** O roteiro; o padrão é o do primeiro contato. O resultado da auditoria tem o dele. */
@@ -39,27 +52,55 @@ export function TourDoNexo({
   rotulo?: string;
   /** O botão do último passo. */
   rotuloFinal?: string;
+  /** Nome do roteiro para guardar onde a pessoa parou. Sem ele, todo tour começa do início. */
+  roteiro?: string;
 }) {
-  const [indice, setIndice] = useState(0);
+  const [indice, setIndice] = useState(() => {
+    if (!roteiro) return 0;
+    const guardado = lerRetomada(roteiro);
+    return Math.max(0, passos.findIndex((p) => p.id === guardado));
+  });
   /** O sentido do último passo dado: um passo pulado (`soSeExistir`) segue no mesmo sentido. */
   const sentido = useRef<1 | -1>(1);
+  /** Chegou ao passo por salto (retomada, voltar, pular capítulo): refaz o clique de vista que o caminho faria. */
+  const saltou = useRef(indice > 0);
   /** O passo cuja tela já está pronta: até lá o balão não aparece (um passo que vai ser pulado não pisca). */
   const [pronto, setPronto] = useState<number | null>(null);
+  /** O passo já medido: o balão aparece no lugar dele, nunca no do anterior. */
+  const [medido, setMedido] = useState<number | null>(null);
   const [alvo, setAlvo] = useState<Retangulo | null>(null);
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
+  const [janela, setJanela] = useState(() =>
+    typeof window === "undefined" ? { largura: 0, altura: 0 } : { largura: window.innerWidth, altura: window.innerHeight },
+  );
   const balaoRef = useRef<HTMLDivElement | null>(null);
 
   const passo = passos[indice];
   const ultimo = indice === passos.length - 1;
+  const capitulos = useMemo(() => capitulosDoRoteiro(passos), [passos]);
+  const onde = ondeEsta(capitulos, indice);
+  const comCapitulos = capitulos.length > 1;
 
   // Pela ref: quem chama pode passar uma função nova a cada render, e o clique do passo não pode repetir por isso.
   const aoSairRef = useRef(aoSair);
+  const passoRef = useRef(passo);
   useEffect(() => {
     aoSairRef.current = aoSair;
+    passoRef.current = passo;
   });
-  const sair = useCallback(() => {
-    aoSairRef.current();
-  }, []);
+  /** `terminou`: chegou ao fim (ou não sobrou passo). Senão, guarda onde parou. */
+  const encerrar = useCallback(
+    (terminou: boolean) => {
+      if (roteiro) {
+        const id = passoRef.current.id;
+        if (terminou || id === passos[0].id) esquecerRetomada(roteiro);
+        else guardarRetomada(roteiro, id);
+      }
+      aoSairRef.current();
+    },
+    [roteiro, passos],
+  );
+  const sair = useCallback(() => encerrar(false), [encerrar]);
 
   // O clique que leva a tela ao estado do passo. Roda ANTES de medir: medir um
   // alvo que só nasce depois do clique devolveria zero.
@@ -67,10 +108,13 @@ export function TourDoNexo({
     let vivo = true;
     let espera = 0;
     const comecar = () => {
+      const clique = saltou.current ? cliqueQueOPassoPressupoe(passos, indice) : passo.clicarAntes;
+      saltou.current = false;
+      // O recorte fecha durante a troca de vista: a tela pulando atrás do holofote não é o que se quer mostrar.
+      if (passo.clicarAntes) setAlvo(null);
       setPronto(indice);
-      if (!passo.clicarAntes) return;
-      const controle = document.querySelector<HTMLElement>(passo.clicarAntes);
-      controle?.click();
+      if (!clique) return;
+      document.querySelector<HTMLElement>(clique)?.click();
     };
     if (!passo.soSeExistir) {
       comecar();
@@ -93,14 +137,14 @@ export function TourDoNexo({
       }
       const proximo = indice + sentido.current;
       if (proximo >= 0 && proximo < passos.length) setIndice(proximo);
-      else sair();
+      else encerrar(true);
     };
     procurar();
     return () => {
       vivo = false;
       window.clearTimeout(espera);
     };
-  }, [passo, indice, passos.length, sair]);
+  }, [passo, indice, passos, encerrar]);
 
   // O que só aparece no hover (as ações da linha) fica à vista enquanto o passo fala dele.
   useEffect(() => {
@@ -119,6 +163,7 @@ export function TourDoNexo({
   useLayoutEffect(() => {
     let vivo = true;
     let quadro = 0;
+    let atraso = 0;
     let tentativas = 0;
     let rolou = false;
 
@@ -127,9 +172,11 @@ export function TourDoNexo({
 
     const medir = () => {
       if (!vivo) return;
+      setJanela({ largura: window.innerWidth, altura: window.innerHeight });
       if (!passo.alvo) {
         setAlvo(null);
         setPos(null);
+        setMedido(indice);
         return;
       }
       const el = document.querySelector(passo.alvo);
@@ -141,6 +188,7 @@ export function TourDoNexo({
         else {
           setAlvo(null);
           setPos(null);
+          setMedido(indice);
         }
         return;
       }
@@ -154,37 +202,56 @@ export function TourDoNexo({
       const r = el.getBoundingClientRect();
       const retangulo = { x: r.left, y: r.top, largura: r.width, altura: r.height };
       setAlvo(retangulo);
-      const alturaBalao = balaoRef.current?.offsetHeight ?? 180;
+      const alturaBalao = balaoRef.current?.offsetHeight ?? 200;
       setPos(
         posicaoDoBalao(
-          retangulo,
+          // O balão se afasta do RECORTE, não do alvo: senão encosta na borda nítida.
+          recorteDoAlvo(retangulo, { largura: window.innerWidth, altura: window.innerHeight }),
           { largura: LARGURA_BALAO, altura: alturaBalao },
           { largura: window.innerWidth, altura: window.innerHeight },
           passo.lado ?? "abaixo",
         ),
       );
+      setMedido(indice);
+    };
+    const remedir = () => {
+      cancelAnimationFrame(quadro);
+      quadro = requestAnimationFrame(medir);
     };
 
-    // Um quadro de espera: o clique do passo anterior pode ter trocado a vista.
-    quadro = requestAnimationFrame(medir);
-    window.addEventListener("resize", medir);
+    // Vista nova: o recorte termina de fechar antes de reabrir. Senão, um quadro de espera.
+    if (passo.clicarAntes) atraso = window.setTimeout(remedir, TROCA_DE_VISTA_MS);
+    else quadro = requestAnimationFrame(medir);
+    window.addEventListener("resize", remedir);
+    // Rolagem de qualquer painel (captura): o recorte acompanha o alvo.
+    window.addEventListener("scroll", remedir, true);
     return () => {
       vivo = false;
       cancelAnimationFrame(quadro);
-      window.removeEventListener("resize", medir);
+      window.clearTimeout(atraso);
+      window.removeEventListener("resize", remedir);
+      window.removeEventListener("scroll", remedir, true);
     };
   }, [passo, pronto, indice]);
 
   const avancar = useCallback(() => {
     sentido.current = 1;
-    if (ultimo) sair();
+    if (ultimo) encerrar(true);
     else setIndice((i) => i + 1);
-  }, [ultimo, sair]);
+  }, [ultimo, encerrar]);
 
   const voltar = useCallback(() => {
     sentido.current = -1;
+    saltou.current = true;
     setIndice((i) => Math.max(0, i - 1));
   }, []);
+
+  const pularCapitulo = useCallback(() => {
+    if (onde.proximoCapitulo === null) return;
+    sentido.current = 1;
+    saltou.current = true;
+    setIndice(onde.proximoCapitulo);
+  }, [onde.proximoCapitulo]);
 
   useEffect(() => {
     const aoTeclar = (e: KeyboardEvent) => {
@@ -196,72 +263,105 @@ export function TourDoNexo({
     return () => window.removeEventListener("keydown", aoTeclar);
   }, [avancar, voltar, sair]);
 
-  const estiloDoBalao = pos
-    ? { left: pos.x, top: pos.y }
-    : {
-        left: "50%",
-        top: "50%",
-        transform: "translate(-50%, -50%)",
-      };
+  const visivel = pronto === indice && medido === indice;
+  const alvoVisivel = visivel ? alvo : passo.clicarAntes ? null : alvo;
+  const moldura = alvoVisivel ? recorteDoAlvo(alvoVisivel, janela) : null;
 
   /*
    * NO BODY, por portal: dentro do `.ds` (o resultado da auditoria) o `zoom`
-   * de 1.125 multiplicaria `left`/`top`, e o balão andaria 12,5% longe do alvo
-   * medido pela janela.
+   * de 1.125 multiplicaria `left`/`top`, e o recorte andaria 12,5% longe do
+   * alvo medido pela janela.
    */
   if (typeof document === "undefined") return null;
   return createPortal(
     <>
       {/*
-        O anel do alvo. `pointer-events-none` para não roubar o clique do que
-        está embaixo: durante o tour a aplicação continua utilizável.
+        A película. Recebe o clique de fora do recorte e encerra; dentro do
+        recorte ela não existe, e o alvo continua clicável.
       */}
-      {alvo && pronto === indice && (
-        <div
-          aria-hidden
-          data-tour-anel
-          className="pointer-events-none fixed z-[60] rounded-md border border-[var(--ring)] transition-[top,left,width,height] duration-200 ease-out motion-reduce:transition-none"
-          style={{
-            left: alvo.x - 4,
-            top: alvo.y - 4,
-            width: alvo.largura + 8,
-            height: alvo.altura + 8,
-            boxShadow: "0 0 0 4px color-mix(in oklab, var(--ring) 25%, transparent)",
-          }}
-        />
-      )}
+      <div
+        aria-hidden
+        data-tour-pelicula
+        className="tour-pelicula"
+        style={{ clipPath: recorteDoHolofote(alvoVisivel, janela) }}
+        onPointerDown={sair}
+      />
+      <div
+        aria-hidden
+        data-tour-anel
+        className="tour-moldura"
+        data-aceso={moldura ? "" : undefined}
+        style={
+          moldura
+            ? { left: moldura.x, top: moldura.y, width: moldura.largura, height: moldura.altura }
+            : { left: janela.largura / 2, top: janela.altura / 2, width: 0, height: 0 }
+        }
+      />
 
       <div
+        key={`${indice}-${visivel ? "v" : "h"}`}
         ref={balaoRef}
         role="dialog"
         aria-label={rotulo}
         data-tour-balao
-        className={cn(
-          "fixed z-[61] flex flex-col gap-2 rounded-md border border-border bg-card p-4",
-          "shadow-[var(--shadow-overlay)] transition-[top,left] duration-200 ease-out motion-reduce:transition-none",
-        )}
-        style={{ width: LARGURA_BALAO, ...estiloDoBalao, visibility: pronto === indice ? undefined : "hidden" }}
+        data-centro={pos ? undefined : ""}
+        className="tour-balao"
+        style={{ width: LARGURA_BALAO, ...(pos ? { left: pos.x, top: pos.y } : null), visibility: visivel ? undefined : "hidden" }}
       >
-        <p className="font-mono text-xs font-medium uppercase tabular-nums tracking-[0.05em] text-muted-foreground">
-          {indice + 1} de {passos.length}
-        </p>
-        <h2 className="text-base font-medium leading-tight">{passo.titulo}</h2>
-        <p className="text-sm leading-relaxed text-muted-foreground">{passo.corpo}</p>
+        <div className="tour-balao-corpo nx-edge-8">
+          <div className="tour-balao-topo">
+            <p className="tour-balao-onde" data-tour-onde>
+              {comCapitulos && onde.capitulo.nome ? (
+                <>
+                  {onde.capitulo.nome} · {onde.passo} de {onde.capitulo.total}
+                </>
+              ) : (
+                <>
+                  {indice + 1} de {passos.length}
+                </>
+              )}
+            </p>
+            <button type="button" className="tour-balao-sair" aria-label="Sair do passo a passo" onClick={sair}>
+              <X size={14} aria-hidden />
+            </button>
+          </div>
 
-        <div className="mt-1 flex items-center gap-2">
-          <Button size="sm" onClick={avancar} data-tour-proximo>
-            {ultimo ? rotuloFinal : "Próximo"}
-          </Button>
-          {indice > 0 && !ultimo && (
-            <Button size="sm" variant="ghost" onClick={voltar}>
-              Voltar
+          <div className="tour-capitulos" aria-hidden>
+            {(comCapitulos ? capitulos : [{ nome: "", inicio: 0, total: passos.length }]).map((c, k) => {
+              const feito = Math.min(c.total, Math.max(0, indice - c.inicio + 1));
+              return (
+                <span key={c.inicio} className="tour-capitulo" style={{ flexGrow: c.total }} data-atual={comCapitulos && k === onde.ordem ? "" : undefined}>
+                  <span style={{ width: `${(feito / c.total) * 100}%` }} />
+                </span>
+              );
+            })}
+          </div>
+
+          <h2 className="tour-balao-titulo">{passo.titulo}</h2>
+          <p className="tour-balao-texto">{passo.corpo}</p>
+
+          <div className="tour-balao-acoes">
+            <Button size="sm" onClick={avancar} data-tour-proximo>
+              {ultimo ? rotuloFinal : "Próximo"}
             </Button>
-          )}
-          {!ultimo && (
-            <Button size="sm" variant="ghost" className="ml-auto" onClick={sair}>
-              Pular
-            </Button>
-          )}
+            {indice > 0 && !ultimo && (
+              <Button size="sm" variant="ghost" onClick={voltar}>
+                Voltar
+              </Button>
+            )}
+            {!ultimo &&
+              (comCapitulos ? (
+                onde.proximoCapitulo !== null && (
+                  <Button size="sm" variant="ghost" className="ml-auto" onClick={pularCapitulo} data-tour-pular-capitulo>
+                    Pular capítulo
+                  </Button>
+                )
+              ) : (
+                <Button size="sm" variant="ghost" className="ml-auto" onClick={sair}>
+                  Pular
+                </Button>
+              ))}
+          </div>
         </div>
       </div>
     </>,

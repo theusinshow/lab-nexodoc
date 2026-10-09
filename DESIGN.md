@@ -440,6 +440,13 @@ contraste: texto ≥4,5:1 mesmo com conteúdo rolando atrás.
 **Por quê essa fronteira:** premium é precisão mais alguns momentos ambientais —
 não vidro em tudo. Borrão sobre dado é o oposto do que este produto vende.
 
+**O holofote do tour é backdrop** (emenda de 09/10/2026). Durante o passo a passo,
+uma película desfoca a tela inteira menos um recorte em chanfro no alvo do passo.
+Ela entra como backdrop de modal, não como vidro: recebe o clique (que encerra o
+tour) e o borrão ali é o ponto, porque diz "isto não é o que se explica agora".
+Só `blur()`, sem `saturate()` nem prefixo (o build descartava a declaração).
+Spec: `docs/superpowers/specs/2026-10-09-holofote-do-tour-design.md`.
+
 **O que a linha d'água protege é a LEGIBILIDADE, não a ausência de textura**
 (emenda de 15/08/2026). Fundo **animado** continua sendo cromo e não desce
 abaixo da linha. Fundo **estático** e sem borrão — a grade de pontos do

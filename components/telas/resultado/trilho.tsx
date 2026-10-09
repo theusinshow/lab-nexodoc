@@ -72,9 +72,12 @@ export function TrilhoDoResultado({
   compacto = false,
   onPerguntar,
   onTutorial,
+  tutorialPelaMetade = false,
 }: {
   /** Abre o passo a passo desta tela (cada parte e cada botão). */
   onTutorial?: () => void;
+  /** A pessoa saiu do passo a passo no meio: o botão retoma de onde ela parou. */
+  tutorialPelaMetade?: boolean;
   /** Leva à conversa desta auditoria, com o campo pronto para a pergunta. */
   onPerguntar?: () => void;
   /**
@@ -201,13 +204,20 @@ export function TrilhoDoResultado({
           </button>
         </Dica>
         {onTutorial && (
-          <Dica texto="Como usar esta tela: o que cada parte e cada botão faz" lado="esquerda">
-            <button type="button" className="re-acao" data-tour="tour-do-resultado" aria-label={compacto ? "Como usar esta tela" : undefined} onClick={onTutorial}>
+          <Dica texto={tutorialPelaMetade ? "Continuar o passo a passo de onde parei" : "Como usar esta tela: o que cada parte e cada botão faz"} lado="esquerda">
+            <button
+              type="button"
+              className="re-acao"
+              data-tour="tour-do-resultado"
+              data-pela-metade={tutorialPelaMetade ? "" : undefined}
+              aria-label={compacto ? (tutorialPelaMetade ? "Continuar de onde parei" : "Como usar esta tela") : undefined}
+              onClick={onTutorial}
+            >
               <CircleHelp aria-hidden />
               {!compacto && (
                 <span>
-                  Como usar esta tela
-                  <small>cada parte e cada botão</small>
+                  {tutorialPelaMetade ? "Continuar de onde parei" : "Como usar esta tela"}
+                  <small>{tutorialPelaMetade ? "o passo a passo desta tela" : "cada parte e cada botão"}</small>
                 </span>
               )}
             </button>
