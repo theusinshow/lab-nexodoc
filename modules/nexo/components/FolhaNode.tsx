@@ -303,7 +303,7 @@ export function FolhaNode({ data, selected }: NodeProps<Node<FolhaNodeData>>) {
                 ? "Esta folha foi criada à mão: não existe PDF para abrir."
                 : data.podeAbrir
                   ? "Abre a página original desta prancha em outra aba."
-                  : "Os PDFs anexados não ficam guardados. Reanexe as pranchas para ver a página."
+                  : "Esta prancha não está guardada no projeto. Solte o PDF de novo para ver a página."
             }
             desabilitado={!data.podeAbrir}
             onClick={() => data.onAbrir(data.id)}
