@@ -415,6 +415,7 @@
   background: linear-gradient(140deg, #3a3d52, #23252e);
 }
 .ds .ds-avatar--xs { width: 20px; height: 20px; font-size: 8.5px; }
+.ds .ds-avatar--lg { width: 40px; height: 40px; font-size: 13px; letter-spacing: 0.02em; }
 /*
  * A EQUIPE NO AVATAR (lib/cor-da-pessoa.ts): as cores das disciplinas, cheias, com
  * iniciais escuras — tom apagado some em 20px (medido no atribuidor, 08/10). O admin ganha um anel na cor da própria

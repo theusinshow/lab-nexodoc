@@ -379,9 +379,8 @@ function MenuDaConta({ dados }: { dados: DadosDaMoldura }) {
         {aberto && (
           <Painel ref={painel} andar={andar} rotulo="Conta" classe="pn-menu">
             <div className="pn-menu-quem">
-              <span className="pn-menu-avatar" aria-hidden>
-                {u.iniciais}
-              </span>
+              {/* O MESMO avatar da pílula, maior: era um <span> à parte e ficava cinza (08/10). */}
+              <Avatar iniciais={u.iniciais} grande cor={corDaPessoa({ grupo: u.grupo, role: u.papelNoEscritorio })} />
               <span className="pn-menu-nome">
                 <b>{u.nome}</b>
                 <small className="mp-mono">{u.email}</small>

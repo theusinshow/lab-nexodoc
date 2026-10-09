@@ -191,8 +191,19 @@ export function Tecla({ children }: { children: ReactNode }) {
 }
 
 /** `cor` sai de `corDaPessoa` (lib/cor-da-pessoa.ts): o tom do grupo técnico e o anel de admin. */
-export function Avatar({ iniciais, pequeno, cor }: { iniciais: string; pequeno?: boolean; cor?: CorDaPessoa }) {
-  const cls = ["ds-avatar", pequeno && "ds-avatar--xs", cor?.tom && `ds-avatar--${cor.tom}`, cor?.admin && "ds-avatar--admin"]
+export function Avatar({
+  iniciais,
+  pequeno,
+  grande,
+  cor,
+}: {
+  iniciais: string;
+  pequeno?: boolean;
+  /** 40px: o do menu da conta. */
+  grande?: boolean;
+  cor?: CorDaPessoa;
+}) {
+  const cls = ["ds-avatar", pequeno && "ds-avatar--xs", grande && "ds-avatar--lg", cor?.tom && `ds-avatar--${cor.tom}`, cor?.admin && "ds-avatar--admin"]
     .filter(Boolean)
     .join(" ");
   return (
