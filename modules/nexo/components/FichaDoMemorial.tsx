@@ -14,13 +14,26 @@ import { useRef, useState } from "react";
 import { ROTULOS_DO_MEMORIAL, type CampoDoMemorial, type FichaDoMemorial, type LinhaDoMemorial } from "../lib/ficha-do-memorial";
 import { useCorrecaoDoMemorial } from "../state/correcao-do-memorial";
 
+/**
+ * A PROCEDÊNCIA que vale dizer (09/10/2026). Capa e arquivo são o esperado e
+ * ficam calados; o projeto e o texto do memorial não: o texto é só sugestão —
+ * no 040-26 o rodapé trazia a obra de outro projeto.
+ */
+const PROCEDENCIA: Partial<Record<NonNullable<LinhaDoMemorial["origem"]>, string>> = {
+  projeto: "do projeto",
+  corpo: "do texto — confira",
+};
+
 function Linha({
   linha,
+  semCapa,
   onSalvar,
 }: {
   linha: LinhaDoMemorial;
+  semCapa: boolean;
   onSalvar: ((campo: CampoDoMemorial, valor: string) => void) | null;
 }) {
+  const procedencia = !linha.corrigido && linha.origem ? PROCEDENCIA[linha.origem] : undefined;
   const rotulo = ROTULOS_DO_MEMORIAL[linha.campo];
   const [editando, setEditando] = useState(false);
   const [rascunho, setRascunho] = useState("");
@@ -66,10 +79,19 @@ function Linha({
           />
         ) : (
           <>
-            {linha.valor ? <span className="nx-ficha-valor">{linha.valor}</span> : <span className="nx-ficha-vazio">não veio na capa</span>}
-            {linha.corrigido && <span className="nx-ficha-corrigido">corrigido</span>}
+            {linha.valor ? (
+              <span className="nx-ficha-valor">{linha.valor}</span>
+            ) : (
+              <span className="nx-ficha-vazio">{semCapa ? "a capa vem no geral — preencha se souber" : "não veio na capa"}</span>
+            )}
+            {linha.corrigido && <span className="nx-ficha-corrigido">{linha.origem === "usuario" ? "você preencheu" : "corrigido"}</span>}
+            {procedencia && linha.valor && (
+              <span className="nx-ficha-procedencia" title={linha.fonte}>
+                {procedencia}
+              </span>
+            )}
             {/* O nome da obra é a régua da auditoria: o selo pede o olhar antes do clique. */}
-            {linha.campo === "obra" && !linha.corrigido && <span className="ds-pill ds-pill--decide nx-ficha-confira">confira</span>}
+            {linha.campo === "obra" && !linha.corrigido && linha.valor && <span className="ds-pill ds-pill--decide nx-ficha-confira">confira</span>}
           </>
         )}
       </dd>
@@ -110,7 +132,7 @@ export function FichaDoMemorialCard({ mensagemId, ficha }: { mensagemId: string;
       </header>
       <dl className="nx-ficha-linhas">
         {ficha.linhas.map((l) => (
-          <Linha key={l.campo} linha={l} onSalvar={onSalvar} />
+          <Linha key={l.campo} linha={l} semCapa={Boolean(ficha.semCapa)} onSalvar={onSalvar} />
         ))}
       </dl>
       {ficha.divergencia && (

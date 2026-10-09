@@ -129,6 +129,8 @@ export function NexoChat({
     codigo?: string | null;
     /** Endereço da caracterização da obra — distingue obras de mesmo nome. */
     endereco?: string | null;
+    /** De onde veio a obra (capa, projeto, corpo, usuário) — o cartão diz. */
+    origemDaObra?: string | null;
   } | null;
   /** Anexos com preview imediato (imagem/PDF). */
   attachments?: Attachment[];

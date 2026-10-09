@@ -350,6 +350,8 @@
 .ds .nx-ficha-valor { min-width: 0; overflow-wrap: anywhere; }
 .ds .nx-ficha-vazio { font-size: var(--ds-text-xs); font-style: italic; color: var(--ds-text-tertiary); }
 .ds .nx-ficha-corrigido { flex: none; font-size: 11px; color: var(--ds-state-ok); }
+/* De onde veio o valor quando não é a capa (09/10/2026): projeto ou texto. Cinza — teal é só do interativo. */
+.ds .nx-ficha-procedencia { flex: none; font-size: 11px; color: var(--ds-text-tertiary); }
 .ds .nx-ficha-acoes { display: inline-flex; gap: 2px; }
 .ds .nx-ficha-botao { display: inline-grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 0; border-radius: var(--ds-radius-control); background: none; color: var(--ds-text-tertiary); cursor: pointer; opacity: 0.55; transition: opacity 0.15s, color 0.15s, background 0.15s; }
 .ds .nx-ficha-linha:hover .nx-ficha-botao, .ds .nx-ficha-botao:focus-visible, .ds .nx-ficha-linha[data-editando] .nx-ficha-botao { opacity: 1; }

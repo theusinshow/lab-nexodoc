@@ -13,6 +13,7 @@
  *
  * Módulo puro (sem React, imports relativos): os testes rodam em node cru.
  */
+import type { OrigemNaFicha } from "../../../lib/escada-da-identidade.ts";
 import type { NexoDossieDraft } from "../types";
 
 /** Os campos que a capa do memorial traz, na ordem da capa. */
@@ -46,6 +47,10 @@ export interface LinhaDoMemorial {
   valor: string | null;
   /** Corrigido à mão nesta conversa — a ficha diz isso na linha. */
   corrigido?: boolean;
+  /** De onde veio o valor (09/10/2026). Ausente em fichas gravadas antes. */
+  origem?: OrigemNaFicha;
+  /** O arquivo que provou, quando a origem é o projeto. */
+  fonte?: string;
 }
 
 export interface FichaDoMemorial {
@@ -53,6 +58,8 @@ export interface FichaDoMemorial {
   linhas: LinhaDoMemorial[];
   /** Código da capa × nome do arquivo, quando divergem. */
   divergencia?: string;
+  /** O memorial não tinha capa (disciplina): a linha vazia convida a preencher. */
+  semCapa?: true;
 }
 
 /** O valor de cada campo no dossiê. O bairro é o da CAPA (ver NexoWorkspace). */
@@ -69,7 +76,15 @@ export function fichaDoMemorial(
 ): FichaDoMemorial {
   return {
     arquivo,
-    linhas: CAMPOS_DO_MEMORIAL.map((campo) => ({ campo, valor: valorNoDossie(dossie, campo) })),
+    linhas: CAMPOS_DO_MEMORIAL.map((campo) => {
+      const o = dossie?.origens?.[campo];
+      return {
+        campo,
+        valor: valorNoDossie(dossie, campo),
+        ...(o ? { origem: o.origem, ...(o.fonte ? { fonte: o.fonte } : {}) } : {}),
+      };
+    }),
+    ...(dossie && !dossie.capa ? { semCapa: true as const } : {}),
     ...(divergencia ? { divergencia } : {}),
   };
 }
@@ -80,7 +95,7 @@ export function corrigirFicha(ficha: FichaDoMemorial, campo: CampoDoMemorial, va
   if (!limpo) return ficha;
   return {
     ...ficha,
-    linhas: ficha.linhas.map((l) => (l.campo === campo ? { campo, valor: limpo, corrigido: true } : l)),
+    linhas: ficha.linhas.map((l) => (l.campo === campo ? { campo, valor: limpo, corrigido: true, origem: "usuario" as const } : l)),
   };
 }
 
@@ -96,7 +111,12 @@ export function corrigirDossie(
 ): NexoDossieDraft | null {
   const limpo = valor.trim();
   if (!dossie || !limpo) return dossie ?? null;
-  const proximo: NexoDossieDraft = { ...dossie, [campo]: limpo };
+  const proximo: NexoDossieDraft = {
+    ...dossie,
+    [campo]: limpo,
+    // O cartão da auditoria diz "preenchida por você" a partir daqui.
+    origens: { ...dossie.origens, [campo]: { origem: "usuario" } },
+  };
   if (campo === "bairro" && dossie.capa) proximo.capa = { ...dossie.capa, bairro: limpo };
   return proximo;
 }

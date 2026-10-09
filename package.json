@@ -226,6 +226,7 @@
     "test:com-prazo": "node scripts/test-com-prazo.ts",
     "test:identidade-do-parecer": "node scripts/test-identidade-do-parecer.ts",
     "test:identidade-sem-capa": "node scripts/test-identidade-sem-capa.ts",
+    "medir:memorial-sem-capa": "node --import ./scripts/lib/resolver-de-imports.mjs scripts/medir-memorial-sem-capa.mjs",
     "test:diff-de-pareceres": "node scripts/test-diff-de-pareceres.ts",
     "prova:texto-do-pdf": "node scripts/prova-texto-do-pdf.ts",
     "prova:conferente-certeza": "node --import ./scripts/lib/resolver-de-imports.mjs scripts/prova-conferente-certeza.ts",

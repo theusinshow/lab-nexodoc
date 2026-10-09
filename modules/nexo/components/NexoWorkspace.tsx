@@ -14,6 +14,8 @@ import { plural } from "@/lib/plural";
 import { retirarEntrega } from "@/lib/entrega-ao-nexo";
 import type { NexoDossieDraft, NexoSlotSuggestion } from "../types";
 import { vincularProjetoDaConversa } from "../lib/projeto-da-auditoria";
+import { camposDaCapaNoDossie, fraseDaConferencia, gravarIdentidadeNoProjeto } from "../lib/identidade-no-projeto";
+import { formatarEmBrasilia } from "@/lib/fuso-de-brasilia";
 import {
   extractSelosFromFiles,
   extractSeloFromImage,
@@ -1057,7 +1059,7 @@ function NexoWorkspaceInner({
     /* Código da capa × nome do arquivo: o nome manda, mas a divergência se vê. */
     const divergencia = dossie?.arquivos
       .find((a) => a.tipo === "memorial")
-      ?.sinais.find((s) => s.startsWith("código da capa"));
+      ?.sinais.find((s) => s.startsWith("código da capa") || s.startsWith("código do corpo"));
 
     /*
      * O ELO QUE FALTAVA.
@@ -1141,6 +1143,22 @@ function NexoWorkspaceInner({
         });
 
         if (v.tipo === "vinculado") conv.vincularProjeto(v.projeto.id);
+
+        /*
+         * A CAPA DO GERAL VIRA A VERDADE DO PROJETO (09/10/2026). Só o que a
+         * capa disse sobe; a resposta traz a conferência das auditorias já
+         * feitas, e a divergência é dita aqui, onde o geral acabou de chegar.
+         */
+        const projetoDaCapa = v.tipo === "vinculado" ? v.projeto.id : v.tipo === "manter" ? conv.projectId : null;
+        if (projetoDaCapa && dossie?.capa) {
+          const r = await gravarIdentidadeNoProjeto(projetoDaCapa, {
+            origem: "capa",
+            fonte: `${memorial.name} p.1`,
+            campos: camposDaCapaNoDossie(dossie),
+          });
+          const frase = r && fraseDaConferencia(r, (iso) => formatarEmBrasilia(iso, { day: "2-digit", month: "2-digit" }));
+          if (frase) conv.appendMessage({ id: crypto.randomUUID(), role: "assistant", content: frase });
+        }
 
         if (v.tipo === "conflito") {
           /*
@@ -2896,6 +2914,14 @@ function NexoWorkspaceInner({
     }
     const patch = patchDaIdentidade(campo, valor);
     if (patch) conv.corrigirIdentidade(patch);
+    /* O que o usuário digitou também vale para o projeto — abaixo da capa do geral. */
+    if (conv.projectId) {
+      void gravarIdentidadeNoProjeto(conv.projectId, {
+        origem: "usuario",
+        fonte: `ficha de ${mensagem.fichaDoMemorial.arquivo}`,
+        campos: { [campo]: valor.trim() },
+      }).catch(() => {});
+    }
     const rotulo = COM_ARTIGO[campo];
     conv.appendMessage({
       id: crypto.randomUUID(),
@@ -3284,6 +3310,7 @@ function NexoWorkspaceInner({
                     municipio: dossie?.municipio ?? null,
                     codigo: dossie?.codigo ?? null,
                     endereco: dossie?.caracterizacao?.endereco ?? null,
+                    origemDaObra: dossie?.origens?.obra?.origem ?? null,
                   }
                 : null
             }

@@ -313,6 +313,8 @@ export function ConfirmationCard({
     codigo?: string | null;
     /** Endereço da caracterização da obra — distingue obras de mesmo nome. */
     endereco?: string | null;
+    /** De onde veio a obra (capa, projeto, corpo, usuário) — o cartão diz. */
+    origemDaObra?: string | null;
   } | null;
   /** A mensagem que trouxe a proposta: dá à auditoria um resultado por rodada. */
   mensagemId?: string;
@@ -1660,14 +1662,14 @@ function VolumeConfirmation({
    * botão, o "montar todos", o "remontar" —, então é aqui que a fase começa e
    * termina. As do meio são marcadas dentro de `montar`.
    */
-  async function confirm(opcoes?: { jaConferido?: boolean }): Promise<string | null> {
+  async function confirm(opcoes?: { jaConferido?: boolean; comprimirImagens?: boolean }): Promise<string | null> {
     marcarFase(id, "conferindo-versao");
     const motivo = await montar(opcoes);
     marcarFase(id, motivo ? "falhou" : "pronto");
     return motivo;
   }
 
-  async function montar(opcoes?: { jaConferido?: boolean }): Promise<string | null> {
+  async function montar(opcoes?: { jaConferido?: boolean; comprimirImagens?: boolean }): Promise<string | null> {
     /*
      * A PRÉ-CONDIÇÃO É VERIFICADA AQUI, e não só no botão.
      *
@@ -1925,6 +1927,7 @@ function VolumeConfirmation({
             blocos: montaveis,
             fileName: nomeDoVolume(selosDoTomo, identidade, tomo),
             metadados: metadadosDoVolume(selosDoTomo, identidade, tomo, sepTitle),
+            ...(opcoes?.comprimirImagens ? { comprimirImagens: true } : {}),
           }),
         salvar: (r, conferencia) =>
           saveResult({
@@ -1944,6 +1947,8 @@ function VolumeConfirmation({
                */
               partes: ordenarPartes(partesUsadas),
               conferencia,
+              // O peso por dentro: é o que diz, no painel, se comprimir alcança os 20 MB.
+              ...(r.composicao ? { composicao: r.composicao } : {}),
             },
             summary: `Volume montado${r.pageCount != null ? ` · ${r.pageCount} páginas` : ""}`,
             canvas: {
@@ -2228,6 +2233,8 @@ function AuditoriaConfirmation({
     codigo?: string | null;
     /** Endereço da caracterização da obra — distingue obras de mesmo nome. */
     endereco?: string | null;
+    /** De onde veio a obra (capa, projeto, corpo, usuário) — o cartão diz. */
+    origemDaObra?: string | null;
   } | null;
   mensagemId?: string;
 }) {
@@ -2280,6 +2287,26 @@ function AuditoriaConfirmation({
         )
       : auditoriaId(selos, memorialFatos?.codigo));
   const result = getResult(id)?.payload as MemorialAuditResult | undefined;
+  /*
+   * A CONFERÊNCIA CONTRA A CAPA DO GERAL (09/10/2026). Gravada no projeto
+   * quando o memorial geral chega depois desta auditoria; uma consulta por
+   * cartão com parecer, e silêncio se não houver.
+   */
+  const [conferencia, setConferencia] = useState<{ estado: "confere" | "diverge"; obraDaCapa: string } | null>(null);
+  const auditIdDoParecer = result?.auditId ?? null;
+  useEffect(() => {
+    if (!auditIdDoParecer || !projetoDaConversa) return;
+    let vivo = true;
+    fetch(`/api/projects/${encodeURIComponent(projetoDaConversa)}/identidade`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j: { identidade?: { conferencias?: Record<string, { estado: "confere" | "diverge"; obraDaCapa: string }> } } | null) => {
+        if (vivo) setConferencia(j?.identidade?.conferencias?.[auditIdDoParecer] ?? null);
+      })
+      .catch(() => {});
+    return () => {
+      vivo = false;
+    };
+  }, [auditIdDoParecer, projetoDaConversa]);
   /*
    * A FICHA E O CARTÃO NUMA MENSAGEM SÓ (auditoria UX do memorial, 07/10/2026).
    * O cartão repetia, com outros nomes, o que a ficha logo acima já mostrava
@@ -2784,6 +2811,7 @@ function AuditoriaConfirmation({
       <>
         <AuditoriaAncora
           report={result.report}
+          conferencia={conferencia ?? undefined}
           onVer={auditoria.verNoPalco}
           // Aba travada: a rodada nova cairia numa conversa que esta aba não grava.
           onAuditarDeNovo={ehAMaisRecente && podeGastar ? auditarDeNovo : undefined}
@@ -2845,7 +2873,11 @@ function AuditoriaConfirmation({
             <p className="text-xs text-muted-foreground">
               {fatos.gabarito.origem === "selos"
                 ? "Obra lida do carimbo das pranchas — fonte independente do memorial."
-                : "Obra lida do próprio memorial — sem prancha para confrontar."}
+                : memorialFatos?.origemDaObra === "projeto"
+                  ? "Obra do projeto (capa do memorial geral) — fonte independente deste memorial."
+                  : memorialFatos?.origemDaObra === "usuario"
+                    ? "Obra preenchida por você."
+                    : "Obra lida do próprio memorial — sem prancha para confrontar."}
             </p>
           )}
           {/*
@@ -3152,10 +3184,13 @@ function AuditoriaConfirmation({
  */
 function AuditoriaAncora({
   report,
+  conferencia,
   onVer,
   onAuditarDeNovo,
 }: {
   report: AuditReport;
+  /** A obra desta auditoria × a capa do geral que chegou depois (09/10/2026). */
+  conferencia?: { estado: "confere" | "diverge"; obraDaCapa: string };
   onVer: () => void;
   /** Só na rodada mais recente. Abre outra proposta, com outro cartão. */
   onAuditarDeNovo?: () => void;
@@ -3201,6 +3236,13 @@ function AuditoriaAncora({
     <div className="nx-fim-da-auditoria flex flex-col gap-2.5">
       {/* Antes do número: a contagem de uma auditoria incompleta não é o total. */}
       <AvisoDeAuditoriaIncompleta report={report} compacto />
+      {conferencia && (
+        <p className="cx-texto text-xs text-muted-foreground" data-conferencia={conferencia.estado}>
+          {conferencia.estado === "confere"
+            ? "Identidade conferida contra a capa do geral."
+            : `Feita com outra obra: a capa do geral diz “${conferencia.obraDaCapa}”.`}
+        </p>
+      )}
       <span className="cx-passo">
         <Check size={13} aria-hidden />
         <span>Auditei o {titulo.charAt(0).toLowerCase() + titulo.slice(1)}{tempo}</span>
