@@ -11,12 +11,15 @@ import {
   type VolumePartRole,
 } from "@/server/nexo/tools/assemble-volume";
 import { accessDeniedResponse, requireActor } from "@/lib/access-control";
+import { CHECKSUM } from "@/lib/pranchas/regras";
+import { bytesDasPranchas, projetoDoEscritorio } from "@/server/pranchas";
 
 export const runtime = "nodejs";
 
 /**
  * Monta o volume final: recebe as partes ja geradas (capa + separatrizes +
- * pranchas + LD) como PDFs em base64, decoda para Buffer, funde EM ORDEM num
+ * pranchas + LD) como PDFs em base64 OU, para a prancha guardada, o checksum
+ * dela no cofre (09/10/2026); decoda para Buffer, funde EM ORDEM num
  * unico PDF reusando o motor do modulo Volume e devolve o PDF em base64. A ordem
  * enviada e respeitada; passe `reorder: true` para reordenar canonicamente
  * (capa -> separatrizes -> pranchas -> ld).
@@ -48,15 +51,16 @@ export async function POST(req: NextRequest) {
    *
    * As duas recusas independentes estao em [[lib/actor.ts]].
    */
+  let actor: Awaited<ReturnType<typeof requireActor>>;
   try {
-    await requireActor();
+    actor = await requireActor();
   } catch (err) {
     const negado = accessDeniedResponse(err);
     if (negado) return negado;
     throw err;
   }
 
-  let parts: VolumePart[];
+  let parts: (VolumePart & { checksum?: string })[];
   let fileName: string | undefined;
   let reorder = false;
   /** Propriedades do PDF final — sem elas, o documento sai assinado pela lib. */
@@ -75,6 +79,7 @@ export async function POST(req: NextRequest) {
         role?: unknown;
         name?: unknown;
         data?: unknown;
+        checksum?: unknown;
         startPage?: unknown;
         endPage?: unknown;
       };
@@ -87,13 +92,16 @@ export async function POST(req: NextRequest) {
       if (typeof part.name !== "string" || !part.name.trim()) {
         throw new Error(`parts[${index}].name ausente`);
       }
-      if (typeof part.data !== "string" || !part.data) {
-        throw new Error(`parts[${index}].data ausente`);
+      const temData = typeof part.data === "string" && part.data.length > 0;
+      const temChecksum = typeof part.checksum === "string" && CHECKSUM.test(part.checksum);
+      if (temData === temChecksum) {
+        throw new Error(`parts[${index}] precisa de data OU checksum`);
       }
       return {
         role: part.role as VolumePartRole,
         name: part.name,
-        buffer: Buffer.from(part.data, "base64"),
+        buffer: temData ? Buffer.from(part.data as string, "base64") : Buffer.alloc(0),
+        checksum: temChecksum ? (part.checksum as string) : undefined,
         startPage: typeof part.startPage === "number" ? part.startPage : undefined,
         endPage: typeof part.endPage === "number" ? part.endPage : undefined,
       };
@@ -128,7 +136,38 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Nenhuma parte informada." }, { status: 400 });
   }
 
-  const result = await assembleVolume({ parts, fileName, reorder, metadados });
+  /*
+   * AS PRANCHAS GUARDADAS chegam por checksum (09/10/2026). Cada uma precisa de
+   * ficha NESTE projeto — do cabeçalho, conferido contra o escritório — e os
+   * bytes saem do cofre aqui. Faltou alguma: 409 com os NOMES, para o cartão
+   * pedir só essas de volta em vez de montar um volume com folha faltando.
+   */
+  const porReferencia = parts.filter((p) => p.checksum);
+  if (porReferencia.length) {
+    const projeto = projetoDoPedido(req.headers);
+    if (!projeto || !(await projetoDoEscritorio(projeto, actor.organizationId))) {
+      return NextResponse.json({ error: "Projeto não encontrado." }, { status: 404 });
+    }
+    const lidos = await bytesDasPranchas({
+      projectId: projeto,
+      organizationId: actor.organizationId,
+      pedidas: porReferencia.map((p) => ({ checksum: p.checksum as string, nome: p.name })),
+    });
+    if (!lidos.ok) {
+      return NextResponse.json(
+        { error: "Algumas pranchas não estão guardadas.", faltando: lidos.faltando },
+        { status: 409 },
+      );
+    }
+    for (const p of porReferencia) p.buffer = lidos.bytes.get(p.checksum as string) as Buffer;
+  }
+
+  const result = await assembleVolume({
+    parts: parts.map(({ checksum: _checksum, ...p }) => p),
+    fileName,
+    reorder,
+    metadados,
+  });
 
   /*
    * O volume montado entra no HISTÓRICO DO SERVIDOR. Só quando a fusão deu

@@ -241,5 +241,20 @@ test("separatriz: lista vazia devolve o xml intacto", () => {
   assert.equal(repetirBlocoDoTitulo(LISTA_DO_TEMPLATE, []), LISTA_DO_TEMPLATE);
 });
 
+test("prancha guardada viaja por checksum, sem base64", () => {
+  const checksum = "c".repeat(64);
+  const parts = buildVolumeParts({
+    capa: { name: "capa.pdf", data: "Q0FQQQ==" },
+    disciplines: [{ pranchas: [{ name: "01.pdf", checksum, startPage: 1, endPage: 2 }] }],
+  });
+  assert.deepEqual(parts[1], { role: "prancha", name: "01.pdf", checksum, startPage: 1, endPage: 2 });
+  assert.equal("data" in parts[1], false);
+});
+
+test("parte sem data e sem checksum é pulada", () => {
+  const parts = buildVolumeParts({ disciplines: [{ pranchas: [{ name: "vazia.pdf" }] }] });
+  assert.equal(parts.length, 0);
+});
+
 console.log(`
 ${passed} teste(s) passaram.`);

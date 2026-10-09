@@ -14,14 +14,19 @@
 export type VolumePartRole = "capa" | "separatriz" | "ld" | "prancha";
 
 /**
- * Uma parte do volume no formato de FIO que a rota `/api/nexo/volume` consome:
- * `data` é o PDF em base64 cru (não object URL — o URL é só p/ download/preview).
+ * Uma parte do volume no formato de FIO que a rota `/api/nexo/volume` consome.
+ * EXATAMENTE UM de:
+ *   · `data`: o PDF em base64 cru (não object URL) — o que nasce no navegador
+ *     (capa, LD, separatriz) e a prancha que ainda não foi guardada;
+ *   · `checksum`: a prancha GUARDADA no cofre (09/10/2026). O servidor lê os
+ *     bytes de lá, e o pedido cai de dezenas de MB para alguns KB.
  * `startPage`/`endPage` recortam o intervalo de pranchas num PDF combinado.
  */
 export interface VolumePart {
   role: VolumePartRole;
   name: string;
-  data: string;
+  data?: string;
+  checksum?: string;
   startPage?: number;
   endPage?: number;
 }
@@ -31,7 +36,9 @@ export interface VolumePartSource {
   /** nome do arquivo/rótulo da parte. */
   name: string;
   /** PDF em base64 cru. */
-  data: string;
+  data?: string;
+  /** sha256 da prancha guardada no cofre. */
+  checksum?: string;
   /** intervalo (1-based) a incluir; usado só para pranchas de PDF combinado. */
   startPage?: number;
   endPage?: number;
@@ -52,17 +59,17 @@ export interface BuildVolumePartsInput {
   disciplines: VolumeDisciplineParts[];
 }
 
-/** Anexa uma fonte como parte do papel `role`, ignorando fontes ausentes/vazias. */
+/** Anexa uma fonte como parte do papel `role`, ignorando fontes sem bytes nem referência. */
 function pushPart(
   parts: VolumePart[],
   role: VolumePartRole,
   source: VolumePartSource | null | undefined,
 ): void {
-  if (!source || !source.data) return;
+  if (!source || (!source.data && !source.checksum)) return;
   parts.push({
     role,
     name: source.name,
-    data: source.data,
+    ...(source.checksum ? { checksum: source.checksum } : { data: source.data }),
     ...(typeof source.startPage === "number" ? { startPage: source.startPage } : {}),
     ...(typeof source.endPage === "number" ? { endPage: source.endPage } : {}),
   });
