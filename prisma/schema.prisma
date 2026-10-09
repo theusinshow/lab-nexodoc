@@ -236,6 +236,7 @@ model Project {
   events         ProjectEvent[]
   aiTasks        AiTask[]
   nexoConversations NexoConversation[]
+  pranchas       PranchaDoProjeto[]
 
   /// O codigo do projeto e unico no ESCRITORIO, e era unico por dono: dois
   /// projetistas podiam cadastrar "099-25" cada um, e o banco achava normal.
@@ -928,9 +929,9 @@ model AuditFindingWatcher {
 /// sem credencial nova, no mesmo backup do resto. `file-storage.ts` continua
 /// sendo a costura, então trocar de provedor depois não é reescrever.
 ///
-/// SÓ O MEMORIAL AUDITADO. Pranchas e volumes ficam de fora, e é o que segura o
-/// custo: memorial real tem 1,6 a 5,2 MB; um volume passa de 20 MB com 88% de
-/// JPEG.
+/// MEMORIAIS, VOLUMES, PRINTS DO SUPORTE E, DESDE 09/10/2026, AS PRANCHAS.
+/// Com `NEXODOC_STORAGE_PROVIDER=s3` os bytes novos vão para o bucket privado
+/// da Railway; as linhas antigas (`onde = "postgres"`) seguem lidas daqui.
 model StoredFile {
   /// A CHAVE É O CONTEÚDO. Reauditar o mesmo memorial não grava de novo, e
   /// `ProjectUpload.checksumSha256` já é calculado e já aponta para cá.
@@ -1068,4 +1069,31 @@ model MensagemDoChamado {
   chamado    ChamadoDeSuporte @relation(fields: [chamadoId], references: [id], onDelete: Cascade)
 
   @@index([chamadoId, createdAt])
+}
+
+/// AS PRANCHAS DE UM PROJETO, guardadas (09/10/2026).
+///
+/// Antes viviam só na memória da aba: o F5 as perdia e a montagem pedia
+/// "reanexe-os". A ficha é leve (nome, impressão digital, páginas); os bytes
+/// moram no cofre ([[lib/cofre.ts]]) pela impressão digital.
+///
+/// UM NOME POR PROJETO: soltar outro arquivo com o mesmo nome troca a ficha,
+/// como a memória da aba sempre fez. O objeto antigo fica no cofre até o
+/// expurgo do projeto — remover a ficha não apaga bytes que outra linha pode
+/// estar usando.
+model PranchaDoProjeto {
+  id             String   @id @default(cuid())
+  projectId      String
+  fileName       String
+  checksumSha256 String
+  paginas        Int
+  sizeBytes      Int
+  /// E-mail de quem soltou. Registro, não posse.
+  enviadaPor     String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  project        Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, fileName])
+  @@index([checksumSha256])
 }

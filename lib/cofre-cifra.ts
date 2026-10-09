@@ -16,6 +16,12 @@
  * PERDER A CHAVE É PERDER OS ARQUIVOS. Ela vai para o cofre de senhas do
  * Matheus, não só para a variável do Railway.
  *
+ * NÃO TROQUE `NEXODOC_COFRE_CHAVE` NUMA RODADA DE TROCA DE CHAVES. As chaves de
+ * API (OpenAI, Resend…) podem ser trocadas a qualquer hora; esta não. Tudo o
+ * que está no cofre — memoriais, volumes, prints e pranchas — foi cifrado com
+ * ela, e uma chave nova deixa cada arquivo ilegível, em silêncio, até alguém
+ * tentar abrir. Trocar exige recifrar todos os objetos antes.
+ *
  * Puro: só `node:crypto`, testado em `scripts/test-cofre-cifra.ts`.
  */
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
