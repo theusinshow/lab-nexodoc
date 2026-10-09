@@ -10,7 +10,7 @@
  */
 import assert from "node:assert/strict";
 
-import { pedidoDeVinculo } from "../modules/nexo/lib/vinculo-pelos-selos.ts";
+import { deOutroProjeto, pedidoDeVinculo } from "../modules/nexo/lib/vinculo-pelos-selos.ts";
 
 let passed = 0;
 function test(nome: string, fn: () => void) {
@@ -56,6 +56,22 @@ test("sem código legível não há pedido — não se adivinha projeto", () => 
 
 test("selo sem extração conta pelo nome do arquivo", () => {
   assert.equal(pedidoDeVinculo([{ fileName: "117_25_arq_001_a.pdf" }])?.codigoLido, "117-25");
+});
+
+/*
+ * PRANCHA DE OUTRA OBRA (09/10/2026): soltar as 16 do 040-26 numa conversa do
+ * 084-25 guardava todas no projeto errado, calado. O código vem do NOME do
+ * arquivo — existe na hora do drop, antes de o carimbo ser lido.
+ */
+test("prancha de outro projeto é reconhecida pelo nome", () => {
+  assert.equal(deOutroProjeto("040_26_arq_001_a.pdf", "084-25"), true);
+  assert.equal(deOutroProjeto("084_25_cab_001_a.pdf", "084-25"), false);
+  assert.equal(deOutroProjeto("084-25_cab_001_a.pdf", "084_25"), false);
+});
+
+test("sem código no nome, ou sem projeto, não se acusa", () => {
+  assert.equal(deOutroProjeto("planta baixa.pdf", "084-25"), false);
+  assert.equal(deOutroProjeto("040_26_arq_001_a.pdf", null), false);
 });
 
 console.log(`\n${passed} ok`);

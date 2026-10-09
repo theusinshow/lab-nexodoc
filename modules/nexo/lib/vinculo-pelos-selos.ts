@@ -43,3 +43,17 @@ export function pedidoDeVinculo(selos: readonly SeloLido[]): PedidoDeVinculo | n
   const prefeitura = selos.find((s) => s.extraction?.cliente?.trim())?.extraction?.cliente?.trim() ?? null;
   return { codigoLido: resumo.codigo, prefeitura, obra: resumo.obra };
 }
+
+const normalizado = (codigo: string) => codigo.trim().replace(/_/g, "-").toLowerCase();
+
+/**
+ * A PRANCHA É DE OUTRA OBRA? (09/10/2026) Pelo código no NOME do arquivo — que
+ * existe no instante do drop, antes da leitura do carimbo. Soltar as pranchas do
+ * 040-26 numa conversa do 084-25 as guardava no projeto errado, sem aviso.
+ * Sem código legível no nome, ou sem projeto, não acusa: na dúvida, segue.
+ */
+export function deOutroProjeto(fileName: string, codigoDoProjeto: string | null | undefined): boolean {
+  if (!codigoDoProjeto) return false;
+  const lido = pedidoDeVinculo([{ fileName }])?.codigoLido;
+  return Boolean(lido) && normalizado(lido!) !== normalizado(codigoDoProjeto);
+}

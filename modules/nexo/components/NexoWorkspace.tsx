@@ -196,7 +196,7 @@ import {
   type EstadoDoEnvio,
   type FichaDePrancha,
 } from "../lib/pranchas-guardadas";
-import { pedidoDeVinculo } from "../lib/vinculo-pelos-selos";
+import { deOutroProjeto, pedidoDeVinculo } from "../lib/vinculo-pelos-selos";
 import { detalheDoParecer, type ParecerParaIncompletude } from "@/lib/auditoria-incompleta";
 
 function reportDoPayload(payload: unknown): ParecerParaIncompletude | null {
@@ -2123,12 +2123,55 @@ function NexoWorkspaceInner({
    * sobe: a prancha fica na memória como sempre, e sobe quando o projeto existir
    * (o efeito roda de novo quando `conv.projectId` muda).
    */
+  /*
+   * O CÓDIGO DO PROJETO da conversa — para não guardar prancha de OUTRA obra
+   * nele (09/10/2026: as 16 do 040-26 soltas numa conversa do 084-25 foram
+   * todas para o projeto errado, caladas). `undefined` = ainda buscando.
+   */
+  const [codigoDoProjeto, setCodigoDoProjeto] = useState<{ projeto: string; codigo: string | null } | null>(null);
   useEffect(() => {
     const projeto = conv.projectId;
     if (!projeto) return;
-    const novos = pranchaFiles.filter((f) => !enviados.current.has(f));
+    let vivo = true;
+    fetch(`/api/projects/${encodeURIComponent(projeto)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j: { project?: { code?: string } } | null) => {
+        if (vivo) setCodigoDoProjeto({ projeto, codigo: j?.project?.code ?? null });
+      })
+      .catch(() => {
+        if (vivo) setCodigoDoProjeto({ projeto, codigo: null });
+      });
+    return () => {
+      vivo = false;
+    };
+  }, [conv.projectId]);
+
+  useEffect(() => {
+    const projeto = conv.projectId;
+    if (!projeto) return;
+    // Espera saber o código do projeto: subir antes disso é subir sem conferir.
+    if (codigoDoProjeto?.projeto !== projeto) return;
+    const candidatos = pranchaFiles.filter((f) => !enviados.current.has(f));
+    if (!candidatos.length) return;
+    candidatos.forEach((f) => enviados.current.add(f));
+    const deOutra = candidatos.filter((f) => deOutroProjeto(f.name, codigoDoProjeto.codigo));
+    const novos = candidatos.filter((f) => !deOutra.includes(f));
+    if (deOutra.length > 0) {
+      /*
+       * DIZ, e não guarda — como o memorial de outro projeto. As pranchas
+       * seguem na memória desta aba; o projeto não ganha folha que não é dele.
+       */
+      const outro = pedidoDeVinculo([{ fileName: deOutra[0].name }])?.codigoLido ?? "outro projeto";
+      conv.appendMessage({
+        id: crypto.randomUUID(),
+        role: "assistant",
+        content:
+          `${deOutra.length === 1 ? "Esta prancha é" : `Estas ${deOutra.length} pranchas são`} do ${outro}, ` +
+          `e esta conversa é do ${codigoDoProjeto.codigo}. Não ${deOutra.length === 1 ? "a guardei" : "as guardei"} no projeto — ` +
+          `abra uma conversa nova para o ${outro}.`,
+      });
+    }
     if (!novos.length) return;
-    novos.forEach((f) => enviados.current.add(f));
     void Promise.resolve()
       .then(() =>
         setEnvio((prev) => {
@@ -2158,7 +2201,7 @@ function NexoWorkspaceInner({
           }
         }),
       );
-  }, [pranchaFiles, conv.projectId]);
+  }, [pranchaFiles, conv.projectId, codigoDoProjeto, conv]);
 
   /*
    * O VÍNCULO PELOS SELOS (09/10/2026). Conversa de pranchas não tinha projeto
