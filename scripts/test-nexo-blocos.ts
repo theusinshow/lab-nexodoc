@@ -19,7 +19,9 @@ import assert from "node:assert/strict";
 import {
   blocoGera,
   blocosDasFolhas,
+  blocosDoVolume,
   codigoDoRotulo,
+  codigoNoVolume,
   escolherCodigo,
   fundirBlocos,
   misturaDisciplinas,
@@ -398,6 +400,48 @@ test("bloco sem código gera", () => {
 
 test("disciplina fora do léxico gera", () => {
   assert.equal(blocoGera("ld", { codigo: "zzz" }), true);
+});
+
+/* ───────────────────── juntar blocos (09/10/2026) ───────────────────── */
+
+test("bloco normal carrega o próprio código em codigos", () => {
+  const blocos = blocosDe(folhas([selo("040_26_dre_001_a.pdf", 1, "DRENAGEM")], {}));
+  assert.deepEqual(blocos[0].codigos, ["dre"]);
+});
+
+test("fundir soma os códigos, na ordem do volume", () => {
+  const blocos = blocosDe(
+    folhas(
+      [
+        selo("ge_040-26_eixos-PLANTA-A1-500.pdf", 1, "GEOMETRICO"),
+        selo("te_040-26_DDM_R00.pdf", 1, "TERRAPLENAGEM"),
+      ],
+      {},
+    ),
+  );
+  assert.deepEqual(fundirBlocos(blocos, "ter", "gmt")[0].codigos, ["gmt", "ter"]);
+});
+
+test("blocosDoVolume aplica as fusões gravadas e ignora par ausente", () => {
+  const lista = folhas(
+    [
+      selo("ge_040-26_eixos-PLANTA-A1-500.pdf", 1, "GEOMETRICO"),
+      selo("te_040-26_DDM_R00.pdf", 1, "TERRAPLENAGEM"),
+      selo("040_26_dre_001_a.pdf", 1, "DRENAGEM"),
+    ],
+    {},
+  );
+  const comFusao = blocosDoVolume(lista, codigoDe, rotuloDe, [["gmt", "ter"], ["arq", "dre"]]);
+  assert.deepEqual(comFusao.map((b) => b.codigos), [["gmt", "ter"], ["dre"]]);
+  assert.deepEqual(blocosDoVolume(lista, codigoDe, rotuloDe, []).map((b) => b.codigo), ["gmt", "ter", "dre"]);
+});
+
+test("codigoNoVolume leva o segundo do par ao primeiro, e não mexe no resto", () => {
+  const de = codigoNoVolume([["gmt", "ter"]]);
+  assert.equal(de("ter"), "gmt");
+  assert.equal(de("gmt"), "gmt");
+  assert.equal(de("dre"), "dre");
+  assert.equal(codigoNoVolume([])("ter"), "ter");
 });
 
 console.log(`\n${passed} teste(s) passaram.`);

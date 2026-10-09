@@ -191,6 +191,12 @@ export interface Bloco {
   rotulo: string;
   /** As folhas deste bloco, na ordem da projeção. */
   ids: FolhaId[];
+  /**
+   * As disciplinas que o bloco cobre: `[codigo]` no bloco normal, `[a, b]` no
+   * par juntado pelo engenheiro (09/10/2026). É por ela que o título acha o
+   * nome do par (`nomeDoPar`) — `codigo` sozinho é só o do primeiro.
+   */
+  codigos: string[];
 }
 
 /**
@@ -249,10 +255,10 @@ export function blocosDasFolhas(
   const blocos: Bloco[] = [];
   for (const [codigo, ids] of porCodigo) {
     if (codigo === "") continue;
-    blocos.push({ codigo, rotulo: rotuloDe(codigo), ids });
+    blocos.push({ codigo, rotulo: rotuloDe(codigo), ids, codigos: [codigo] });
   }
   const soltas = porCodigo.get("");
-  if (soltas) blocos.push({ codigo: "", rotulo: "", ids: soltas });
+  if (soltas) blocos.push({ codigo: "", rotulo: "", ids: soltas, codigos: [] });
   return blocos;
 }
 
@@ -303,10 +309,46 @@ export function fundirBlocos(
       .filter(Boolean)
       .join(" e "),
     ids: [...blocos[primeiro].ids, ...blocos[segundo].ids],
+    codigos: [...blocos[primeiro].codigos, ...blocos[segundo].codigos],
   };
   return blocos
     .map((bloco, i) => (i === primeiro ? fundido : bloco))
     .filter((_, i) => i !== segundo);
+}
+
+/** Um par juntado pelo engenheiro, gravado na conversa: `["gmt", "ter"]`. */
+export type ParFundido = readonly [string, string];
+
+/**
+ * OS BLOCOS DO VOLUME, com as fusões que o engenheiro gravou (09/10/2026).
+ *
+ * É a porta única: os lugares que montam blocos (plano, cartão, montagem,
+ * editáveis) passam por aqui, senão um deles veria duas disciplinas onde o
+ * engenheiro decidiu uma — e sairia uma separatriz a mais, calada. Par cujo
+ * código não está no volume é ignorado (não apaga: a disciplina pode voltar).
+ */
+export function blocosDoVolume(
+  lista: readonly Folha[],
+  codigoDe: (folha: Folha) => string,
+  rotuloDe: (codigo: string) => string,
+  fundidos: readonly ParFundido[],
+): Bloco[] {
+  let blocos = blocosDasFolhas(lista, codigoDe, rotuloDe);
+  for (const [a, b] of fundidos) blocos = fundirBlocos(blocos, a, b);
+  return blocos;
+}
+
+/**
+ * O código de uma folha DENTRO do volume: o segundo do par vira o primeiro
+ * (`ter → gmt`). Para quem agrupa folha a folha — corte de tomo, documento
+ * envelhecido, totais —, o par é uma disciplina só; sem isto o tomo podia ser
+ * cortado no meio dele.
+ */
+export function codigoNoVolume(fundidos: readonly ParFundido[]): (codigo: string) => string {
+  if (fundidos.length === 0) return (codigo) => codigo;
+  const para = new Map<string, string>();
+  for (const [a, b] of fundidos) para.set(b.toLowerCase(), a.toLowerCase());
+  return (codigo) => para.get(codigo.trim().toLowerCase()) ?? codigo;
 }
 
 /**

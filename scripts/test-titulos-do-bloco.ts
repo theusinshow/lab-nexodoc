@@ -24,7 +24,7 @@
  */
 import assert from "node:assert/strict";
 
-import { titulosDoBloco } from "../server/nexo/titulos-do-bloco.ts";
+import { nomesDoBloco, titulosDoBloco } from "../server/nexo/titulos-do-bloco.ts";
 
 let passed = 0;
 function test(name: string, fn: () => void) {
@@ -107,6 +107,40 @@ test("sem código e sem rótulo, o escolhido é o que sobra", () => {
 
 test("sem nada, devolve vazio em vez de inventar", () => {
   assert.deepEqual(titulosDoBloco({ codigo: "", rotulo: "" }), { ld: "", separatriz: "" });
+});
+
+/* ───────────────────── juntar blocos (09/10/2026) ───────────────────── */
+
+test("par com nome próprio: o mesmo título na LD e na separatriz", () => {
+  assert.deepEqual(nomesDoBloco({ codigo: "gmt", codigos: ["gmt", "ter"], rotulo: "Geométrico e Terraplenagem" }), {
+    capa: "PROJETO DE GEOMETRIA E TERRAPLENAGEM",
+    separatriz: "PROJETO DE GEOMETRIA E TERRAPLENAGEM",
+  });
+  // a ordem do par não importa
+  assert.equal(
+    nomesDoBloco({ codigo: "ter", codigos: ["ter", "gmt"], rotulo: "" }).separatriz,
+    "PROJETO DE GEOMETRIA E TERRAPLENAGEM",
+  );
+});
+
+test("par sem nome: o primeiro inteiro, o segundo sem o 'PROJETO DE' repetido", () => {
+  const n = nomesDoBloco({ codigo: "his", codigos: ["his", "inc"], rotulo: "Hidrossanitário e Incêndio" });
+  assert.equal(n.separatriz, "PROJETO DE INSTALAÇÕES HIDROSSANITÁRIAS E PREVENTIVO CONTRA INCÊNDIO");
+  assert.equal(n.capa, "PROJETO HIDROSSANITÁRIO E PREVENTIVO");
+});
+
+test("bloco normal: igual a hoje, com ou sem codigos", () => {
+  assert.deepEqual(
+    titulosDoBloco({ codigo: "his", rotulo: "Hidrossanitário" }),
+    titulosDoBloco({ codigo: "his", codigos: ["his"], rotulo: "Hidrossanitário" }),
+  );
+});
+
+test("titulosDoBloco de um par usa o nome do par", () => {
+  assert.deepEqual(titulosDoBloco({ codigo: "gmt", codigos: ["gmt", "ter"], rotulo: "Geométrico e Terraplenagem" }), {
+    ld: "PROJETO DE GEOMETRIA E TERRAPLENAGEM",
+    separatriz: "PROJETO DE GEOMETRIA E TERRAPLENAGEM",
+  });
 });
 
 console.log(`\n${passed} teste(s) passaram.`);

@@ -26,7 +26,7 @@
  * Por isso: o léxico vence o PADRÃO DERIVADO e perde para a DECISÃO, e o que
  * separa os dois é a comparação com o nome de capa da própria disciplina.
  */
-import { nomeNaCapa, nomeNaSeparatriz } from "./disciplinas";
+import { nomeDoPar, nomeNaCapa, nomeNaSeparatriz } from "./disciplinas";
 
 export interface TitulosDoBloco {
   /** Título da LISTA DE DOCUMENTOS deste bloco. */
@@ -36,6 +36,8 @@ export interface TitulosDoBloco {
 }
 
 export interface EntradaDosTitulos {
+  /** As disciplinas do bloco: `[a, b]` no par juntado. Ausente = `[codigo]`. */
+  codigos?: readonly string[];
   /** Código canônico de três letras ("his"). Vazio = disciplina desconhecida. */
   codigo: string;
   /** Rótulo de tela da disciplina ("Hidrossanitário"). Último recurso. */
@@ -58,8 +60,7 @@ function chave(texto: string): string {
 export function titulosDoBloco(entrada: EntradaDosTitulos): TitulosDoBloco {
   const escolhido = (entrada.escolhido ?? "").trim();
   const doRotulo = entrada.rotulo.trim().toUpperCase();
-  const daCapa = nomeNaCapa(entrada.codigo) ?? "";
-  const daSeparatriz = nomeNaSeparatriz(entrada.codigo) ?? "";
+  const { capa: daCapa, separatriz: daSeparatriz } = nomesDoBloco(entrada);
 
   /*
    * Decisão é o que DIVERGE do padrão da LD. Um `escolhido` igual ao nome de
@@ -71,4 +72,34 @@ export function titulosDoBloco(entrada: EntradaDosTitulos): TitulosDoBloco {
     ld: escolhido || daCapa || doRotulo,
     separatriz: houveDecisao ? escolhido : daSeparatriz || doRotulo || escolhido,
   };
+}
+
+/** "PROJETO DE X", "PROJETO X" → "X": o segundo nome do par não repete o prefixo. */
+const PREFIXO = /^PROJETO(?:\s+(?:DE|DO|DA|DOS|DAS))?\s+/;
+
+/**
+ * OS NOMES DE DOCUMENTO DE UM BLOCO — o da capa/LD e o da separatriz —, do
+ * léxico do escritório. No par juntado (09/10/2026): o nome próprio do par
+ * quando existe (`NOME_DO_PAR`: "PROJETO DE GEOMETRIA E TERRAPLENAGEM"); senão
+ * o primeiro inteiro e o segundo sem o "PROJETO DE" repetido — "PROJETO DE
+ * INSTALAÇÕES HIDROSSANITÁRIAS E PREVENTIVO CONTRA INCÊNDIO". Bloco de uma
+ * disciplina só: os mesmos nomes de antes.
+ */
+export function nomesDoBloco(bloco: {
+  codigo: string;
+  codigos?: readonly string[];
+  rotulo: string;
+}): { capa: string; separatriz: string } {
+  const codigos = bloco.codigos && bloco.codigos.length > 0 ? bloco.codigos : [bloco.codigo];
+  if (codigos.length < 2) {
+    return { capa: nomeNaCapa(bloco.codigo) ?? "", separatriz: nomeNaSeparatriz(bloco.codigo) ?? "" };
+  }
+  const par = nomeDoPar(codigos[0], codigos[1]);
+  if (par) return { capa: par, separatriz: par };
+  const juntar = (nome: (codigo: string) => string | undefined) => {
+    const nomes = codigos.map((c) => nome(c) ?? "");
+    if (nomes.some((n) => !n)) return bloco.rotulo.trim().toUpperCase();
+    return [nomes[0], ...nomes.slice(1).map((n) => n.replace(PREFIXO, ""))].join(" E ");
+  };
+  return { capa: juntar(nomeNaCapa), separatriz: juntar(nomeNaSeparatriz) };
 }
