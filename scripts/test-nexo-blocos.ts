@@ -26,6 +26,8 @@ import {
   fundirBlocos,
   misturaDisciplinas,
   resumoDosBlocos,
+  separarPar,
+  juntarPar,
   tabelasDoLexico,
 } from "../modules/nexo/lib/blocos.ts";
 import { folhas } from "../modules/nexo/lib/folhas.ts";
@@ -434,6 +436,19 @@ test("blocosDoVolume aplica as fusões gravadas e ignora par ausente", () => {
   const comFusao = blocosDoVolume(lista, codigoDe, rotuloDe, [["gmt", "ter"], ["arq", "dre"]]);
   assert.deepEqual(comFusao.map((b) => b.codigos), [["gmt", "ter"], ["dre"]]);
   assert.deepEqual(blocosDoVolume(lista, codigoDe, rotuloDe, []).map((b) => b.codigo), ["gmt", "ter", "dre"]);
+});
+
+test("juntar grava o par uma vez; disciplina já num par não entra em outro", () => {
+  assert.deepEqual(juntarPar([], "gmt", "ter"), [["gmt", "ter"]]);
+  assert.deepEqual(juntarPar([["gmt", "ter"]], "ter", "gmt"), [["gmt", "ter"]]);
+  assert.deepEqual(juntarPar([["gmt", "ter"]], "ter", "dre"), [["gmt", "ter"]]);
+  assert.deepEqual(juntarPar([], "gmt", "gmt"), []);
+  assert.deepEqual(juntarPar([], "", "ter"), []);
+});
+
+test("separar tira o par de qualquer um dos dois códigos", () => {
+  assert.deepEqual(separarPar([["gmt", "ter"], ["his", "inc"]], "ter"), [["his", "inc"]]);
+  assert.deepEqual(separarPar([["gmt", "ter"]], "dre"), [["gmt", "ter"]]);
 });
 
 test("codigoNoVolume leva o segundo do par ao primeiro, e não mexe no resto", () => {

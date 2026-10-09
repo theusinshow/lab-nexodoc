@@ -98,6 +98,7 @@ import { fundirListas, lapidesLocais } from "@/server/nexo/conversa-remota";
 import { migrarAuditoriasLegadas } from "../lib/auditoria-da-proposta";
 import { deveReconsultarLista } from "../lib/reconsulta-da-lista";
 import { detalheDoParecer, resumoDoParecer } from "@/lib/auditoria-incompleta";
+import { juntarPar, separarPar } from "../lib/blocos";
 
 /** Um arquivo de resultado com object URL vivo (p/ download/preview). */
 export interface SavedFile {
@@ -260,6 +261,12 @@ interface ConversationStoreValue {
   totaisPorDisciplina: Record<string, number>;
   /** Fixa (ou limpa, com `null`) o total de referência de uma disciplina. */
   definirTotal: (codigoDaDisciplina: string, total: number | null) => void;
+  /** Pares de disciplinas juntados num bloco só (uma separatriz, uma LD). */
+  blocosFundidos: [string, string][];
+  /** Junta duas disciplinas num bloco. Disciplina já num par não entra em outro. */
+  juntarBlocos: (a: string, b: string) => void;
+  /** Desfaz o par que contém este código. */
+  separarBlocos: (codigo: string) => void;
   /**
    * Órgão, secretaria, obra, fase, código e revisão ditos por uma pessoa — o
    * escape de quando o carimbo mente. Vale para a CONVERSA, não para um
@@ -528,6 +535,7 @@ export function ConversationStoreProvider({ children }: { children: ReactNode })
   const [ajustes, setAjustes] = useState<Record<FolhaId, Ajuste>>({});
   const [avulsas, setAvulsas] = useState<FolhaId[]>([]);
   const [totaisPorDisciplina, setTotaisPorDisciplina] = useState<Record<string, number>>({});
+  const [blocosFundidos, setBlocosFundidos] = useState<[string, string][]>([]);
   const [identidade, setIdentidade] = useState<IdentidadeDoProjeto>({});
   /** O projeto desta conversa. Nulo = a endereçar. */
   const [projectId, setProjectId] = useState<string | null>(null);
@@ -556,6 +564,7 @@ export function ConversationStoreProvider({ children }: { children: ReactNode })
     ajustes,
     avulsas,
     totaisPorDisciplina,
+    blocosFundidos,
     identidade,
     projectId,
     decisoes,
@@ -579,6 +588,7 @@ export function ConversationStoreProvider({ children }: { children: ReactNode })
       ajustes,
       avulsas,
       totaisPorDisciplina,
+      blocosFundidos,
       identidade,
       projectId,
       decisoes,
@@ -982,6 +992,7 @@ export function ConversationStoreProvider({ children }: { children: ReactNode })
       ...(Object.keys(s.totaisPorDisciplina).length > 0
         ? { totaisPorDisciplina: s.totaisPorDisciplina }
         : {}),
+      ...(s.blocosFundidos.length > 0 ? { blocosFundidos: s.blocosFundidos } : {}),
       ...(Object.keys(s.identidade).length > 0 ? { identidade: s.identidade } : {}),
       ...(Object.keys(s.decisoes).length > 0 ? { decisoes: s.decisoes } : {}),
       ...(s.tomosDeclarados > 0 ? { tomosDeclarados: s.tomosDeclarados } : {}),
@@ -1185,6 +1196,25 @@ export function ConversationStoreProvider({ children }: { children: ReactNode })
    * O total de referência dito por uma pessoa. `null` limpa e devolve o carimbo —
    * a mesma regra de todo campo do popover: vazio desfaz.
    */
+  /*
+   * JUNTAR E SEPARAR BLOCOS (09/10/2026). Gravado como os totais: a decisão é
+   * do engenheiro e vale para a conversa; separar é o desfazer.
+   */
+  const juntarBlocos = useCallback(
+    (a: string, b: string) => {
+      setBlocosFundidos((atual) => juntarPar(atual, a, b) as [string, string][]);
+      schedulePersist();
+    },
+    [schedulePersist],
+  );
+  const separarBlocos = useCallback(
+    (codigo: string) => {
+      setBlocosFundidos((atual) => separarPar(atual, codigo) as [string, string][]);
+      schedulePersist();
+    },
+    [schedulePersist],
+  );
+
   const definirTotal = useCallback(
     (codigoDaDisciplina: string, total: number | null) => {
       const chave = codigoDaDisciplina.trim().toLowerCase();
@@ -1438,6 +1468,7 @@ export function ConversationStoreProvider({ children }: { children: ReactNode })
     setAjustes({});
     setAvulsas([]);
     setTotaisPorDisciplina({});
+    setBlocosFundidos([]);
     setIdentidade({});
     setProjectId(null);
     setTomosDeclarados(0);
@@ -1812,6 +1843,7 @@ export function ConversationStoreProvider({ children }: { children: ReactNode })
         ajustes: rec.ajustes ?? {},
         avulsas: rec.avulsas ?? [],
         totaisPorDisciplina: rec.totaisPorDisciplina ?? {},
+        blocosFundidos: rec.blocosFundidos ?? [],
         identidade: rec.identidade ?? {},
         projectId: rec.projectId ?? null,
         decisoes: rec.decisoes ?? {},
@@ -1830,6 +1862,7 @@ export function ConversationStoreProvider({ children }: { children: ReactNode })
       setAjustes(aberta.ajustes);
       setAvulsas(aberta.avulsas);
       setTotaisPorDisciplina(aberta.totaisPorDisciplina);
+      setBlocosFundidos(aberta.blocosFundidos);
       setIdentidade(aberta.identidade);
       setProjectId(aberta.projectId);
       setDecisoes(aberta.decisoes);
@@ -2178,6 +2211,9 @@ export function ConversationStoreProvider({ children }: { children: ReactNode })
       excluirFolhaAvulsa,
       totaisPorDisciplina,
       definirTotal,
+      blocosFundidos,
+      juntarBlocos,
+      separarBlocos,
       identidade,
       corrigirIdentidade,
       projectId,
@@ -2236,6 +2272,9 @@ export function ConversationStoreProvider({ children }: { children: ReactNode })
       excluirFolhaAvulsa,
       totaisPorDisciplina,
       definirTotal,
+      blocosFundidos,
+      juntarBlocos,
+      separarBlocos,
       identidade,
       corrigirIdentidade,
       projectId,

@@ -143,6 +143,12 @@ export interface StoredConversation {
    */
   totaisPorDisciplina?: Record<string, number>;
   /**
+   * Os pares de disciplinas que o engenheiro juntou num bloco só (09/10/2026):
+   * `[["gmt","ter"]]` = uma separatriz e uma LD para os dois. Opcional, como
+   * `ajustes`. Ver `blocosDoVolume`.
+   */
+  blocosFundidos?: [string, string][];
+  /**
    * Órgão, secretaria, obra, fase, código e revisão ditos por uma pessoa — o
    * escape de quando o carimbo mente. Vale para a conversa: capa e LD imprimem
    * os mesmos fatos.

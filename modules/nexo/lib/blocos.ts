@@ -339,6 +339,24 @@ export function blocosDoVolume(
 }
 
 /**
+ * Grava um par novo. Uma disciplina só cabe em um par (fundir três não entra
+ * agora), o par é guardado na ordem em que veio, e pedir de novo não duplica.
+ */
+export function juntarPar(fundidos: readonly ParFundido[], a: string, b: string): ParFundido[] {
+  const x = a.trim().toLowerCase();
+  const y = b.trim().toLowerCase();
+  if (!x || !y || x === y) return [...fundidos];
+  if (fundidos.some(([p, q]) => [p, q].includes(x) || [p, q].includes(y))) return [...fundidos];
+  return [...fundidos, [x, y]];
+}
+
+/** Desfaz o par que contém este código (qualquer um dos dois). */
+export function separarPar(fundidos: readonly ParFundido[], codigo: string): ParFundido[] {
+  const c = codigo.trim().toLowerCase();
+  return fundidos.filter(([p, q]) => p !== c && q !== c);
+}
+
+/**
  * O código de uma folha DENTRO do volume: o segundo do par vira o primeiro
  * (`ter → gmt`). Para quem agrupa folha a folha — corte de tomo, documento
  * envelhecido, totais —, o par é uma disciplina só; sem isto o tomo podia ser
