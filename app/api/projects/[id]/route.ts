@@ -240,7 +240,7 @@ export async function PATCH(
     return NextResponse.json({ project: serializeProjectDetail(project) });
   }
 
-  const project = await prisma.$transaction(async (tx) => {
+  await prisma.$transaction(async (tx) => {
     const actor = await getUserActor(user.email, user.name);
 
     if (nextStatus) {
@@ -269,10 +269,15 @@ export async function PATCH(
         },
       });
     }
-
-    return getProjectById(existing.id, user.email);
   });
 
+  /*
+   * A LEITURA DEPOIS DO COMMIT. Ela morava dentro da transação, mas
+   * `getProjectById` usa o cliente global, não o `tx`: lia de fora, antes do
+   * commit, e a resposta saía com o nome ANTIGO (a tela recarregava e
+   * escondia; quem confiasse na resposta via o dado velho).
+   */
+  const project = await getProjectById(existing.id, user.email);
   return NextResponse.json({ project: serializeProjectDetail(project) });
 }
 
