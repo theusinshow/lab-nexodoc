@@ -194,6 +194,7 @@ import {
   type EstadoDoEnvio,
   type FichaDePrancha,
 } from "../lib/pranchas-guardadas";
+import { pedidoDeVinculo } from "../lib/vinculo-pelos-selos";
 import { detalheDoParecer, type ParecerParaIncompletude } from "@/lib/auditoria-incompleta";
 
 function reportDoPayload(payload: unknown): ParecerParaIncompletude | null {
@@ -409,7 +410,21 @@ function NexoWorkspaceInner({
    * foi guardado — por identidade, não por nome: soltar outro arquivo com o
    * mesmo nome é troca, e precisa subir de novo.
    */
-  const [fichas, setFichas] = useState<FichaDePrancha[]>([]);
+  /*
+   * As fichas carregam o PROJETO a que pertencem, e só valem para a conversa
+   * desse projeto. Apagá-las na troca de conversa não dava: a limpeza roda
+   * dentro da transição do shell, quadros depois, e chegava DEPOIS das fichas
+   * da conversa nova — o volume dizia "sem as pranchas" com as 8 guardadas
+   * (visto em 09/10/2026 no 084-25).
+   */
+  const [fichasDoProjeto, setFichasDoProjeto] = useState<{ projeto: string | null; lista: FichaDePrancha[] }>({
+    projeto: null,
+    lista: [],
+  });
+  const fichas = useMemo(
+    () => (conv.projectId && fichasDoProjeto.projeto === conv.projectId ? fichasDoProjeto.lista : []),
+    [fichasDoProjeto, conv.projectId],
+  );
   const [envio, setEnvio] = useState<ReadonlyMap<string, EstadoDoEnvio>>(new Map());
   const enviados = useRef(new WeakSet<File>());
   const pranchas = useMemo(() => juntarPranchas(pranchaFiles, fichas, envio), [pranchaFiles, fichas, envio]);
@@ -438,7 +453,6 @@ function NexoWorkspaceInner({
     urlsDasPranchas.current.forEach((url) => URL.revokeObjectURL(url));
     urlsDasPranchas.current.clear();
     setPranchaFiles([]);
-    setFichas([]);
     setEnvio(new Map());
   }, []);
   const [memorialFile, setMemorialFile] = useState<File | null>(null);
@@ -710,7 +724,7 @@ function NexoWorkspaceInner({
       // Sai do conjunto de pranchas e some do contexto de selos: manter o selo
       // de um documento que não é prancha sujaria a LD e o volume.
       setPranchaFiles((prev) => prev.filter((f) => f.name !== file.name));
-      setFichas((prev) => prev.filter((f) => f.fileName !== file.name));
+      setFichasDoProjeto((prev) => ({ ...prev, lista: prev.lista.filter((f) => f.fileName !== file.name) }));
       if (conv.projectId) removerFicha(conv.projectId, file.name).catch(() => {});
       setSeloResults(seloResults.filter((r) => r.fileName !== file.name));
       setMemorialFile(file);
@@ -1319,7 +1333,7 @@ function NexoWorkspaceInner({
         selosRef.current = limpos;
         setSeloResults(limpos);
         setPranchaFiles((prev) => prev.filter((f) => f.name !== memorial.name));
-        setFichas((prev) => prev.filter((f) => f.fileName !== memorial.name));
+        setFichasDoProjeto((prev) => ({ ...prev, lista: prev.lista.filter((f) => f.fileName !== memorial.name) }));
         if (conv.projectId) removerFicha(conv.projectId, memorial.name).catch(() => {});
         conv.appendMessage({
           id: crypto.randomUUID(),
@@ -2068,7 +2082,14 @@ function NexoWorkspaceInner({
     let vivo = true;
     listarFichas(projeto)
       .then((lista) => {
-        if (vivo) setFichas(lista);
+        if (!vivo) return;
+        // O servidor manda; uma ficha que acabou de subir e ainda não está na
+        // lista (o envio terminou antes da consulta) não se perde.
+        setFichasDoProjeto((prev) => {
+          const nomes = new Set(lista.map((f) => f.fileName));
+          const recentes = prev.projeto === projeto ? prev.lista.filter((f) => !nomes.has(f.fileName)) : [];
+          return { projeto, lista: [...lista, ...recentes] };
+        });
       })
       .catch(() => {
         // Sem fichas a tela fica como antes do recurso; o envio tenta de novo.
@@ -2102,7 +2123,12 @@ function NexoWorkspaceInner({
         emParalelo(novos, 3, async (file) => {
           try {
             const ficha = await enviarPrancha(projeto, file);
-            setFichas((prev) => [...prev.filter((f) => f.fileName !== ficha.fileName), ficha]);
+            setFichasDoProjeto((prev) =>
+              // Terminou depois de a pessoa trocar para OUTRO projeto: não mexe nas fichas dele.
+              prev.projeto && prev.projeto !== projeto
+                ? prev
+                : { projeto, lista: [...prev.lista.filter((f) => f.fileName !== ficha.fileName), ficha] },
+            );
             setEnvio((prev) => {
               const prox = new Map(prev);
               prox.delete(file.name);
@@ -2115,6 +2141,43 @@ function NexoWorkspaceInner({
         }),
       );
   }, [pranchaFiles, conv.projectId]);
+
+  /*
+   * O VÍNCULO PELOS SELOS (09/10/2026). Conversa de pranchas não tinha projeto
+   * — só o memorial vinculava —, e sem projeto nada acima sobe. Terminada a
+   * leitura, o código do carimbo procura o projeto no cadastro pelo MESMO
+   * caminho do memorial. Achou: vincula, e o efeito de envio guarda as
+   * pranchas. Não achou: ficam na memória, como sempre. Uma tentativa por
+   * conversa e código — reler os mesmos selos não pergunta de novo.
+   */
+  const vinculoTentado = useRef(new Set<string>());
+  // A conversa aberta AGORA: a resposta do cadastro pode chegar depois da troca.
+  const conversaAberta = useRef(conv.conversationId);
+  useEffect(() => {
+    conversaAberta.current = conv.conversationId;
+  }, [conv.conversationId]);
+  useEffect(() => {
+    if (reading || conv.projectId) return;
+    const pedido = pedidoDeVinculo(seloResults);
+    if (!pedido) return;
+    const chave = `${conv.conversationId}:${pedido.codigoLido}`;
+    if (vinculoTentado.current.has(chave)) return;
+    vinculoTentado.current.add(chave);
+    const conversa = conv.conversationId;
+    void vincularProjetoDaConversa({
+      codigoAtual: conv.identidade?.codigo ?? null,
+      codigoLido: pedido.codigoLido,
+      prefeitura: pedido.prefeitura,
+      obra: pedido.obra,
+      municipio: null,
+    })
+      .then((v) => {
+        if (v.tipo === "vinculado" && conversa === conversaAberta.current) conv.vincularProjeto(v.projeto.id);
+      })
+      .catch(() => {
+        // Sem vínculo a conversa segue "a endereçar"; as pranchas ficam na memória.
+      });
+  }, [reading, seloResults, conv]);
 
   /** O botão "Tentar de novo": devolve as que falharam para a fila. */
   const tentarDeNovo = useCallback(() => {
