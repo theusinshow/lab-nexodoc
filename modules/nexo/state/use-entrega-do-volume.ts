@@ -33,7 +33,7 @@ function baixarUrl(url: string, nome: string) {
 }
 
 export function useEntregaDoVolume(selos: SeloForLd[]) {
-  const { results, identidade, decisoes, editaveisSalvos, registrarEditaveisSalvos } = useConversation();
+  const { results, identidade, decisoes, editaveisSalvos, registrarEditaveisSalvos, blocosFundidos } = useConversation();
   const liberacao = useLiberacaoDoVolume();
   const [ocupado, setOcupado] = useState<"editaveis" | "volumes" | null>(null);
   const [erro, setErro] = useState<string | null>(null);
@@ -63,6 +63,7 @@ export function useEntregaDoVolume(selos: SeloForLd[]) {
         params,
         identidade,
         rede: redeParaGerar(decisoes, params),
+        fundidos: blocosFundidos,
       });
       // Liberar com um editável faltando é liberar o volume que perde a capa
       // editável — exatamente o que a trava existe para impedir.

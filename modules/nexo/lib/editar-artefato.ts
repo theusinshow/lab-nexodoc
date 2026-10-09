@@ -41,7 +41,7 @@ import {
 } from "./generate";
 import { summarizeSelos } from "./agent-context";
 import { codigoDaFolha } from "./disciplina-da-folha";
-import { nomeNaCapa, nomeNaSeparatriz } from "@/server/nexo/disciplinas";
+import { nomesDoBloco } from "@/server/nexo/titulos-do-bloco";
 import { totalDoConjunto } from "./totais";
 import {
   CAMPOS_DA_IDENTIDADE,
@@ -394,7 +394,7 @@ export async function gerarItem(args: {
      * Os selos vão INTEIROS mesmo assim: o total de referência do carimbo
      * ("05/24") é contado sobre o conjunto, e mandar só a fatia viraria "05/12".
      */
-    const { doTomo, opts } = opcoesDoTomo(selos, num("numTomos", 1), item.tomoAtual);
+    const { doTomo, opts } = opcoesDoTomo(selos, num("numTomos", 1), item.tomoAtual, item.fundidos);
     /*
      * Com bloco, as folhas são as DELE — recortadas dentro do tomo quando há
      * os dois. O título vira o da disciplina: é ele que sai impresso no
@@ -415,7 +415,7 @@ export async function gerarItem(args: {
      */
     const titulo =
       // O titulo da LD leva o nome da CAPA; o longo e da separatriz.
-      (item.bloco ? nomeNaCapa(item.bloco.codigo) : "") ||
+      (item.bloco ? nomesDoBloco(item.bloco).capa : "") ||
       item.bloco?.rotulo.toUpperCase() ||
       txt("tituloLd");
     /*
@@ -486,7 +486,7 @@ export async function gerarItem(args: {
     : [];
   // Mesma regra da LD: a separatriz leva o nome de DOCUMENTO da disciplina.
   const tituloSep =
-    (item.bloco ? nomeNaSeparatriz(item.bloco.codigo) : "") ||
+    (item.bloco ? nomesDoBloco(item.bloco).separatriz : "") ||
     item.bloco?.rotulo.toUpperCase() ||
     args.tituloDaSeparatriz.trim();
   const titulos = listados.length > 0 ? listados : tituloSep ? [tituloSep] : [];

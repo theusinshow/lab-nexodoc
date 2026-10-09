@@ -55,7 +55,7 @@ import { AgentPopover } from "@/components/ui/agent-popover";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { buildBalancedQuantities, planoPorDisciplina, repartirPorBlocos } from "@/lib/ld/ld-rules";
-import { repartirDaLista } from "../lib/blocos";
+import { codigoNoVolume, repartirDaLista } from "../lib/blocos";
 import { codigoDaFolha } from "../lib/disciplina-da-folha";
 import {
   chaveDeOrdem,
@@ -563,7 +563,12 @@ function CanvasInterno({
   tomosDeclarados?: number;
 }) {
   const { artifacts } = useArtifactStore();
-  const { results } = useConversation();
+  const { results, blocosFundidos } = useConversation();
+  // O par juntado é UMA disciplina para o corte de tomos e para o "envelheceu".
+  const codigoDe = useMemo(() => {
+    const noVolume = codigoNoVolume(blocosFundidos);
+    return (f: Folha) => noVolume(codigoDaFolha(f));
+  }, [blocosFundidos]);
 
   // Prefeituras: lista fechada do campo da capa no editor do nó.
   const [templates, setTemplates] = useState<{ id: string; nome: string }[]>([]);
@@ -695,9 +700,9 @@ function CanvasInterno({
             folhas,
             tomosReais,
             // O corte cai ENTRE disciplinas -- ver `repartirPorBlocos`.
-            repartirDaLista(folhas, codigoDaFolha, repartirPorBlocos, buildBalancedQuantities),
+            repartirDaLista(folhas, codigoDe, repartirPorBlocos, buildBalancedQuantities),
             // As disciplinas pequenas juntas, a grande separada — ver `planoPorDisciplina`.
-            (l) => planoPorDisciplina(l.map(codigoDaFolha)),
+            (l) => planoPorDisciplina(l.map(codigoDe)),
           )
         : [];
     const porId = new Map(folhas.map((f) => [f.id, f]));
@@ -740,7 +745,7 @@ function CanvasInterno({
       if (typeof gravada !== "string") return false;
       const tomo = tomoDoArtefato(id);
       // O mesmo recorte que o documento descreve (a LD de um bloco é só da disciplina dele).
-      return documentoEnvelheceu(gravada, porTomo.get(tomo) ?? folhas, codigoDaFolha);
+      return documentoEnvelheceu(gravada, porTomo.get(tomo) ?? folhas, codigoDe);
     };
 
     const nodes: Node[] = [];
@@ -972,6 +977,7 @@ function CanvasInterno({
     pedirCorrecao,
     fecharCorrecao,
     results,
+    codigoDe,
     templates,
     tomosDeclarados,
     previa,

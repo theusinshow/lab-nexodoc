@@ -154,6 +154,36 @@ test("o payload da LD carrega a assinatura das folhas", () => {
   assert.equal(p.tomo, 0);
 });
 
+/* ───────────────────── juntar blocos (09/10/2026) ───────────────────── */
+
+const itemDoBloco = (kind: "ld" | "separatriz", bloco: ItemDoPlano["bloco"]): ItemDoPlano => ({
+  kind,
+  tomoAtual: 0,
+  tomoNumero: 0,
+  sufixo: `:${bloco!.codigo}`,
+  params: { numTomos: 1, tomoInicial: 1 },
+  rotulo: kind,
+  bloco,
+});
+
+test("bloco normal: o payload não muda por o bloco carregar `codigos`", () => {
+  const sem = payloadDoItem({ item: itemDoBloco("ld", { codigo: "his", rotulo: "Hidrossanitário", ids: [] }), selos, tituloDaSeparatriz: "" });
+  const com = payloadDoItem({
+    item: { ...itemDoBloco("ld", { codigo: "his", rotulo: "Hidrossanitário", ids: [], codigos: ["his"] }), fundidos: [["gmt", "ter"]] },
+    selos,
+    tituloDaSeparatriz: "",
+  });
+  assert.deepEqual(com, sem);
+});
+
+test("par juntado: LD e separatriz com o nome do par (o payload muda e o plano pede de novo)", () => {
+  const par = { codigo: "gmt", rotulo: "Geométrico e Terraplenagem", ids: [], codigos: ["gmt", "ter"] };
+  const ld = payloadDoItem({ item: itemDoBloco("ld", par), selos, tituloDaSeparatriz: "" }) as Record<string, unknown>;
+  const sep = payloadDoItem({ item: itemDoBloco("separatriz", par), selos, tituloDaSeparatriz: "" }) as Record<string, unknown>;
+  assert.equal(ld.tituloLd, "PROJETO DE GEOMETRIA E TERRAPLENAGEM");
+  assert.equal(sep.titulo, "PROJETO DE GEOMETRIA E TERRAPLENAGEM");
+});
+
 // ---------------------------------------------------------------------------
 // O defeito: mudar um parâmetro depois de gerar
 // ---------------------------------------------------------------------------

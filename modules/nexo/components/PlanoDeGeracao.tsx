@@ -57,10 +57,11 @@ import { gravarRede, lerRede, redeDoVolumeAnterior } from "@/lib/ld/caminho-da-r
 import { PerguntaDaRede } from "./PerguntaDaRede";
 import {
   blocoGera,
-  blocosDasFolhas,
+  blocosDoVolume,
   misturaDisciplinas,
   resumoDosBlocos,
   type Bloco,
+  type ParFundido,
 } from "../lib/blocos";
 import { codigoDaFolha, rotuloDoCodigo } from "../lib/disciplina-da-folha";
 import {
@@ -71,7 +72,7 @@ import {
 import { titulosPropostos, tituloDoSelo } from "../lib/titulo-do-selo";
 import { conferirPrefeitura } from "../lib/coerencia-do-volume";
 import { useLarguraDoCopiloto } from "../lib/largura-do-copiloto";
-import { nomeNaCapa } from "@/server/nexo/disciplinas";
+import { nomesDoBloco } from "@/server/nexo/titulos-do-bloco";
 import { dataDominante } from "@/server/nexo/data-do-selo";
 import { summarizeSelos } from "../lib/agent-context";
 import { MESES_PT } from "@/server/nexo/agent/requirements";
@@ -124,6 +125,7 @@ export function itensDoPlano(
   proposals: NexoAgentProposal[],
   blocos: readonly Bloco[] = [],
   selos: SeloForLd[] = [],
+  fundidos: readonly ParFundido[] = [],
 ): ItemDoPlano[] {
   const itens: ItemDoPlano[] = [];
   const porBloco = misturaDisciplinas(blocos);
@@ -149,7 +151,7 @@ export function itensDoPlano(
       // dentro dele — um item que não produz documento é uma linha mentirosa.
       const doTomo = temTomo
         ? new Set(
-            opcoesDoTomo(selos, numTomos, tomoAtual).doTomo.map((f) => f.id),
+            opcoesDoTomo(selos, numTomos, tomoAtual, fundidos).doTomo.map((f) => f.id),
           )
         : null;
 
@@ -172,6 +174,7 @@ export function itensDoPlano(
             temTomo ? ` · TOMO ${String(numero).padStart(2, "0")}` : ""
           }`,
           ...(bloco ? { bloco } : {}),
+          ...(fundidos.length > 0 ? { fundidos } : {}),
         });
       }
     }
@@ -261,6 +264,7 @@ export function PlanoDeGeracao({
     saveResult,
     results,
     totaisPorDisciplina,
+    blocosFundidos,
     identidade,
     corrigirIdentidade,
     decisoes,
@@ -284,11 +288,8 @@ export function PlanoDeGeracao({
    * disciplina. Sem isto, as folhas das outras disciplinas saíam sob um título
    * que não é o delas — e o PDF ia embora assim, sem aviso.
    */
-  const blocos = blocosDasFolhas(
-    selos as Folha[],
-    codigoDaFolha,
-    rotuloDoCodigo,
-  );
+  // Com os pares que o engenheiro juntou: um bloco, uma separatriz, uma LD.
+  const blocos = blocosDoVolume(selos as Folha[], codigoDaFolha, rotuloDoCodigo, blocosFundidos);
   const misto = misturaDisciplinas(blocos);
 
   /*
@@ -299,7 +300,7 @@ export function PlanoDeGeracao({
    */
   const tituloSugerido = blocos
     .filter((b) => b.codigo)
-    .map((b) => nomeNaCapa(b.codigo) ?? b.rotulo.toUpperCase())
+    .map((b) => nomesDoBloco(b).capa || b.rotulo.toUpperCase())
     .filter(Boolean)
     .join("\n");
 
@@ -447,7 +448,7 @@ export function PlanoDeGeracao({
     return p;
   });
 
-  const itens = itensDoPlano(propostas, blocos, selos);
+  const itens = itensDoPlano(propostas, blocos, selos, blocosFundidos);
   /*
    * A CAPA NAO INVENTA O NUMERO DO VOLUME. Sem ele o builder cai em "Vol. I"
    * calado, e o engenheiro so descobre abrindo o PDF.
@@ -1115,7 +1116,7 @@ export function PlanoDeGeracao({
                      capa. O longo e da separatriz (`nomeNaSeparatriz`). */
               sugestao={
                 blocos.find((b) => b.codigo)
-                  ? (nomeNaCapa(blocos.find((b) => b.codigo)!.codigo) ?? "")
+                  ? (nomesDoBloco(blocos.find((b) => b.codigo)!).capa)
                   : ""
               }
               onTitulo={(v) => decidir("tituloLd", v, paramsDoAgente.tituloLd)}

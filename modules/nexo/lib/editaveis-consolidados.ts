@@ -23,7 +23,8 @@ import type { IdentidadeDoProjeto } from "./identidade";
 import { postCapa, postLd, postSeparatriz } from "./generate";
 import type { Editavel } from "./editaveis";
 import { nomeDaLd, type RedeDaLd } from "@/lib/ld/caminho-da-rede";
-import { blocoGera, blocosDasFolhas, misturaDisciplinas } from "./blocos";
+import { blocoGera, blocosDoVolume, misturaDisciplinas, type ParFundido } from "./blocos";
+import { nomesDoBloco } from "@/server/nexo/titulos-do-bloco";
 import { codigoDaFolha, rotuloDoCodigo } from "./disciplina-da-folha";
 import type { Folha } from "./folhas";
 
@@ -100,6 +101,8 @@ export async function gerarEditaveisConsolidados(args: {
   nomes?: { capa: string; ld: string; separatriz: string };
   /** Onde cada LD mora na rede — vai no rodapé, como campo "nome do arquivo". */
   rede?: RedeDaLd;
+  /** Os pares de disciplinas juntados na conversa (09/10/2026). */
+  fundidos?: readonly ParFundido[];
 }): Promise<{ editaveis: Editavel[]; falhas: string[] }> {
   const { selos, params, identidade } = args;
   const editaveis: Editavel[] = [];
@@ -132,20 +135,23 @@ export async function gerarEditaveisConsolidados(args: {
    * LD só juntando urbanismo, paisagismo e maquete não tem rodapé que acerte.
    * Disciplina única continua um documento só, com os tomos como seções.
    */
-  const blocos = blocosDasFolhas(selos as Folha[], codigoDaFolha, rotuloDoCodigo);
+  const blocos = blocosDoVolume(selos as Folha[], codigoDaFolha, rotuloDoCodigo, args.fundidos ?? []);
   const daLd = { editavel: true, rede: args.rede, templateId: params.templateId, identidade };
   if (misturaDisciplinas(blocos)) {
     for (const bloco of blocos.filter((b) => b.codigo && blocoGera("ld", b))) {
       try {
         const r = await postLd(selos, {
           ...daLd,
-          // Vazio: o servidor dá o título pelo léxico da disciplina do bloco.
+          // Vazio: o servidor dá o título pelo léxico da disciplina do bloco. O
+          // par juntado não tem uma disciplina só: o título vai daqui.
+          ...(bloco.codigos.length > 1 ? { tituloLd: nomesDoBloco(bloco).capa } : {}),
           numTomos: 1,
           tomoAtual: 0,
           folhasDoTomo: bloco.ids,
           respeitarOrdem: true,
         });
-        editaveis.push({ nome: nomeDaLd(r.resumo.codigo, bloco.codigo, r.resumo.revisao), url: r.odtUrl });
+        // O par vai no nome do arquivo como o escritório escreve: `gmt_ter_ld`.
+        editaveis.push({ nome: nomeDaLd(r.resumo.codigo, bloco.codigos.join("_") || bloco.codigo, r.resumo.revisao), url: r.odtUrl });
       } catch (err) {
         falhas.push(`LD de ${bloco.rotulo || bloco.codigo} (${err instanceof Error ? err.message : "erro"})`);
       }
@@ -167,9 +173,22 @@ export async function gerarEditaveisConsolidados(args: {
     }
   }
 
-  if (params.titulosDaSeparatriz.length > 0) {
+  /*
+   * No misto, as separatrizes são as dos BLOCOS ATUAIS (09/10/2026): os
+   * resultados guardam também as de antes de juntar ou separar blocos, e a
+   * separatriz órfã de `ter` entraria no editável ao lado da do par. Só com
+   * par juntado: sem ele, vale o que foi salvo (título decidido incluído).
+   */
+  const titulosDaSeparatriz =
+    (args.fundidos?.length ?? 0) > 0 && misturaDisciplinas(blocos)
+    ? blocos
+        .filter((b) => b.codigo && blocoGera("separatriz", b))
+        .map((b) => nomesDoBloco(b).separatriz || b.rotulo.toUpperCase())
+        .filter(Boolean)
+    : params.titulosDaSeparatriz;
+  if (titulosDaSeparatriz.length > 0) {
     try {
-      const r = await postSeparatriz(params.titulosDaSeparatriz, {
+      const r = await postSeparatriz(titulosDaSeparatriz, {
         codigo: identidade?.codigo,
         revisao: identidade?.revisao,
       });

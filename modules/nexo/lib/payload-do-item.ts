@@ -11,9 +11,9 @@
  * trás obrigaria a importar o módulo aliasado de volta.
  */
 import { buildBalancedQuantities, planoPorDisciplina, repartirPorBlocos } from "../../../lib/ld/ld-rules.ts";
-import { repartirDaLista } from "./blocos.ts";
+import { codigoNoVolume, repartirDaLista, type ParFundido } from "./blocos.ts";
 import { codigoDaFolha } from "./disciplina-da-folha.ts";
-import { nomeNaCapa, nomeNaSeparatriz } from "../../../server/nexo/disciplinas.ts";
+import { nomesDoBloco } from "../../../server/nexo/titulos-do-bloco.ts";
 import type { SeloForLd } from "../../../server/nexo/build-ld-proposal.ts";
 import { gruposDasFolhas, type Folha } from "./folhas.ts";
 import {
@@ -40,26 +40,35 @@ export interface ItemDoPlano {
    * daquela disciplina, e a separatriz com o nome dela: é a regra do
    * escritório, que emite uma de cada por disciplina dentro do volume.
    */
-  bloco?: { codigo: string; rotulo: string; ids: string[] };
+  bloco?: { codigo: string; rotulo: string; ids: string[]; codigos?: string[] };
+  /**
+   * Os pares juntados pelo engenheiro (09/10/2026). Viajam no item para o corte
+   * de tomos tratar o par como uma disciplina só. NÃO entram no payload.
+   */
+  fundidos?: readonly ParFundido[];
 }
 
 export function opcoesDoTomo(
   selos: SeloForLd[],
   numTomos: number,
   tomoAtual: number,
+  fundidos: readonly ParFundido[] = [],
 ): {
   doTomo: Folha[];
   opts: { folhasDoTomo?: string[]; respeitarOrdem?: boolean };
 } {
   if (tomoAtual <= 0) return { doTomo: [], opts: {} };
   const projecao = selos as Folha[];
+  // O par juntado é UMA disciplina para o corte: o tomo não o parte ao meio.
+  const noVolume = codigoNoVolume(fundidos);
+  const codigoDe = (f: Folha) => noVolume(codigoDaFolha(f));
   // O corte de tomo cai ENTRE disciplinas -- ver `repartirPorBlocos`.
   const divisao = gruposDasFolhas(
     projecao,
     numTomos,
-    repartirDaLista(projecao, codigoDaFolha, repartirPorBlocos, buildBalancedQuantities),
+    repartirDaLista(projecao, codigoDe, repartirPorBlocos, buildBalancedQuantities),
     // As disciplinas pequenas juntas, a grande separada — ver `planoPorDisciplina`.
-    (l) => planoPorDisciplina(l.map(codigoDaFolha)),
+    (l) => planoPorDisciplina(l.map(codigoDe)),
   );
   const doTomo = folhasDoTomo(projecao, divisao, tomoAtual);
   if (doTomo.length === 0) return { doTomo, opts: {} };
@@ -78,7 +87,7 @@ export function opcoesDoTomo(
 export function folhasDoItem(item: ItemDoPlano, selos: SeloForLd[]): Folha[] {
   const numTomos =
     typeof item.params.numTomos === "number" ? item.params.numTomos : 1;
-  const { doTomo } = opcoesDoTomo(selos, numTomos, item.tomoAtual);
+  const { doTomo } = opcoesDoTomo(selos, numTomos, item.tomoAtual, item.fundidos);
   if (!item.bloco) return doTomo;
   const fonte = doTomo.length > 0 ? doTomo : (selos as Folha[]);
   return fonte.filter((f) => item.bloco!.ids.includes(f.id));
@@ -120,7 +129,7 @@ export function payloadDoItem(args: {
      */
     const titulo =
       // O titulo da LD leva o nome da CAPA; o longo e da separatriz.
-      (item.bloco ? nomeNaCapa(item.bloco.codigo) : "") ||
+      (item.bloco ? nomesDoBloco(item.bloco).capa : "") ||
       item.bloco?.rotulo.toUpperCase() ||
       txt("tituloLd");
     return {
@@ -141,7 +150,7 @@ export function payloadDoItem(args: {
     ? (p.titulos as unknown[]).map((t) => String(t ?? "").trim()).filter(Boolean)
     : [];
   const tituloSep =
-    (item.bloco ? nomeNaSeparatriz(item.bloco.codigo) : "") ||
+    (item.bloco ? nomesDoBloco(item.bloco).separatriz : "") ||
     item.bloco?.rotulo.toUpperCase() ||
     args.tituloDaSeparatriz.trim();
   const titulos = listados.length > 0 ? listados : tituloSep ? [tituloSep] : [];

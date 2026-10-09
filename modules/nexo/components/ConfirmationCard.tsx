@@ -109,7 +109,8 @@ import { buildBalancedQuantities, planoPorDisciplina, repartirPorBlocos } from "
 import { plural } from "@/lib/plural";
 import { gruposDasFolhas, type Folha } from "../lib/folhas";
 import {
-  blocosDasFolhas,
+  blocosDoVolume,
+  codigoNoVolume,
   misturaDisciplinas,
   resumoDosBlocos,
   type Bloco,
@@ -673,7 +674,7 @@ function LdConfirmation({
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { getResult, saveResult, totaisPorDisciplina, identidade, podeGastar, motivoParaNaoGastar, motivoDaTrava, decisoes, results } =
+  const { getResult, saveResult, totaisPorDisciplina, blocosFundidos, identidade, podeGastar, motivoParaNaoGastar, motivoDaTrava, decisoes, results } =
     useConversation();
   const id = ldId(selos) + tomo.sufixo;
   const saved = getResult(id);
@@ -691,15 +692,15 @@ function LdConfirmation({
    * hora em que o engenheiro olha a LD e estranha a contagem.
    */
   const blocos = useMemo(
-    () => blocosDasFolhas(selos as Folha[], codigoDaFolha, rotuloDoCodigo),
-    [selos],
+    () => blocosDoVolume(selos as Folha[], codigoDaFolha, rotuloDoCodigo, blocosFundidos),
+    [selos, blocosFundidos],
   );
   const misto = misturaDisciplinas(blocos);
   // O tomo entra na comparação: gerar o tomo 1 não deixa o tomo 2 "aplicado".
   const paramsAtuais = {
     ...params,
     tomo: tomo.numero,
-    folhas: assinaturaDoTomo(opcoesDoTomo(selos, params.numTomos, tomo.atual).doTomo),
+    folhas: assinaturaDoTomo(opcoesDoTomo(selos, params.numTomos, tomo.atual, blocosFundidos).doTomo),
   };
   const estado = estadoDoArtefato(saved, paramsAtuais);
   const pendencia = {
@@ -723,7 +724,7 @@ function LdConfirmation({
     try {
       // A MESMA decisão do plano e do canvas: quais folhas são deste tomo. Este
       // caminho ficou de fora do sub-projeto 5 e voltava a fatiar por quantidade.
-      const { doTomo, opts } = opcoesDoTomo(selos, params.numTomos, tomo.atual);
+      const { doTomo, opts } = opcoesDoTomo(selos, params.numTomos, tomo.atual, blocosFundidos);
       /*
        * O total corrigido à mão, quando este documento é de uma disciplina só.
        * Vai pelas folhas DO TOMO quando há divisão — é delas que a LD fala.
@@ -1441,6 +1442,7 @@ function VolumeConfirmation({
     getResult,
     saveResult,
     totaisPorDisciplina,
+    blocosFundidos,
     identidade,
     conversationId,
     podeGastar,
@@ -1500,16 +1502,19 @@ function VolumeConfirmation({
      * o bloco ao meio -- no volume 10 de 040-26, dez folhas do hidrossanitario
      * num tomo e UMA no outro. Ver `repartirPorBlocos`.
      */
+    // O par juntado é UMA disciplina para o corte (09/10/2026).
+    const noVolume = codigoNoVolume(blocosFundidos);
+    const codigoDe = (f: Folha) => noVolume(codigoDaFolha(f));
     const divisao = gruposDasFolhas(
       projecao,
       total,
-      repartirDaLista(projecao, codigoDaFolha, repartirPorBlocos, buildBalancedQuantities),
+      repartirDaLista(projecao, codigoDe, repartirPorBlocos, buildBalancedQuantities),
       // As disciplinas pequenas juntas, a grande separada — ver `planoPorDisciplina`.
-      (l) => planoPorDisciplina(l.map(codigoDaFolha)),
+      (l) => planoPorDisciplina(l.map(codigoDe)),
     );
     const doTomo = folhasDoTomo(projecao, divisao, tomo.atual);
     return doTomo.length > 0 ? doTomo : selos;
-  }, [selos, results, tomo.atual]);
+  }, [selos, results, tomo.atual, blocosFundidos]);
 
   /*
    * Os ARQUIVOS deste tomo, não só os selos.
@@ -1540,8 +1545,8 @@ function VolumeConfirmation({
    * aquele título. Não faltava um aviso — o documento saía errado.
    */
   const blocos = useMemo(
-    () => blocosDasFolhas(selosDoTomo as Folha[], codigoDaFolha, rotuloDoCodigo),
-    [selosDoTomo],
+    () => blocosDoVolume(selosDoTomo as Folha[], codigoDaFolha, rotuloDoCodigo, blocosFundidos),
+    [selosDoTomo, blocosFundidos],
   );
   const misto = misturaDisciplinas(blocos);
 
@@ -1772,6 +1777,7 @@ function VolumeConfirmation({
          */
         const titulos = titulosDoBloco({
           codigo: bloco.codigo,
+          codigos: bloco.codigos,
           rotulo: bloco.rotulo,
           ...(unico && sepTitle ? { escolhido: sepTitle } : {}),
         });
@@ -1779,9 +1785,18 @@ function VolumeConfirmation({
 
         let separatrizPdf64 = unico && sepPdfUrl ? await urlToBase64(sepPdfUrl) : null;
         if (separatrizPdf64) anotarParte(separatriz);
+        /*
+         * REAPROVEITA SÓ O QUE AINDA É DESTE BLOCO (09/10/2026). Juntar ou
+         * separar blocos muda o título e as folhas; a separatriz salva antes
+         * disso entraria no volume com o nome velho, calada.
+         */
         const sepDoBloco = unico
           ? null
-          : results.find((r) => r.artifactId === separatrizId(selos) + chave + tomo.sufixo);
+          : results.find(
+              (r) =>
+                r.artifactId === separatrizId(selos) + chave + tomo.sufixo &&
+                (r.payload as { titulo?: unknown } | undefined)?.titulo === titulo,
+            );
         const sepUrlDoBloco = sepDoBloco?.files.find((f) => f.mime === PDF_MIME)?.url;
         if (!separatrizPdf64 && sepUrlDoBloco) {
           separatrizPdf64 = await urlToBase64(sepUrlDoBloco);
@@ -1811,8 +1826,11 @@ function VolumeConfirmation({
         let ldDoBloco64 = unico ? ldPdf64 : null;
         if (ldDoBloco64) anotarParte(ld);
         if (!unico) {
+          const assinaturaDoBloco = JSON.stringify(assinaturaDoTomo(doBloco));
           const artefato = results.find(
-            (r) => r.artifactId === ldId(selos) + chave + tomo.sufixo,
+            (r) =>
+              r.artifactId === ldId(selos) + chave + tomo.sufixo &&
+              JSON.stringify((r.payload as { folhas?: unknown } | undefined)?.folhas) === assinaturaDoBloco,
           );
           const url = artefato?.files.find((f) => f.mime === PDF_MIME)?.url;
           if (url) {
@@ -1832,8 +1850,9 @@ function VolumeConfirmation({
               respeitarOrdem: true,
               // A LD deste BLOCO fala de uma disciplina só: o total corrigido
               // dela é o que vale, e é por isso que ele é guardado por código.
-              ...(totaisPorDisciplina[bloco.codigo]
-                ? { referenceTotal: totaisPorDisciplina[bloco.codigo] }
+              // No par juntado, o total é a soma dos dois — só se ambos foram ditos.
+              ...(bloco.codigos.length > 0 && bloco.codigos.every((c) => totaisPorDisciplina[c])
+                ? { referenceTotal: bloco.codigos.reduce((soma, c) => soma + totaisPorDisciplina[c], 0) }
                 : {}),
               identidade,
               rede: redeParaGerar(decisoes, parametrosDaEntrega(results)),
