@@ -69,7 +69,7 @@ function gravar() {
   }
 }
 
-export function usarLarguraDoCopiloto() {
+export function useLarguraDoCopiloto() {
   const [, redesenhar] = useState(0);
 
   useEffect(() => {

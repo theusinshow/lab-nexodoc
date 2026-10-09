@@ -70,7 +70,7 @@ import {
 } from "../lib/pre-condicoes-do-volume";
 import { titulosPropostos, tituloDoSelo } from "../lib/titulo-do-selo";
 import { conferirPrefeitura } from "../lib/coerencia-do-volume";
-import { usarLarguraDoCopiloto } from "../lib/largura-do-copiloto";
+import { useLarguraDoCopiloto } from "../lib/largura-do-copiloto";
 import { nomeNaCapa } from "@/server/nexo/disciplinas";
 import { dataDominante } from "@/server/nexo/data-do-selo";
 import { summarizeSelos } from "../lib/agent-context";
@@ -468,7 +468,10 @@ export function PlanoDeGeracao({
   const temLdNoPlano = itens.some((i) => i.kind === "ld");
   const revisaoDoVolume = identidade.revisao?.trim() || summarizeSelos(selos).revisao || "a";
   const decisoesAtuais = useRef(decisoes);
-  decisoesAtuais.current = decisoes;
+  // Antes do efeito que a lê: efeitos rodam na ordem em que são declarados.
+  useEffect(() => {
+    decisoesAtuais.current = decisoes;
+  }, [decisoes]);
   const herdouRede = useRef<string | null>(null);
   useEffect(() => {
     if (!temLdNoPlano || !pastaDaObra || herdouRede.current === conversationId) return;
@@ -486,6 +489,17 @@ export function PlanoDeGeracao({
         // Sem a obra, a sugestão de sempre — nada a avisar.
       });
   }, [temLdNoPlano, pastaDaObra, conversationId, revisaoDoVolume, decidir]);
+
+  /*
+   * VER COMO SAI. Não abre superfície nova: alarga a coluna que já é
+   * redimensionável e troca o modo do frame. O mapa e o chat continuam na tela,
+   * e voltar é uma transição de largura em vez de uma tela que fecha.
+   *
+   * ANTES do `return null` abaixo (09/10/2026): depois dele, o plano que
+   * passava de vazio a cheio chamava um hook a mais que no render anterior.
+   * O nome antigo (`usar…`) escondia isso do lint.
+   */
+  const { abrirDocumento, fecharDocumento, emDocumento } = useLarguraDoCopiloto();
 
   if (itens.length === 0) return null;
 
@@ -611,14 +625,6 @@ export function PlanoDeGeracao({
    * portão pega o que a construção não alcança, que é a prefeitura editada
    * depois. Ver [[coerencia-do-volume.ts]].
    */
-  /*
-   * VER COMO SAI. Não abre superfície nova: alarga a coluna que já é
-   * redimensionável e troca o modo do frame. O mapa e o chat continuam na tela,
-   * e voltar é uma transição de largura em vez de uma tela que fecha.
-   */
-  const { abrirDocumento, fecharDocumento, emDocumento } =
-    usarLarguraDoCopiloto();
-
   const problemaDePrefeitura = conferirPrefeitura(
     propostas
       .filter((p) => p.kind === "capa" || p.kind === "separatriz")

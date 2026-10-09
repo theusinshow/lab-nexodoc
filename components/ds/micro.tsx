@@ -173,10 +173,14 @@ export function Dica({ texto, tecla, lado = "cima", children }: { texto: string;
   // presa à janela, calculada do botão: nenhuma caixa com overflow escondido a corta
   const [pos, setPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const ancora = useRef<HTMLSpanElement>(null);
+  // A raiz do portal é medida ao ABRIR, como a posição: ler o ref no render
+  // mostraria a do render anterior (e o lint do React barra).
+  const [raiz, setRaiz] = useState<HTMLElement | null>(null);
   const espera = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mostrar = () => {
     const p = posicaoDaDica(ancora.current, lado);
     if (p) setPos(p);
+    setRaiz(raizDoSistema(ancora.current));
     setAberta(true);
   };
   const abrir = () => {
@@ -204,7 +208,6 @@ export function Dica({ texto, tecla, lado = "cima", children }: { texto: string;
               {tecla && <kbd className="ds-kbd">{tecla}</kbd>}
             </span>
           );
-          const raiz = raizDoSistema(ancora.current);
           return raiz ? createPortal(dica, raiz) : dica;
         })()}
     </span>

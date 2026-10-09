@@ -103,6 +103,30 @@ function digitando(alvo: EventTarget | null) {
   return !!(alvo as HTMLElement | null)?.closest("input, textarea, select, [contenteditable=''], [contenteditable='true']");
 }
 
+/*
+ * A BARRA ESCOLHIDA, lembrada por navegador. Loja externa (localStorage) lida
+ * por `useSyncExternalStore`: o servidor pinta a pílula, o cliente troca para a
+ * guardada sem `setState` dentro de efeito. `escolhida` cobre o navegador que
+ * recusa o localStorage (aba privada): a troca vale até recarregar.
+ */
+const EVENTO_DA_BARRA = "prototipo.barra";
+let escolhida: "faixa" | "pilula" | null = null;
+function lerBarra(): "faixa" | "pilula" {
+  try {
+    const salva = localStorage.getItem("prototipo.barra");
+    if (salva === "faixa" || salva === "pilula") return salva;
+  } catch {}
+  return escolhida ?? "pilula";
+}
+function assinarBarra(avisar: () => void) {
+  window.addEventListener(EVENTO_DA_BARRA, avisar);
+  window.addEventListener("storage", avisar);
+  return () => {
+    window.removeEventListener(EVENTO_DA_BARRA, avisar);
+    window.removeEventListener("storage", avisar);
+  };
+}
+
 export function Prototipo() {
   const hash = useSyncExternalStore(assinarHash, () => window.location.hash, () => "");
   const { tela, situacao } = lerRota(hash);
@@ -118,18 +142,13 @@ export function Prototipo() {
    * protótipo abre nela; "Atual" volta à faixa. Lembrada por navegador, só
    * por conveniência de quem testa.
    */
-  const [barra, setBarra] = useState<"faixa" | "pilula">("pilula");
-  useEffect(() => {
-    try {
-      const salva = localStorage.getItem("prototipo.barra");
-      if (salva === "faixa" || salva === "pilula") setBarra(salva);
-    } catch {}
-  }, []);
+  const barra = useSyncExternalStore(assinarBarra, lerBarra, () => "pilula" as const);
   const trocarBarra = (b: "faixa" | "pilula") => {
-    setBarra(b);
+    escolhida = b;
     try {
       localStorage.setItem("prototipo.barra", b);
     } catch {}
+    window.dispatchEvent(new Event(EVENTO_DA_BARRA));
   };
   const [carregando, setCarregando] = useState(false);
   const relogio = useRef<ReturnType<typeof setTimeout> | null>(null);

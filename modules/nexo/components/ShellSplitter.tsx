@@ -21,7 +21,7 @@ import {
   PADRAO,
   PASSO,
   restaurarPreferencia,
-  usarLarguraDoCopiloto,
+  useLarguraDoCopiloto,
 } from "../lib/largura-do-copiloto";
 
 /*
@@ -34,7 +34,7 @@ import {
  * ainda achava ser a atual. Ver [[largura-do-copiloto.ts]].
  */
 export function ShellSplitter() {
-  const { largura, definir } = usarLarguraDoCopiloto();
+  const { largura, definir } = useLarguraDoCopiloto();
 
   useEffect(() => {
     restaurarPreferencia();

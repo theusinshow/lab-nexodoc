@@ -11,6 +11,8 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
     "design-system/**",
+    // Rascunho local (ignorado pelo git): o CI nunca o vê, e o lint local não deve contar.
+    "scratchpad/**",
   ]),
 ]);
 
