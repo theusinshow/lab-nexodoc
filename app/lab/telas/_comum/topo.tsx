@@ -158,7 +158,7 @@ const ICONE_DO_DESTINO: Record<Destino, ReactNode> = {
 
 function CartaoDeNavegacao({ atual, trabalhando }: { atual: Destino | null; trabalhando: boolean }) {
   const { dur, k } = useTempo();
-  const p = usePainel(false);
+  const { aberto, fechar, raiz, botao, painel, andar, aoClicar, aoTeclar } = usePainel(false);
   const ir = useIr();
   const comVoce = COM_VOCE.reduce((n, c) => n + c.achados.length, 0);
   const bloqueiam = COM_VOCE.reduce((n, c) => n + c.achados.filter((a) => a.impacto === "block").length, 0);
@@ -184,19 +184,19 @@ function CartaoDeNavegacao({ atual, trabalhando }: { atual: Destino | null; trab
     Administração: "Centro de controle",
   };
   return (
-    <div ref={p.raiz} className="pn-conta pn-marca-raiz">
-      <button type="button" className="pn-marca pn-marca--botao" aria-haspopup="menu" aria-label="Navegação" {...p.gatilho}>
+    <div ref={raiz} className="pn-conta pn-marca-raiz">
+      <button type="button" className="pn-marca pn-marca--botao" aria-haspopup="menu" aria-label="Navegação" ref={botao} aria-expanded={aberto} onClick={aoClicar} onKeyDown={aoTeclar}>
         <span className="pn-marca-circulo">
           <Orbe tamanho={22} estado={trabalhando ? "trabalhando" : "repouso"} />
         </span>
         <span className="pn-marca-nome">Nexo</span>
-        <motion.span className="pn-quem-seta" animate={{ rotate: p.aberto ? 180 : 0 }} transition={{ duration: dur("state"), ease: [...CURVA.out] }}>
+        <motion.span className="pn-quem-seta" animate={{ rotate: aberto ? 180 : 0 }} transition={{ duration: dur("state"), ease: [...CURVA.out] }}>
           <ChevronDown size={14} />
         </motion.span>
       </button>
       <AnimatePresence>
-        {p.aberto && (
-          <Painel painel={p.painel} andar={p.andar} rotulo="Navegação" classe="pn-cartao-nav">
+        {aberto && (
+          <Painel painel={painel} andar={andar} rotulo="Navegação" classe="pn-cartao-nav">
             <div className="pn-cartao-grade">
               {DESTINOS.map((d, i) => (
                 <motion.button
@@ -208,7 +208,7 @@ function CartaoDeNavegacao({ atual, trabalhando }: { atual: Destino | null; trab
                   initial={{ opacity: 0, y: 6 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: dur("enter"), delay: (0.04 + i * 0.03) * k, ease: [...CURVA.out] }}
-                  onClick={() => (p.fechar(false), ir(...DESTINO_DA_BARRA[d]))}
+                  onClick={() => (fechar(false), ir(...DESTINO_DA_BARRA[d]))}
                 >
                   <span className="pn-cartao-icone">{ICONE_DO_DESTINO[d]}</span>
                   <b>{d}</b>
@@ -274,22 +274,18 @@ function usePainel(abertoInicial: boolean) {
     else if (e.key === "Tab") setAberto(false);
   };
 
-  const gatilho = {
-    ref: botao,
-    "aria-expanded": aberto,
-    onClick: (e: React.MouseEvent) => {
-      peloTeclado.current = e.detail === 0;
-      setAberto((a) => !a);
-    },
-    onKeyDown: (e: KE<HTMLButtonElement>) => {
-      if (e.key === "ArrowDown") {
-        e.preventDefault();
-        peloTeclado.current = true;
-        setAberto(true);
-      }
-    },
+  const aoClicar = (e: React.MouseEvent) => {
+    peloTeclado.current = e.detail === 0;
+    setAberto((a) => !a);
   };
-  return { aberto, setAberto, fechar, raiz, painel, andar, gatilho };
+  const aoTeclar = (e: KE<HTMLButtonElement>) => {
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      peloTeclado.current = true;
+      setAberto(true);
+    }
+  };
+  return { aberto, fechar, raiz, botao, painel, andar, aoClicar, aoTeclar };
 }
 
 function Painel({ painel, andar, rotulo, classe, children }: { painel: RefObject<HTMLDivElement | null>; andar: (e: KE<HTMLDivElement>) => void; rotulo: string; classe: string; children: ReactNode }) {
@@ -319,19 +315,19 @@ function Painel({ painel, andar, rotulo, classe, children }: { painel: RefObject
  * diz que a lista não está vazia.
  */
 function Sino({ ponto, abertoInicial }: { ponto: boolean; abertoInicial: boolean }) {
-  const p = usePainel(abertoInicial);
+  const { aberto, fechar, raiz, botao, painel, andar, aoClicar, aoTeclar } = usePainel(abertoInicial);
   const ir = useIr();
   const total = COM_VOCE.reduce((n, c) => n + c.achados.length, 0);
   const temAlgo = ponto && total > 0;
   return (
-    <div ref={p.raiz} className="pn-conta">
-      <Botao variante="quiet" icone aria-label={temAlgo ? `Com você: ${total} achados` : "Com você: nada"} aria-haspopup="menu" className="pn-sino" {...p.gatilho}>
+    <div ref={raiz} className="pn-conta">
+      <Botao variante="quiet" icone aria-label={temAlgo ? `Com você: ${total} achados` : "Com você: nada"} aria-haspopup="menu" className="pn-sino" ref={botao} aria-expanded={aberto} onClick={aoClicar} onKeyDown={aoTeclar}>
         <Bell />
         {temAlgo && <i />}
       </Botao>
       <AnimatePresence>
-        {p.aberto && (
-          <Painel painel={p.painel} andar={p.andar} rotulo="Com você" classe="pn-sino-painel">
+        {aberto && (
+          <Painel painel={painel} andar={andar} rotulo="Com você" classe="pn-sino-painel">
             <div className="pn-sino-cabeca">
               <b>Com você</b>
               <span className="ds-num">{total} achados</span>
@@ -340,7 +336,7 @@ function Sino({ ponto, abertoInicial }: { ponto: boolean; abertoInicial: boolean
               COM_VOCE.map((c) => {
                 const bloqueiam = c.achados.filter((a) => a.impacto === "block").length;
                 return (
-                  <button key={c.id} type="button" role="menuitem" className="pn-sino-item" onClick={() => (p.fechar(false), ir("nexo-auditoria", "achado"))}>
+                  <button key={c.id} type="button" role="menuitem" className="pn-sino-item" onClick={() => (fechar(false), ir("nexo-auditoria", "achado"))}>
                     <span className="pn-sino-linha">
                       <span className="ds-code">{c.codigo}</span>
                       <b>{c.titulo}</b>
@@ -364,7 +360,7 @@ function Sino({ ponto, abertoInicial }: { ponto: boolean; abertoInicial: boolean
               <p className="pn-sino-vazio">Nada com você agora.</p>
             )}
             <div className="pn-painel-pe">
-              <button type="button" role="menuitem" onClick={() => (p.fechar(false), ir("achados"))}>
+              <button type="button" role="menuitem" onClick={() => (fechar(false), ir("achados"))}>
                 Abrir Achados <ArrowRight size={14} aria-hidden />
               </button>
             </div>
@@ -384,15 +380,15 @@ function Sino({ ponto, abertoInicial }: { ponto: boolean; abertoInicial: boolean
  */
 function MenuDaConta({ atual, onAtalhos, abertoInicial }: { atual: Destino | null; onAtalhos?: () => void; abertoInicial: boolean }) {
   const { dur } = useTempo();
-  const p = usePainel(abertoInicial);
+  const { aberto, fechar, raiz, botao, painel, andar, aoClicar, aoTeclar } = usePainel(abertoInicial);
   const ir = useIr();
   return (
-    <div ref={p.raiz} className="pn-conta">
+    <div ref={raiz} className="pn-conta">
       <button
         type="button"
         className="pn-quem"
         aria-haspopup="menu"
-        {...p.gatilho}
+        ref={botao} aria-expanded={aberto} onClick={aoClicar} onKeyDown={aoTeclar}
         // O brilho da barra em pílula segue o ponteiro (só existe lá; na faixa o CSS não o desenha).
         onPointerMove={(e) => {
           const r = e.currentTarget.getBoundingClientRect();
@@ -408,13 +404,13 @@ function MenuDaConta({ atual, onAtalhos, abertoInicial }: { atual: Destino | nul
             {USUARIO.escritorio}, {USUARIO.papel}
           </small>
         </span>
-        <motion.span className="pn-quem-seta" animate={{ rotate: p.aberto ? 180 : 0 }} transition={{ duration: dur("state"), ease: [...CURVA.out] }}>
+        <motion.span className="pn-quem-seta" animate={{ rotate: aberto ? 180 : 0 }} transition={{ duration: dur("state"), ease: [...CURVA.out] }}>
           <ChevronDown size={14} />
         </motion.span>
       </button>
       <AnimatePresence>
-        {p.aberto && (
-          <Painel painel={p.painel} andar={p.andar} rotulo="Conta" classe="pn-menu">
+        {aberto && (
+          <Painel painel={painel} andar={andar} rotulo="Conta" classe="pn-menu">
             <div className="pn-menu-quem">
               <span className="pn-menu-avatar" aria-hidden>
                 {USUARIO.iniciais}
@@ -441,7 +437,7 @@ function MenuDaConta({ atual, onAtalhos, abertoInicial }: { atual: Destino | nul
                 type="button"
                 role="menuitem"
                 onClick={() => {
-                  p.fechar(false);
+                  fechar(false);
                   onAtalhos?.();
                 }}
               >
@@ -451,11 +447,11 @@ function MenuDaConta({ atual, onAtalhos, abertoInicial }: { atual: Destino | nul
               </button>
             </div>
             <div className="pn-menu-grupo">
-              <button type="button" role="menuitem" onClick={() => (p.fechar(false), ir("entrada", "padrao"))}>
+              <button type="button" role="menuitem" onClick={() => (fechar(false), ir("entrada", "padrao"))}>
                 <Repeat2 size={15} aria-hidden />
                 Entrar com outra conta
               </button>
-              <button type="button" role="menuitem" className="pn-menu-sair" onClick={() => (p.fechar(false), ir("entrada", "padrao"))}>
+              <button type="button" role="menuitem" className="pn-menu-sair" onClick={() => (fechar(false), ir("entrada", "padrao"))}>
                 <LogOut size={15} aria-hidden />
                 Sair
               </button>

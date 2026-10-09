@@ -46,6 +46,9 @@ function assinarLargura(avisar: () => void) {
   return () => window.removeEventListener("resize", avisar);
 }
 
+// leituras que não mudam sozinhas: nada a assinar
+const semAssinatura = () => () => {};
+
 /** A largura da janela; no servidor, larga (o aviso só nasce no navegador). */
 export function useLarguraDaJanela() {
   return useSyncExternalStore(assinarLargura, () => window.innerWidth, () => 1440);
@@ -71,17 +74,15 @@ function useMovimentoReduzido() {
 
 export function useAvisoDeTela() {
   const largura = useLarguraDaJanela();
-  const [continuou, setContinuou] = useState(false);
-  const [faixaFechada, setFaixaFechada] = useState(false);
-  const [forcar, setForcar] = useState(false);
-  useEffect(() => {
-    const f = forcado();
-    setForcar(f);
-    if (!f) {
-      setContinuou(lerSessao(CHAVE_CONTINUOU));
-      setFaixaFechada(lerSessao(CHAVE_FAIXA));
-    }
-  }, []);
+  // O endereço e a sessão só existem no navegador; no servidor, nada forçado e nada decidido.
+  const forcar = useSyncExternalStore(semAssinatura, forcado, () => false);
+  const continuouNaSessao = useSyncExternalStore(semAssinatura, () => lerSessao(CHAVE_CONTINUOU), () => false);
+  const fechadaNaSessao = useSyncExternalStore(semAssinatura, () => lerSessao(CHAVE_FAIXA), () => false);
+  const [continuouAgora, setContinuou] = useState(false);
+  const [fechadaAgora, setFaixaFechada] = useState(false);
+  // forçado pelo endereço, a decisão gravada na sessão não conta
+  const continuou = continuouAgora || (!forcar && continuouNaSessao);
+  const faixaFechada = fechadaAgora || (!forcar && fechadaNaSessao);
   const pequena = forcar || largura < LARGURA_MINIMA;
   return {
     largura,

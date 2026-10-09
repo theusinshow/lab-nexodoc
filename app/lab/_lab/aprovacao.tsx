@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useId, useState } from "react";
+import { useId, useState } from "react";
 
 import { CURVA, DURACAO, MOLA, escalarMola } from "@/lib/ds/movimento";
 
@@ -34,9 +34,11 @@ export function Aprovacao({ id, rotulo }: { id: string; rotulo: string }) {
   const grupo = useId();
 
   // O registro chega depois da primeira pintura; a nota acompanha.
-  useEffect(() => {
+  const [notaVista, setNotaVista] = useState(atual?.nota);
+  if (notaVista !== atual?.nota) {
+    setNotaVista(atual?.nota);
     setNota(atual?.nota ?? "");
-  }, [atual?.nota]);
+  }
 
   const abrirNota = status === "mudar" || nota.length > 0;
 

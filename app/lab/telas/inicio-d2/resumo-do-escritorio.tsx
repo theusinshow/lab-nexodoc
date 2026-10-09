@@ -87,7 +87,7 @@ const soma = (ds: Dia[], campo: keyof Omit<Dia, "data">) => ds.reduce((a, d) => 
 
 export function ResumoDoEscritorio() {
   const [periodo, setPeriodo] = useState<Periodo>("mes");
-  const dias = useMemo(serie, []);
+  const dias = useMemo(() => serie(), []);
   const doMes = dias.filter((d) => (noFuso(d.data).mes - 1) === (noFuso(HOJE).mes - 1));
   const recorte = periodo === "mes" ? doMes : dias;
 

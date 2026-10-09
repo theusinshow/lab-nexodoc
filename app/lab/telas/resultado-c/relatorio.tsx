@@ -28,7 +28,8 @@ export function Relatorio({ achados, parcial, revisao }: { achados: Achado[]; pa
   const { dur } = useTempo();
   const [copiado, setCopiado] = useState(false);
   const estado = estadoDaEmissao(achados, parcial);
-  let n = 0;
+  // a numeração corrida: por impacto, na ordem das seções
+  const numero = new Map(IMPACTOS.flatMap((imp) => achados.filter((a) => a.impacto === imp.id)).map((a, i) => [a.id, i + 1]));
 
   const copiar = () => {
     const texto = document.querySelector(".rl-texto")?.textContent ?? "";
@@ -87,11 +88,10 @@ export function Relatorio({ achados, parcial, revisao }: { achados: Achado[]; pa
                   <span>{imp.dica}</span>
                 </h3>
                 {doNivel.map((a) => {
-                  n += 1;
                   return (
                     <div key={a.id} className="rl-achado">
                       <p className="rl-achado-titulo">
-                        {n}. {a.titulo}
+                        {numero.get(a.id)}. {a.titulo}
                       </p>
                       <dl>
                         <dt>Página</dt>

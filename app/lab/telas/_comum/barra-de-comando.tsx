@@ -233,37 +233,40 @@ export function BarraDeComando({
   const arquivo = arquivoControlado ?? arquivoLocal;
   const setArquivo = (v: boolean) => (onArquivo ? onArquivo(v) : setArquivoLocal(v));
   const [indice, setIndice] = useState(executandoInicial ? 1 : 0);
-  const [executando, setExecutando] = useState<string | null>(null);
   const [aberta, setAberta] = useState(modo === "fixa" || abertaInicial);
   const entrada = useRef<HTMLInputElement>(null);
   const raiz = useRef<HTMLDivElement>(null);
   const ir = useIr();
   const proto = useNoPrototipo();
+
+  const lista = useMemo(() => montar(q, arquivo, primeiro), [q, arquivo, primeiro]);
+  const itens = lista.filter((e): e is Extract<Entrada, { tipo: "item" }> => e.tipo === "item");
+  // a posição de cada item entre os itens (os grupos e o vazio não contam)
+  const posicao = new Map(itens.map((e, i) => [e.id, i]));
+  const sel = itens[Math.min(indice, itens.length - 1)];
+  const mostrarLista = modo === "fixa" || aberta;
+  // executandoInicial: já nasce começando o item selecionado (só na montagem)
+  const [executando, setExecutando] = useState<string | null>(executandoInicial && sel ? sel.id : null);
   useEffect(() => {
     if (!proto || !executando) return;
     const id = setTimeout(() => ir(...destinoDoItem(executando)), 650);
     return () => clearTimeout(id);
   }, [proto, executando, ir]);
 
-  const lista = useMemo(() => montar(q, arquivo, primeiro), [q, arquivo, primeiro]);
-  const itens = lista.filter((e): e is Extract<Entrada, { tipo: "item" }> => e.tipo === "item");
-  const sel = itens[Math.min(indice, itens.length - 1)];
-  const mostrarLista = modo === "fixa" || aberta;
-
   useEffect(() => {
     if (autoFoco) entrada.current?.focus();
   }, [autoFoco]);
-  useEffect(() => {
-    if (executandoInicial && sel) setExecutando(sel.id);
-    // só na montagem
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  useEffect(() => {
+  // ao entrar no modo arquivo, a lista abre no primeiro item
+  const [arquivoVisto, setArquivoVisto] = useState(false);
+  if (arquivo !== arquivoVisto) {
+    setArquivoVisto(arquivo);
     if (arquivo) {
       setAberta(true);
       setIndice(0);
-      entrada.current?.focus();
     }
+  }
+  useEffect(() => {
+    if (arquivo) entrada.current?.focus();
   }, [arquivo]);
   // Suspensa: é a busca da própria tela (Painel), então o Ctrl K que a dica
   // mostra põe o foco nela em vez de abrir a paleta por cima.
@@ -331,43 +334,39 @@ export function BarraDeComando({
     <>
       <div className="cf-corpo">
         <ul className="cf-lista" id={`cf-lista-${modo}`} role="listbox">
-          {(() => {
-            let n = -1;
-            return lista.map((e, i) => {
-              if (e.tipo === "grupo")
-                return (
-                  <li key={`g-${e.nome}-${i}`} className="cf-grupo" role="presentation">
-                    {e.nome}
-                  </li>
-                );
-              if (e.tipo === "vazio")
-                return (
-                  <li key="vazio" className="cf-vazio" role="presentation">
-                    {e.texto}
-                  </li>
-                );
-              n += 1;
-              const meu = n;
-              const ativo = sel?.id === e.id;
+          {lista.map((e, i) => {
+            if (e.tipo === "grupo")
               return (
-                <li
-                  key={e.id}
-                  id={`cf-${modo}-${e.id}`}
-                  role="option"
-                  aria-selected={ativo}
-                  className={`cf-item${e.recuo ? " cf-item--recuo" : ""}${e.nexo ? " cf-item--nexo" : ""}`}
-                  onMouseMove={() => indice !== meu && setIndice(meu)}
-                  onClick={() => setExecutando(e.id)}
-                >
-                  {ativo && <motion.span layoutId={`cf-destaque-${modo}`} className="cf-destaque" transition={mola("snappy")} />}
-                  <span className="cf-item-icone">{e.icone}</span>
-                  <span className="cf-item-titulo">{e.titulo}</span>
-                  {e.sub && <span className="cf-item-sub">{e.sub}</span>}
-                  <span className="cf-item-direita">{executando === e.id ? <span className="cf-comecando">começando…</span> : e.direita}</span>
+                <li key={`g-${e.nome}-${i}`} className="cf-grupo" role="presentation">
+                  {e.nome}
                 </li>
               );
-            });
-          })()}
+            if (e.tipo === "vazio")
+              return (
+                <li key="vazio" className="cf-vazio" role="presentation">
+                  {e.texto}
+                </li>
+              );
+            const meu = posicao.get(e.id) ?? 0;
+            const ativo = sel?.id === e.id;
+            return (
+              <li
+                key={e.id}
+                id={`cf-${modo}-${e.id}`}
+                role="option"
+                aria-selected={ativo}
+                className={`cf-item${e.recuo ? " cf-item--recuo" : ""}${e.nexo ? " cf-item--nexo" : ""}`}
+                onMouseMove={() => indice !== meu && setIndice(meu)}
+                onClick={() => setExecutando(e.id)}
+              >
+                {ativo && <motion.span layoutId={`cf-destaque-${modo}`} className="cf-destaque" transition={mola("snappy")} />}
+                <span className="cf-item-icone">{e.icone}</span>
+                <span className="cf-item-titulo">{e.titulo}</span>
+                {e.sub && <span className="cf-item-sub">{e.sub}</span>}
+                <span className="cf-item-direita">{executando === e.id ? <span className="cf-comecando">começando…</span> : e.direita}</span>
+              </li>
+            );
+          })}
         </ul>
 
         <aside className="cf-detalhe" aria-live="polite">

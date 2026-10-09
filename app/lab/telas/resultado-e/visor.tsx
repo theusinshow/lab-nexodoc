@@ -54,13 +54,15 @@ export function VisorDoMemorial({
   const [zoom, setZoom] = useState(1);
   const [direcao, setDirecao] = useState(1);
 
-  useEffect(() => {
-    if (!aberto) return;
-    setPagina(primeiro.pagina);
-    setAtivo(primeiro.id);
-    // só quando abre
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [aberto, inicial]);
+  // só quando abre (ou troca o achado de entrada com ele aberto)
+  const [aberturaVista, setAberturaVista] = useState({ aberto, inicial });
+  if (aberto !== aberturaVista.aberto || inicial !== aberturaVista.inicial) {
+    setAberturaVista({ aberto, inicial });
+    if (aberto) {
+      setPagina(primeiro.pagina);
+      setAtivo(primeiro.id);
+    }
+  }
 
   const daPagina = achados.filter((a) => a.pagina === pagina);
   const ir = (p: number) => {

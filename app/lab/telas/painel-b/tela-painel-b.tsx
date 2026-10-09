@@ -88,26 +88,30 @@ export function TelaPainelB({ situacao }: { situacao: SituacaoB }) {
   }, [estado, situacao, dur]);
 
   const prontos = trabalhos.filter((t) => t.pronto).map((t) => t.id).join(",");
-  useEffect(() => {
-    if (!prontos.split(",").includes("t1")) return;
-    setFila((f) =>
-      f.some((i) => i.id === "pronto-t1")
-        ? f
-        : [
-            {
-              id: "pronto-t1",
-              faixa: "agora",
-              tipo: "pronto",
-              titulo: "Parecer de 117-25 pronto: não emitir ainda",
-              obra: "117-25",
-              cidade: "Criciúma",
-              porque: "Auditoria concluída agora. 2 bloqueios, 3 decisões técnicas.",
-              acao: "Abrir parecer",
-            },
-            ...f,
-          ],
-    );
-  }, [prontos]);
+  // t1 pronto vira item da fila (conferido a cada mudança dos prontos)
+  const [prontosVistos, setProntosVistos] = useState("");
+  if (prontos !== prontosVistos) {
+    setProntosVistos(prontos);
+    if (prontos.split(",").includes("t1")) {
+      setFila((f) =>
+        f.some((i) => i.id === "pronto-t1")
+          ? f
+          : [
+              {
+                id: "pronto-t1",
+                faixa: "agora",
+                tipo: "pronto",
+                titulo: "Parecer de 117-25 pronto: não emitir ainda",
+                obra: "117-25",
+                cidade: "Criciúma",
+                porque: "Auditoria concluída agora. 2 bloqueios, 3 decisões técnicas.",
+                acao: "Abrir parecer",
+              },
+              ...f,
+            ],
+      );
+    }
+  }
 
   function avisar(texto: string, desfazer?: () => void) {
     if (avisoTimer.current) clearTimeout(avisoTimer.current);

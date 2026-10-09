@@ -394,7 +394,9 @@ export function Escrevendo({ texto, onFim }: { texto: string; onFim?: () => void
   const palavras = texto.split(" ");
   const [n, setN] = useState(reduzido ? palavras.length : 1);
   const fim = useRef(onFim);
-  fim.current = onFim;
+  useEffect(() => {
+    fim.current = onFim;
+  });
   useEffect(() => {
     if (n >= palavras.length) {
       fim.current?.();

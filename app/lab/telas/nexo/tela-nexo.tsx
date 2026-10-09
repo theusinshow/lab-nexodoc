@@ -3,7 +3,7 @@
 import { ReactFlowProvider, useReactFlow, type Node, type OnNodeDrag, type OnNodesChange } from "@xyflow/react";
 import { AnimatePresence, motion, useReducedMotionConfig } from "motion/react";
 import { MessageSquarePlus, PanelLeftClose, PanelRightClose, Search } from "lucide-react";
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 
 import { Botao, Orbe, Tecla } from "@/components/ds/basicos";
 import { useTempo } from "@/lib/ds/tempo";
@@ -107,9 +107,9 @@ export function Conversas({ ativa = "volume" }: { ativa?: "volume" | "auditoria"
  */
 function Resposta({ partes }: { partes: [string, ReactNode | false][] }) {
   const { k } = useTempo();
-  const naAbertura = useRef<Set<string> | null>(null);
   const visiveis = partes.filter(([, p]) => p !== false);
-  if (naAbertura.current === null) naAbertura.current = new Set(visiveis.map(([c]) => c));
+  // as partes que já estavam lá na abertura (lidas uma vez, na montagem)
+  const [naAbertura] = useState(() => new Set(visiveis.map(([c]) => c)));
   return (
     <div className="cx-nexo">
       <motion.span className="cx-nexo-marca" aria-hidden initial={false} animate={{ opacity: 1, scale: 1 }} transition={{ duration: RITMO.entra * k, delay: 0.3 * k, ease: SUAVE }}>
@@ -120,7 +120,7 @@ function Resposta({ partes }: { partes: [string, ReactNode | false][] }) {
           <motion.div
             key={chave}
             className="cx-parte"
-            initial={naAbertura.current!.has(chave) ? false : { opacity: 0, y: 6 }}
+            initial={naAbertura.has(chave) ? false : { opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: RITMO.entra * k, ease: SUAVE }}
           >

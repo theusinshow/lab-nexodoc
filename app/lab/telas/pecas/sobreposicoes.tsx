@@ -204,9 +204,12 @@ export function Avisos({ avisos, onFechar, onAcao }: { avisos: Aviso[]; onFechar
     }
   const escondidos = guardados.size;
   const vistos = avisos.filter((a) => !guardados.has(a.id));
-  useEffect(() => {
+  // voltando a caber, a lista se recolhe de novo
+  const [quantosVistos, setQuantosVistos] = useState(avisos.length);
+  if (avisos.length !== quantosVistos) {
+    setQuantosVistos(avisos.length);
     if (avisos.length <= 3) setTodos(false);
-  }, [avisos.length]);
+  }
   return (
     <section className="pc-avisos" aria-label="Avisos" aria-live="polite">
       <AnimatePresence initial={false}>

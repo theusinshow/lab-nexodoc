@@ -195,6 +195,15 @@ const meio = (s: Ponto, c1: Ponto, c2: Ponto, t: Ponto): Ponto => ({ x: (s.x + 3
  */
 type Fio = { s: Ponto; t: Ponto; p: Ponto | null; v: Ponto; quadro: number; ultimo: number; linha: SVGPathElement | null; ponta: SVGPathElement | null };
 const FIOS = new Map<string, Fio>();
+/** O fio desta seta, criado na primeira vez que alguém pede. */
+function fioDe(chave: string) {
+  let f = FIOS.get(chave);
+  if (!f) {
+    f = { s: { x: 0, y: 0 }, t: { x: 0, y: 0 }, p: null, v: { x: 0, y: 0 }, quadro: 0, ultimo: 0, linha: null, ponta: null };
+    FIOS.set(chave, f);
+  }
+  return f;
+}
 
 function desenharFio(f: Fio) {
   const { s, t } = f;
@@ -256,17 +265,12 @@ const Seta = memo(function Seta({ id, source, target, sourceX: sx, sourceY: sy, 
   const targetX = para?.x ?? tx;
   const targetY = para?.y ?? ty;
   const chave = useStore((s) => s.rfId) + id;
-  let f = FIOS.get(chave);
-  if (!f) {
-    f = { s: { x: 0, y: 0 }, t: { x: 0, y: 0 }, p: null, v: { x: 0, y: 0 }, quadro: 0, ultimo: 0, linha: null, ponta: null };
-    FIOS.set(chave, f);
-  }
-  const fio = f;
   const s = { x: sourceX + R - 1, y: sourceY };
   const t = { x: targetX - 1, y: targetY };
 
   // A cada posição nova das pontas: o fio redesenha já (preso nas duas) e, se o meio ficou para trás, a mola roda.
   useLayoutEffect(() => {
+    const fio = fioDe(chave);
     const andou = fio.s.x !== s.x || fio.s.y !== s.y || fio.t.x !== t.x || fio.t.y !== t.y;
     const nasceu = fio.p === null;
     fio.s = s;
@@ -287,9 +291,9 @@ const Seta = memo(function Seta({ id, source, target, sourceX: sx, sourceY: sy, 
   const cls = `mp-seta3${data?.acesa ? " mp-seta3--acesa" : ""}${data?.fraca ? " mp-seta3--fraca" : ""}`;
   return (
     <g className={cls}>
-      <path ref={(el) => { if (el) fio.linha = el; }} className="mp-seta3-linha" />
+      <path ref={(el) => { if (el) fioDe(chave).linha = el; }} className="mp-seta3-linha" />
       <path d={porta(sourceX, sourceY)} className="mp-seta3-porta" />
-      <path ref={(el) => { if (el) fio.ponta = el; }} className="mp-seta3-ponta" />
+      <path ref={(el) => { if (el) fioDe(chave).ponta = el; }} className="mp-seta3-ponta" />
     </g>
   );
 });

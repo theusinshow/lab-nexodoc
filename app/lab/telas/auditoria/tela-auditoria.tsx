@@ -204,7 +204,8 @@ export function TelaAuditoria({ situacao, embutido = false }: { situacao: Situac
   // As pílulas: feitas com o tempo real, a atual com o decorrido, as que faltam
   // com o previsto, cada uma começando onde a anterior terminou.
   let t = 0;
-  const passos: PassoDaLinha[] = ETAPAS.map((e, i) => {
+  const passos: PassoDaLinha[] = [];
+  for (const [i, e] of ETAPAS.entries()) {
     const inicio = t;
     let estado: PassoDaLinha["estado"] = "futuro";
     let duracao = 0;
@@ -228,8 +229,8 @@ export function TelaAuditoria({ situacao, embutido = false }: { situacao: Situac
         </>
       );
     if (estado === "erro") nota = <span className="au-nota-erro">O modelo não respondeu no bloco 9, depois de três tentativas.</span>;
-    return { id: e.id, rotulo: e.rotulo, inicio, duracao, previsto: e.previsto, estado, nota };
-  });
+    passos.push({ id: e.id, rotulo: e.rotulo, inicio, duracao, previsto: e.previsto, estado, nota });
+  }
   const total = Math.max(330, t);
   const agora = rodando && atual >= 0 ? passos[atual].inicio + naEtapa : situacao === "enviando" ? 2 : null;
   const decorrido = concluida ? passos.reduce((s, p) => s + p.duracao, 0) : falhou ? passos[3].inicio + naEtapa : (agora ?? 0);

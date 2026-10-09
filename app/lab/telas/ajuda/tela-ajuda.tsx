@@ -225,12 +225,14 @@ export function TelaAjuda({ situacao }: { situacao: SituacaoAjuda }) {
   };
 
   // Na busca, a aba sem resultado cede para a primeira que tem.
-  useEffect(() => {
+  const [qVisto, setQVisto] = useState("");
+  if (q !== qVisto) {
+    setQVisto(q);
     if (q && !achados[aba].length) {
       const outra = ABAS.find(([a]) => achados[a].length);
       if (outra) setAba(outra[0]);
     }
-  }, [q]); // eslint-disable-line react-hooks/exhaustive-deps
+  }
 
   useEffect(() => {
     const tecla = (e: KeyboardEvent) => {

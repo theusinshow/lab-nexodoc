@@ -64,12 +64,11 @@ export function TelaInicioE({ situacao }: { situacao: SituacaoE }) {
   // A chegada em três tempos: caem soltas, o Nexo lê os carimbos, e arruma.
   useEffect(() => {
     if (fase !== "chegando") return;
-    const t = setTimeout(() => setFase("lendo"), 700 * k);
+    const t = setTimeout(() => (setLidas(0), setFase("lendo")), 700 * k);
     return () => clearTimeout(t);
   }, [fase, k]);
   useEffect(() => {
     if (fase !== "lendo") return;
-    setLidas(0);
     const id = setInterval(() => setLidas((n) => Math.min(folhas.length, n + 2)), 90 * k);
     const t = setTimeout(() => setFase("arrumada"), 1900 * k);
     return () => {

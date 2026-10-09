@@ -450,9 +450,12 @@ function WidgetFoco({ rodando: rodandoInicial }: { rodando: boolean }) {
     const id = setInterval(() => setResta((r) => Math.max(0, r - 1)), 1000);
     return () => clearInterval(id);
   }, [rodando]);
-  useEffect(() => {
+  // chegou a zero: para
+  const [restaVista, setRestaVista] = useState(resta);
+  if (resta !== restaVista) {
+    setRestaVista(resta);
     if (resta === 0) setRodando(false);
-  }, [resta]);
+  }
 
   const frac = 1 - resta / total;
   const r = 42;

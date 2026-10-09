@@ -3,7 +3,7 @@
 import { ReactFlowProvider, useReactFlow, useStore } from "@xyflow/react";
 import { AnimatePresence, motion } from "motion/react";
 import { ChevronDown, Maximize, Minus, Plus, Search } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 
 import { Botao, Tecla } from "@/components/ds/basicos";
 import { useTempo } from "@/lib/ds/tempo";
@@ -371,12 +371,13 @@ function Mapa({ situacao }: { situacao: SituacaoMapa }) {
 
 /** No lab, a forma do cartão vem da URL (?cartao=prancha); o padrão é o carimbo, para comparar no canvas de verdade. */
 function useCartaoDaUrl(): EstiloDoCartao {
-  const [e, setE] = useState<EstiloDoCartao>("carimbo");
-  useEffect(() => {
-    const c = new URLSearchParams(window.location.search).get("cartao");
-    if (c && ESTILOS.some((x) => x.id === c)) setE(c as EstiloDoCartao);
-  }, []);
-  return e;
+  // no servidor (e na primeira pintura), o carimbo; a URL só existe no navegador
+  return useSyncExternalStore(semAssinatura, cartaoDaUrl, () => "carimbo");
+}
+const semAssinatura = () => () => {};
+function cartaoDaUrl(): EstiloDoCartao {
+  const c = new URLSearchParams(window.location.search).get("cartao");
+  return c && ESTILOS.some((x) => x.id === c) ? (c as EstiloDoCartao) : "carimbo";
 }
 
 export function TelaMapa({ situacao }: { situacao: SituacaoMapa }) {
