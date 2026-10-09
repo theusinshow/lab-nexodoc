@@ -21,6 +21,7 @@ import type { AgentContext } from "../lib/agent-context";
 import { NexoChat, type ReadStatus, type Attachment } from "./NexoChat";
 import { PartidasDoNexo } from "./PartidasDoNexo";
 import type { Partida } from "../lib/partidas";
+import type { PranchaNaSessao } from "../lib/pranchas-guardadas";
 import { SaudacaoDoNexo } from "./SaudacaoDoNexo";
 
 export function NexoCopilot({
@@ -36,7 +37,7 @@ export function NexoCopilot({
   fileCount = 0,
   activity = 0,
   context,
-  pranchaFiles,
+  pranchas,
   memorialFile,
   memorialFatos = null,
   attachments,
@@ -76,7 +77,7 @@ export function NexoCopilot({
   /** Contexto derivado dos selos (o que o Nexo já entendeu) — popover do orb. */
   context: AgentContext;
   /** Pranchas originais retidas (bytes p/ montar o volume no chat). */
-  pranchaFiles: File[];
+  pranchas: PranchaNaSessao[];
   /** Memorial anexado (arquivo distinto) — alimenta a auditoria no chat. */
   memorialFile: File | null;
   /** O que a classificação leu do memorial — vai ao agente como fato. */
@@ -229,7 +230,7 @@ export function NexoCopilot({
               topo de toda conversa seriam mobília.
             */}
             <PartidasDoNexo
-              temPranchas={pranchaFiles.length > 0 || selos.length > 0}
+              temPranchas={pranchas.length > 0 || selos.length > 0}
               temMemorial={Boolean(memorialFile)}
               onAnexar={onAttach}
               ativa={tarefa?.id ?? null}
@@ -252,7 +253,7 @@ export function NexoCopilot({
           arrastando={arrastando}
           tarefa={tarefa?.tela ?? null}
           readStatus={readStatus}
-          pranchaFiles={pranchaFiles}
+          pranchas={pranchas}
           memorialFile={memorialFile}
           memorialFatos={memorialFatos}
           attachments={attachments}

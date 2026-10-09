@@ -42,6 +42,7 @@ import { BarraDeLeitura } from "./BarraDeLeitura";
 import { ZonaDeSolta } from "./ZonaDeSolta";
 import { pedeNovaAuditoria } from "../lib/auditoria-da-proposta";
 import { detalheDoParecer, resumoDoParecer } from "@/lib/auditoria-incompleta";
+import type { PranchaNaSessao } from "../lib/pranchas-guardadas";
 
 /** Status da leitura de selos (mostrado acima do composer). */
 export interface ReadStatus {
@@ -94,7 +95,7 @@ export function NexoChat({
   arrastando = false,
   tarefa = null,
   readStatus,
-  pranchaFiles,
+  pranchas,
   memorialFile,
   memorialFatos = null,
   attachments = [],
@@ -112,7 +113,7 @@ export function NexoChat({
   tarefa?: { pede: string; faz: string; botao: string } | null;
   readStatus?: ReadStatus | null;
   /** Pranchas originais retidas (bytes p/ montar o volume). */
-  pranchaFiles: File[];
+  pranchas: PranchaNaSessao[];
   /** Memorial anexado (arquivo distinto) — alimenta a auditoria. */
   memorialFile: File | null;
   /**
@@ -638,7 +639,7 @@ export function NexoChat({
       className={`cx nx-chat flex h-full min-h-0 flex-col${soltandoAchado ? " nx-chat--soltando-achado" : ""}`}
     >
       {/* Quem sabe montar cada tomo — sem tela; o canvas e o cartão curto chamam. */}
-      <MontadoresDoVolume selos={selos} pranchaFiles={pranchaFiles} templates={templates} />
+      <MontadoresDoVolume selos={selos} pranchas={pranchas} templates={templates} />
       {/* Log aberto — sem "card" embrulhando (respiro). Coluna de leitura central. */}
       <div
         ref={scrollRef}
@@ -745,7 +746,7 @@ export function NexoChat({
                         selos={selos}
                         templates={templates}
                         ldPreview={m.ldPreview}
-                        pranchaFiles={pranchaFiles}
+                        pranchas={pranchas}
                         memorialFile={memorialFile}
                         memorialFatos={memorialFatos}
                         mensagemId={m.id}
@@ -775,7 +776,7 @@ export function NexoChat({
             remontado. Preso a uma mensagem, ficaria congelado no histórico
             mentindo depois de resolvido.
           */}
-          <VolumesDesatualizados selos={selos} temPranchas={pranchaFiles.length > 0} />
+          <VolumesDesatualizados selos={selos} temPranchas={pranchas.length > 0} />
           {busy && messages[messages.length - 1]?.role === "user" && (
             <div className="cx-nexo nx-turno">
               <span className="cx-nexo-marca" aria-hidden>

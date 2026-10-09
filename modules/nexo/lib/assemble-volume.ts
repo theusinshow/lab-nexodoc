@@ -1,8 +1,8 @@
 /**
  * Montagem do volume no cliente (caminho único p/ o chat e o painel dev). Junta
  * as partes JÁ geradas — capa PDF, LD PDF (bytes vindos dos object URLs do
- * artifact-store) e as pranchas originais (`File[]`) recortadas por faixa de
- * página — na ORDEM CANÔNICA (`buildVolumeParts`, puro/testado) e funde via
+ * artifact-store) e as pranchas — por referência quando guardadas no cofre, em
+ * base64 quando só existem nesta aba — recortadas por faixa de página — na ORDEM CANÔNICA (`buildVolumeParts`, puro/testado) e funde via
  * `/api/nexo/volume`. A separatriz é best-effort: se o LibreOffice estiver off,
  * o volume segue sem ela.
  *
@@ -17,6 +17,7 @@ import {
 import { buildVolumeParts, type VolumePartSource } from "@/server/nexo/volume-parts";
 
 import { postVolume, type VolumeGenResult } from "./generate";
+import type { PranchaNaSessao } from "./pranchas-guardadas";
 
 /** Lê um File como base64 cru (sem o prefixo data:...;base64,). */
 export function fileToBase64(file: File): Promise<string> {
@@ -46,8 +47,11 @@ export async function urlToBase64(objectUrl: string): Promise<string> {
 export interface BlocoDoVolume {
   /** Selos DESTE bloco — dão as faixas de página das pranchas (PDF combinado). */
   selos: SeloForLd[];
-  /** PDFs das pranchas deste bloco (na ordem do escritório, por nº de folha). */
-  pranchaFiles: File[];
+  /**
+   * As pranchas deste bloco. A guardada vai por `checksum` (o servidor lê do
+   * cofre); a que só existe nesta aba vai em base64, como sempre foi.
+   */
+  pranchas: PranchaNaSessao[];
   /** LD do bloco em base64 cru (ou null se não gerada). */
   ldPdf64?: string | null;
   /**
@@ -135,25 +139,26 @@ export async function assembleVolume(
     // Pranchas na ordem do escritório (por nº de folha do nome), recortadas no
     // intervalo de pranchas (exclui capa/LD internas de um PDF combinado).
     const pages = pranchaPagesByFile(bloco.selos);
-    const ordered = [...bloco.pranchaFiles].sort(
+    const ordered = [...bloco.pranchas].sort(
       (a, b) =>
         (sheetNumberFromFilename(a.name) ?? 9999) -
         (sheetNumberFromFilename(b.name) ?? 9999),
     );
     const pranchas: VolumePartSource[] = [];
-    for (const file of ordered) {
-      const data = await base64De(file);
-      const range = pages.get(file.name);
-      if (range && range.length > 0) {
-        pranchas.push({
-          name: file.name,
-          data,
-          startPage: Math.min(...range),
-          endPage: Math.max(...range),
-        });
-      } else {
-        pranchas.push({ name: file.name, data });
-      }
+    for (const prancha of ordered) {
+      const fonte: VolumePartSource | null =
+        prancha.estado === "guardada" && prancha.checksum
+          ? { name: prancha.name, checksum: prancha.checksum }
+          : prancha.file
+            ? { name: prancha.name, data: await base64De(prancha.file) }
+            : null;
+      if (!fonte) continue; // a pré-condição já recusou; aqui só não quebra
+      const range = pages.get(prancha.name);
+      pranchas.push(
+        range && range.length > 0
+          ? { ...fonte, startPage: Math.min(...range), endPage: Math.max(...range) }
+          : fonte,
+      );
     }
 
     disciplines.push({

@@ -170,6 +170,7 @@ import {
   rotuloDaContagem,
 } from "@/lib/auditoria-incompleta";
 import { AvisoDeAuditoriaIncompleta } from "@/components/aviso-de-auditoria-incompleta";
+import { resumoDoEnvio, type PranchaNaSessao } from "../lib/pranchas-guardadas";
 
 const PDF_MIME = "application/pdf";
 
@@ -289,7 +290,7 @@ export function ConfirmationCard({
   selos,
   templates,
   ldPreview,
-  pranchaFiles = [],
+  pranchas = [],
   memorialFile = null,
   memorialFatos = null,
   mensagemId,
@@ -299,7 +300,7 @@ export function ConfirmationCard({
   templates: NexoTemplateOption[];
   ldPreview?: LdPreviewData;
   /** Pranchas originais retidas (bytes p/ montar o volume). */
-  pranchaFiles?: File[];
+  pranchas?: PranchaNaSessao[];
   /** Memorial anexado (arquivo distinto) — alimenta a auditoria. */
   memorialFile?: File | null;
   /** O que a classificação leu do memorial — vira o gabarito quando não há selos. */
@@ -355,7 +356,7 @@ export function ConfirmationCard({
         <ConferenciaConfirmation
           resumo={proposal.resumo}
           selos={selos}
-          pranchaFiles={pranchaFiles}
+          pranchas={pranchas}
           templates={templates}
         />
       );
@@ -1080,12 +1081,12 @@ function CapaConfirmation({
 function ConferenciaConfirmation({
   resumo,
   selos,
-  pranchaFiles = [],
+  pranchas = [],
   templates,
 }: {
   resumo: string;
   selos: SeloForLd[];
-  pranchaFiles?: File[];
+  pranchas?: PranchaNaSessao[];
   templates: NexoTemplateOption[];
 }) {
   const [busy, setBusy] = useState(false);
@@ -1142,7 +1143,7 @@ function ConferenciaConfirmation({
     try {
       const r = await conferirIdentidadeDoSelo({
         selos,
-        pranchaFiles,
+        pranchas,
         orgaoAlvo,
         conversationId,
       });
@@ -1160,7 +1161,7 @@ function ConferenciaConfirmation({
     }
   }
 
-  const semPranchas = pranchaFiles.length === 0;
+  const semPranchas = pranchas.length === 0;
 
   return (
     <CardShell kind="conferencia" resumo={resumo}>
@@ -1355,7 +1356,7 @@ async function conferirVolume(args: {
         codigo: args.blocos[i]?.codigo ?? "",
         temSeparatriz: Boolean(m.separatrizPdf64),
         temLd: Boolean(m.ldPdf64),
-        pranchas: m.pranchaFiles.length,
+        pranchas: m.pranchas.length,
       })),
     );
     const partes = alinharPartes(esperadas, devolvidas);
@@ -1420,14 +1421,14 @@ async function conferirVolume(args: {
 function VolumeConfirmation({
   resumo,
   selos,
-  pranchaFiles,
+  pranchas,
   templates,
   tomo,
   semTela = false,
 }: {
   resumo: string;
   selos: SeloForLd[];
-  pranchaFiles: File[];
+  pranchas: PranchaNaSessao[];
   templates: NexoTemplateOption[];
   tomo: { atual: number; numero: number; sufixo: string };
   /** Só a lógica (registro, montagem, situação); a interface mora no canvas. */
@@ -1513,20 +1514,21 @@ function VolumeConfirmation({
   /*
    * Os ARQUIVOS deste tomo, não só os selos.
    *
-   * `assembleVolume` itera sobre os `pranchaFiles` e, quando um arquivo não tem
+   * `assembleVolume` itera sobre os `pranchas` e, quando um arquivo não tem
    * faixa de páginas nos selos recebidos, entra INTEIRO como fallback (o caso
    * legítimo do arquivo cujo selo não foi lido). Com um PDF por prancha, fatiar
    * só os selos não bastava: os 24 arquivos continuavam entrando, e o volume do
    * tomo 02 saía com a LD certa (13-24) e as folhas 01-24. Filtrar os arquivos é
    * o que de fato separa os documentos.
    */
-  const pranchaFilesDoTomo = useMemo(() => {
-    if (tomo.atual === 0) return pranchaFiles;
+  const pranchasDoTomo = useMemo(() => {
+    if (tomo.atual === 0) return pranchas;
     const doTomo = new Set(selosDoTomo.map((s) => s.fileName));
-    return pranchaFiles.filter((f) => doTomo.has(f.name));
-  }, [pranchaFiles, selosDoTomo, tomo.atual]);
+    return pranchas.filter((f) => doTomo.has(f.name));
+  }, [pranchas, selosDoTomo, tomo.atual]);
 
-  const semPranchas = pranchaFilesDoTomo.length === 0;
+  const semPranchas = pranchasDoTomo.length === 0;
+  const envioDoTomo = resumoDoEnvio(pranchasDoTomo);
 
   /*
    * OS BLOCOS DO VOLUME — a regra do escritório, lida dos projetos reais: uma
@@ -1554,7 +1556,20 @@ function VolumeConfirmation({
     temCapa: Boolean(capaPdfUrl),
     temLd: Boolean(ldPdfUrl),
     misto,
-    pranchas: pranchaFilesDoTomo.length,
+    pranchas: pranchasDoTomo.length,
+    subindo: envioDoTomo.subindo,
+    /*
+     * A ABA FECHADA NO MEIO DO ENVIO (09/10/2026): depois do F5, a folha cujo
+     * selo foi lido mas cuja prancha não ganhou ficha não está em
+     * `pranchasDoTomo` — e a montagem simplesmente não a teria. Sem esta lista
+     * o volume sairia sem ela, calado.
+     */
+    naoGuardadas: [
+      ...envioDoTomo.falharam,
+      ...[...new Set(selosDoTomo.map((s) => s.fileName))].filter(
+        (nome) => !pranchasDoTomo.some((p) => p.name === nome),
+      ),
+    ],
     /*
      * A disciplina só existe quando o volume é de UMA — e é ela que dispensa a
      * LD de sondagem. Em volume misto não há uma disciplina do volume: a
@@ -1856,7 +1871,7 @@ function VolumeConfirmation({
 
         montaveis.push({
           selos: doBloco,
-          pranchaFiles: pranchaFilesDoTomo.filter((f) => arquivos.has(f.name)),
+          pranchas: pranchasDoTomo.filter((f) => arquivos.has(f.name)),
           separatrizPdf64,
           ldPdf64: ldDoBloco64,
         });
@@ -2046,7 +2061,7 @@ function VolumeConfirmation({
               label="Pranchas"
               ok={!semPranchas}
               detail={
-                semPranchas ? "nenhuma" : `${plural(pranchaFilesDoTomo.length, "arquivo", "arquivos")}`
+                semPranchas ? "nenhuma" : `${plural(pranchasDoTomo.length, "arquivo", "arquivos")}`
               }
             />
           </div>
@@ -2081,7 +2096,7 @@ function VolumeConfirmation({
         </>
       )}
 
-      <FaseDoTomo fase={fase} pranchas={pranchaFilesDoTomo.length} />
+      <FaseDoTomo fase={fase} pranchas={pranchasDoTomo.length} />
 
       {saved && (
         <ResultLinks
@@ -3406,11 +3421,11 @@ function SeparatrizConfirmation({
  */
 export function MontadoresDoVolume({
   selos,
-  pranchaFiles,
+  pranchas,
   templates,
 }: {
   selos: SeloForLd[];
-  pranchaFiles: File[];
+  pranchas: PranchaNaSessao[];
   templates: NexoTemplateOption[];
 }) {
   const { results } = useConversation();
@@ -3418,7 +3433,7 @@ export function MontadoresDoVolume({
   return (
     <>
       {tomosDoVolume(selos, results).map((t) => (
-        <VolumeConfirmation key={t.sufixo || "unico"} semTela resumo="" selos={selos} pranchaFiles={pranchaFiles} templates={templates} tomo={t} />
+        <VolumeConfirmation key={t.sufixo || "unico"} semTela resumo="" selos={selos} pranchas={pranchas} templates={templates} tomo={t} />
       ))}
     </>
   );

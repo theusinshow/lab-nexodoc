@@ -453,6 +453,20 @@ export interface VolumeGenResult {
  * `buildVolumeParts`) como PDFs em base64, funde num único PDF e devolve object
  * URL + contagem de páginas. A ordem enviada é respeitada (`reorder:false`).
  */
+/** O servidor não achou estas pranchas guardadas — o cartão pede só elas de volta. */
+export class PranchasFaltando extends Error {
+  readonly faltando: string[];
+  constructor(faltando: string[]) {
+    super(
+      faltando.length === 1
+        ? `A prancha ${faltando[0]} não está mais guardada — solte o arquivo de novo para montar.`
+        : `${faltando.length} pranchas não estão mais guardadas (${faltando.slice(0, 3).join(", ")}${faltando.length > 3 ? "…" : ""}) — solte os arquivos de novo para montar.`,
+    );
+    this.name = "PranchasFaltando";
+    this.faltando = faltando;
+  }
+}
+
 export async function postVolume(
   parts: VolumePart[],
   opts: VolumeOptions = {},
@@ -474,8 +488,12 @@ export async function postVolume(
         pdf?: { name: string; data: string } | null;
         pageCount?: number;
         partes?: { role: string; name: string; paginas: number }[];
+        faltando?: string[];
       }
     | null;
+  if (res.status === 409 && payload?.faltando?.length) {
+    throw new PranchasFaltando(payload.faltando);
+  }
   if (!res.ok || !payload?.pdf) {
     throw new Error(payload?.error ?? "Falha ao montar o volume.");
   }

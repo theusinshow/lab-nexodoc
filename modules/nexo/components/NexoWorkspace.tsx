@@ -183,6 +183,17 @@ import {
   type CampoDoMemorial,
 } from "../lib/ficha-do-memorial";
 import { separarMemorialRepetido } from "../lib/memorial-repetido";
+import {
+  baixarPrancha,
+  emParalelo,
+  enviarPrancha,
+  juntarPranchas,
+  listarFichas,
+  removerFicha,
+  resumoDoEnvio,
+  type EstadoDoEnvio,
+  type FichaDePrancha,
+} from "../lib/pranchas-guardadas";
 import { detalheDoParecer, type ParecerParaIncompletude } from "@/lib/auditoria-incompleta";
 
 function reportDoPayload(payload: unknown): ParecerParaIncompletude | null {
@@ -391,6 +402,35 @@ function NexoWorkspaceInner({
   // Pranchas originais retidas (bytes p/ montar o volume) e memorial anexado
   // (arquivo distinto — alimenta a auditoria). Partição por tipo do nome.
   const [pranchaFiles, setPranchaFiles] = useState<File[]>([]);
+  /*
+   * AS PRANCHAS GUARDADAS (09/10/2026). `pranchaFiles` são os bytes desta aba;
+   * `fichas` é o que o servidor guardou para o projeto e volta no F5; `envio`
+   * diz, por nome, o que ainda sobe ou falhou. `enviados` lembra QUAL `File` já
+   * foi guardado — por identidade, não por nome: soltar outro arquivo com o
+   * mesmo nome é troca, e precisa subir de novo.
+   */
+  const [fichas, setFichas] = useState<FichaDePrancha[]>([]);
+  const [envio, setEnvio] = useState<ReadonlyMap<string, EstadoDoEnvio>>(new Map());
+  const enviados = useRef(new WeakSet<File>());
+  const pranchas = useMemo(() => juntarPranchas(pranchaFiles, fichas, envio), [pranchaFiles, fichas, envio]);
+  /*
+   * OS BYTES QUANDO ALGUÉM PRECISA DELES: reler os selos, preencher títulos,
+   * abrir no visor. Depois do F5 a prancha guardada não tem `File`; baixa do
+   * cofre e entra em `pranchaFiles` já marcada como enviada (não sobe de novo).
+   */
+  const garantirBytes = useCallback(
+    async (nomes?: string[]): Promise<File[]> => {
+      const alvo = pranchas.filter((p) => !p.file && p.checksum && (!nomes || nomes.includes(p.name)));
+      const baixados = await Promise.all(
+        alvo.map((p) => baixarPrancha({ name: p.name, checksum: p.checksum as string })),
+      );
+      baixados.forEach((f) => enviados.current.add(f));
+      if (baixados.length) setPranchaFiles((prev) => [...prev, ...baixados]);
+      const emMaos = pranchas.flatMap((p) => (p.file ? [p.file] : []));
+      return [...emMaos, ...baixados].filter((f) => !nomes || nomes.includes(f.name));
+    },
+    [pranchas],
+  );
   // Object URLs das pranchas abertas pelo canvas, um por arquivo.
   const urlsDasPranchas = useRef(new Map<string, string>());
   // Limpa as pranchas e os object URLs que elas geraram, sem vazar.
@@ -398,6 +438,8 @@ function NexoWorkspaceInner({
     urlsDasPranchas.current.forEach((url) => URL.revokeObjectURL(url));
     urlsDasPranchas.current.clear();
     setPranchaFiles([]);
+    setFichas([]);
+    setEnvio(new Map());
   }, []);
   const [memorialFile, setMemorialFile] = useState<File | null>(null);
   // Anexos com preview imediato (imagem = miniatura; PDF = ícone). Só visual.
@@ -668,6 +710,8 @@ function NexoWorkspaceInner({
       // Sai do conjunto de pranchas e some do contexto de selos: manter o selo
       // de um documento que não é prancha sujaria a LD e o volume.
       setPranchaFiles((prev) => prev.filter((f) => f.name !== file.name));
+      setFichas((prev) => prev.filter((f) => f.fileName !== file.name));
+      if (conv.projectId) removerFicha(conv.projectId, file.name).catch(() => {});
       setSeloResults(seloResults.filter((r) => r.fileName !== file.name));
       setMemorialFile(file);
       conv.salvarMemorial(file).catch((err) => {
@@ -1275,6 +1319,8 @@ function NexoWorkspaceInner({
         selosRef.current = limpos;
         setSeloResults(limpos);
         setPranchaFiles((prev) => prev.filter((f) => f.name !== memorial.name));
+        setFichas((prev) => prev.filter((f) => f.fileName !== memorial.name));
+        if (conv.projectId) removerFicha(conv.projectId, memorial.name).catch(() => {});
         conv.appendMessage({
           id: crypto.randomUUID(),
           role: "assistant",
@@ -2011,6 +2057,70 @@ function NexoWorkspaceInner({
   useEffect(() => {
     definirProjetoDaConversa(conv.projectId);
   }, [conv.projectId]);
+
+  /*
+   * NO F5 (e ao abrir outra conversa do projeto) as fichas voltam do servidor —
+   * sem bytes. É isto que aposenta o "reanexe-os para montar".
+   */
+  useEffect(() => {
+    const projeto = conv.projectId;
+    if (!projeto) return;
+    let vivo = true;
+    listarFichas(projeto)
+      .then((lista) => {
+        if (vivo) setFichas(lista);
+      })
+      .catch(() => {
+        // Sem fichas a tela fica como antes do recurso; o envio tenta de novo.
+      });
+    return () => {
+      vivo = false;
+    };
+  }, [conv.projectId]);
+
+  /*
+   * TODO `File` que entra em `pranchaFiles` sobe uma vez, 3 por vez — seja do
+   * drop, do reanexo ou do arquivo que deixou de ser memorial. Sem projeto, nada
+   * sobe: a prancha fica na memória como sempre, e sobe quando o projeto existir
+   * (o efeito roda de novo quando `conv.projectId` muda).
+   */
+  useEffect(() => {
+    const projeto = conv.projectId;
+    if (!projeto) return;
+    const novos = pranchaFiles.filter((f) => !enviados.current.has(f));
+    if (!novos.length) return;
+    novos.forEach((f) => enviados.current.add(f));
+    void Promise.resolve()
+      .then(() =>
+        setEnvio((prev) => {
+          const prox = new Map(prev);
+          novos.forEach((f) => prox.set(f.name, "subindo"));
+          return prox;
+        }),
+      )
+      .then(() =>
+        emParalelo(novos, 3, async (file) => {
+          try {
+            const ficha = await enviarPrancha(projeto, file);
+            setFichas((prev) => [...prev.filter((f) => f.fileName !== ficha.fileName), ficha]);
+            setEnvio((prev) => {
+              const prox = new Map(prev);
+              prox.delete(file.name);
+              return prox;
+            });
+          } catch {
+            enviados.current.delete(file); // "tentar de novo" = deixar o efeito pegar de novo
+            setEnvio((prev) => new Map(prev).set(file.name, "falhou"));
+          }
+        }),
+      );
+  }, [pranchaFiles, conv.projectId]);
+
+  /** O botão "Tentar de novo": devolve as que falharam para a fila. */
+  const tentarDeNovo = useCallback(() => {
+    setEnvio((prev) => new Map([...prev].filter(([, estado]) => estado !== "falhou")));
+    setPranchaFiles((prev) => [...prev]); // novo array → o efeito de envio roda
+  }, []);
   const caminhoDoRoteador = usePathname();
   const buscaDoRoteador = useSearchParams().toString();
   useEffect(() => {
@@ -2247,7 +2357,8 @@ function NexoWorkspaceInner({
   const [memoriaDispensada, setMemoriaDispensada] = useState(false);
 
   async function relerSelos() {
-    if (pranchaFiles.length === 0) return;
+    if (pranchas.length === 0) return;
+    const arquivos = await garantirBytes();
     /*
      * Conjunto vazio de propósito: `jaLidas` é o que impede reler uma folha que
      * a conversa já tem, e reler é exatamente o pedido. Com ele vazio a leitura
@@ -2257,7 +2368,7 @@ function NexoWorkspaceInner({
     selosRef.current = [];
     setSeloResults([]);
     setDaMemoria(0);
-    await lerPranchas([...pranchaFiles], [], null, new Set<string>(), {
+    await lerPranchas([...arquivos], [], null, new Set<string>(), {
       ignorarMemoria: true,
     });
   }
@@ -2266,7 +2377,7 @@ function NexoWorkspaceInner({
     setPreenchendo(true);
     try {
       const copia = seloResults.map((r) => ({ ...r }));
-      const n = await preencherTitulosFaltantes(pranchaFiles, copia);
+      const n = await preencherTitulosFaltantes(await garantirBytes(), copia);
       if (n > 0) {
         selosRef.current = copia;
         setSeloResults(copia);
@@ -2526,8 +2637,8 @@ function NexoWorkspaceInner({
   // Quais pranchas ainda têm bytes em memória. Numa conversa restaurada isto é
   // vazio: os PDFs de ENTRADA não persistem, só os gerados.
   const arquivosDisponiveis = useMemo(
-    () => new Set(pranchaFiles.map((f) => f.name)),
-    [pranchaFiles],
+    () => new Set(pranchas.map((p) => p.name)),
+    [pranchas],
   );
 
   /*
@@ -2584,9 +2695,16 @@ function NexoWorkspaceInner({
 
   const abrirFolha = useCallback(
     (id: FolhaId) => {
-      if (folhasNoVisor.some((f) => f.id === id)) setFolhaNoVisor(id);
+      if (folhasNoVisor.some((f) => f.id === id)) {
+        setFolhaNoVisor(id);
+        return;
+      }
+      // Guardada, sem bytes nesta aba: baixa só ESTA e abre.
+      const folha = selos.find((s) => s.id === id);
+      if (!folha || !pranchas.some((p) => p.name === folha.fileName)) return;
+      void garantirBytes([folha.fileName]).then(() => setFolhaNoVisor(id));
     },
-    [folhasNoVisor],
+    [folhasNoVisor, selos, pranchas, garantirBytes],
   );
 
   /*
@@ -2828,7 +2946,7 @@ function NexoWorkspaceInner({
         e reanexa vê a mesma leitura de antes e conclui que o software não pegou
         a alteração. Aqui ela se anuncia e oferece a saída.
       */}
-      {daMemoria > 0 && !memoriaDispensada && !busyReading && pranchaFiles.length > 0 && (
+      {daMemoria > 0 && !memoriaDispensada && !busyReading && pranchas.length > 0 && (
         <FaixaDeEstado
           tipo="documento"
           titulo={`${plural(daMemoria, "folha veio da memória", "folhas vieram da memória")} de leitura`}
@@ -2852,7 +2970,30 @@ function NexoWorkspaceInner({
         nunca relê uma página, e é essa economia que tornaria o conserto caro.
         O botão custa ZERO: lê o texto do PDF, não chama modelo nenhum.
       */}
-      {semTitulo > 0 && !busyReading && pranchaFiles.length > 0 && (
+      {/*
+        PRANCHA NÃO GUARDADA (09/10/2026). O envio tentou 3 vezes e desistiu: sem
+        esta faixa, a única pista seria o botão de montar travado, longe daqui.
+      */}
+      {resumoDoEnvio(pranchas).falharam.length > 0 && (
+        <FaixaDeEstado
+          tipo="documento"
+          titulo={
+            resumoDoEnvio(pranchas).falharam.length === 1
+              ? `Não consegui guardar ${resumoDoEnvio(pranchas).falharam[0]}`
+              : `Não consegui guardar ${resumoDoEnvio(pranchas).falharam.length} pranchas`
+          }
+          acao={
+            <Button size="sm" variant="outline" onClick={tentarDeNovo}>
+              Tentar de novo
+            </Button>
+          }
+        >
+          Sem guardar, a prancha some se a página recarregar, e o volume não monta
+          até ela subir.
+        </FaixaDeEstado>
+      )}
+
+      {semTitulo > 0 && !busyReading && pranchas.length > 0 && (
         <FaixaDeEstado
           tipo="documento"
           titulo={`${plural(semTitulo, "folha sem título", "folhas sem título")}`}
@@ -3065,7 +3206,7 @@ function NexoWorkspaceInner({
             fileCount={okCount}
             activity={orbActivity}
             context={agentContext}
-            pranchaFiles={pranchaFiles}
+            pranchas={pranchas}
             memorialFile={memorialFile}
             memorialFatos={
               memorialFile

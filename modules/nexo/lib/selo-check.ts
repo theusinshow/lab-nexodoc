@@ -24,6 +24,7 @@ import type { SeloIdentityResult, LeituraDoSelo } from "@/server/nexo/selo-ident
 import { blocosDasFolhas } from "./blocos";
 import { codigoDaFolha, rotuloDoCodigo } from "./disciplina-da-folha";
 import type { Folha } from "./folhas";
+import { baixarPrancha, type PranchaNaSessao } from "./pranchas-guardadas";
 import { recortarSelo } from "./selo-render";
 import { conferirSessao } from "./sessao";
 
@@ -107,26 +108,34 @@ export function amostraDosSelos(selos: SeloForLd[]): Escolhida[] {
  * Roda a conferência de identidade: recorta os selos da amostra e manda ao
  * modelo, que LÊ; o veredito vem das regras, no servidor.
  *
- * `pranchaFiles` são os PDFs retidos. A folha cujo arquivo não estiver mais em
- * mãos é simplesmente pulada — a conferência diz sobre quantas folhas falou, e
+ * `pranchas` são as da sessão; a guardada sem bytes na aba é baixada do cofre
+ * (só as da amostra). A folha cuja prancha não estiver em mãos é simplesmente pulada — a conferência diz sobre quantas folhas falou, e
  * falar de menos é honesto; inventar um recorte não seria.
  */
 export async function conferirIdentidadeDoSelo(args: {
   selos: SeloForLd[];
-  pranchaFiles: File[];
+  pranchas: PranchaNaSessao[];
   /** A prefeitura DECLARADA para quem o volume vai. */
   orgaoAlvo: string;
   conversationId?: string | null;
 }): Promise<SeloCheckResponse> {
-  const porNome = new Map(args.pranchaFiles.map((f) => [f.name, f]));
+  const porNome = new Map(args.pranchas.map((p) => [p.name, p]));
   const escolhidas = amostraDosSelos(args.selos);
 
   const amostras: { label: string; imageDataUrl: string }[] = [];
   const esperado: { label: string; folha: number | null; total: number | null }[] = [];
   for (const e of escolhidas) {
-    const file = porNome.get(e.selo.fileName);
-    if (!file) continue;
+    const prancha = porNome.get(e.selo.fileName);
+    if (!prancha) continue;
     try {
+      /*
+       * Depois do F5 a prancha guardada não tem bytes na aba: baixa só as da
+       * amostra (poucas), não o projeto inteiro.
+       */
+      const file =
+        prancha.file ??
+        (prancha.checksum ? await baixarPrancha({ name: prancha.name, checksum: prancha.checksum }) : null);
+      if (!file) continue;
       const imageDataUrl = await recortarSelo(file, e.selo.pageNumber ?? 1);
       amostras.push({ label: e.label, imageDataUrl });
       esperado.push({ label: e.label, folha: e.folha, total: e.total });
