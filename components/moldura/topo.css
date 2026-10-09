@@ -141,6 +141,11 @@
 .ds .pn-sino-bloq { display: inline-flex; align-items: center; gap: 6px; }
 .ds .pn-sino-bloq i { width: 6px; height: 6px; border-radius: 2px; background: var(--ds-state-error); transform: rotate(45deg); }
 .ds .pn-sino-vazio { margin: 0; padding: 10px; font-size: 12.5px; color: var(--ds-text-tertiary); }
+/* O QUE HÁ DE NOVO: acima do "Com você", separado por um fio (09/10/2026). */
+.ds .pn-novidades { border-bottom: 1px solid var(--ds-line-subtle); margin-bottom: 4px; padding-bottom: 4px; }
+.ds .pn-novidade { display: grid; gap: 3px; padding: 7px 10px; }
+.ds .pn-novidade b { font-weight: 450; color: var(--ds-text-primary); }
+.ds .pn-novidade-data { margin-left: auto; font-size: 11.5px; color: var(--ds-text-tertiary); white-space: nowrap; }
 
 /* ---------- o cartão de navegação (ref.: Card Nav) ---------- */
 .ds .pn-marca--botao { display: none; gap: 8px; padding: 4px 8px 4px 4px; margin-left: -4px; border: 0; border-radius: 10px; background: none; font: inherit; color: inherit; cursor: pointer; transition: background var(--ds-dur-feedback); }

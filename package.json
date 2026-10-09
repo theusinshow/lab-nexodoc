@@ -35,6 +35,7 @@
     "test:cliente": "node scripts/test-cliente-do-projeto.ts",
     "test:cor-da-pessoa": "node scripts/test-cor-da-pessoa.ts",
     "test:suporte": "node scripts/test-suporte.ts",
+    "test:novidades": "node scripts/test-novidades.ts",
     "test:pranchas": "node scripts/test-pranchas.ts && node scripts/test-pranchas-na-sessao.ts && node scripts/test-vinculo-pelos-selos.ts",
     "test:caminho-da-rede": "node scripts/test-caminho-da-rede.ts && node scripts/test-rodape-com-caminho.ts",
     "test:desfecho": "node scripts/test-desfecho-do-achado.ts",

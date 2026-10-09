@@ -5,13 +5,14 @@ import { ArrowRight, Bell, Bug, ChevronDown, FolderOpen, Keyboard, LayoutGrid, L
 import { signOut } from "next-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useId, useRef, useState, type KeyboardEvent as KE, type ReactNode, type RefObject } from "react";
+import { useCallback, useEffect, useId, useRef, useState, useSyncExternalStore, type KeyboardEvent as KE, type ReactNode, type RefObject } from "react";
 
 import { Avatar, Botao, Orbe, Tecla } from "@/components/ds/basicos";
 import { corDaPessoa } from "@/lib/cor-da-pessoa";
 import { CURVA } from "@/lib/ds/movimento";
 import { useTempo } from "@/lib/ds/tempo";
 import { linkDoAchado } from "@/lib/link-do-achado";
+import { dataCurta, marcaDeVisto, naoVistas, NOVIDADES } from "@/lib/novidades";
 import type { DadosDaMoldura, DestinoDoTopo } from "@/lib/moldura";
 import { plural } from "@/lib/plural";
 import { abrirSuporte } from "@/lib/suporte/cliente";
@@ -283,20 +284,104 @@ const desde = (iso: string) => {
  * notificações e esta não inventa uma: sem "lido/não lido", o ponto só diz que
  * a lista não está vazia.
  */
+/*
+ * O QUE HÁ DE NOVO (09/10/2026). "Visto até" mora no navegador — conveniência
+ * de quem usa, não registro: perder (aba privada, outra máquina) só mostra de
+ * novo as últimas novidades. Lido por `useSyncExternalStore`: o servidor pinta
+ * "nada novo", o cliente acende o ponto.
+ */
+const CHAVE_DAS_NOVIDADES = "nexo.novidades.vistoAte";
+const EVENTO_DAS_NOVIDADES = "nexo.novidades";
+function lerVistoAte(): string {
+  try {
+    return localStorage.getItem(CHAVE_DAS_NOVIDADES) ?? "";
+  } catch {
+    return "";
+  }
+}
+function assinarNovidades(avisar: () => void) {
+  window.addEventListener(EVENTO_DAS_NOVIDADES, avisar);
+  window.addEventListener("storage", avisar);
+  return () => {
+    window.removeEventListener(EVENTO_DAS_NOVIDADES, avisar);
+    window.removeEventListener("storage", avisar);
+  };
+}
+/** "AAAA-MM-DD" em Brasília — o corte de "quem nunca abriu". */
+function hojeEmBrasilia(): string {
+  return new Date().toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" });
+}
+function useNovidades() {
+  // "-" no servidor: nada novo até o cliente ler o navegador.
+  const vistoAte = useSyncExternalStore(assinarNovidades, lerVistoAte, () => "-");
+  const novas = vistoAte === "-" ? [] : naoVistas(NOVIDADES, vistoAte || null, hojeEmBrasilia());
+  const marcarVistas = useCallback(() => {
+    const marca = marcaDeVisto(NOVIDADES);
+    if (!marca) return;
+    try {
+      localStorage.setItem(CHAVE_DAS_NOVIDADES, marca);
+    } catch {}
+    window.dispatchEvent(new Event(EVENTO_DAS_NOVIDADES));
+  }, []);
+  return { novas, marcarVistas };
+}
+
 function Sino({ dados }: { dados: DadosDaMoldura }) {
   const { aberto, fechar, raiz, botao, painel, andar, aoClicar, aoTeclar } = usePainel();
   const router = useRouter();
   const total = dados.comVoce.reduce((n, c) => n + c.total, 0);
+  const { novas, marcarVistas } = useNovidades();
+  /*
+   * As novidades que estavam novas quando o painel ABRIU: abrir marca como
+   * vistas, e sem esta foto elas sumiriam da lista no mesmo instante em que a
+   * pessoa foi olhar.
+   */
+  const [novasAoAbrir, setNovasAoAbrir] = useState<string[]>([]);
   const temAlgo = total > 0;
+  const temNovidade = novas.length > 0;
+  const abrir = (e: Parameters<typeof aoClicar>[0]) => {
+    if (!aberto) {
+      setNovasAoAbrir(novas.map((n) => n.id));
+      marcarVistas();
+    }
+    aoClicar(e);
+  };
   return (
     <div ref={raiz} className="pn-conta">
-      <Botao ref={botao} variante="quiet" icone aria-label={temAlgo ? `Com você: ${plural(total, "achado", "achados")}` : "Com você: nada"} aria-haspopup="menu" aria-expanded={aberto} className="pn-sino" onClick={aoClicar} onKeyDown={aoTeclar}>
+      <Botao
+        ref={botao}
+        variante="quiet"
+        icone
+        aria-label={[temAlgo ? `Com você: ${plural(total, "achado", "achados")}` : "Com você: nada", temNovidade ? plural(novas.length, "novidade", "novidades") : ""].filter(Boolean).join(" · ")}
+        aria-haspopup="menu"
+        aria-expanded={aberto}
+        className="pn-sino"
+        onClick={abrir}
+        onKeyDown={aoTeclar}
+      >
         <Bell />
-        {temAlgo && <i />}
+        {(temAlgo || temNovidade) && <i />}
       </Botao>
       <AnimatePresence>
         {aberto && (
           <Painel ref={painel} andar={andar} rotulo="Com você" classe="pn-sino-painel">
+            {novasAoAbrir.length > 0 && (
+              <div className="pn-novidades">
+                <div className="pn-sino-cabeca">
+                  <b>O que há de novo</b>
+                  <span className="ds-num">{plural(novasAoAbrir.length, "novidade", "novidades")}</span>
+                </div>
+                {NOVIDADES.filter((n) => novasAoAbrir.includes(n.id)).map((n) => (
+                  <div key={n.id} className="pn-novidade">
+                    <span className="pn-sino-linha">
+                      <b>{n.titulo}</b>
+                      <span className="pn-novidade-data">{dataCurta(n.id)}</span>
+                    </span>
+                    <span className="pn-sino-sub">{n.linha}</span>
+                  </div>
+                ))}
+              </div>
+            )}
             <div className="pn-sino-cabeca">
               <b>Com você</b>
               <span className="ds-num">{plural(total, "achado", "achados")}</span>
