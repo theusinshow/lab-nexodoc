@@ -6,7 +6,7 @@
  * montadores e decide com `trilhoDoTomo`; monta pelo montador registrado — a
  * mesma via de sempre.
  */
-import { BookOpen, CircleAlert, CircleCheck, Download, LoaderCircle, RotateCcw } from "lucide-react";
+import { BookOpen, CircleAlert, CircleCheck, Download, LoaderCircle, RotateCcw, Shrink, SplitSquareVertical } from "lucide-react";
 import { AnimatePresence, animate, motion, useMotionValue, useReducedMotion, useTransform } from "motion/react";
 import { useEffect, useMemo } from "react";
 import { Handle, Position, type Node, type NodeProps } from "@xyflow/react";
@@ -14,7 +14,7 @@ import { Handle, Position, type Node, type NodeProps } from "@xyflow/react";
 import { Button } from "@/components/ui/button";
 import { CURVA, DURACAO, MOLA } from "@/lib/ds/movimento";
 
-import { formatarMb, tomosMontados } from "../lib/entrega-do-volume";
+import { formatarMb, saidasDoTeto, tomosMontados, tomosPlanejados } from "../lib/entrega-do-volume";
 import type { FaseDaMontagem } from "../lib/progresso-da-montagem";
 import { trilhoDoTomo, type Trilho } from "../lib/trilho-do-tomo";
 import { useConversation } from "../state/conversation-store";
@@ -93,9 +93,29 @@ export function CabecaDoTomo({ data }: NodeProps<Node<CabecaDoTomoData & Record<
   const t = useTrilho(data.idDoVolume, data.folhas);
   const { montador } = useMontadoresDeVolume();
   const { gerar } = useGeradorDoPlano();
-  const { results } = useConversation();
+  const { results, decisoes, decidir } = useConversation();
   const reduzido = useReducedMotion();
   const bytes = useMemo(() => tomosMontados(results).find((x) => x.id === data.idDoVolume)?.bytes ?? null, [results, data.idDoVolume]);
+  /*
+   * ACIMA DE 20 MB, AS DUAS SAÍDAS (Parte 9, 09/10/2026). A composição vem do
+   * volume montado; volume de antes disso não a tem, e então comprimir fica
+   * oferecido sem estimativa (só remontando se sabe).
+   */
+  const composicao = (results.find((r) => r.artifactId === data.idDoVolume)?.payload as
+    | { composicao?: { emJpeg: number; comprimido: boolean } }
+    | undefined)?.composicao;
+  const saidas =
+    t.estado === "acima-do-teto" && bytes !== null
+      ? saidasDoTeto({ bytes, emJpeg: composicao?.emJpeg ?? bytes, jaComprimido: composicao?.comprimido })
+      : null;
+  const dividir = () => {
+    if (!saidas) return;
+    // Este tomo vira N: o total do volume cresce N − 1. Mesmo caminho do campo
+    // "Nº de tomos" do plano — capa e LD dos tomos pedem para ser geradas de novo.
+    const atual = Math.max(1, tomosPlanejados(results));
+    const sobre = decisoes.numTomos?.sobre ?? String(atual);
+    decidir("numTomos", String(atual - 1 + saidas.dividir.tomos), sobre);
+  };
   const rotulo = data.unico ? "Volume" : `Tomo ${String(data.tomo).padStart(2, "0")}`;
   const cor =
     t.estado === "falhou" ? "text-[var(--destructive)]" : t.estado === "acima-do-teto" || t.estado === "fora-da-maquina" ? "text-[var(--status-warning)]" : t.estado === "montado" ? "text-[var(--status-ok)]" : "text-muted-foreground";
@@ -138,6 +158,24 @@ export function CabecaDoTomo({ data }: NodeProps<Node<CabecaDoTomoData & Record<
               {t.baixar.motivo}
             </span>
           )
+        )}
+        {saidas && (
+          <>
+            <Button
+              className="h-11 px-4 text-[15px]"
+              variant="secondary"
+              disabled={!saidas.comprimir.possivel}
+              title={saidas.comprimir.motivo ?? "Recomprime só as imagens; texto, desenho e carimbo ficam iguais. A conferência relê os carimbos depois."}
+              onClick={() => void montador(data.idDoVolume)?.({ comprimirImagens: true })}
+            >
+              <Shrink className="mr-2 h-5 w-5" aria-hidden />
+              {composicao ? `Comprimir imagens (≈ ${formatarMb(saidas.comprimir.estimativa)})` : "Comprimir imagens"}
+            </Button>
+            <Button className="h-11 px-4 text-[15px]" variant="secondary" onClick={dividir} title="Sem perda: as folhas deste tomo se repartem em mais tomos, e a capa e a LD de cada um são geradas de novo.">
+              <SplitSquareVertical className="mr-2 h-5 w-5" aria-hidden />
+              Dividir em {saidas.dividir.tomos} tomos
+            </Button>
+          </>
         )}
         <motion.span layout={!reduzido} transition={{ duration: DURACAO.state, ease: CURVA.out }}>
           {t.estado === "montando" ? (

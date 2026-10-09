@@ -421,6 +421,8 @@ export async function postVolumeCheck(
 export interface VolumeOptions {
   /** nome do PDF final; default "volume.pdf" na rota. */
   fileName?: string;
+  /** Recomprimir as imagens JPEG (com perda) — o tomo acima de 20 MB. */
+  comprimirImagens?: boolean;
   /** reordena canonicamente na rota; por padrão a ordem enviada é respeitada. */
   reorder?: boolean;
   /**
@@ -446,6 +448,8 @@ export interface VolumeGenResult {
    * de estrutura exigiria recontar tudo no browser.
    */
   partes?: { role: string; name: string; paginas: number }[];
+  /** Peso do volume: bytes em JPEG (base da estimativa de comprimir) e se foi comprimido. */
+  composicao?: { emJpeg: number; comprimido: boolean; antes: number; depois: number } | null;
 }
 
 /**
@@ -479,6 +483,7 @@ export async function postVolume(
       ...(opts.fileName?.trim() ? { fileName: opts.fileName.trim() } : {}),
       ...(opts.reorder ? { reorder: true } : {}),
       ...(opts.metadados ? { metadados: opts.metadados } : {}),
+      ...(opts.comprimirImagens ? { comprimirImagens: true } : {}),
     }),
   });
   conferirSessao(res);
@@ -489,6 +494,7 @@ export async function postVolume(
         pageCount?: number;
         partes?: { role: string; name: string; paginas: number }[];
         faltando?: string[];
+        composicao?: { emJpeg: number; comprimido: boolean; antes: number; depois: number } | null;
       }
     | null;
   if (res.status === 409 && payload?.faltando?.length) {
@@ -502,6 +508,7 @@ export async function postVolume(
     name: payload.pdf.name,
     pageCount: payload.pageCount,
     partes: payload.partes,
+    composicao: payload.composicao ?? null,
   };
 }
 

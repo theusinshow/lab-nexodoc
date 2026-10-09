@@ -16,6 +16,8 @@
 
 export type MontarVolume = (opcoes?: {
   jaConferido?: boolean;
+  /** Montar de novo recomprimindo as imagens — o tomo acima de 20 MB. */
+  comprimirImagens?: boolean;
 }) => Promise<string | null>;
 
 export type ConferenciaDoLote =

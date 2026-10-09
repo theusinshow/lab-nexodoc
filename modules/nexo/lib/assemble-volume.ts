@@ -70,6 +70,8 @@ export interface AssembleVolumeInput {
   blocos: BlocoDoVolume[];
   /** Nome do PDF final. */
   fileName?: string;
+  /** Recomprimir as imagens JPEG (com perda) — o tomo acima de 20 MB. */
+  comprimirImagens?: boolean;
   /** Propriedades do PDF — ver `metadadosDoVolume`. */
   metadados?: {
     titulo?: string;
@@ -176,5 +178,6 @@ export async function assembleVolume(
   return postVolume(parts, {
     fileName: fileName ?? "volume.pdf",
     ...(metadados ? { metadados } : {}),
+    ...(input.comprimirImagens ? { comprimirImagens: true } : {}),
   });
 }

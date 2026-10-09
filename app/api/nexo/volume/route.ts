@@ -13,6 +13,7 @@ import {
 import { accessDeniedResponse, requireActor } from "@/lib/access-control";
 import { CHECKSUM } from "@/lib/pranchas/regras";
 import { bytesDasPranchas, projetoDoEscritorio } from "@/server/pranchas";
+import { otimizarPdf } from "@/server/nexo/tools/otimizar-pdf";
 
 export const runtime = "nodejs";
 
@@ -63,6 +64,8 @@ export async function POST(req: NextRequest) {
   let parts: (VolumePart & { checksum?: string })[];
   let fileName: string | undefined;
   let reorder = false;
+  /** Recomprimir as imagens JPEG (com perda) — o "Comprimir" do tomo acima de 20 MB. */
+  let comprimirImagens = false;
   /** Propriedades do PDF final — sem elas, o documento sai assinado pela lib. */
   let metadados: MetadadosDoVolume | undefined;
   try {
@@ -71,6 +74,7 @@ export async function POST(req: NextRequest) {
       fileName?: unknown;
       reorder?: unknown;
       metadados?: unknown;
+      comprimirImagens?: unknown;
     };
     if (!Array.isArray(body.parts)) throw new Error("parts ausente");
 
@@ -125,6 +129,7 @@ export async function POST(req: NextRequest) {
     if (typeof body.reorder === "boolean") {
       reorder = body.reorder;
     }
+    comprimirImagens = body.comprimirImagens === true;
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Corpo invalido." },
@@ -175,6 +180,28 @@ export async function POST(req: NextRequest) {
    * aconteceu. As partes viram contagem por papel — é o que permite olhar a
    * linha depois e saber se aquele volume levou capa e LD ou só pranchas.
    */
+  /*
+   * O PESO (Parte 9, 09/10/2026): a repetição sai sempre, sem perda; as
+   * imagens só são recomprimidas quando pedido. A composição volta junto — é
+   * ela que diz, no painel, se comprimir alcança os 20 MB. Falhar aqui não
+   * derruba o volume: sai o montado, como antes.
+   */
+  let composicao: { emJpeg: number; comprimido: boolean; antes: number; depois: number } | null = null;
+  if (result.pdf) {
+    try {
+      const ot = await otimizarPdf(result.pdf.buffer, { comprimirImagens });
+      result.pdf.buffer = Buffer.from(ot.bytes);
+      composicao = {
+        emJpeg: ot.emJpeg,
+        comprimido: comprimirImagens && ot.imagensComprimidas > 0,
+        antes: ot.antes,
+        depois: ot.depois,
+      };
+    } catch (err) {
+      console.error("[volume] otimização falhou; segue o montado", err);
+    }
+  }
+
   if (result.pdf) {
     await recordNexoArtifacts({
     projectId: projetoDoPedido(req.headers),
@@ -209,5 +236,6 @@ export async function POST(req: NextRequest) {
     // Quantas páginas cada parte contribuiu — é o alicerce da conferência do
     // volume montado, que precisa saber QUAL página deveria ser qual folha.
     partes: result.partes,
+    composicao,
   });
 }
