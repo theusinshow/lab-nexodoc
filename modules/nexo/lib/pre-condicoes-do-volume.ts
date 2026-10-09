@@ -18,6 +18,9 @@
  * a ela ANTES de montar, e o botão pergunta a mesma coisa para desabilitar. Uma
  * verdade só — interface e montagem não podem discordar sobre o que é um volume
  * entregável.
+ *
+ * Desde 09/10/2026 as pranchas são guardadas por projeto e voltam no F5; a
+ * trava continua para a conversa sem projeto e para o envio que falhou.
  */
 
 import {
@@ -38,6 +41,13 @@ export interface PartesDoVolume {
   misto: boolean;
   /** Quantos ARQUIVOS de prancha este tomo tem em mãos (bytes, não selos). */
   pranchas: number;
+  /**
+   * Quantas das `pranchas` ainda estão SUBINDO para o servidor (09/10/2026).
+   * Montar no meio do envio mandaria referência de prancha sem ficha.
+   */
+  subindo?: number;
+  /** Nomes das pranchas cujo envio falhou de vez. */
+  naoGuardadas?: string[];
   /**
    * Código da disciplina do volume, quando ele é de UMA só (`snd`, `arq`...).
    *
@@ -66,7 +76,18 @@ export interface PartesDoVolume {
  */
 export function motivoParaNaoMontar(partes: PartesDoVolume): string | null {
   if (partes.pranchas <= 0) {
-    return "sem as pranchas — os arquivos não estão nesta sessão; reanexe-os para montar";
+    return "sem as pranchas — solte os arquivos das pranchas para montar";
+  }
+  const falhas = partes.naoGuardadas ?? [];
+  if (falhas.length === 1) {
+    return `não consegui guardar ${falhas[0]} — tente de novo ou solte o arquivo outra vez`;
+  }
+  if (falhas.length > 1) {
+    return `não consegui guardar ${falhas.length} pranchas (${falhas[0]} e mais ${falhas.length - 1}) — tente de novo ou solte os arquivos outra vez`;
+  }
+  const subindo = Math.max(0, partes.subindo ?? 0);
+  if (subindo > 0) {
+    return `guardando as pranchas — ${partes.pranchas - subindo} de ${partes.pranchas}; monta assim que terminar`;
   }
   const codigo = partes.codigo?.trim() ?? "";
   if (!partes.temCapa && (!codigo || disciplinaTemCapa(codigo))) {

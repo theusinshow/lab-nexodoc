@@ -193,4 +193,36 @@ test("plano sem capa nao trava por volume", () => {
   assert.equal(motivoParaNaoGerarCapa({ noPlano: false, volume: "" }), null);
 });
 
+test("prancha ainda subindo trava a montagem com a contagem", () => {
+  const m = motivoParaNaoMontar({ temCapa: true, temLd: true, misto: false, pranchas: 40, subindo: 28 });
+  assert.equal(m, "guardando as pranchas — 12 de 40; monta assim que terminar");
+});
+
+test("prancha que não foi guardada trava e diz qual", () => {
+  const m = motivoParaNaoMontar({
+    temCapa: true,
+    temLd: true,
+    misto: false,
+    pranchas: 3,
+    naoGuardadas: ["084-25-ARQ-02.pdf"],
+  });
+  assert.equal(m, "não consegui guardar 084-25-ARQ-02.pdf — tente de novo ou solte o arquivo outra vez");
+});
+
+test("várias não guardadas: diz quantas e a primeira", () => {
+  const m = motivoParaNaoMontar({
+    temCapa: true,
+    temLd: true,
+    misto: false,
+    pranchas: 3,
+    naoGuardadas: ["a.pdf", "b.pdf"],
+  });
+  assert.equal(m, "não consegui guardar 2 pranchas (a.pdf e mais 1) — tente de novo ou solte os arquivos outra vez");
+});
+
+test("sem prancha nenhuma, a frase deixa de mandar reanexar sem motivo", () => {
+  const m = motivoParaNaoMontar({ temCapa: true, temLd: true, misto: false, pranchas: 0 });
+  assert.equal(m, "sem as pranchas — solte os arquivos das pranchas para montar");
+});
+
 console.log(`\n${passed} teste(s) passaram.`);
