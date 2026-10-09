@@ -114,7 +114,7 @@ export function nomeDoZipDosVolumes(
 ): string {
   const doSelo = summarizeSelos(selos as SeloForLd[]);
   const codigo = limpo(identidade.codigo?.trim() || doSelo.codigo || "");
-  const disciplina = limpo(disciplinaDominante(selos));
+  const disciplina = disciplinasComoEscritas(selos);
   // "12", "vol 12", "Volume 12" e "VOL. 12" são o mesmo volume; sem isto o nome
   // sairia "vol_volume_12". Só dígitos entram.
   const numero = (volume ?? "").replace(/\D+/g, "");
@@ -132,7 +132,7 @@ export function nomeDoVolume(
   // O código sai como "084-25" do parser e como "084_25" no papel: a capa e o
   // nome de arquivo do escritório usam underscore.
   const codigo = limpo(identidade.codigo?.trim() || doSelo.codigo || "");
-  const disciplina = limpo(disciplinaDominante(selosDoTomo));
+  const disciplina = disciplinasComoEscritas(selosDoTomo);
   // Tomo 0 = volume único, sem divisão: o sufixo mentiria sobre existir tomo.
   const tomoParte = tomo.atual > 0 ? `tomo${tomo.numero}` : "";
 
@@ -141,27 +141,21 @@ export function nomeDoVolume(
 }
 
 /**
- * A DISCIPLINA COMO O ESCRITÓRIO A ESCREVE no nome do arquivo: `est_met`, e não
- * só o código canônico `met`. Vem dos tokens de disciplina do NOME das
- * pranchas, na ordem em que aparecem; a combinação mais frequente vence. Sem
- * nenhuma no nome, cai na disciplina dominante do selo.
+ * AS DISCIPLINAS COMO O ESCRITÓRIO AS ESCREVE no nome do arquivo: `est_met`, e
+ * não só o código canônico `met`; e, no volume MISTO, todas — `cab_cft`, como
+ * em `084_25_vol8_cab_cft_a.pdf` (09/10/2026; antes vencia a de mais folhas, e
+ * o misto saía `084_25_cab_capas.odt`). Vêm dos tokens de disciplina do NOME
+ * das pranchas, na ordem em que aparecem, sem repetir. Sem nenhuma no nome,
+ * cai na disciplina dominante do selo.
  */
-function disciplinaComoEscrita(selos: readonly SeloForLd[]): string {
-  const contagem = new Map<string, number>();
+function disciplinasComoEscritas(selos: readonly SeloForLd[]): string {
+  const tokens: string[] = [];
   for (const s of selos) {
-    const escrita = parseFilename(s.arquivo?.trim() || s.fileName).disciplinas.join("_");
-    if (!escrita) continue;
-    contagem.set(escrita, (contagem.get(escrita) ?? 0) + 1);
-  }
-  let melhor = "";
-  let maior = 0;
-  for (const [escrita, n] of contagem) {
-    if (n > maior) {
-      melhor = escrita;
-      maior = n;
+    for (const t of parseFilename(s.arquivo?.trim() || s.fileName).disciplinas) {
+      if (t && !tokens.includes(t)) tokens.push(t);
     }
   }
-  return limpo(melhor || disciplinaDominante(selos));
+  return limpo(tokens.join("_") || disciplinaDominante(selos));
 }
 
 /**
@@ -178,7 +172,7 @@ export function nomesDosEditaveis(
 ): { zip: string; capa: string; ld: string; separatriz: string } {
   const doSelo = summarizeSelos(selos as SeloForLd[]);
   const codigo = limpo(identidade.codigo?.trim() || doSelo.codigo || "");
-  const base = [codigo, disciplinaComoEscrita(selos)].filter(Boolean).join("_");
+  const base = [codigo, disciplinasComoEscritas(selos)].filter(Boolean).join("_");
   const com = (sufixo: string) => `${base ? `${base}_` : ""}${sufixo}.odt`;
   return {
     zip: `${codigo ? `${codigo}_` : ""}editaveis.zip`,
