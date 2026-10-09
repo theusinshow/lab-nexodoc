@@ -6,8 +6,10 @@
 # `experimental.viewTransition` do tipo do next.config: a bateria ficaria
 # verde e o deploy na Railway quebraria. Aqui fica vermelho antes.
 #
-# O lint não entra (ainda): o projeto tem 63 erros antigos de eslint, e um
-# portão vermelho desde o primeiro dia é um portão que ninguém olha.
+# O lint entrou em 09/10/2026, quando os 63 erros antigos chegaram a zero. Um
+# deles era defeito de verdade: um hook depois de `return null`, escondido do
+# lint por um nome em português (`usar…` em vez de `use…`). Avisos não travam;
+# erro trava.
 name: verificacao
 
 on:
@@ -48,6 +50,9 @@ jobs:
 
       - name: Tipos
         run: npx tsc --noEmit -p tsconfig.json
+
+      - name: Lint
+        run: npx eslint .
 
       - name: Build de produção
         run: npx next build
