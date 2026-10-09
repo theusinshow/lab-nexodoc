@@ -8,6 +8,10 @@ import {
   type ClassifyDocumentsInput,
 } from "@/server/nexo/classify-documents";
 import { accessDeniedResponse, requireActor } from "@/lib/access-control";
+import { getPrisma, isDatabaseConfigured } from "@/lib/db";
+import { lerIdentidadeDoProjeto, type IdentidadeDoProjeto } from "@/lib/identidade-do-projeto";
+import { normalizarCentroDeCusto } from "@/lib/resolucao-de-projeto";
+import { aplicarEscadaAoDossie } from "@/modules/nexo/lib/dossie-com-projeto";
 
 export const runtime = "nodejs";
 
@@ -34,8 +38,9 @@ export async function POST(req: NextRequest) {
    *
    * As duas recusas independentes estao em [[lib/actor.ts]].
    */
+  let actor: Awaited<ReturnType<typeof requireActor>>;
   try {
-    await requireActor();
+    actor = await requireActor();
   } catch (err) {
     const negado = accessDeniedResponse(err);
     if (negado) return negado;
@@ -88,7 +93,28 @@ export async function POST(req: NextRequest) {
   );
 
   try {
-    const dossie = await classifyDocuments(inputs);
+    const lido = await classifyDocuments(inputs);
+    /*
+     * O DEGRAU "PROJETO" (09/10/2026): memorial de disciplina sem capa herda o
+     * que o projeto já sabe pelo código do nome do arquivo — a capa do geral,
+     * gravada antes. Falhar aqui não derruba a leitura: o dossiê segue só com
+     * capa e corpo. Ver [[lib/escada-da-identidade.ts]].
+     */
+    const temMemorial = lido.arquivos.some((a) => a.tipo === "memorial");
+    let projeto: IdentidadeDoProjeto | null = null;
+    const code = normalizarCentroDeCusto(lido.codigo ?? "");
+    if (temMemorial && code && isDatabaseConfigured()) {
+      try {
+        const p = await getPrisma().project.findUnique({
+          where: { organizationId_code: { organizationId: actor.organizationId, code } },
+          select: { identidade: true, deletedAt: true },
+        });
+        if (p && !p.deletedAt) projeto = lerIdentidadeDoProjeto(p.identidade);
+      } catch (err) {
+        console.error("[nexo-classify] identidade do projeto indisponível", err);
+      }
+    }
+    const dossie = temMemorial ? aplicarEscadaAoDossie(lido, projeto) : lido;
     return NextResponse.json({ dossie });
   } catch (err) {
     return NextResponse.json(

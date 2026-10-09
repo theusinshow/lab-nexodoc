@@ -217,6 +217,12 @@ model Project {
   /// legítimo: projeto sem cliente é projeto sem cliente, e inventar uma chave o
   /// faria agrupar com quem não é dele.
   clientKey      String             @default("")
+  /// A IDENTIDADE GUARDADA (09/10/2026): obra, órgão, município… campo a campo,
+  /// com a ORIGEM (capa, selo, usuário) e o arquivo que provou. A capa do
+  /// memorial geral vence e registra divergência; o corpo do memorial nunca
+  /// grava. Também guarda a conferência retroativa das auditorias. Forma e
+  /// regra em [[lib/identidade-do-projeto.ts]].
+  identidade     Json               @default("{}")
   description    String             @default("")
   status         ProjectStatus      @default(ACTIVE)
   createdAt      DateTime           @default(now())
